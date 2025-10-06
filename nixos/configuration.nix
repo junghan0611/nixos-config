@@ -193,6 +193,9 @@ in
       zoxide
       broot
       onefetch
+      bottom
+      syncthing
+      stc-cli
 
       # 한글 관련 도구
       glibc
@@ -218,9 +221,40 @@ in
     # Disable autologin.
     services.getty.autologinUser = null;
 
-    # Open ports in the firewall.
-    networking.firewall.allowedTCPPorts = [ 22 ];
-    # networking.firewall.allowedUDPPorts = [ ... ];
+    # Syncthing 서비스
+    # 보안 설정 (웹 UI에서): - Actions → Settings → GUI - User/Password 설정 - Use HTTPS 체크 (권장)
+    # SSH 터널로만 접속하기 (포트 안 열고): 로컬에서 실행 ssh -L 8384:localhost:8384 oracle, 브라우저에서 http://localhost:8384
+    services.syncthing = {
+      enable = true;
+      user = vars.username;
+      dataDir = "/home/${vars.username}/sync";
+      configDir = "/home/${vars.username}/.config/syncthing";
+
+      overrideDevices = true;
+      overrideFolders = true;
+
+      settings = {
+        gui = {
+          enabled = true;
+          address = "127.0.0.1:8384";  # 웹 UI 외부 접속 허용
+        };
+        options = {
+          urAccepted = -1;  # 통계 비활성화
+          relaysEnabled = true;
+        };
+      };
+    };
+
+    # 방화벽 포트 추가
+    networking.firewall.allowedTCPPorts = [
+      22      # SSH
+      22000   # Syncthing sync
+    ];
+
+    networking.firewall.allowedUDPPorts = [
+      21027   # Syncthing discovery
+      22000   # Syncthing QUIC
+    ];
 
     # Disable documentation for minimal install.
     documentation.enable = false;
