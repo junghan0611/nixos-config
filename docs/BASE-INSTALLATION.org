@@ -1,0 +1,358 @@
+#+TITLE: Base Installation
+#+SUBTITLE:
+#+AUTHOR: Junghan Kim
+#+EMAIL: junghanacs@gmail.com
+#+date: <2025-10-06 Mon 16:04>
+
+- 설치 과정의 핵심만 남긴다. 일단 동작하게 하는 것!
+
+* junghan-oracle-nixos
+  [2025-10-06 Mon 16:05] 완료
+
+** grub 설정
+
+   #+BEGIN_SRC markdown
+   ### 🔧 해결책 2: GRUB을 통한 UEFI 진입 (권장)
+   ```bash
+   # SSH로 Ubuntu 접속
+   ssh ubuntu@168.107.2.68
+
+   # netboot.xyz 먼저 설치
+   sudo su
+   wget https://boot.netboot.xyz/ipxe/netboot.xyz-arm64.efi
+   install --owner=root --group=root --mode=664 \
+     netboot.xyz-arm64.efi /boot/efi/netboot.efi
+
+   # GRUB에 UEFI Firmware Settings 항목 추가/확인
+   grep -i "uefi" /boot/grub/grub.cfg
+
+   # GRUB을 통해 UEFI로 재부팅
+   sudo grub-reboot 'UEFI Firmware Settings'
+   sudo reboot
+
+   # 또는 menuentry 번호로 선택 (보통 마지막 항목)
+   sudo grub-reboot 3  # UEFI가 4번째 메뉴인 경우
+   sudo reboot
+   #+END_SRC
+
+** 공개키: 168.107.2.68 아이피
+
+- disko v.1.11.0 - 최신 Jan 15 공개키
+#+begin_src shell :tangle no :eval no :exports none
+
+mkdir -p ~/.ssh && curl "https://notes.junghanacs.com/static/junghan0611.keys"> ~/.ssh/authorized_keys
+#+end_src
+
+인터페이스는 자동으로 잡힌다.
+
+#+BEGIN_SRC markdown
+[nixos@nixos:~]$ ifconfig
+enp0s6: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.0.0.157  netmask 255.255.255.0  broadcast 10.0.0.255
+        inet6 fe80::17ff:fe02:24fe  prefixlen 64  scopeid 0x20<link>
+        ether 02:00:17:02:24:fe  txqueuelen 1000  (Ethernet)
+        RX packets 118  bytes 29985 (29.2 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 110  bytes 12105 (11.8 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+#+END_SRC
+
+** disk-config.nix
+ [2025-10-06 Mon 12:23]
+
+[root@nixos:/tmp/tmp.2WiGckytar]# cat disk-config.nix
+
+ #+begin_src nix
+{
+  disko.devices = {
+    disk = {
+      main = {
+        type = "disk";
+        device = "/dev/sda";
+        content = {
+          type = "gpt";
+          partitions = {
+            boot = {
+              size = "512M";
+              type = "EF00";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+              };
+            };
+            root = {
+              size = "100%";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}
+
+ #+end_src
+
+
+
+** configuration.nix - 매우 중요
+ [2025-10-06 Mon 12:29]
+
+[root@nixos:/mnt/etc/nixos]# cat configuration.nix
+ #+begin_src nix
+{ config, lib, pkgs, ... }:
+
+let
+  vars = import ./vars.nix;
+in
+{
+  imports =
+    [
+      ./hardware-configuration.nix
+      "${builtins.fetchTarball "https://github.com/nix-community/disko/archive/v1.11.0.tar.gz"}/module.nix"
+     ./disk-config.nix
+    ];
+
+  boot = {
+    loader = {
+      systemd-boot.enable = true;
+      efi = {
+        canTouchEfiVariables = true;
+        efiSysMountPoint = "/boot";
+      };
+    };
+    initrd.systemd.enable = true;
+  };
+
+  systemd.targets.multi-user.enable = true;
+
+  networking.hostName = vars.hostname;
+  networking.networkmanager.enable = true;
+
+  time.timeZone = vars.timezone;
+  i18n.defaultLocale = vars.locale;
+
+  users = {
+    mutableUsers = true;
+    users.${vars.username} = {
+      isNormalUser = true;
+      extraGroups = ["networkmanager" "wheel"];
+      openssh.authorizedKeys.keys = [ vars.sshKey ];
+      initialPassword = "password";
+    };
+  };
+
+  # Enable passwordless sudo.
+  security.sudo.extraRules = [
+    {
+      users = [vars.username];
+      commands = [
+        {
+          command = "ALL";
+          options = ["NOPASSWD"];
+        }
+      ];
+    }
+  ];
+
+  environment.systemPackages = with pkgs; [
+     curl
+     git
+     vim
+     wget
+  ];
+
+  # Enable the OpenSSH daemon.
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
+    };
+  };
+
+  # Disable autologin.
+  services.getty.autologinUser = null;
+
+  # Open ports in the firewall.
+  networking.firewall.allowedTCPPorts = [ 22 ];
+  # networking.firewall.allowedUDPPorts = [ ... ];
+
+  # Disable documentation for minimal install.
+  documentation.enable = false;
+
+  # This option defines the first version of NixOS you have installed on this particular machine,
+  # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.
+  #
+  # Most users should NEVER change this value after the initial install, for any reason,
+  # even if you've upgraded your system to a new NixOS release.
+  #
+  # This value does NOT affect the Nixpkgs version your packages and OS are pulled from,
+  # so changing it will NOT upgrade your system - see https://nixos.org/manual/nixos/stable/#sec-upgrading for how
+  # to actually do that.
+  #
+  # This value being lower than the current NixOS release does NOT mean your system is
+  # out of date, out of support, or vulnerable.
+  #
+  # Do NOT change this value unless you have manually inspected all the changes it would make to your configuration,
+  # and migrated your data accordingly.
+  #
+  # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
+  system.stateVersion = "25.05"; # Did you read the comment?
+}
+ #+end_src
+** vars.nix
+[2025-10-06 Mon 12:47]
+
+#+begin_src nix
+{
+  hostname = "junghan-oracle-nixos";
+  username = "junghan";
+  sshKey = "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEArJDhZ/YWUUZXJjvwAeTp/Y6VOP6acQSTXV8mvrOJyH+yXnEMdasI9MSeVBEhnKW92o94HC7PVkAgMYwzUQqKeRHLROf6AWJHK873pqpuqhSgGfswPQAIQxCq4DEjcio2EDiYZx4thH/4wIcDY2O1IvW10m6sz62vb40R+/zbN819nG6EV0AoYb4aeaOtjWZaQ+XJAW1pBjd/2j9CMBwXyvjodsySIOKC+O2vLwppVg5ZjSdtvN42rfKnszZsAtPibovtsj/8KbeOMKDnsBak11tvrbyZGWZpjPGUawCkEQZi6718G2mZp7qnb4qMCFn0+DkDnQMGPp8tm0zhajYo9w== rsa-key-20220215";
+  locale = "en_US.UTF-8";
+  timezone = "Asia/Seoul";
+}
+
+#+end_src
+
+** configuration.nix - autogeneration 참고용
+
+#+BEGIN_SRC markdown
+# Edit this configuration file to define what should be installed on
+# your system. Help is available in the configuration.nix(5) man page, on
+# https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
+
+{ config, lib, pkgs, ... }:
+
+{
+  imports =
+    [ # Include the results of the hardware scan.
+      ./hardware-configuration.nix
+    ];
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # networking.hostName = "nixos"; # Define your hostname.
+  # Pick only one of the below networking options.
+  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  # networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+
+  # Set your time zone.
+  # time.timeZone = "Europe/Amsterdam";
+
+  # Configure network proxy if necessary
+  # networking.proxy.default = "http://user:password@proxy:port/";
+  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
+
+  # Select internationalisation properties.
+  # i18n.defaultLocale = "en_US.UTF-8";
+  # console = {
+  #   font = "Lat2-Terminus16";
+  #   keyMap = "us";
+  #   useXkbConfig = true; # use xkb.options in tty.
+  # };
+
+  # Enable the X11 windowing system.
+  # services.xserver.enable = true;
+
+
+
+
+  # Configure keymap in X11
+  # services.xserver.xkb.layout = "us";
+  # services.xserver.xkb.options = "eurosign:e,caps:escape";
+
+  # Enable CUPS to print documents.
+  # services.printing.enable = true;
+
+  # Enable sound.
+  # services.pulseaudio.enable = true;
+  # OR
+  # services.pipewire = {
+  #   enable = true;
+  #   pulse.enable = true;
+  # };
+
+  # Enable touchpad support (enabled default in most desktopManager).
+  # services.libinput.enable = true;
+
+  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # users.users.alice = {
+  #   isNormalUser = true;
+  #   extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+  #   packages = with pkgs; [
+  #     tree
+  #   ];
+  # };
+
+  # programs.firefox.enable = true;
+
+  # List packages installed in system profile.
+  # You can use https://search.nixos.org/ to find more packages (and options).
+  # environment.systemPackages = with pkgs; [
+  #   vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+  #   wget
+  # ];
+
+  # Some programs need SUID wrappers, can be configured further or are
+  # started in user sessions.
+  # programs.mtr.enable = true;
+  # programs.gnupg.agent = {
+  #   enable = true;
+  #   enableSSHSupport = true;
+  # };
+
+  # List services that you want to enable:
+
+  # Enable the OpenSSH daemon.
+  # services.openssh.enable = true;
+
+  # Open ports in the firewall.
+  # networking.firewall.allowedTCPPorts = [ ... ];
+  # networking.firewall.allowedUDPPorts = [ ... ];
+  # Or disable the firewall altogether.
+  # networking.firewall.enable = false;
+
+  # Copy the NixOS configuration file and link it from the resulting system
+  # (/run/current-system/configuration.nix). This is useful in case you
+  # accidentally delete configuration.nix.
+  # system.copySystemConfiguration = true;
+
+  # This option defines the first version of NixOS you have installed on this particular machine,
+  # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.
+  #
+  # Most users should NEVER change this value after the initial install, for any reason,
+  # even if you've upgraded your system to a new NixOS release.
+  #
+  # This value does NOT affect the Nixpkgs version your packages and OS are pulled from,
+  # so changing it will NOT upgrade your system - see https://nixos.org/manual/nixos/stable/#sec-upgrading for how
+  # to actually do that.
+  #
+  # This value being lower than the current NixOS release does NOT mean your system is
+  # out of date, out of support, or vulnerable.
+  #
+  # Do NOT change this value unless you have manually inspected all the changes it would make to your configuration,
+  # and migrated your data accordingly.
+  #
+  # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
+  system.stateVersion = "25.05"; # Did you read the comment?
+
+}
+#+END_SRC
+
+* ~/.ssh/id_rsa 설정
+
+#+begin_src
+#IdentityFile ~/.ssh/id_rsa
+Host oracle
+  HostName 168.107.2.68
+  User junghan
+  IdentityFile ~/.ssh/id_rsa
+#+end_src

@@ -1,1 +1,1 @@
-# junghan-oracle-nixos 
+# junghan-oracle-nixos
