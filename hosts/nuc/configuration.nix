@@ -7,7 +7,7 @@ in
     imports =
       [
         ./hardware-configuration.nix  # nixos-generate-config로 자동 생성됨
-        ./disk-config.nix
+        # ./disk-config.nix # disko 이미 완료 hardware-configuration.nix와 충돌
       ];
 
     boot = {
