@@ -19,6 +19,15 @@
           ./hosts/oracle/configuration.nix
         ];
       };
+
+      # Intel NUC x86_64
+      nuc = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          disko.nixosModules.disko
+          ./hosts/nuc/configuration.nix
+        ];
+      };
     };
   };
 }

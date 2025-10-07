@@ -8,6 +8,7 @@
 
 * junghan-oracle-nixos
   [2025-10-06 Mon 16:05] 완료
+- [[https://mtlynch.io/notes/nix-oracle-cloud/][Install NixOS on a Free Oracle Cloud VM]]
 
 ** grub 설정
 
@@ -356,3 +357,4 @@ Host oracle
   User junghan
   IdentityFile ~/.ssh/id_rsa
 #+end_src
+
