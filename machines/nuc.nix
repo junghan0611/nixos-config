@@ -20,6 +20,12 @@
   hardware = {
     enableRedistributableFirmware = true;
     cpu.intel.updateMicrocode = true;
+
+    # Bluetooth support
+    bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
   };
 
   # Power management for NUC
@@ -56,6 +62,9 @@
 
   # Enable thermald for Intel CPU thermal management
   services.thermald.enable = true;
+
+  # Bluetooth management (blueman applet for i3)
+  services.blueman.enable = true;
 
   # ZRAM swap
   zramSwap.enable = true;

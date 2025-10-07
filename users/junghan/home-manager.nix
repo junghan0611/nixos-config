@@ -90,11 +90,13 @@ in {
     ".config/i3/config".text = builtins.readFile ./i3;
     # i3status is configured via programs.i3status below
     ".config/rofi/config.rasi".text = builtins.readFile ./rofi;
-    ".Xresources".text = builtins.readFile ./Xresources;
     ".config/ghostty/config".text = builtins.readFile ./ghostty.linux;
     ".config/kitty/kitty.conf".text = builtins.readFile ./kitty;
     ".inputrc".text = builtins.readFile ./inputrc;
   };
+
+  # X resources configuration
+  xresources.extraConfig = builtins.readFile ./Xresources;
 
   #---------------------------------------------------------------------
   # Programs configuration
@@ -262,12 +264,23 @@ in {
     '';
   };
 
-  # i3status configuration
+  # Cursor theme (96 DPI에 적합한 크기)
+  home.pointerCursor = {
+    name = "Vanilla-DMZ";
+    package = pkgs.vanilla-dmz;
+    size = 32;
+    x11.enable = true;
+  };
+
+  # i3status configuration (Tomorrow Night 색상 스키마)
   programs.i3status = {
     enable = true;
     general = {
       colors = true;
       interval = 5;
+      color_good = "#8C9440";      # 녹색
+      color_bad = "#A54242";       # 빨간색
+      color_degraded = "#DE935F";  # 주황색
     };
 
     modules = {

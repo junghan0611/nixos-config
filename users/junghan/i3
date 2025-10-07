@@ -50,6 +50,9 @@ exec --no-startup-id kime
 # Network Manager applet
 exec --no-startup-id nm-applet
 
+# Bluetooth Manager applet
+exec --no-startup-id blueman-applet
+
 # Dunst for notifications
 exec --no-startup-id dunst
 
