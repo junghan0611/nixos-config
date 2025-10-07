@@ -90,6 +90,23 @@
   };
 
   # Console configuration for Korean support
+  # Use kmscon for proper Unicode/Korean support in TTY
+  services.kmscon = {
+    enable = true;
+    hwRender = true;
+    fonts = [
+      {
+        name = "D2Coding";
+        package = pkgs.d2coding;
+      }
+    ];
+    extraConfig = ''
+      font-size=14
+      xkb-layout=us
+    '';
+  };
+
+  # Fallback console settings (used when kmscon is not available)
   console = {
     font = "Lat2-Terminus16";
     keyMap = "us";
