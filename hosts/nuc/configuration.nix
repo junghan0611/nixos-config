@@ -140,9 +140,7 @@ in
 
       # 네트워크
       networkmanager
-      networkmanagerapplet
-      nmcli nmtui
-      iwd iwctl
+      iwd
 
       # 개발 도구
       python312
