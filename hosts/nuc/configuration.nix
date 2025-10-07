@@ -86,7 +86,7 @@ in
       mutableUsers = true;
       users.${vars.username} = {
         isNormalUser = true;
-        description = "Junghan Kim";
+        description = "Junghan Kim NUC";
         extraGroups = [
           "networkmanager"
           "wheel"
@@ -122,29 +122,79 @@ in
     # 시스템 패키지
     environment.systemPackages = with pkgs; [
       # 기본 도구
-      wget vim curl git htop tmux tree
+      wget
+      vim
+      curl
+      git
+      htop
+      tmux
+      jq
+      uv
+      fd
+      ack
+      tree
+      lsof
+      unzip
+      iotop
+      ncdu
 
-      # 네트워크 도구 (중요!)
+      # 네트워크
       networkmanager
       networkmanagerapplet
       nmcli nmtui
       iwd iwctl
-      wpa_supplicant
 
       # 개발 도구
-      neovim fzf ripgrep fd
-      python3 nodejs gcc gnumake
-      docker docker-compose
+      python312
+      nodejs_22
+      pam
+      gcc
+      gh  # github
+      neovim
+      tree-sitter
+      fzf
+      delta
+      git-lfs
+      gnumake
+      pkg-config
+      mosh
+      ripgrep
+      pnpm # pnpm setup, pnpm add -g @anthropic-ai/claude-code
+      openssl
+      linux-pam
 
-      # 시스템 도구
-      pciutils usbutils lshw
-      dnsutils traceroute
-      iotop ncdu
+      # 네트워크 도구
+      dnsutils      # nslookup, dig, host
+      traceroute    # 네트워크 경로 추적
+      yq-go         # YAML 처리 (Go 버전)
+      bat           # 구문 강조 cat
+      eza           # 모던 ls 대체
+      httpie        # HTTP 클라이언트
 
       # 추가 도구
-      syncthing
+      infisical
+      emacs-nox libvterm libtool cmake
+      lnav
+      pciutils
       direnv nix-direnv
-      starship zoxide
+      atuin
+      starship
+      lazygit
+      zoxide
+      broot
+      onefetch
+      bottom
+      syncthing
+      stc-cli
+
+      # 한글 관련 도구
+      glibc
+      glibcLocales
+      fontconfig
+      file          # 파일 타입 확인 (한글 파일명 지원)
+      less          # 텍스트 뷰어 (한글 지원)
+      iconv         # 인코딩 변환
+      enca          # 인코딩 자동 감지
     ];
 
     # SSH 서버
@@ -182,21 +232,13 @@ in
 
     # 방화벽
     networking.firewall = {
-      allowedTCPPorts = [ 22 8384 22000 ];
+      allowedTCPPorts = [ 22 22000 ];
       allowedUDPPorts = [ 21027 22000 ];
     };
 
     # Nix 설정
     nixpkgs.config.allowUnfree = true;
     nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-    # 자동 정리
-    nix.gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
-    nix.settings.auto-optimise-store = true;
 
     system.stateVersion = "25.05";
   }

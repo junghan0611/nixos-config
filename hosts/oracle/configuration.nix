@@ -279,6 +279,14 @@ in
       };
     };
 
+    # 자동 정리
+    nix.gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
+    nix.settings.auto-optimise-store = true;
+
     # This option defines the first version of NixOS you have installed on this particular machine,
     # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.
     #
