@@ -274,14 +274,15 @@
 
   # Syncthing service configuration
   # SSH tunnel for secure access: ssh -L 8384:localhost:8384 <host>
+  # Note: overrideDevices/Folders = false allows web UI management
   services.syncthing = {
     enable = true;
     user = currentSystemUser;
     dataDir = "/home/${currentSystemUser}/sync";
     configDir = "/home/${currentSystemUser}/.config/syncthing";
 
-    overrideDevices = true;
-    overrideFolders = true;
+    overrideDevices = false;  # Allow web UI to manage devices
+    overrideFolders = false;  # Allow web UI to manage folders
 
     settings = {
       gui = {
