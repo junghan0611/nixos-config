@@ -216,6 +216,7 @@ in
     };
 
     nixpkgs.config.allowUnfree = true;
+	nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
     # Disable autologin.
     services.getty.autologinUser = null;
