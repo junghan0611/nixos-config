@@ -230,8 +230,8 @@ in
       dataDir = "/home/${vars.username}/sync";
       configDir = "/home/${vars.username}/.config/syncthing";
 
-      overrideDevices = true;
-      overrideFolders = true;
+      overrideDevices = false;
+      overrideFolders = false;
 
       settings = {
         gui = {

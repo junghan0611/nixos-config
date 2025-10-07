@@ -35,11 +35,15 @@ client.background       $back
 #----------------------------------------------------------------------
 # Startup
 #----------------------------------------------------------------------
+# Power management: 1 hour auto-lock, 2 hours screen off
+exec --no-startup-id xset s 3600 3600
+exec --no-startup-id xset dpms 0 0 7200
+
 # Lock screen setup
 exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 
-# Set background color
-exec --no-startup-id xsetroot -solid "$back"
+# Set wallpaper
+exec --no-startup-id feh --bg-scale ~/.config/nixos-wallpaper.png
 
 # Keyboard layout
 exec --no-startup-id setxkbmap -layout us

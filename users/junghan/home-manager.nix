@@ -77,10 +77,19 @@ in {
 
     # Editors
     emacs
+
+    # Email and password management
+    gnupg
+    pass
+    passExtensions.pass-otp
+    notmuch
+    isync
+    afew
   ] ++ (lib.optionals isLinux [
     # Linux-specific packages
     xclip
     wl-clipboard
+    firefox
   ]);
 
   #---------------------------------------------------------------------
@@ -93,6 +102,8 @@ in {
     ".config/ghostty/config".text = builtins.readFile ./ghostty.linux;
     ".config/kitty/kitty.conf".text = builtins.readFile ./kitty;
     ".inputrc".text = builtins.readFile ./inputrc;
+    # Wallpaper for i3
+    ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
   };
 
   # X resources configuration
