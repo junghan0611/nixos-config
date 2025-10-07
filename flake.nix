@@ -30,19 +30,23 @@
       })
     ];
 
-    # Helper function to create system configurations
+    # Helper function to create system configurations with home-manager
     mkSystem = import ./lib/mksystem.nix {
       inherit overlays nixpkgs inputs;
     };
   in {
     nixosConfigurations = {
-      # Oracle Cloud ARM VM
-      oracle = mkSystem "oracle" {
+      # Oracle Cloud ARM VM - simple configuration without home-manager
+      oracle = nixpkgs.lib.nixosSystem {
         system = "aarch64-linux";
-        user = "junghan";
+        modules = [
+          { nixpkgs.overlays = overlays; }
+          disko.nixosModules.disko
+          ./hosts/oracle/configuration.nix
+        ];
       };
 
-      # Intel NUC x86_64
+      # Intel NUC x86_64 - full configuration with home-manager
       nuc = mkSystem "nuc" {
         system = "x86_64-linux";
         user = "junghan";
