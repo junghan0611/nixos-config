@@ -1,0 +1,64 @@
+# Ghostty configuration for Linux/NixOS
+font-family = D2CodingLigature Nerd Font
+font-size = 12
+background-opacity = 0.95
+background-blur-radius = 20
+mouse-hide-while-typing = true
+
+# Theme colors (matches i3 theme)
+background = #1D1F21
+foreground = #C5C8C6
+
+# Black
+palette = 0=#282A2E
+palette = 8=#373B41
+
+# Red
+palette = 1=#A54242
+palette = 9=#CC6666
+
+# Green
+palette = 2=#8C9440
+palette = 10=#B5BD68
+
+# Yellow
+palette = 3=#DE935F
+palette = 11=#F0C674
+
+# Blue
+palette = 4=#5F819D
+palette = 12=#81A2BE
+
+# Magenta
+palette = 5=#85678F
+palette = 13=#B294BB
+
+# Cyan
+palette = 6=#5E8D87
+palette = 14=#8ABEB7
+
+# White
+palette = 7=#707880
+palette = 15=#C5C8C6
+
+# Keybindings
+keybind = super+c=copy_to_clipboard
+keybind = super+v=paste_from_clipboard
+keybind = super+shift+c=copy_to_clipboard
+keybind = super+shift+v=paste_from_clipboard
+keybind = super+equal=increase_font_size:1
+keybind = super+minus=decrease_font_size:1
+keybind = super+zero=reset_font_size
+keybind = super+q=quit
+keybind = super+shift+comma=reload_config
+keybind = super+k=clear_screen
+keybind = super+n=new_window
+keybind = super+w=close_surface
+keybind = super+shift+w=close_window
+keybind = super+t=new_tab
+keybind = super+shift+left_bracket=previous_tab
+keybind = super+shift+right_bracket=next_tab
+keybind = super+d=new_split:right
+keybind = super+shift+d=new_split:down
+keybind = super+right_bracket=goto_split:next
+keybind = super+left_bracket=goto_split:previous
