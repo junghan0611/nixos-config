@@ -4,6 +4,9 @@
 
 let
   isLinux = pkgs.stdenv.isLinux;
+  # Import vars from the appropriate host - fallback to nuc for now
+  # TODO: Make this dynamic based on currentSystemName
+  vars = import ../../hosts/nuc/vars.nix;
 
   shellAliases = {
     # Git aliases
@@ -31,8 +34,8 @@ let
 in {
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
-  home.username = "junghan";
-  home.homeDirectory = "/home/junghan";
+  home.username = vars.username;
+  home.homeDirectory = "/home/${vars.username}";
 
   # This value determines the Home Manager release that your
   # configuration is compatible with.
@@ -101,7 +104,7 @@ in {
   programs.git = {
     enable = true;
     userName = "Jung Han";
-    userEmail = "junghanacs@gmail.com";
+    userEmail = vars.email;
 
     aliases = {
       co = "checkout";
@@ -150,10 +153,29 @@ in {
       # Better ls colors
       eval "$(dircolors -b)"
 
+      export PNPM_HOME="/home/${vars.username}/.local/share/pnpm"
+      case ":$PATH:" in
+        *":$PNPM_HOME:"*) ;;
+        *) export PATH="$PNPM_HOME:$PATH" ;;
+      esac
+
+      # User specific paths
+      export PATH=~/.local/bin:$PATH
+
       # FZF key bindings
       if command -v fzf &> /dev/null; then
         source ${pkgs.fzf}/share/fzf/key-bindings.bash
         source ${pkgs.fzf}/share/fzf/completion.bash
+      fi
+
+      # Claude Config bash 설정 로드
+      if [ -f "$HOME/claude-config/bash/bashrc" ]; then
+         source "$HOME/claude-config/bash/bashrc"
+      fi
+
+      # 사용자 로컬 설정 (있는 경우)
+      if [ -f "$HOME/.bashrc.local" ]; then
+         source "$HOME/.bashrc.local"
       fi
     '';
   };

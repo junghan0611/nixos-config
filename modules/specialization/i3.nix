@@ -18,6 +18,10 @@
       '';
     };
 
+    # Display manager configuration
+    services.displayManager.defaultSession = "none+i3";
+
+    # X server configuration
     services.xserver = {
       enable = true;
       xkb.layout = "us";
@@ -29,9 +33,7 @@
       };
 
       displayManager = {
-        defaultSession = "none+i3";
         lightdm.enable = true;
-
         sessionCommands = ''
           ${pkgs.xorg.xset}/bin/xset r rate 200 40
         '';
