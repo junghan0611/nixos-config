@@ -2,8 +2,12 @@
 
 {
   imports = [
-    ../modules/specialization/i3.nix
+    # Default window manager
+    ../modules/wm/i3.nix
+
+    # Alternative desktop environments (specialisations)
     ../modules/specialization/gnome.nix
+    # ../modules/specialization/sway.nix  # Future
   ];
 
   # Be careful updating this.
@@ -259,13 +263,9 @@
     '')
   ];
 
-  # Our default non-specialised desktop environment
-  services.xserver = lib.mkIf (config.specialisation != {}) {
-    enable = true;
-    xkb.layout = "us";
-    desktopManager.gnome.enable = true;
-    displayManager.gdm.enable = true;
-  };
+  # Default desktop environment: i3
+  # GNOME is available as specialisation.gnome
+  # (i3 configuration is in modules/specialization/i3.nix but applied as default)
 
   # Enable the OpenSSH daemon
   services.openssh.enable = true;
