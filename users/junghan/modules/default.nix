@@ -3,7 +3,7 @@
 {
   imports = [
     # Phase 2: Shell configuration (git, bash, tmux, etc)
-    # ./shell.nix
+    ./shell.nix
 
     # Phase 3: i3 window manager configuration
     # ./i3.nix
