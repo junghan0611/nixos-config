@@ -12,7 +12,7 @@
     ./dunst.nix
 
     # Phase 5: Development environments
-    # ./development
+    ./development
 
     # Phase 6: Emacs configuration (optional)
     # ./emacs.nix
