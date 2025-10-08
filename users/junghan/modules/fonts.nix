@@ -1,35 +1,24 @@
 # Custom fonts configuration
+# Install PretendardVariable and MonoplexNerd fonts if available
 { config, lib, pkgs, ... }:
 
 let
-  # MonoplexNerd font package
-  monoplex-nerd = pkgs.stdenvNoCC.mkDerivation {
-    name = "monoplex-nerd";
-    version = "1.0";
+  fontsDir = ../../../fonts;
+  fontFiles = builtins.readDir fontsDir;
 
-    src = ../../fonts/MonoplexNerd.zip;
-
-    dontUnpack = false;
-    buildInputs = [ pkgs.unzip ];
-
-    unpackPhase = ''
-      unzip $src
-    '';
-
-    installPhase = ''
-      mkdir -p $out/share/fonts/truetype
-      find . -name "*.ttf" -not -path "*/__MACOSX/*" -exec cp {} $out/share/fonts/truetype/ \;
-    '';
-
-    meta = with lib; {
-      description = "Monoplex Nerd Font";
-      platforms = platforms.all;
-    };
-  };
+  # Filter: PretendardVariable.ttf and MonoplexNerd-*.ttf
+  customFonts = lib.filterAttrs (name: type:
+    type == "regular" && lib.hasSuffix ".ttf" name &&
+    (name == "PretendardVariable.ttf" || lib.hasPrefix "MonoplexNerd-" name)
+  ) fontFiles;
 in {
-  home.packages = with pkgs; [
-    monoplex-nerd
-  ];
+  # Install custom fonts to ~/.local/share/fonts/
+  home.file = lib.mapAttrs' (name: _: {
+    name = ".local/share/fonts/${name}";
+    value = {
+      source = "${fontsDir}/${name}";
+    };
+  }) customFonts;
 
   # Font configuration
   fonts.fontconfig.enable = true;

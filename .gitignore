@@ -8,3 +8,5 @@ tmp/
 .mcp.json
 .claude
 CLAUDE.md
+*.ttf
+*.zip
