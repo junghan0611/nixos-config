@@ -27,11 +27,17 @@ in {
     "${doomConfigPath}/bin"
   ];
 
+  # Create initial current-task file for py3status
+  home.file.".emacs.d/current-task".text = "";
+
   # Emacs dependencies
   home.packages = with pkgs; [
     # Spell checking
     (aspellWithDicts (dicts: with dicts; [ en en-computers ]))
     ispell
+
+    hunspell
+    hunspellDicts.ko_KR
 
     # Email (mu4e)
     mu

@@ -17,6 +17,9 @@
     # Phase 6: Emacs configuration
     ./emacs.nix
 
+    # Email (mu4e + mbsync)
+    ./email.nix
+
     # Fonts
     ./fonts.nix
   ];

@@ -36,7 +36,7 @@ in {
   #---------------------------------------------------------------------
   programs.git = {
     enable = true;
-    userName = "Jung Han";
+    userName = vars.username;
     userEmail = vars.email;
 
     aliases = {

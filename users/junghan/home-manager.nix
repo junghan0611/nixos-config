@@ -83,6 +83,24 @@ in {
 
     # Display management (ElleNajit)
     xlayoutdisplay  # Auto display layout
+
+    # Desktop applications (ElleNajit platforms/linux.nix)
+    chromium        # Alternative browser
+    signal-desktop  # Messaging
+    apvlv           # PDF viewer
+    vlc             # Video player
+    gimp            # Image editor
+
+    # System utilities (ElleNajit)
+    powertop        # Power management
+    usbutils        # USB tools
+    gdmap           # Disk usage visualizer
+    nmap            # Network scanner
+    iftop           # Network monitoring
+
+    # Security (ElleNajit)
+    keybase         # Encrypted communication
+    yubikey-manager # YubiKey support
   ]);
 
   #---------------------------------------------------------------------
