@@ -11,3 +11,6 @@ CLAUDE.md
 *.ttf
 *.zip
 backup
+
+# Backup folder with private keys
+backup/
