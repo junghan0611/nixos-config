@@ -16,5 +16,8 @@
 
     # Phase 6: Emacs configuration
     ./emacs.nix
+
+    # Fonts
+    ./fonts.nix
   ];
 }
