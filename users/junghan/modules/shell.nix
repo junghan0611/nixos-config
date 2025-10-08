@@ -180,6 +180,19 @@ in {
     '';
   };
 
+  # Import GPG keys from claude-config
+  home.activation.importGpgKeys = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    GPG_KEY_DIR="${config.home.homeDirectory}/claude-config/gpg-keys"
+    if [ -d "$GPG_KEY_DIR" ]; then
+      if [ -f "$GPG_KEY_DIR/junghanacs_private_key.asc" ]; then
+        $DRY_RUN_CMD ${pkgs.gnupg}/bin/gpg --import "$GPG_KEY_DIR/junghanacs_private_key.asc" 2>/dev/null || true
+      fi
+      if [ -f "$GPG_KEY_DIR/junghanacs_public_key.asc" ]; then
+        $DRY_RUN_CMD ${pkgs.gnupg}/bin/gpg --import "$GPG_KEY_DIR/junghanacs_public_key.asc" 2>/dev/null || true
+      fi
+    fi
+  '';
+
   #---------------------------------------------------------------------
   # Password Store
   #---------------------------------------------------------------------
