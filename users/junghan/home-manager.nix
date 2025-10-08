@@ -75,9 +75,9 @@ in {
 
   #---------------------------------------------------------------------
   # Dotfiles
+  # (i3 config moved to modules/i3.nix)
   #---------------------------------------------------------------------
   home.file = {
-    ".config/i3/config".text = builtins.readFile ./i3;
     # i3status is configured via programs.i3status below
     ".config/rofi/config.rasi".text = builtins.readFile ./configs/rofi;
     ".config/ghostty/config".text = builtins.readFile ./configs/ghostty.linux;

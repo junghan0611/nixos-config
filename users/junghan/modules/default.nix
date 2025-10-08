@@ -6,7 +6,7 @@
     ./shell.nix
 
     # Phase 3: i3 window manager configuration
-    # ./i3.nix
+    ./i3.nix
 
     # Phase 4: Dunst notification daemon
     # ./dunst.nix
