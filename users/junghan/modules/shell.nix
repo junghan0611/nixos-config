@@ -167,6 +167,30 @@ in {
   };
 
   #---------------------------------------------------------------------
+  # GPG
+  #---------------------------------------------------------------------
+  programs.gpg.enable = true;
+
+  services.gpg-agent = {
+    enable = true;
+    pinentryPackage = pkgs.pinentry-qt;
+    enableBashIntegration = true;
+    extraConfig = ''
+      allow-emacs-pinentry
+    '';
+  };
+
+  #---------------------------------------------------------------------
+  # Password Store
+  #---------------------------------------------------------------------
+  programs.password-store = {
+    enable = true;
+    settings = {
+      PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
+    };
+  };
+
+  #---------------------------------------------------------------------
   # Tmux
   #---------------------------------------------------------------------
   programs.tmux = {

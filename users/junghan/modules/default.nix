@@ -9,7 +9,7 @@
     ./i3.nix
 
     # Phase 4: Dunst notification daemon
-    # ./dunst.nix
+    ./dunst.nix
 
     # Phase 5: Development environments
     # ./development

@@ -130,6 +130,12 @@ in {
           # Password manager (rofi-pass)
           "${mod}+p" = "exec ${pkgs.rofi-pass}/bin/rofi-pass -font '${fontName} ${toString fontSize}'";
 
+          # Notifications (dunst control)
+          "${mod}+space" = "exec ${pkgs.dunst}/bin/dunstctl close";
+          "${mod}+Shift+space" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
+          "${mod}+grave" = "exec ${pkgs.dunst}/bin/dunstctl history-pop";
+          "${mod}+period" = "exec ${pkgs.dunst}/bin/dunstctl action";
+
           # Focus (vim keys)
           "${mod}+h" = "focus left";
           "${mod}+j" = "focus down";
@@ -296,9 +302,7 @@ in {
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
         { command = "${pkgs.blueman}/bin/blueman-applet"; notification = false; }
 
-        # Notifications (dunst will be handled by services.dunst in Phase 4)
-        # For now, keep manual startup
-        { command = "${pkgs.dunst}/bin/dunst"; notification = false; }
+        # Notifications are handled by services.dunst (see modules/dunst.nix)
       ];
     };
   };
