@@ -112,7 +112,7 @@ in {
 
 **방법 1: 환경 변수 체크**
 ```bash
-# ~/.xinitrc 또는 i3 startup script
+ # ~/.xinitrc 또는 i3 startup script
 if [ -n "$SSH_CONNECTION" ] || [ -n "$VNC_CONNECTION" ]; then
   # Remote session - disable picom
   pkill picom
