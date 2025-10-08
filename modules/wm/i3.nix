@@ -1,6 +1,6 @@
 # i3 (X11) with kime Korean input
 # Default window manager configuration
-{ pkgs, ... }: {
+{ pkgs, lib, ... }: {
   # We need an XDG portal for various applications to work properly
   xdg.portal = {
     enable = true;
@@ -33,7 +33,7 @@
     };
 
     displayManager = {
-      lightdm.enable = true;
+      lightdm.enable = lib.mkDefault true;  # Can be overridden by specialisations
       sessionCommands = ''
         ${pkgs.xorg.xset}/bin/xset r rate 200 40
       '';

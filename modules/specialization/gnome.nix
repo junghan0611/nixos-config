@@ -22,7 +22,10 @@
       xkb.layout = "us";
 
       desktopManager.gnome.enable = true;
-      displayManager.gdm.enable = true;
+      displayManager = {
+        lightdm.enable = false;  # Disable i3's lightdm
+        gdm.enable = true;       # Use GDM for GNOME
+      };
     };
 
     # GNOME-specific packages
