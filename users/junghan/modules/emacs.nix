@@ -27,8 +27,8 @@ in {
     "${doomConfigPath}/bin"
   ];
 
-  # Create initial current-task file for py3status
-  home.file.".emacs.d/current-task".text = "";
+  # Note: current-task file is created by Emacs function (junghan/update-org-clocked-in-task-file)
+  # Not pre-created to avoid symlink issues with with-temp-file
 
   # Emacs dependencies
   home.packages = with pkgs; [
