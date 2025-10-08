@@ -57,8 +57,7 @@ in {
     # System tools
     neofetch
 
-    # Editors
-    emacs
+    # Editors (moved to modules/emacs.nix)
 
     # Email and password management
     gnupg

@@ -14,7 +14,7 @@
     # Phase 5: Development environments
     ./development
 
-    # Phase 6: Emacs configuration (optional)
-    # ./emacs.nix
+    # Phase 6: Emacs configuration
+    ./emacs.nix
   ];
 }

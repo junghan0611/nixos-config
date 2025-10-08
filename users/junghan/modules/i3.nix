@@ -130,6 +130,9 @@ in {
           # Password manager (rofi-pass)
           "${mod}+p" = "exec ${pkgs.rofi-pass}/bin/rofi-pass -font '${fontName} ${toString fontSize}'";
 
+          # Edit input field with Emacs
+          "${mod}+i" = "exec edit-input";
+
           # Notifications (dunst control)
           "${mod}+n" = "exec ${pkgs.dunst}/bin/dunstctl close";
           "${mod}+Shift+n" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
