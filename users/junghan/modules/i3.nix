@@ -131,8 +131,8 @@ in {
           "${mod}+p" = "exec ${pkgs.rofi-pass}/bin/rofi-pass -font '${fontName} ${toString fontSize}'";
 
           # Notifications (dunst control)
-          "${mod}+space" = "exec ${pkgs.dunst}/bin/dunstctl close";
-          "${mod}+Shift+space" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
+          "${mod}+n" = "exec ${pkgs.dunst}/bin/dunstctl close";
+          "${mod}+Shift+n" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
           "${mod}+grave" = "exec ${pkgs.dunst}/bin/dunstctl history-pop";
           "${mod}+period" = "exec ${pkgs.dunst}/bin/dunstctl action";
 
