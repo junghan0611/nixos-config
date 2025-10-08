@@ -180,6 +180,9 @@ in {
           # Edit input field with Emacs
           "${mod}+i" = "exec edit-input";
 
+          # Toggle compositor (picom)
+          "${mod}+c" = "exec --no-startup-id pkill picom || ${pkgs.picom}/bin/picom -b";
+
           # Notifications (dunst control)
           "${mod}+n" = "exec ${pkgs.dunst}/bin/dunstctl close";
           "${mod}+Shift+n" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
@@ -351,6 +354,10 @@ in {
         # System tray applets
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
         { command = "${pkgs.blueman}/bin/blueman-applet"; notification = false; }
+
+        # Compositor (picom)
+        # Note: Can be disabled for remote sessions or specific hosts
+        { command = "${pkgs.picom}/bin/picom -b"; notification = false; }
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
       ];

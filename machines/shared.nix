@@ -306,7 +306,7 @@
     allowedUDPPorts = [
       21027   # Syncthing discovery
       22000   # Syncthing QUIC
-    ];
+    ] ++ (lib.range 60000 61000);  # mosh
   };
 
   # This value determines the NixOS release from which the default
