@@ -14,3 +14,6 @@ backup
 
 # Backup folder with private keys
 backup/
+
+# Font files (installed locally)
+*.ttf
