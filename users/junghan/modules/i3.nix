@@ -19,8 +19,55 @@ let
     size = fontSize * 1.0;
   };
 
-  # i3status integration (already configured in home-manager.nix)
-  # We use the existing programs.i3status configuration
+  # py3status configuration (ElleNajit pattern)
+  py3status = pkgs.python3Packages.py3status;
+
+  i3status-conf = pkgs.writeText "i3status.conf" ''
+    general {
+        output_format = i3bar
+        colors = true
+        interval = 1
+        color_good = "${solarized.green}"
+        color_bad = "${solarized.red}"
+        color_degraded = "${solarized.yellow}"
+    }
+
+    order += "read_file emacs_task"
+    order += "ethernet _first_"
+    order += "disk /"
+    order += "load"
+    order += "memory"
+    order += "tztime local"
+
+    read_file emacs_task {
+        format = "Task: %content"
+        path = "${config.home.homeDirectory}/.emacs.d/current-task"
+        color_good = "${solarized.cyan}"
+    }
+
+    ethernet _first_ {
+        format_up = "E: %ip (%speed)"
+        format_down = "E: down"
+    }
+
+    disk "/" {
+        format = "/ %avail"
+    }
+
+    load {
+        format = "%1min"
+    }
+
+    memory {
+        format = "%used / %total"
+        threshold_degraded = "1G"
+        format_degraded = "MEMORY < %available"
+    }
+
+    tztime local {
+        format = "%Y-%m-%d %H:%M:%S"
+    }
+  '';
 in {
   xsession.windowManager.i3 = {
     enable = true;
@@ -238,10 +285,10 @@ in {
       };
 
       #---------------------------------------------------------------------
-      # Status bar
+      # Status bar (py3status with Emacs org-clock integration)
       #---------------------------------------------------------------------
       bars = [{
-        statusCommand = "${pkgs.i3status}/bin/i3status";
+        statusCommand = "${py3status}/bin/py3status -c ${i3status-conf}";
         position = "top";
         fonts = {
           names = [ fontName ];
