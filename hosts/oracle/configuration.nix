@@ -152,6 +152,8 @@ in
       unzip
       iotop
       ncdu
+      parted         # 파티션 관리
+      cloud-utils    # growpart (Oracle Volume 확장)
 
       # 개발 도구
       python312

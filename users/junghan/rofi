@@ -1,20 +1,13 @@
 configuration {
   dpi: 96;
   font: "Pretendard 11";
-  show-icons: true;
-  icon-theme: "Papirus";
-  display-drun: "Applications";
-  display-window: "Windows";
-  display-run: "Run";
-  drun-display-format: "{name}";
-  sidebar-mode: false;
 }
 
 * {
     foreground: #f8f8f2;
     background-color: #282a36;
     active-background: #6272a4;
-    urgent-background: #ff5555;
+    urgent-background: #696969;
     selected-background: @active-background;
     selected-urgent-background: @urgent-background;
     selected-active-background: @active-background;
