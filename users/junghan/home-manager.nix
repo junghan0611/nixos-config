@@ -46,6 +46,7 @@ in {
     ncdu
     duf
     procs
+    psmisc       # killall, fuser (ElleNajit)
 
     # Development
     lazygit
@@ -66,11 +67,23 @@ in {
     notmuch
     isync
     afew
+
+    # Media
+    yt-dlp       # YouTube downloader (ElleNajit)
+    ffmpeg       # Video processing (ElleNajit)
   ] ++ (lib.optionals isLinux [
     # Linux-specific packages
     xclip
     wl-clipboard
     firefox
+
+    # X11 utilities (ElleNajit)
+    xorg.xev        # X event viewer
+    xorg.libxcvt    # cvt replacement
+    xdotool         # X automation (for edit-input)
+
+    # Display management (ElleNajit)
+    xlayoutdisplay  # Auto display layout
   ]);
 
   #---------------------------------------------------------------------
