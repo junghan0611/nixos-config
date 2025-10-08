@@ -78,14 +78,20 @@ in {
       # Fonts
       fonts = fonts;
 
+      # Gaps (from Xresources)
+      gaps = {
+        inner = 12;
+        outer = 8;
+      };
+
       # Window appearance
       window = {
-        border = 2;
+        border = 5;  # Xresources: wm.window.border.size
         titlebar = true;
       };
 
       floating = {
-        border = 2;
+        border = 5;
         modifier = mod;
         criteria = [
           { title = "^float$"; }
@@ -97,45 +103,45 @@ in {
       };
 
       #---------------------------------------------------------------------
-      # Colors (Solarized Dark)
+      # Colors (Custom from Xresources)
       #---------------------------------------------------------------------
       colors = {
         focused = {
-          border = solarized.green;
-          background = solarized.green;
-          text = solarized.base03;
-          indicator = solarized.blue;
-          childBorder = solarized.green;
+          border = "#00E5FF";       # Xresources: cyan
+          background = "#00E5FF";
+          text = "#000000";
+          indicator = "#FF8C00";    # Xresources: orange indicator
+          childBorder = "#00E5FF";
         };
         focusedInactive = {
-          border = solarized.base02;
-          background = solarized.base02;
-          text = solarized.base1;
-          indicator = solarized.base01;
-          childBorder = solarized.base02;
+          border = "#1a1a2e";
+          background = "#1a1a2e";
+          text = "#888888";
+          indicator = "#1a1a2e";
+          childBorder = "#1a1a2e";
         };
         unfocused = {
-          border = solarized.base02;
-          background = solarized.base02;
-          text = solarized.base0;
-          indicator = solarized.base01;
-          childBorder = solarized.base02;
+          border = "#1a1a2e";       # Xresources: dark navy
+          background = "#0f0f23";   # Xresources: darker navy
+          text = "#888888";
+          indicator = "#0f0f23";
+          childBorder = "#1a1a2e";
         };
         urgent = {
-          border = solarized.red;
-          background = solarized.red;
-          text = solarized.base3;
-          indicator = solarized.red;
-          childBorder = solarized.red;
+          border = "#FF6600";       # Xresources: orange
+          background = "#FF6600";
+          text = "#FFFFFF";
+          indicator = "#FF6600";
+          childBorder = "#FF6600";
         };
         placeholder = {
-          border = solarized.base03;
-          background = solarized.base03;
-          text = solarized.base0;
-          indicator = solarized.base03;
-          childBorder = solarized.base03;
+          border = "#0f0f23";
+          background = "#0f0f23";
+          text = "#888888";
+          indicator = "#0f0f23";
+          childBorder = "#0f0f23";
         };
-        background = solarized.base03;
+        background = "#0f0f23";
       };
 
       #---------------------------------------------------------------------
@@ -299,34 +305,34 @@ in {
         };
 
         colors = {
-          background = solarized.base03;
-          statusline = solarized.base0;
-          separator = solarized.base01;
+          background = "#0f0f23";
+          statusline = "#ffffff";
+          separator = "#666666";
 
           focusedWorkspace = {
-            border = solarized.green;
-            background = solarized.green;
-            text = solarized.base03;
+            border = "#00E5FF";
+            background = "#00E5FF";
+            text = "#000000";
           };
           activeWorkspace = {
-            border = solarized.base02;
-            background = solarized.base02;
-            text = solarized.base0;
+            border = "#1a1a2e";
+            background = "#1a1a2e";
+            text = "#ffffff";
           };
           inactiveWorkspace = {
-            border = solarized.base03;
-            background = solarized.base03;
-            text = solarized.base01;
+            border = "#0f0f23";
+            background = "#0f0f23";
+            text = "#888888";
           };
           urgentWorkspace = {
-            border = solarized.red;
-            background = solarized.red;
-            text = solarized.base3;
+            border = "#FF6600";
+            background = "#FF6600";
+            text = "#FFFFFF";
           };
           bindingMode = {
-            border = solarized.magenta;
-            background = solarized.magenta;
-            text = solarized.base3;
+            border = "#FF8C00";
+            background = "#FF8C00";
+            text = "#FFFFFF";
           };
         };
       }];
@@ -355,9 +361,8 @@ in {
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
         { command = "${pkgs.blueman}/bin/blueman-applet"; notification = false; }
 
-        # Compositor (picom)
-        # Note: Can be disabled for remote sessions or specific hosts
-        { command = "${pkgs.picom}/bin/picom -b"; notification = false; }
+        # Compositor managed by services.picom (see modules/picom.nix)
+        # Can be toggled with Mod+c
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
       ];

@@ -11,6 +11,9 @@
     # Phase 4: Dunst notification daemon
     ./dunst.nix
 
+    # Picom compositor (Regolith config)
+    ./picom.nix
+
     # Phase 5: Development environments
     ./development
 

@@ -9,7 +9,7 @@
     IMAPAccount gmail
     Host imap.gmail.com
     User junghanacs@gmail.com
-    PassCmd "pass show email/junghanacs@gmail.com-apppassword"
+    PassCmd "pass show personal/email/junghanacs-gmail/app-password"
     AuthMechs LOGIN
     SSLType IMAPS
     CertificateFile ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
