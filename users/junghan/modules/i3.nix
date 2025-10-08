@@ -115,9 +115,20 @@ in {
           "${mod}+Shift+q" = "kill";
 
           # Rofi launcher
-          "${mod}+d" = "exec ${pkgs.rofi}/bin/rofi -show drun";
-          "${mod}+Tab" = "exec ${pkgs.rofi}/bin/rofi -show window";
-          "${mod}+Shift+d" = "exec ${pkgs.rofi}/bin/rofi -show run";
+          "${mod}+d" = "exec ${
+              pkgs.writeShellScript "rofi-launcher" ''
+                ${pkgs.rofi}/bin/rofi \
+                  -modi 'combi' \
+                  -combi-modi "window,drun,run" \
+                  -font '${fontName} ${toString fontSize}' \
+                  -show combi
+              ''
+            }";
+          "${mod}+Tab" = "exec ${pkgs.rofi}/bin/rofi -show window -font '${fontName} ${toString fontSize}'";
+          "${mod}+Shift+d" = "exec ${pkgs.rofi}/bin/rofi -show run -font '${fontName} ${toString fontSize}'";
+
+          # Password manager (rofi-pass)
+          "${mod}+p" = "exec ${pkgs.rofi-pass}/bin/rofi-pass -font '${fontName} ${toString fontSize}'";
 
           # Focus (vim keys)
           "${mod}+h" = "focus left";
