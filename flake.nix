@@ -52,11 +52,11 @@
         user = "junghan";
       };
 
-      # Laptop configuration (future)
-      # laptop = mkSystem "laptop" {
-      #   system = "x86_64-linux";
-      #   user = "junghan";
-      # };
+      # Samsung NT930SBE Laptop - full configuration with home-manager
+      laptop = mkSystem "laptop" {
+        system = "x86_64-linux";
+        user = "junghan";
+      };
     };
   };
 }

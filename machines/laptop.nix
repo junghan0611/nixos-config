@@ -3,20 +3,32 @@
 {
   imports = [
     ./shared.nix
-    # Future: Import hardware configuration when available
-    # ../hosts/laptop/hardware-configuration.nix
+    # Import the existing hardware configuration
+    ../hosts/laptop/hardware-configuration.nix
   ];
 
   # Laptop specific configuration
   networking.hostName = "laptop";
 
+  # Boot configuration
+  boot = {
+    initrd.systemd.enable = true;
+    kernelParams = [ "nls=utf8" ];
+  };
+
   # Laptop-specific hardware settings
   hardware = {
     enableRedistributableFirmware = true;
     cpu.intel.updateMicrocode = true;
+
+    # Bluetooth support
+    bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
   };
 
-  # Power management for laptop
+  # Power management for laptop (powersave for battery life)
   powerManagement = {
     enable = true;
     cpuFreqGovernor = "powersave";
@@ -33,6 +45,25 @@
     };
   };
 
+  # Audio support
+  services.pulseaudio.enable = false;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+  };
+
+  # Graphics support (formerly hardware.opengl)
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;  # Enable 32-bit support for compatibility
+    extraPackages = with pkgs; [
+      intel-media-driver  # VA-API driver for Broadwell+ iGPUs
+      libvdpau-va-gl     # VDPAU driver with OpenGL/VA-API backend
+    ];
+  };
+
   # Enable touchpad support
   services.libinput = {
     enable = true;
@@ -44,8 +75,19 @@
 
   # Laptop-specific packages
   environment.systemPackages = with pkgs; [
+    intel-gpu-tools
+    powertop
+    thermald
     acpi
     brightnessctl
-    powertop
   ];
+
+  # Enable thermald for Intel CPU thermal management
+  services.thermald.enable = true;
+
+  # Bluetooth management (blueman applet for i3)
+  services.blueman.enable = true;
+
+  # ZRAM swap
+  zramSwap.enable = true;
 }
