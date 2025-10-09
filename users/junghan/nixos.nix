@@ -6,6 +6,8 @@ let
     import ../../hosts/oracle/vars.nix
   else if (currentSystemName == "nuc") then
     import ../../hosts/nuc/vars.nix
+  else if (currentSystemName == "laptop") then
+    import ../../hosts/laptop/vars.nix
   else
     # Default values for other systems
     {

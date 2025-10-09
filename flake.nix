@@ -36,14 +36,10 @@
     };
   in {
     nixosConfigurations = {
-      # Oracle Cloud ARM VM - simple configuration without home-manager
-      oracle = nixpkgs.lib.nixosSystem {
+      # Oracle Cloud ARM VM - full configuration with home-manager
+      oracle = mkSystem "oracle" {
         system = "aarch64-linux";
-        modules = [
-          { nixpkgs.overlays = overlays; }
-          disko.nixosModules.disko
-          ./hosts/oracle/configuration.nix
-        ];
+        user = "junghan";
       };
 
       # Intel NUC x86_64 - full configuration with home-manager

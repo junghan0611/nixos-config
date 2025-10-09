@@ -40,6 +40,7 @@ in systemFunc rec {
       home-manager.backupFileExtension = "hm-backup";
       home-manager.users.${user} = import userHMConfig {
         inherit inputs;
+        currentSystemName = name;  # Pass system name to home-manager config
       };
     }
 

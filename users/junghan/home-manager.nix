@@ -1,12 +1,23 @@
-{ inputs, ... }:
+{ inputs, currentSystemName ? "nuc", ... }:
 
 { config, lib, pkgs, ... }:
 
 let
   isLinux = pkgs.stdenv.isLinux;
-  # Import vars from the appropriate host - fallback to nuc for now
-  # TODO: Make this dynamic based on currentSystemName
-  vars = import ../../hosts/nuc/vars.nix;
+
+  # Get hostname for pattern matching
+  hostname = config.networking.hostName or currentSystemName;
+
+  # Import vars based on hostname pattern matching
+  vars = if (builtins.match ".*oracle.*" hostname != null) then
+    import ../../hosts/oracle/vars.nix
+  else if (builtins.match ".*nuc.*" hostname != null) then
+    import ../../hosts/nuc/vars.nix
+  else if (builtins.match ".*laptop.*" hostname != null) then
+    import ../../hosts/laptop/vars.nix
+  else
+    # Default to nuc for backward compatibility
+    import ../../hosts/nuc/vars.nix;
 in {
   # Import modular configuration
   imports = [
