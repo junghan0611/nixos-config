@@ -112,6 +112,13 @@
     # VNC tools
     tigervnc
 
+    # X11 essentials for VNC
+    xorg.xinit
+    xorg.xauth
+    xorg.xhost
+    xorg.xset
+    xterm  # Fallback terminal
+
     # Cloud utilities
     cloud-utils
 
