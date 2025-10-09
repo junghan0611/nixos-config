@@ -37,9 +37,9 @@
       };
 
       # SD Card 119GB - 데이터 저장용 (부팅 불가)
-      sda = {
+      sdb = {
         type = "disk";
-        device = "/dev/sda";
+        device = "/dev/sdb";
         content = {
           type = "gpt";
           partitions = {
