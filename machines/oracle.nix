@@ -33,7 +33,7 @@
   # Power management not needed for cloud VM
   powerManagement.enable = false;
 
-  # Audio support - minimal for remote environment
+  # Audio support - minimal for cloud environment
   services.pulseaudio.enable = false;
   services.pipewire = {
     enable = true;
@@ -42,89 +42,16 @@
     pulse.enable = true;
   };
 
-  # Graphics support for remote desktop
-  # Note: Limited OpenGL support in cloud environment
+  # Basic graphics support for cloud environment
   hardware.graphics = {
     enable = true;
     enable32Bit = false;  # ARM64 only
   };
 
-  # Remote desktop services
-  # Starting with TigerVNC for stability
-  services.displayManager.autoLogin = {
-    enable = false;  # No auto-login for security
-  };
-
-  # TigerVNC server configuration
-  services.xserver.displayManager.sessionCommands = ''
-    # Set display resolution for VNC (can be adjusted)
-    ${pkgs.xorg.xrandr}/bin/xrandr --output Virtual-1 --mode 1920x1080 2>/dev/null || true
-    ${pkgs.xorg.xrandr}/bin/xrandr --output default --mode 1920x1080 2>/dev/null || true
-  '';
-
-  # VNC Server (TigerVNC)
-  systemd.services.vncserver = {
-    description = "TigerVNC Server";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
-
-    serviceConfig = {
-      Type = "forking";
-      User = "junghan";
-      WorkingDirectory = "/home/junghan";
-
-      # VNC on display :1, port 5901
-      ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p /home/junghan/.vnc";
-      ExecStart = "${pkgs.tigervnc}/bin/vncserver :1 -geometry 1920x1080 -depth 24 -localhost";
-      ExecStop = "${pkgs.tigervnc}/bin/vncserver -kill :1";
-
-      Restart = "on-failure";
-      RestartSec = "10s";
-    };
-
-    environment = {
-      HOME = "/home/junghan";
-      USER = "junghan";
-    };
-  };
-
-  # Generate VNC password file (user needs to set password with vncpasswd)
-  system.activationScripts.vncSetup = ''
-    mkdir -p /home/junghan/.vnc
-    chown junghan:users /home/junghan/.vnc
-
-    # Create xstartup for i3
-    cat > /home/junghan/.vnc/xstartup << 'EOF'
-    #!/bin/sh
-    unset SESSION_MANAGER
-    unset DBUS_SESSION_BUS_ADDRESS
-
-    # Start i3 window manager
-    exec ${pkgs.i3}/bin/i3 &
-    EOF
-
-    chmod +x /home/junghan/.vnc/xstartup
-    chown junghan:users /home/junghan/.vnc/xstartup
-  '';
-
   # Oracle Cloud specific packages
   environment.systemPackages = with pkgs; [
-    # VNC tools
-    tigervnc
-
-    # X11 essentials for VNC
-    xorg.xinit
-    xorg.xauth
-    xorg.xhost
-    xorg.xset
-    xterm  # Fallback terminal
-
     # Cloud utilities
     cloud-utils
-
-    # Remote desktop utilities
-    x11vnc
-    novnc  # Web-based VNC client
 
     # Monitoring for cloud environment
     htop
@@ -132,7 +59,7 @@
     nethogs
     iftop
 
-    # Reduced graphics packages for remote environment
+    # Basic tools
     glxinfo
     mesa-demos
   ];
@@ -141,8 +68,6 @@
   networking.firewall = {
     enable = true;
 
-    # Allow VNC only from localhost (SSH tunnel required)
-    # Users connect via: ssh -L 5901:localhost:5901 oracle
     allowedTCPPorts = [
       22     # SSH
       22000  # Syncthing sync
@@ -152,9 +77,6 @@
       21027  # Syncthing discovery
       22000  # Syncthing QUIC
     ] ++ (lib.range 60000 61000);  # mosh
-
-    # VNC ports (5901-5910) NOT exposed externally for security
-    # Access only via SSH tunnel
   };
 
   # Oracle Cloud Volume management
@@ -166,14 +88,14 @@
   services.printing.enable = false;
   services.libinput.enable = false;  # No touchpad in cloud
 
-  # ZRAM swap for better memory management
+  # ZRAM swap disabled
   zramSwap = {
-    enable = true;
-    algorithm = "zstd";
-    memoryPercent = 50;  # Use up to 50% of RAM for compressed swap
+    enable = false;
+    # algorithm = "zstd";
+    # memoryPercent = 50;  # Use up to 50% of RAM for compressed swap
   };
 
-  # System-wide performance tuning for remote desktop
+  # System-wide performance tuning
   boot.kernel.sysctl = {
     "net.core.rmem_max" = 134217728;
     "net.core.wmem_max" = 134217728;
@@ -184,5 +106,5 @@
   };
 
   # Oracle Cloud specific notes
-  system.nixos.tags = [ "oracle-cloud" "arm64" "remote-desktop" ];
+  system.nixos.tags = [ "oracle-cloud" "arm64" ];
 }

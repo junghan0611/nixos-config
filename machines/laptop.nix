@@ -5,6 +5,8 @@
     ./shared.nix
     # Import the existing hardware configuration
     ../hosts/laptop/hardware-configuration.nix
+    # Note: disk-config.nix is only needed for fresh installations with disko
+    # ../hosts/laptop/disk-config.nix
   ];
 
   # Laptop specific configuration
@@ -77,6 +79,6 @@
   # Bluetooth management (blueman applet for i3)
   services.blueman.enable = true;
 
-  # ZRAM swap
-  zramSwap.enable = true;
+  # Disable ZRAM swap (using physical swap partition instead)
+  zramSwap.enable = false;
 }

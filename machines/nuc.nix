@@ -5,6 +5,8 @@
     ./shared.nix
     # Import the existing hardware configuration
     ../hosts/nuc/hardware-configuration.nix
+    # Note: disk-config.nix is only needed for fresh installations with disko
+    # For existing systems, hardware-configuration.nix manages the filesystems
   ];
 
   # NUC specific configuration
@@ -67,6 +69,6 @@
   # Bluetooth management (blueman applet for i3)
   services.blueman.enable = true;
 
-  # ZRAM swap
-  zramSwap.enable = true;
+  # Disable ZRAM swap (using physical swap partition instead)
+  zramSwap.enable = false;
 }

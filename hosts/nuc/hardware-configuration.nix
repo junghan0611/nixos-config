@@ -29,7 +29,10 @@
       fsType = "ext4";
     };
 
-  swapDevices = [ ];
+  # UUID obtained from: sudo mkswap /dev/nvme0n1p1
+  swapDevices = [
+    { device = "/dev/disk/by-uuid/df4811b4-4bf8-4d63-a3d4-5ee47bc3ce6c"; }
+  ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's

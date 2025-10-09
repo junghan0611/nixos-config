@@ -14,29 +14,34 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/c33f5bad-1b53-4b07-9a81-202d97049ebf";
-      fsType = "ext4";
-    };
+  { device = "/dev/disk/by-uuid/c33f5bad-1b53-4b07-9a81-202d97049ebf";
+    fsType = "ext4";
+  };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/962A-F8E7";
-      fsType = "vfat";
-      options = [ "fmask=0022" "dmask=0022" ];
-    };
+  { device = "/dev/disk/by-uuid/962A-F8E7";
+    fsType = "vfat";
+    options = [ "fmask=0022" "dmask=0022" ];
+  };
 
   fileSystems."/data" =
-    { device = "/dev/disk/by-uuid/0af294d3-c909-4730-ae7f-64d1429213ff";
-      fsType = "ext4";
-    };
+  { device = "/dev/disk/by-uuid/0af294d3-c909-4730-ae7f-64d1429213ff";
+    fsType = "ext4";
+  };
 
-  swapDevices = [ ];
+# Note: disk-config.nix defines the partition layout for disko (initial setup)
+# but hardware-configuration.nix needs manual update after formatting
+# UUID obtained from: sudo mkswap /dev/nvme0n1p2
+  swapDevices = [
+  { device = "/dev/disk/by-uuid/425ab881-aeb5-4ae9-8350-e872a54dcfec"; }
+  ];
 
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+# Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+# (the default) this is the recommended approach. When using systemd-networkd it's
+# still possible to use this option, but it's recommended to use it in conjunction
+# with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.wlo1.useDHCP = lib.mkDefault true;
+# networking.interfaces.wlo1.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

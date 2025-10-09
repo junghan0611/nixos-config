@@ -21,7 +21,6 @@
               size = "16G";
               content = {
                 type = "swap";
-                randomEncryption = true;
               };
             };
             root = {
@@ -37,9 +36,9 @@
       };
 
       # SD Card 119GB - 데이터 저장용 (부팅 불가)
-      sdb = {
+      sda = {
         type = "disk";
-        device = "/dev/sdb";
+        device = "/dev/sda";
         content = {
           type = "gpt";
           partitions = {

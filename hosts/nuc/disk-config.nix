@@ -40,7 +40,9 @@
               size = "16G";
               content = {
                 type = "swap";
-                randomEncryption = true;
+                # randomEncryption disabled for existing systems
+                # Enable only for fresh installations
+                randomEncryption = false;
               };
             };
             home = {
