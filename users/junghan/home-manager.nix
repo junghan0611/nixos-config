@@ -126,8 +126,34 @@ in {
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
 
-    # Force fcitx5 profile from system config
-    ".config/fcitx5/profile".source = /etc/xdg/fcitx5/profile;
+    # Force fcitx5 profile to ensure reproducibility
+    ".config/fcitx5/profile".text = ''
+      [GroupOrder]
+      0=Default
+      1=Korean
+
+      [Groups/0]
+      Default Layout=us
+      DefaultIM=keyboard-us
+      Name=Default
+
+      [Groups/0/Items/0]
+      Layout=
+      Name=keyboard-us
+
+      [Groups/1]
+      Default Layout=kr
+      DefaultIM=keyboard-kr
+      Name=Korean
+
+      [Groups/1/Items/0]
+      Layout=
+      Name=hangul
+
+      [Groups/1/Items/1]
+      Layout=
+      Name=keyboard-kr
+    '';
   };
 
   # X resources configuration
