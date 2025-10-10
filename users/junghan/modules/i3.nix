@@ -352,7 +352,8 @@ in {
         { command = "${pkgs.feh}/bin/feh --bg-scale ~/.config/nixos-wallpaper.png"; notification = false; }
 
         # Keyboard layout
-        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }
+        # { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }  # For English-only
+        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104"; notification = false; }
 
         # System tray applets
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }

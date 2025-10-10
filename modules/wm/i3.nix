@@ -119,7 +119,11 @@
   # X server configuration
   services.xserver = {
     enable = true;
-    xkb.layout = "us";
+    xkb = {
+      # xkb.layout = "us";  # For English-only systems
+      layout = "kr";
+      variant = "kr104";  # Korean (101/104-key compatible) - maps Right Alt to Hangul, Right Ctrl to Hanja
+    };
     dpi = 96;  # Adjust based on your display
 
     desktopManager = {
