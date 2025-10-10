@@ -354,12 +354,6 @@ in {
         # Keyboard layout
         { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }
 
-        # Korean input method (fcitx5)
-        { command = "${pkgs.fcitx5}/bin/fcitx5 -d"; notification = false; }
-
-        # Alternative: Force hangul activation on startup (if DefaultIM=hangul doesn't work)
-        # { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
-
         # System tray applets
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
         { command = "${pkgs.blueman}/bin/blueman-applet"; notification = false; }
@@ -368,6 +362,12 @@ in {
         # Can be toggled with Mod+c
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
+
+        # Korean input method (fcitx5)
+        { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
+
+        # Alternative: Force hangul activation on startup (if DefaultIM=hangul doesn't work)
+        { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
       ];
     };
   };
