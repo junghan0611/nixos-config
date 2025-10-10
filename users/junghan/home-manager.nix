@@ -143,16 +143,16 @@ in {
 
       [Groups/1]
       Default Layout=kr
-      DefaultIM=keyboard-kr
+      DefaultIM=keyboard-kr-kr104
       Name=Korean
 
       [Groups/1/Items/0]
       Layout=
-      Name=hangul
+      Name=keyboard-kr-kr104
 
       [Groups/1/Items/1]
       Layout=
-      Name=keyboard-kr
+      Name=hangul
     '';
   };
 

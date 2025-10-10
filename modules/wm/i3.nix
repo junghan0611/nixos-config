@@ -40,14 +40,14 @@
           "Groups/1" = {
             "Name" = "Korean";
             "Default Layout" = "kr";
-            "DefaultIM" = "keyboard-kr";
+            "DefaultIM" = "keyboard-kr-kr104";
           };
           "Groups/1/Items/0" = {
-            "Name" = "hangul";
+            "Name" = "keyboard-kr-kr104";
             "Layout" = "";
           };
           "Groups/1/Items/1" = {
-            "Name" = "keyboard-kr";
+            "Name" = "hangul";
             "Layout" = "";
           };
 
@@ -64,7 +64,7 @@
           };
           "Hotkey/TriggerKeys" = {
             "0" = "Shift+space";
-            "1" = "Alt+Alt_R";
+            "1" = "Hangul";
           };
           "Hotkey/EnumerateGroupForwardKeys" = {
             "0" = "Alt+Super+BackSpace";
