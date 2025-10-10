@@ -7,14 +7,18 @@
       extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
     };
 
-    # Korean input method - kime
+    # Korean input method - fcitx5
     i18n.inputMethod = {
       enable = true;
-      type = "kime";
-      kime.extraConfig = ''
-        [indicator]
-        icon_color = "Black"
-      '';
+      type = "fcitx5";
+      fcitx5 = {
+        addons = with pkgs; [
+          fcitx5-hangul       # Korean input engine
+          fcitx5-gtk          # GTK integration
+          fcitx5-configtool   # Configuration GUI tool
+        ];
+        waylandFrontend = false;
+      };
     };
 
     services.xserver = {

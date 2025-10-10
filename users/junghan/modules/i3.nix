@@ -354,8 +354,8 @@ in {
         # Keyboard layout
         { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }
 
-        # Korean input method (kime)
-        { command = "kime"; notification = false; }
+        # Korean input method (fcitx5)
+        { command = "${pkgs.fcitx5}/bin/fcitx5 -d"; notification = false; }
 
         # System tray applets
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
