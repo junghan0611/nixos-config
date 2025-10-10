@@ -19,6 +19,10 @@
         fcitx5-configtool   # Configuration GUI tool
       ];
       waylandFrontend = false;  # Currently using X11
+
+      # Ensure reproducibility - ignore user config files
+      ignoreUserConfig = true;
+
       settings = {
         inputMethod = {
           # Default group (0) - English only, for Emacs and apps that control IME
