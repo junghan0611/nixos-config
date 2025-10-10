@@ -16,6 +16,8 @@ let
     };
 in
 {
+  # Import xrdp module (oracle only)
+  imports = [ ./xrdp.nix ];
   # Define user account
   users.users.${vars.username} = {
     isNormalUser = true;
