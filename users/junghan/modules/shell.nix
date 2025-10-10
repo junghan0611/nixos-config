@@ -54,9 +54,45 @@ in {
       init.defaultBranch = "main";
       push.default = "current";
       pull.rebase = true;
-      core.editor = "vim";
-      diff.tool = "vimdiff";
-      merge.tool = "vimdiff";
+
+      core = {
+        editor = "vim";
+        # Korean filename support
+        quotePath = false;           # 한글 파일명 정상 표시
+        precomposeunicode = true;    # 유니코드 정규화
+        autocrlf = "input";          # Linux/Mac line endings
+      };
+
+      diff = {
+        tool = "vimdiff";
+        # Org-mode and Lisp file support
+        org.xfuncname = "^(\\*+ +.*|#\\+title:.*)$";
+        lisp.xfuncname = "^(((;;;+ )|\\(|([ \t]+\\(((cl-|el-patch-)?def(un|var|macro|method|custom)|gb/))).*)$";
+      };
+
+      merge = {
+        tool = "vimdiff";
+        conflictstyle = "zdiff3";    # Better conflict markers with delta
+      };
+
+      # GitHub identity
+      github.user = vars.username;
+
+      # Git LFS
+      filter.lfs = {
+        smudge = "git-lfs smudge -- %f";
+        process = "git-lfs filter-process";
+        required = true;
+        clean = "git-lfs clean -- %f";
+      };
+
+      # Better colors
+      color = {
+        ui = "auto";
+        branch = "auto";
+        diff = "auto";
+        status = "auto";
+      };
     };
 
     delta = {

@@ -234,6 +234,9 @@
     syncthing
     stc-cli
 
+    remmina # GUI RDP/VNC/SSH client
+    freerdp # Command-line RDP client
+
     # System monitoring
     btop
     ncdu
