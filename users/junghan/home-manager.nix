@@ -143,7 +143,7 @@ in {
 
       [Groups/1]
       Default Layout=kr
-      DefaultIM=keyboard-kr
+      DefaultIM=hangul
       Name=Korean
 
       [Groups/1/Items/0]

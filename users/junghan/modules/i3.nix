@@ -357,6 +357,9 @@ in {
         # Korean input method (fcitx5)
         { command = "${pkgs.fcitx5}/bin/fcitx5 -d"; notification = false; }
 
+        # Alternative: Force hangul activation on startup (if DefaultIM=hangul doesn't work)
+        # { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
+
         # System tray applets
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
         { command = "${pkgs.blueman}/bin/blueman-applet"; notification = false; }
