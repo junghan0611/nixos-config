@@ -39,16 +39,16 @@
           # Korean group (1) - for general applications with Korean input
           "Groups/1" = {
             "Name" = "Korean";
-            "Default Layout" = "kr";
+            "Default Layout" = "kr-kr104";
             "DefaultIM" = "keyboard-kr-kr104";
           };
           "Groups/1/Items/0" = {
             "Name" = "keyboard-kr-kr104";
-            "Layout" = "";
+            "Layout" = "kr-kr104";
           };
           "Groups/1/Items/1" = {
             "Name" = "hangul";
-            "Layout" = "";
+            "Layout" = "kr-kr104";
           };
 
           "GroupOrder" = {
@@ -68,6 +68,8 @@
           };
           "Hotkey/EnumerateGroupForwardKeys" = {
             "0" = "Alt+Super+BackSpace";
+            "1" = "Super+Hangul";
+            "2" = "Super+Right Alt";
           };
           "Hotkey/ActivateKeys" = {
             "0" = "Hangul_Hanja";
