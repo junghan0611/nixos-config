@@ -125,6 +125,9 @@ in {
     ".inputrc".text = builtins.readFile ./configs/inputrc;
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
+
+    # Force fcitx5 profile from system config
+    ".config/fcitx5/profile".source = /etc/xdg/fcitx5/profile;
   };
 
   # X resources configuration
