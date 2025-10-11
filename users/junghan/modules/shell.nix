@@ -160,6 +160,27 @@ in {
   };
 
   #---------------------------------------------------------------------
+  # Atuin - Shell history sync
+  #---------------------------------------------------------------------
+  programs.atuin = {
+    enable = true;
+    enableBashIntegration = true;
+    settings = {
+      # auto_sync = true;  # Disabled - manual sync only
+      sync_frequency = "5m";
+      search_mode = "fuzzy";
+    };
+  };
+
+  #---------------------------------------------------------------------
+  # Zoxide - Smarter cd command
+  #---------------------------------------------------------------------
+  programs.zoxide = {
+    enable = true;
+    enableBashIntegration = true;
+  };
+
+  #---------------------------------------------------------------------
   # fd (find alternative)
   #---------------------------------------------------------------------
   home.file.".fdignore".text = ''
@@ -240,6 +261,7 @@ in {
   #---------------------------------------------------------------------
   programs.password-store = {
     enable = true;
+    package = pkgs.pass.withExtensions (exts: [ exts.pass-otp ]);
     settings = {
       PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
     };

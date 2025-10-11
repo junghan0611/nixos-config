@@ -64,6 +64,12 @@
     };
   };
 
+  # Keyboard repeat rate (laptop keyboard sensitivity fix)
+  services.xserver = {
+    autoRepeatDelay = 500;    # 500ms delay before repeat starts
+    autoRepeatInterval = 30;  # 30ms between repeats
+  };
+
   # Laptop-specific packages
   environment.systemPackages = with pkgs; [
     intel-gpu-tools

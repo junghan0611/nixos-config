@@ -60,7 +60,6 @@
     intel-gpu-tools
     powertop
     thermald
-    zotero
   ];
 
   # Enable thermald for Intel CPU thermal management

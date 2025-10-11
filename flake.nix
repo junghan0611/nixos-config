@@ -18,6 +18,12 @@
 
     # Unstable nixpkgs for newer packages
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
+    # Claude Desktop for Linux (unofficial)
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
@@ -27,6 +33,8 @@
       (final: prev: {
         # Use unstable packages where needed
         ghostty = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.ghostty;
+        # Claude Desktop with MCP support
+        claude-desktop = inputs.claude-desktop.packages.${prev.system}.claude-desktop-with-fhs;
       })
     ];
 

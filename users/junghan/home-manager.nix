@@ -72,8 +72,8 @@ in {
 
     # Email and password management
     gnupg
-    pass
-    passExtensions.pass-otp
+    # pass - configured via programs.password-store in modules/shell.nix
+    # passExtensions.pass-otp - included in shell.nix configuration
     notmuch
     isync
     afew
@@ -86,6 +86,8 @@ in {
     xclip
     wl-clipboard
     firefox
+    zotero
+    claude-desktop  # Claude Desktop with MCP support
 
     # X11 utilities (ElleNajit)
     xorg.xev        # X event viewer

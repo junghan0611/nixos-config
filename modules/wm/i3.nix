@@ -135,9 +135,9 @@
 
     displayManager = {
       lightdm.enable = lib.mkDefault true;  # Can be overridden by specialisations
-      sessionCommands = ''
-        ${pkgs.xorg.xset}/bin/xset r rate 200 40
-      '';
+      # sessionCommands = ''
+      #   ${pkgs.xorg.xset}/bin/xset r rate 200 40
+      # '';
     };
 
     windowManager = {

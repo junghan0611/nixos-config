@@ -1,0 +1,261 @@
+#+title:      NixOS Laptop 환경 개선 작업
+#+date:       [2025-10-11 Fri 19:26]
+#+filetags:   :laptop:shell:claude:nixos:
+#+identifier: 20251011T192649
+#+export_file_name: 20251011T192649.md
+
+* NixOS Laptop 환경 개선 작업 :NIXOS:
+
+** 작업 개요
+
+- 날짜: 2025-10-11
+- 대상: laptop (ThinkPad P16s)
+- 목표: 보안, 쉘 환경, 키보드 설정, Claude Desktop 통합
+
+** 주요 변경 사항
+
+*** 1. 보안 및 인증 관리
+
+**** Google 백업 코드를 pass에 등록
+
+- 위치: ~2fa/google/recovery~
+- 형식: GitHub recovery와 동일한 구조
+- 파일: ~/home/junghan/sync/emacs/claude-config/gpg-keys/~
+
+#+begin_src bash
+pass 2fa/google/recovery
+#+end_src
+
+**** GPG 키 확인
+
+- 공개키/개인키 모두 laptop에 임포트 완료
+- 신뢰도: [ultimate]
+- 키 ID: ~rsa3072/0x4816682AC05536E5~
+- 만료일: 2027-09-23
+
+*** 2. Shell 환경 개선 (~users/junghan/modules/shell.nix~)
+
+**** pass-otp 확장 추가
+
+#+begin_src nix
+programs.password-store = {
+  enable = true;
+  package = pkgs.pass.withExtensions (exts: [ exts.pass-otp ]);
+  settings = {
+    PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
+  };
+};
+#+end_src
+
+- 충돌 해결: ~home-manager.nix~에서 중복 패키지 제거
+  - ~pass~ → ~programs.password-store~로 통합
+  - ~passExtensions.pass-otp~ → shell.nix로 통합
+
+**** Atuin (Shell history sync)
+
+#+begin_src nix
+programs.atuin = {
+  enable = true;
+  enableBashIntegration = true;
+  settings = {
+    # auto_sync = true;  # Disabled - manual sync only
+    sync_frequency = "5m";
+    search_mode = "fuzzy";
+  };
+};
+#+end_src
+
+- ~Ctrl+R~로 fuzzy 히스토리 검색
+- 수동 동기화만 사용 (auto_sync 주석 처리)
+
+**** Zoxide (Smarter cd)
+
+#+begin_src nix
+programs.zoxide = {
+  enable = true;
+  enableBashIntegration = true;
+};
+#+end_src
+
+- ~z <directory-name>~으로 스마트 디렉토리 이동
+
+**** Bash Completion
+
+- ~programs.bash.enableCompletion = true~ (기존 활성화됨)
+- pass-otp completion 자동 포함
+
+*** 3. 키보드 설정 (~machines/laptop.nix~)
+
+**** 문제 증상
+- 노트북 키보드 입력이 예민함
+- 키를 한 번 눌렀는데 두 번씩 입력됨
+
+**** 해결 방법
+
+#+begin_src nix
+# Keyboard repeat rate (laptop keyboard sensitivity fix)
+services.xserver = {
+  autoRepeatDelay = 500;    # 500ms delay before repeat starts
+  autoRepeatInterval = 30;  # 30ms between repeats
+};
+#+end_src
+
+- 기존: ~xset r rate 200 40~ (i3.nix, 주석 처리됨)
+- 변경: NixOS 옵션으로 500ms delay 설정
+
+*** 4. Claude Desktop 통합
+
+**** 리포지토리 클론
+
+#+begin_src bash
+cd ~/repos/3rd
+git clone https://github.com/k3d3/claude-desktop-linux-flake.git
+#+end_src
+
+**** flake.nix 변경
+
+***** Input 추가
+
+#+begin_src nix
+inputs = {
+  # ... 기존 inputs ...
+
+  # Claude Desktop for Linux (unofficial)
+  claude-desktop = {
+    url = "github:k3d3/claude-desktop-linux-flake";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+};
+#+end_src
+
+***** Overlay 추가
+
+#+begin_src nix
+overlays = [
+  (final: prev: {
+    ghostty = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.ghostty;
+    # Claude Desktop with MCP support
+    claude-desktop = inputs.claude-desktop.packages.${prev.system}.claude-desktop-with-fhs;
+  })
+];
+#+end_src
+
+**** home-manager.nix 변경
+
+#+begin_src nix
+] ++ (lib.optionals isLinux [
+  # Linux-specific packages
+  xclip
+  wl-clipboard
+  firefox
+  zotero
+  claude-desktop  # Claude Desktop with MCP support
+  # ...
+]);
+#+end_src
+
+**** Claude Desktop 버전 선택
+
+- ~claude-desktop~: 기본 버전
+- ~claude-desktop-with-fhs~: MCP 서버 지원 (선택됨)
+  - FHS 환경 제공
+  - npx, uvx, docker 명령어 사용 가능
+  - MCP 서버 실행 가능
+
+** 적용 과정
+
+*** 1. Flake 업데이트
+
+#+begin_src bash
+cd ~/sync/emacs/nixos-config
+nix flake update
+#+end_src
+
+**업데이트 결과**:
+- claude-desktop 추가 (2025-10-09)
+- nixpkgs: 2025-10-04 → 2025-10-09
+- nixpkgs-unstable: 2025-10-05 → 2025-10-10
+
+*** 2. 리빌드
+
+#+begin_src bash
+sudo nixos-rebuild test --flake .#laptop
+sudo nixos-rebuild switch --flake .#laptop
+#+end_src
+
+**결과**: ✅ 성공
+
+** 사용 방법
+
+*** Pass OTP
+
+#+begin_src bash
+# 백업 코드 확인
+pass 2fa/google/recovery
+
+# OTP 코드 추가
+pass otp insert 2fa/service-name
+
+# OTP 코드 생성
+pass otp 2fa/service-name
+#+end_src
+
+*** Atuin
+
+#+begin_src bash
+# Ctrl+R: fuzzy 히스토리 검색
+# 수동 동기화
+atuin sync
+#+end_src
+
+*** Zoxide
+
+#+begin_src bash
+# 스마트 디렉토리 이동
+z <directory-name>
+#+end_src
+
+*** Claude Desktop
+
+#+begin_src bash
+# 터미널에서 실행
+claude-desktop
+
+# 또는 rofi/dmenu에서 "Claude" 검색
+#+end_src
+
+** 테스트 항목
+
+- [ ] Claude Desktop 실행 확인
+- [ ] pass-otp 명령어 테스트
+- [ ] atuin Ctrl+R 검색 테스트
+- [ ] zoxide 디렉토리 이동 테스트
+- [ ] 키보드 repeat delay 체감 확인 (500ms)
+- [ ] 재부팅 후 모든 설정 유지 확인
+
+** 참고 자료
+
+- Claude Desktop Flake: https://github.com/k3d3/claude-desktop-linux-flake
+- pass-otp: https://github.com/tadfisher/pass-otp
+- atuin: https://atuin.sh/
+- zoxide: https://github.com/ajeetdsouza/zoxide
+
+** 관련 파일
+
+- ~~/sync/emacs/nixos-config/flake.nix~
+- ~~/sync/emacs/nixos-config/users/junghan/modules/shell.nix~
+- ~~/sync/emacs/nixos-config/users/junghan/home-manager.nix~
+- ~~/sync/emacs/nixos-config/machines/laptop.nix~
+- ~~/sync/emacs/nixos-config/modules/wm/i3.nix~
+
+** 다음 작업
+
+- Claude Desktop MCP 서버 설정 (~/.config/claude-desktop/config.json~)
+- atuin 계정 로그인 및 동기화 설정
+- zoxide 데이터베이스 구축 (사용하면서 자동)
+
+** 메타데이터
+
+- 작성자: Junghan Kim (junghanacs@gmail.com)
+- 환경: NixOS 25.05, ThinkPad P16s
+- AI: Claude (Sonnet 4.5)
