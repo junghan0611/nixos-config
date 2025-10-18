@@ -115,16 +115,69 @@ mbsync -a
 
 ## Philosophy
 
-### AI Era System Management
+### Reproducibility: The Blacksmith's Forge
 
-NixOS's declarative nature enables:
+> "A computer is not a black box—it's the **blacksmith's forge**.
+> The master controls the tools, the apprentice (agent) assists, but tool selection remains under the master's command."
 
-- **Transparency**: AI agents understand explicit configurations
-- **Reproducibility**: nix-shell provides clear dev environments
-- **Reliability**: "Works on my machine" eliminated
-- **Scalability**: Same config across multiple hosts
+**Core Insight**: Reproducible computing environments are essential for human-AI collaboration.
 
-home-manager extends this to macOS/WSL, providing consistent environments everywhere.
+**Key Principles**:
+
+**1. Reproducibility = Trust**
+```
+Traditional OS:
+  - "What's installed?" → Unknown
+  - "What version?" → Unclear
+  - Agent: Guesses, trial-and-error
+
+NixOS:
+  - configuration.nix = Single source of truth
+  - Agent: Precise, reproducible actions
+```
+
+**2. Master's Control**
+```
+Blacksmith (Human):
+  - Selects tools (nixos-config)
+  - Controls environment
+  - Final judgment
+
+Tools (Computer):
+  - Keyboard, editor, languages
+  - Extended body
+
+Apprentice (AI Agent):
+  - Assists, but doesn't choose tools
+  - Tool selection = Master's domain
+```
+
+**3. Scale: Desktop → Data Center**
+```
+Same syntax, infinite scale:
+  - Desktop: configuration.nix
+  - Server: configuration.nix (same pattern)
+  - Cluster: flake.nix (same philosophy)
+
+→ Learn once, apply everywhere
+```
+
+**4. Transparency for Agents**
+```yaml
+What agents need to know:
+  - Your tools? (environment.systemPackages)
+  - Your editor? (programs.emacs)
+  - Your languages? (pkgs.python311)
+
+nixos-config provides:
+  - Complete environment specification
+  - Exact versions (flake.lock)
+  - Full transparency
+
+→ Agents generate precise, working code
+```
+
+**Read More**: [NixOS: Reproducibility and the Blacksmith's Philosophy](./docs/20251018T184200--nixos-재현성과-대장장이의-도구철학__nixos_philosophy_reproducibility_master.md)
 
 ---
 
