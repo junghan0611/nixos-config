@@ -8,6 +8,9 @@ let
   # Get hostname for pattern matching
   hostname = config.networking.hostName or currentSystemName;
 
+  # Check if current system is oracle (aarch64-linux)
+  isOracle = builtins.match ".*oracle.*" hostname != null;
+
   # Import vars based on hostname pattern matching
   vars = if (builtins.match ".*oracle.*" hostname != null) then
     import ../../hosts/oracle/vars.nix
@@ -86,7 +89,6 @@ in {
     xclip
     wl-clipboard
     firefox
-    zotero
     claude-desktop  # Claude Desktop with MCP support
 
     # X11 utilities (ElleNajit)
@@ -114,6 +116,9 @@ in {
     # Security (ElleNajit)
     keybase         # Encrypted communication
     yubikey-manager # YubiKey support
+  ]) ++ (lib.optionals (isLinux && !isOracle) [
+    # x86_64 Linux-specific packages (not available on ARM)
+    zotero          # Reference manager (x86_64 only)
   ]);
 
   #---------------------------------------------------------------------
@@ -155,6 +160,24 @@ in {
       [Groups/1/Items/1]
       Layout=kr-kr104
       Name=hangul
+    '';
+
+    # Flameshot configuration with Denote timestamp pattern
+    ".config/flameshot/flameshot.ini".text = ''
+      [General]
+      checkForUpdates=true
+      contrastOpacity=188
+      copyOnDoubleClick=true
+      copyPathAfterSave=true
+      filenamePattern=%Y%m%dT%H%M%S--
+      saveAfterCopy=false
+      saveAsFileExtension=png
+      savePath=/home/${vars.username}/sync/screenshot
+      savePathFixed=false
+      showHelp=false
+      showStartupLaunchMessage=false
+      startupLaunch=true
+      undoLimit=100
     '';
   };
 

@@ -5,8 +5,8 @@
     ./shared.nix
     # Import the existing hardware configuration
     ../hosts/oracle/hardware-configuration.nix
-    # Oracle-specific disk configuration
-    ../hosts/oracle/disk-config.nix
+    # Oracle-specific disk configuration (초기 설치용 - 부팅 시에는 hardware-configuration.nix 사용)
+    # ../hosts/oracle/disk-config.nix
   ];
 
   # Oracle Cloud specific configuration

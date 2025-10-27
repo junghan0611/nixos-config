@@ -1,0 +1,313 @@
+#+title:      NixOS Home-Manager 애플리케이션 재현성 전략
+#+date:       [2025-10-11 Sat 20:37]
+#+filetags:   :llmlog:nixos:reproducibility:homemanager:configuration:
+#+identifier: 20251011T203742
+#+export_file_name: 20251011T203742.md
+
+* NixOS Home-Manager 애플리케이션 재현성 전략 :LLMLOG:
+
+** 핵심 인사이트: 재현성의 진정한 의미
+
+*** 일반적인 재현성 (시스템 레벨)
+대부분의 사람들이 NixOS로 확보하는 재현성:
+- 시스템 패키지 목록
+- 서비스 설정
+- 네트워크 구성
+- 사용자 계정
+
+이것은 *시작점*일 뿐이다.
+
+*** 완전한 재현성 (애플리케이션 + 설정)
+NixOS + Home-Manager의 진정한 가치:
+- 애플리케이션 자체 (선언적 패키지 관리)
+- 애플리케이션 설정 파일 (Nix store 심볼릭 링크)
+- 사용자 환경 전체 (dotfiles, configs, preferences)
+
+#+begin_quote
+"애플리케이션 그 자체부터 설정까지 다 재현할 수 있어야 한다."
+#+end_quote
+
+** 기존 방식의 한계: Stow
+
+*** GNU Stow의 접근법
+- *목적*: dotfiles 심볼릭 링크 관리
+- *방식*: =~/dotfiles/= → =~/= 심볼릭 링크 생성
+- *한계*:
+  1. 설정 파일만 관리 (애플리케이션은 별도 설치 필요)
+  2. 버전 관리 없음 (git으로 별도 관리)
+  3. 플랫폼별 차이 수동 처리
+  4. 충돌 시 수동 해결
+
+*** Stow의 역할
+#+begin_example
+dotfiles/
+├── vim/
+│   └── .vimrc → ~/
+├── zsh/
+│   └── .zshrc → ~/
+└── git/
+    └── .gitconfig → ~/
+#+end_example
+
+*설정 파일의 일부만 흉내내는 수준*
+
+** NixOS Home-Manager 방식: 완전한 재현성
+
+*** 철학적 차이
+#+begin_src fundamental
+Stow:        설정 파일을 복사/링크
+Home-Manager: 설정을 선언하고 생성
+#+end_src
+
+*** Home-Manager의 접근법
+
+1. *선언적 설정*
+   #+begin_src nix
+   home.file.".config/flameshot/flameshot.ini".text = ''
+     [General]
+     filenamePattern=%Y%m%dT%H%M%S--
+     savePath=/home/${vars.username}/sync/screenshot
+   '';
+   #+end_src
+
+2. *Nix Store 관리*
+   #+begin_example
+   ~/.config/flameshot/flameshot.ini
+   → /nix/store/xxx-home-manager-files/.config/flameshot/flameshot.ini
+   #+end_example
+
+3. *자동 충돌 해결*
+   - 기존 파일 발견 → =.hm-backup= 생성
+   - Nix store 심볼릭 링크 생성
+   - 재현 가능한 상태 확보
+
+*** 실제 구현 패턴
+
+**** 1단계: 설정 파일 선언 (home-manager.nix)
+#+begin_src nix
+home.file = {
+  # fcitx5: 한글 입력 자동화
+  ".config/fcitx5/profile".text = ''
+    [GroupOrder]
+    0=Default
+    1=Korean
+    ...
+  '';
+
+  # Flameshot: Denote 타임스탬프 스크린샷
+  ".config/flameshot/flameshot.ini".text = ''
+    [General]
+    filenamePattern=%Y%m%dT%H%M%S--
+    savePath=/home/${vars.username}/sync/screenshot
+    ...
+  '';
+};
+#+end_src
+
+**** 2단계: 충돌 파일 처리
+#+begin_src bash
+# 기존 수동 생성 파일들
+~/.config/flameshot/flameshot.ini  # 사용자가 만든 파일
+
+# 빌드 시 자동 백업
+~/.config/flameshot/flameshot.ini.hm-backup
+
+# 새로운 심볼릭 링크 생성
+~/.config/flameshot/flameshot.ini -> /nix/store/.../flameshot.ini
+#+end_src
+
+**** 3단계: 백업 시스템 (lib/mksystem.nix)
+#+begin_src nix
+home-manager.backupFileExtension = "hm-backup";
+#+end_src
+
+기존 파일 충돌 시 자동으로 =.hm-backup= 확장자로 백업
+
+** 구현 사례: 재현성 확보한 애플리케이션들
+
+*** fcitx5 (한글 입력기)
+*문제*: 매번 설정 GUI에서 수동 구성 필요
+
+*해결*:
+#+begin_src nix
+".config/fcitx5/profile".text = ''
+  [GroupOrder]
+  0=Default
+  1=Korean
+
+  [Groups/1]
+  Default Layout=kr-kr104
+  DefaultIM=keyboard-kr-kr104
+  Name=Korean
+'';
+#+end_src
+
+*결과*:
+- 모든 머신에서 동일한 한글 입력 설정
+- GUI 설정 불필요
+- 심볼릭 링크로 Nix store 참조
+
+*** atuin (shell history)
+*문제*: 초기 설정 파일 수동 생성
+
+*해결*: Home-Manager의 =programs.atuin= 모듈 사용
+
+*결과*:
+- 선언적 history 동기화 설정
+- 모든 머신에서 동일한 shell experience
+
+*** Flameshot (스크린샷 도구)
+*문제*: Denote 타임스탬프 패턴 설정 필요
+
+*해결*:
+#+begin_src nix
+".config/flameshot/flameshot.ini".text = ''
+  [General]
+  filenamePattern=%Y%m%dT%H%M%S--
+  savePath=/home/${vars.username}/sync/screenshot
+'';
+#+end_src
+
+*결과*:
+- 스크린샷 자동 Denote 형식 저장
+- 지식베이스와 통합 가능
+- 플랫폼 독립적 (=vars.username= 변수)
+
+** 재현성 확보 표준 워크플로우
+
+*** Step 1: 기존 설정 파일 발견
+#+begin_src bash
+# 수동으로 만든 설정 찾기
+ls -la ~/.config/app-name/config.ini
+#+end_src
+
+*** Step 2: Nix 설정으로 변환
+#+begin_src nix
+# users/junghan/home-manager.nix
+home.file.".config/app-name/config.ini".text = ''
+  [Settings]
+  key=value
+  path=/home/${vars.username}/data
+'';
+#+end_src
+
+*** Step 3: 기존 백업 정리 (필요시)
+#+begin_src bash
+# .hm-backup 충돌 방지
+find ~/.config -name "*.hm-backup" -delete
+#+end_src
+
+*** Step 4: 빌드 및 검증
+#+begin_src bash
+# NixOS 빌드
+sudo nixos-rebuild switch --flake .#hostname
+
+# 심볼릭 링크 확인
+ls -la ~/.config/app-name/config.ini
+# → /nix/store/xxx-home-manager-files/.config/app-name/config.ini
+#+end_src
+
+*** Step 5: 모든 머신에 적용
+#+begin_src bash
+# Git push
+cd ~/nixos-config
+git add users/junghan/home-manager.nix
+git commit -m "Add app-name reproducible config"
+git push
+
+# 다른 머신에서
+git pull
+sudo nixos-rebuild switch --flake .#other-hostname
+#+end_src
+
+** 설계 원칙
+
+*** 1. 단일 진실 소스 (Single Source of Truth)
+- 모든 설정은 =~/nixos-config/= Git 저장소에
+- 수동 수정 파일 허용 안 함
+- Nix 선언만이 유일한 소스
+
+*** 2. 충돌 불허 (Zero Tolerance for Conflicts)
+#+begin_quote
+"설정 파일을 누가 만들어 놓았거나 수정해 놓은 것을 용납하지 않는다."
+#+end_quote
+
+- 수동 파일 발견 → 자동 백업 (=.hm-backup=)
+- Nix store 심볼릭 링크만 허용
+- 재현 가능한 상태 강제
+
+*** 3. 플랫폼 독립성
+#+begin_src nix
+# 절대 경로 하드코딩 금지
+savePath=/home/junghan/sync  # ❌ 나쁨
+
+# 변수 사용
+savePath=/home/${vars.username}/sync  # ✅ 좋음
+#+end_src
+
+*** 4. 버전 관리
+- 모든 설정 변경 Git 커밋
+- 롤백 가능
+- 히스토리 추적 가능
+
+** 확장 가능성
+
+*** 재현성 확보 대상 애플리케이션 (예시)
+- [ ] Emacs (init.el, packages)
+- [ ] i3wm (config)
+- [ ] Rofi (themes, config)
+- [ ] Alacritty/Kitty (terminal config)
+- [ ] Git (global config)
+- [ ] SSH (config, known_hosts)
+- [ ] GPG (keys, trust)
+
+*** 패턴 템플릿
+#+begin_src nix
+# 모든 애플리케이션에 적용 가능
+home.file.".config/APP_NAME/CONFIG_FILE".text = ''
+  # 설정 내용
+  # 변수 사용: ${vars.username}, ${vars.email}
+'';
+#+end_src
+
+** 결론: 재현성의 단계
+
+*** Level 0: 수동 설치
+- 매번 애플리케이션 다운로드
+- GUI로 설정
+- 다른 머신에서 반복
+
+*** Level 1: 스크립트 자동화
+- Bash 스크립트로 설치
+- 설정 파일 복사
+- 여전히 플랫폼 의존적
+
+*** Level 2: Dotfiles + Stow
+- Git으로 설정 관리
+- 심볼릭 링크 자동화
+- *애플리케이션은 수동 설치*
+
+*** Level 3: NixOS + Home-Manager (우리가 도달한 수준)
+- 애플리케이션 선언적 설치
+- 설정 파일 선언적 생성
+- 완전한 재현성
+- 단일 진실 소스
+- 플랫폼 독립적
+
+#+begin_quote
+"이것이 진정한 재현성이다."
+#+end_quote
+
+** 참고 자료
+- NixOS 설정: =~/repos/gh/nixos-config/=
+- Home-Manager 문서: https://nix-community.github.io/home-manager/
+- 구현 파일:
+  - =lib/mksystem.nix= : backupFileExtension 설정
+  - =users/junghan/home-manager.nix= : 애플리케이션 설정들
+  - =hosts/*/vars.nix= : 머신별 변수
+
+** 메타 정보
+- 작성일: 2025-10-11
+- 작성자: junghanacs
+- 컨텍스트: NixOS 재현성 구축 프로젝트
+- 태그: #nixos #reproducibility #home-manager #configuration

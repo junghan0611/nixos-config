@@ -5,6 +5,9 @@ background-opacity = 0.95
 background-blur-radius = 20
 mouse-hide-while-typing = true
 
+# Clipboard settings
+clipboard-paste-protection = false
+
 # Theme colors (matches i3 theme)
 background = #1D1F21
 foreground = #C5C8C6

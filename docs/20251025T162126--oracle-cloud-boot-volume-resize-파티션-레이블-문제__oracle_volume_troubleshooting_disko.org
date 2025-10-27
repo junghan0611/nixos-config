@@ -1,0 +1,526 @@
+#+title:      Oracle Cloud Boot Volume Resize 파티션 레이블 문제
+#+date:       [2025-10-25 Fri 16:21]
+#+filetags:   :oracle:volume:troubleshooting:disko:
+#+identifier: 20251025T162126
+
+* Oracle Cloud Boot Volume Resize 파티션 레이블 문제 :TROUBLESHOOTING:
+:PROPERTIES:
+:UPDATED: [2025-10-27 Mon 19:45]
+:SOLVED: [2025-10-27 Mon] - UUID 기반 마운트로 영구 해결
+:END:
+
+** 🔴 중요: 영구 해결책 (반드시 먼저 적용!)
+
+*** UUID 기반 마운트 전환 (Oracle Resize 완전 면역)
+
+*laptop과 동일한 방식으로 통일* - 파티션 레이블 의존성 완전 제거
+
+#+begin_src bash
+# 1. UUID 확인
+sudo blkid /dev/sda1  # boot: A085-2DF8
+sudo blkid /dev/sda2  # root: 6ebf7d20-c186-4187-a8ab-30a92f293e24
+#+end_src
+
+#+begin_src nix
+# hosts/oracle/hardware-configuration.nix
+fileSystems."/" =
+  { device = "/dev/disk/by-uuid/6ebf7d20-c186-4187-a8ab-30a92f293e24";
+    fsType = "ext4";
+  };
+
+fileSystems."/boot" =
+  { device = "/dev/disk/by-uuid/A085-2DF8";
+    fsType = "vfat";
+    options = [ "fmask=0022" "dmask=0022" ];
+  };
+#+end_src
+
+#+begin_src bash
+# 적용
+sudo nixos-rebuild switch
+#+end_src
+
+*이제 Volume resize/snapshot/migration 모두 안전!*
+
+** 문제 상황
+
+*** 증상
+Oracle Cloud에서 Boot Volume을 100GB로 resize 후 부팅 불가능
+
+#+begin_example
+[TIME] Timed out waiting for device /dev/disk/by-partlabel/disk-main-root
+[DEPEND] Dependency failed for File System /dev/disk/by-partlabel/disk-main-root
+[DEPEND] Dependency failed for /sysroot
+[DEPEND] Dependency failed for Initrd Root File System
+#+end_example
+
+*** 환경
+- 플랫폼: Oracle Cloud Infrastructure (OCI)
+- OS: NixOS 25.05 (aarch64-linux)
+- 초기 설치: Ubuntu 24.04 Minimal → NixOS 전환
+- 디스크 관리: disko.nix
+- Boot Volume: 100GB (resize 수행)
+
+** 근본 원인 분석
+
+*** 볼륨 제어 관점의 핵심 문제
+
+*Oracle Cloud Volume Resize의 위험성*
+
+1. *볼륨 레벨 vs 파티션 레벨 불일치*
+   - Oracle은 Block Volume (볼륨) 크기만 확장
+   - 파티션 테이블과 파일시스템은 자동 조정 안 함
+   - 사용자가 수동으로 파티션 확장 필요
+
+2. *GPT 파티션 레이블 손실 메커니즘*
+   #+begin_src bash
+   # Oracle Volume Resize 과정
+   볼륨 크기 확장 (50GB → 100GB)
+   → GPT 백업 헤더 위치 변경 필요
+   → 파티션 테이블 재구성 시도
+   → 파티션 레이블(name) 메타데이터 손실 가능
+   #+end_src
+
+3. *Disko의 파티션 레이블 의존성*
+   - Disko는 =/dev/disk/by-partlabel/disk-main-root= 경로 사용
+   - 레이블 손실 → initrd에서 루트 파티션 찾기 실패
+   - UUID나 device path는 유지되지만 레이블만 사라짐
+
+*** 기술적 세부사항
+
+*파티션 식별 방법 3가지*
+| 방법              | 경로 예시                                    | 안정성 | Disko 기본값 |
+|-------------------+----------------------------------------------+--------+--------------|
+| Device Path       | =/dev/sda2=                                  | 낮음   | X            |
+| UUID              | =/dev/disk/by-uuid/xxxxx=                    | 높음   | X            |
+| Partition Label   | =/dev/disk/by-partlabel/disk-main-root=      | 중간   | O (기본)     |
+
+*왜 Disko는 Partition Label을 사용하는가?*
+- 가독성: =disk-main-root= > =UUID=
+- 선언적 구성: 파티션 이름을 코드로 관리
+- 재현성: 새 디스크에 동일한 레이블로 재구축 가능
+
+*하지만 Oracle Cloud에서는 위험*
+- Volume resize가 레이블을 삭제할 수 있음
+- Live migration, snapshot restore 시에도 유사한 문제 가능
+
+** Oracle Cloud 접근 문제 해결
+
+*** Serial Console 접근 불가 원인
+
+*에러 메시지*:
+#+begin_example
+Cannot open access to console, the root account is locked.
+See sulogin(8) man page for more details.
+#+end_example
+
+*근본 원인*:
+- NixOS 기본 보안: root 계정 잠금 (=passwd -l root= 상태)
+- Emergency Mode: root 권한 필요
+- sulogin 실패 → 무한 루프
+
+*** 해결 방안: Boot Volume을 다른 Instance에 Attach (권장)
+
+*가장 확실한 복구 방법*
+
+#+begin_src bash
+# === Oracle Cloud Console Web UI에서 ===
+
+# 1. 문제 있는 인스턴스 중지
+Compute → Instances → oracle-nixos → Stop
+
+# 2. Boot Volume Detach
+Compute → Instances → oracle-nixos
+→ Boot Volume → Detach Boot Volume
+
+# 3. 임시 Ubuntu Instance 생성
+Compute → Instances → Create Instance
+→ Image: Ubuntu 24.04 Minimal (aarch64)
+→ Availability Domain: 원래 instance와 동일하게 선택
+→ Shape: VM.Standard.A1.Flex (무료 티어)
+→ SSH Key: 본인 키 등록
+
+# 4. Boot Volume을 Block Volume으로 Attach
+Compute → Block Storage → Boot Volumes
+→ 문제의 boot volume 선택 (oracle-nixos)
+→ Attached Instances → Attach to Instance
+→ Instance: 방금 만든 Ubuntu instance
+→ Device Path: /dev/oracleoci/oraclevdb (자동 할당)
+→ Access: Read/Write
+→ Attach
+
+# 5. Ubuntu instance에 SSH 접속
+ssh ubuntu@<TEMP-INSTANCE-PUBLIC-IP>
+
+# === Ubuntu Instance 내부에서 ===
+
+# 6. 디바이스 확인
+lsblk
+# NAME                  MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+# sda                     8:0    0   50G  0 disk    <- Ubuntu boot
+# oracleoci-oraclevdb   252:0    0  100G  0 disk    <- NixOS boot (문제 디스크)
+# ├─oraclevdb1          252:1    0  512M  0 part
+# └─oraclevdb2          252:2    0 99.5G  0 part
+
+# 7. 마운트
+sudo mkdir -p /mnt/nixos-root /mnt/nixos-boot
+sudo mount /dev/oracleoci/oraclevdb2 /mnt/nixos-root  # root 파티션
+sudo mount /dev/oracleoci/oraclevdb1 /mnt/nixos-boot  # boot 파티션
+
+# 8. 파티션 레이블 확인
+sudo sgdisk -p /dev/oracleoci/oraclevdb
+# 레이블이 없는지 확인 (Name 컬럼 비어있음)
+
+# 9. 파티션 레이블 복구 ⭐
+sudo sgdisk -c 1:disk-main-boot /dev/oracleoci/oraclevdb
+sudo sgdisk -c 2:disk-main-root /dev/oracleoci/oraclevdb
+sudo partprobe /dev/oracleoci/oraclevdb
+
+# 10. 복구 확인
+ls -la /dev/disk/by-partlabel/
+# disk-main-boot -> ../../oraclevdb1
+# disk-main-root -> ../../oraclevdb2
+
+# 11. (선택) root 비밀번호 설정으로 Emergency Mode 접근 가능하게
+sudo mount --bind /dev /mnt/nixos-root/dev
+sudo mount --bind /proc /mnt/nixos-root/proc
+sudo mount --bind /sys /mnt/nixos-root/sys
+sudo chroot /mnt/nixos-root
+passwd root  # 임시 비밀번호 설정 (예: recovery123)
+exit
+
+# 12. 언마운트
+sudo umount /mnt/nixos-root/{dev,proc,sys}
+sudo umount /mnt/nixos-boot /mnt/nixos-root
+
+# === Oracle Cloud Console로 돌아가기 ===
+
+# 13. Volume Detach
+Compute → Block Storage → Boot Volumes
+→ 복구한 boot volume 선택
+→ Attached Instances → Detach
+
+# 14. 원래 Instance에 Boot Volume 재연결
+Compute → Instances → oracle-nixos
+→ Boot Volume → Attach Boot Volume
+→ 복구한 boot volume 선택
+
+# 15. Instance 시작
+Compute → Instances → oracle-nixos → Start
+
+# 16. 부팅 확인
+ssh junghan@<ORACLE-NIXOS-PUBLIC-IP>
+
+# 17. 임시 Ubuntu Instance 삭제
+Compute → Instances → temp-ubuntu → Terminate
+#+end_src
+
+*** 대안: VNC Console 시도
+
+Serial Console 대신 VNC Console 사용:
+
+#+begin_src bash
+# Oracle Cloud Console에서:
+Compute → Instances → oracle-nixos
+→ More Actions → Create Instance Console Connection
+→ Connection Type: VNC
+→ Create Console Connection
+→ Copy Connection String
+→ Launch VNC Console (브라우저 기반)
+#+end_src
+
+*VNC Console의 장점*:
+- Serial Console보다 더 직접적인 하드웨어 접근
+- 그래픽 터미널 지원
+- Root 잠금 문제 우회 가능성 있음
+
+** 해결 방안 (부팅 가능한 환경에서)
+
+*** 방안 1: 파티션 레이블 복구 (즉시 복구용)
+
+*정상 부팅 가능하거나 위 방법으로 접근 가능할 때*
+
+#+begin_src bash
+# 1. 현재 파티션 상태 확인
+sudo fdisk -l /dev/sda
+sudo blkid /dev/sda*
+
+# 2. GPT 파티션 레이블 확인
+sudo sgdisk -p /dev/sda
+
+# 3. 파티션 레이블이 없으면 복구
+sudo sgdisk -c 1:disk-main-boot /dev/sda    # /boot 파티션 (EFI)
+sudo sgdisk -c 2:disk-main-root /dev/sda    # / 파티션 (루트)
+
+# 4. 파티션 테이블 변경사항 커널에 즉시 적용
+sudo partprobe /dev/sda
+
+# 5. 복구 확인
+ls -la /dev/disk/by-partlabel/
+# disk-main-boot -> ../../sda1
+# disk-main-root -> ../../sda2 가 보여야 함
+
+# 6. 리부팅
+sudo reboot
+#+end_src
+
+*주의사항*:
+- =-c= 옵션: partition number:label 형식
+- =sda1= = boot (EFI), =sda2= = root 순서 확인 필수
+- =partprobe= 실패 시 시스템 재부팅 필요
+
+*** 방안 2: UUID 기반 마운트로 전환 (권장, 영구 해결)
+
+*1단계: UUID 확인*
+#+begin_src bash
+# Cloud Shell 또는 Live CD에서
+sudo blkid /dev/sda1  # boot UUID 확인
+sudo blkid /dev/sda2  # root UUID 확인
+#+end_src
+
+*2단계: hardware-configuration.nix 수정*
+#+begin_src nix
+# hosts/oracle/hardware-configuration.nix
+{ config, lib, pkgs, modulesPath, ... }:
+
+{
+  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
+
+  boot.initrd.availableKernelModules = [ "xhci_pci" "virtio_pci" "virtio_scsi" "usbhid" ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ ];
+  boot.extraModulePackages = [ ];
+
+  # UUID 기반 파일시스템 마운트 (레이블 의존성 제거)
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/YOUR-ROOT-UUID";  # blkid로 확인한 UUID
+    fsType = "ext4";
+    options = [ "defaults" "noatime" ];
+  };
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/YOUR-BOOT-UUID";  # blkid로 확인한 UUID
+    fsType = "vfat";
+    options = [ "defaults" ];
+  };
+
+  networking.useDHCP = lib.mkDefault true;
+  nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
+}
+#+end_src
+
+*3단계: disk-config.nix는 유지*
+- =disk-config.nix= 는 초기 설치용 (=nixos-install= 시 사용)
+- =hardware-configuration.nix= 가 실제 부팅 시 마운트 제어
+- Disko는 설치 이후에는 관여하지 않음
+
+*장점*
+- Oracle Volume 작업에 완전히 독립적
+- Resize, snapshot, migration 모두 안전
+- UUID는 파티션 생성 시 자동 부여되며 거의 변하지 않음
+
+*** 방안 3: Emergency Mode 접근 개선 (권장 설정)
+
+*NixOS Configuration에 추가*
+
+#+begin_src nix
+# hosts/oracle/configuration.nix
+
+{
+  # Emergency shell 접근을 위한 root 계정 활성화
+  # 보안: SSH는 여전히 비활성화 (PermitRootLogin = "no")
+  users.users.root = {
+    # 방법 1: 해시된 비밀번호 (더 안전)
+    # mkpasswd -m sha-512 로 생성
+    # initialHashedPassword = "$6$rounds=65536$...";
+
+    # 방법 2: 평문 비밀번호 (간단, Emergency 용도만)
+    initialPassword = "recovery-only-2025";  # Serial Console 전용
+  };
+
+  # Serial Console 및 Emergency Mode 개선
+  boot.kernelParams = [
+    "console=tty0"           # 로컬 콘솔
+    "console=ttyS0,115200"   # Serial console
+    "systemd.log_level=debug"  # 디버깅 (문제 발생 시)
+  ];
+
+  # Systemd emergency mode 활성화
+  systemd = {
+    enableEmergencyMode = true;
+
+    # Emergency shell 타임아웃 증가 (기본 90초 → 300초)
+    services."emergency".serviceConfig = {
+      JobTimeoutSec = "5min";
+    };
+  };
+
+  # (중요) SSH는 여전히 root 로그인 차단
+  services.openssh.settings = {
+    PermitRootLogin = "no";  # SSH로는 root 접근 불가
+    PasswordAuthentication = false;
+  };
+}
+#+end_src
+
+*보안 고려사항*:
+- Root 비밀번호는 Serial Console/Emergency Mode 전용
+- SSH는 여전히 일반 사용자 + sudo 사용
+- 복구 완료 후 =users.users.root.hashedPassword = "!";= 로 다시 잠금 가능
+
+*** 방안 4: Disko 설정 개선 (새 설치 시 적용)
+
+#+begin_src nix
+# hosts/oracle/disk-config.nix
+{
+  disko.devices = {
+    disk = {
+      main = {
+        type = "disk";
+        device = "/dev/sda";
+        content = {
+          type = "gpt";
+          partitions = {
+            boot = {
+              size = "512M";
+              type = "EF00";
+              name = "disk-main-boot";  # 명시적 레이블 지정
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+                mountOptions = [ "defaults" ];
+              };
+            };
+            root = {
+              size = "100%";
+              name = "disk-main-root";  # 명시적 레이블 지정
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+                mountOptions = [ "defaults" "noatime" ];
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}
+#+end_src
+
+** Oracle Cloud Volume 관리 베스트 프랙티스
+
+*** Volume Resize 전 체크리스트
+
+#+begin_src bash
+# 1. 파티션 정보 백업 (GPT 헤더 포함)
+sudo sgdisk --backup=/root/sda-partition-backup.sgdisk /dev/sda
+
+# 2. 파티션 레이블 목록 저장
+sudo sgdisk -p /dev/sda > /root/sda-partition-info.txt
+
+# 3. UUID 목록 저장
+sudo blkid > /root/blkid-backup.txt
+
+# 4. fstab 백업 (NixOS는 미사용이지만 참고용)
+sudo cp /etc/fstab /root/fstab.backup
+#+end_src
+
+*** Volume Resize 후 필수 작업
+
+#+begin_src bash
+# 1. 파티션 레이블 확인 및 복구
+ls -la /dev/disk/by-partlabel/
+# 레이블이 없으면 위 "방안 1" 실행
+
+# 2. 파티션 확장 (루트 파티션)
+sudo growpart /dev/sda 2  # cloud-utils 패키지 필요
+
+# 3. 파일시스템 확장
+sudo resize2fs /dev/sda2  # ext4의 경우
+
+# 4. 확인
+df -h /
+lsblk
+#+end_src
+
+*** NixOS 특화 고려사항
+
+*Disko vs hardware-configuration.nix 역할 구분*
+- =disk-config.nix= (disko): 초기 설치 시 디스크 파티셔닝
+- =hardware-configuration.nix=: 부팅 시 파일시스템 마운트
+- *충돌 시 hardware-configuration.nix가 우선 적용됨*
+
+*재현성 vs 안정성 트레이드오프*
+| 방식              | 재현성 | 안정성 | Oracle Cloud 적합도 |
+|-------------------+--------+--------+---------------------|
+| Partition Label   | 높음   | 중간   | 낮음 (resize 위험)  |
+| UUID              | 중간   | 높음   | 높음 (권장)         |
+| Device Path       | 낮음   | 낮음   | 낮음                |
+
+** 향후 예방 조치
+
+*** 모니터링 스크립트
+
+#+begin_src bash
+#!/usr/bin/env bash
+# ~/scripts/check-partition-labels.sh
+
+echo "=== Partition Label 상태 점검 ==="
+echo
+
+echo "1. 파티션 레이블 존재 확인:"
+ls -la /dev/disk/by-partlabel/ 2>/dev/null || echo "경고: 파티션 레이블 없음!"
+
+echo
+echo "2. 현재 마운트 상태:"
+df -h / /boot
+
+echo
+echo "3. Disko가 기대하는 레이블:"
+grep -r "by-partlabel" /etc/nixos/ 2>/dev/null || echo "(레이블 의존성 없음 - OK)"
+
+echo
+echo "4. UUID 정보:"
+sudo blkid /dev/sda1 /dev/sda2
+#+end_src
+
+*** Systemd 경고 서비스 (선택사항)
+
+#+begin_src nix
+# configuration.nix에 추가
+systemd.services.partition-label-check = {
+  description = "Check partition labels on boot";
+  wantedBy = [ "multi-user.target" ];
+  after = [ "local-fs.target" ];
+  serviceConfig = {
+    Type = "oneshot";
+    ExecStart = pkgs.writeShellScript "check-labels" ''
+      if [ ! -e /dev/disk/by-partlabel/disk-main-root ]; then
+        echo "경고: disk-main-root 레이블 손실됨!" | systemd-cat -t partition-check -p warning
+      fi
+    '';
+  };
+};
+#+end_src
+
+** 참고 자료
+
+- [[https://github.com/nix-community/disko][Disko GitHub Repository]]
+- [[https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/resizingavolume.htm][Oracle Cloud: Resizing a Volume]]
+- [[https://nixos.org/manual/nixos/stable/#sec-installation-manual-partitioning][NixOS Manual: Partitioning]]
+- [[https://www.rodsbooks.com/gdisk/][GPT fdisk (gdisk) Documentation]]
+
+** 타임라인
+
+- [2025-10-25 Fri 16:21] 문서 작성
+- [2025-10-25 Fri] 문제 발견 및 분석
+- [예정] 방안 2 (UUID 전환) 적용
+
+** 메타데이터
+- 작성자: Claude Code + Junghan
+- 카테고리: Troubleshooting / Infrastructure
+- 우선순위: High (프로덕션 시스템 부팅 불가)
+- 상태: 분석 완료, 해결 대기
