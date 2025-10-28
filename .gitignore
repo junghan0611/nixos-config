@@ -4,6 +4,8 @@
 tmp/
 *.zip
 
+TODO*.org
+
 *__human.org
 .mcp.json
 .claude

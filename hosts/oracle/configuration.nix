@@ -6,8 +6,8 @@ in
   {
     imports =
       [
-        ./hardware-configuration.nix
-        ./disk-config.nix
+        # ./hardware-configuration.nix
+        ./disk-config.nix  # 초기 설치용 - 부팅 시에는 hardware-configuration.nix 사용
       ];
 
     boot = {
