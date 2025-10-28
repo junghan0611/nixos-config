@@ -33,6 +33,8 @@ let
     }
 
     order += "read_file emacs_task"
+    order += "volume master"
+    order += "battery all"
     order += "ethernet _first_"
     order += "disk /"
     order += "load"
@@ -43,6 +45,25 @@ let
         format = "Task: %content"
         path = "${config.home.homeDirectory}/.emacs.d/current-task"
         color_good = "${solarized.cyan}"
+    }
+
+    volume master {
+        format = "♪ %volume"
+        format_muted = "♪ muted (%volume)"
+        device = "default"
+        mixer = "Master"
+        mixer_idx = 0
+    }
+
+    battery all {
+        format = "%status %percentage %remaining"
+        format_down = "No battery"
+        status_chr = "⚡"
+        status_bat = "🔋"
+        status_unk = "?"
+        status_full = "☻"
+        path = "/sys/class/power_supply/BAT%d/uevent"
+        low_threshold = 10
     }
 
     ethernet _first_ {
