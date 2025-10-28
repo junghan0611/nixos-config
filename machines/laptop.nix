@@ -122,6 +122,9 @@
     thermald
     acpi
     brightnessctl
+    # Audio control (PipeWire)
+    pavucontrol      # GUI volume control
+    pulseaudio       # Provides pactl command for PipeWire
   ];
 
   # Enable thermald for Intel CPU thermal management
