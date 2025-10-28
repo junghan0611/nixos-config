@@ -259,6 +259,14 @@ in {
           "XF86AudioMute" = "exec --no-startup-id ${pkgs.pulseaudio}/bin/pactl set-sink-mute @DEFAULT_SINK@ toggle";
           "XF86AudioMicMute" = "exec --no-startup-id ${pkgs.pulseaudio}/bin/pactl set-source-mute @DEFAULT_SOURCE@ toggle";
 
+          # Brightness control (Intel backlight)
+          "XF86MonBrightnessUp" = "exec --no-startup-id ${pkgs.brightnessctl}/bin/brightnessctl set +5%";
+          "XF86MonBrightnessDown" = "exec --no-startup-id ${pkgs.brightnessctl}/bin/brightnessctl set 5%-";
+
+          # Keyboard backlight control (Samsung Galaxy Book)
+          "XF86KbdBrightnessUp" = "exec --no-startup-id ${pkgs.brightnessctl}/bin/brightnessctl --device='samsung-galaxybook::kbd_backlight' set +1";
+          "XF86KbdBrightnessDown" = "exec --no-startup-id ${pkgs.brightnessctl}/bin/brightnessctl --device='samsung-galaxybook::kbd_backlight' set 1-";
+
           # Screenshot
           "Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";
           "${mod}+Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot -u '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";

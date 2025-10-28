@@ -36,6 +36,51 @@
     cpuFreqGovernor = "powersave";
   };
 
+  # TLP power management for laptop battery optimization
+  # Disable power-profiles-daemon (conflicts with TLP)
+  services.power-profiles-daemon.enable = false;
+
+  services.tlp = {
+    enable = true;
+    settings = {
+      # Battery Care - Charge Thresholds (80% rule for longevity)
+      # Start charging when below 40%, stop at 80%
+      START_CHARGE_THRESH_BAT0 = 40;
+      STOP_CHARGE_THRESH_BAT0 = 80;
+
+      # CPU Scaling Governor
+      # Performance on AC, power-saving on battery
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+
+      # Intel CPU Energy/Performance Policies (HWP)
+      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+
+      # Intel CPU Turbo Boost
+      # Enable on AC, disable on battery for better battery life
+      CPU_BOOST_ON_AC = 1;
+      CPU_BOOST_ON_BAT = 0;
+
+      # PCI Express Active State Power Management
+      PCIE_ASPM_ON_AC = "default";
+      PCIE_ASPM_ON_BAT = "powersupersave";
+
+      # WiFi Power Saving
+      WIFI_PWR_ON_AC = "off";    # Full performance when plugged in
+      WIFI_PWR_ON_BAT = "on";    # Save power on battery
+
+      # Runtime Power Management for PCI(e) devices
+      RUNTIME_PM_ON_AC = "on";
+      RUNTIME_PM_ON_BAT = "auto";
+
+      # USB Autosuspend
+      USB_AUTOSUSPEND = 1;
+      USB_EXCLUDE_BTUSB = 1;     # Don't suspend Bluetooth
+      USB_EXCLUDE_PHONE = 1;     # Don't suspend phone connections
+    };
+  };
+
   # Audio support
   services.pulseaudio.enable = false;
   services.pipewire = {
