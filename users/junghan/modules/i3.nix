@@ -371,8 +371,8 @@ in {
       #---------------------------------------------------------------------
       startup = [
         # Power management
-        { command = "${pkgs.xorg.xset}/bin/xset s 3600 3600"; notification = false; }
-        { command = "${pkgs.xorg.xset}/bin/xset dpms 0 0 7200"; notification = false; }
+        { command = "${pkgs.xorg.xset}/bin/xset s 10800 10800"; notification = false; }
+        { command = "${pkgs.xorg.xset}/bin/xset dpms 0 0 18000"; notification = false; }
 
         # Lock screen setup
         { command = "${pkgs.xss-lock}/bin/xss-lock --transfer-sleep-lock -- ${pkgs.i3lock}/bin/i3lock --nofork"; notification = false; }
