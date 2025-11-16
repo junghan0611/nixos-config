@@ -57,6 +57,7 @@ in {
 
       core = {
         editor = "vim";
+        filemode = false; # 파일 권한 변경 추적 끄기
         # Korean filename support
         quotePath = false;           # 한글 파일명 정상 표시
         precomposeunicode = true;    # 유니코드 정규화
