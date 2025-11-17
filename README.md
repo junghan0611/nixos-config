@@ -197,6 +197,13 @@ nixos-config provides:
 
 ## Documentation
 
+### Configuration Guides
+
+- [CHANGELOG.md](./CHANGELOG.md) - Version history and package tracking
+- [Package Installation Guide](./docs/PACKAGE_GUIDE.md) - How to add packages (for AI agents and users)
+
+### Analysis and Strategy
+
 See `docs/` (denote format):
 - Analysis documents
 - Integration plans

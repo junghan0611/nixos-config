@@ -244,6 +244,13 @@ nixos-config가 제공:
 
 ## 문서
 
+### 설정 가이드
+
+- [CHANGELOG.md](./CHANGELOG.md) - 버전 히스토리 및 패키지 추적
+- [패키지 설치 가이드](./docs/PACKAGE_GUIDE.md) - 패키지 추가 방법 (AI 에이전트 및 사용자용)
+
+### 분석 및 전략
+
 `docs/` 디렉토리 참조:
 - 분석 문서 (denote 형식)
 - 통합 계획
