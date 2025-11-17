@@ -7,23 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **qwen-code** - Qwen AI code assistant CLI tool (from nixpkgs-unstable)
+### Fixed
+- Removed non-existent packages from configuration that caused build errors:
+  - gemini-cli, codex, opencode (not available in nixpkgs)
+  - claude-code-monitor, claude-code-acp, claude-code-router (not separate packages)
+  - qwen-code (package name needs verification)
+
+### Changed
+- Simplified AI CLI tools to only include verified packages
 
 ## [0.1.0] - 2025-11-17
 
 ### Added
 
 #### AI CLI Tools (from nixpkgs-unstable)
-- **gemini-cli** - Google Gemini CLI interface for AI-powered assistance
-- **codex** - OpenAI Codex CLI for code generation and completion
-- **opencode** - Open source code assistant tool
 - **claude-code** - Anthropic Claude Code CLI for AI-powered development
-- **claude-code-monitor** - Monitoring tool for Claude Code sessions
-- **claude-code-acp** - Claude Code ACP (Agent Communication Protocol) integration
-- **claude-code-router** - Routing utility for Claude Code requests
 
 All AI CLI tools are sourced from `nixpkgs-unstable` via overlay configuration to ensure access to the latest versions.
+
+### Note
+Initial package list included several packages that were not actually available in nixpkgs-unstable.
+These were removed in a subsequent fix to ensure the configuration builds correctly.
 
 #### Configuration Changes
 - Added overlay configuration in `flake.nix` for AI CLI tools from unstable channel
