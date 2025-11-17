@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+NIXPKGS_ALLOW_UNFREE=1
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'

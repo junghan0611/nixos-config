@@ -27,6 +27,9 @@ in {
     ./modules
   ];
 
+  # Note: nixpkgs.config is not needed here because we use home-manager.useGlobalPkgs = true
+  # which inherits nixpkgs.config from the system configuration (machines/shared.nix)
+
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home.username = vars.username;
@@ -73,7 +76,7 @@ in {
     codex
     opencode
     claude-code
-    claude-code-monitor
+    claude-monitor
     claude-code-acp
     claude-code-router
     qwen-code

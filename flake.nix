@@ -28,23 +28,31 @@
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
   let
+    # Create unstable pkgs with allowUnfree for each system
+    mkUnstablePkgs = system: import inputs.nixpkgs-unstable {
+      inherit system;
+      config.allowUnfree = true;
+    };
+
     # Overlays to apply custom packages
     overlays = [
-      (final: prev: {
+      (final: prev: let
+        unstable = mkUnstablePkgs prev.system;
+      in {
         # Use unstable packages where needed
-        ghostty = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.ghostty;
+        ghostty = unstable.ghostty;
         # Claude Desktop with MCP support
         claude-desktop = inputs.claude-desktop.packages.${prev.system}.claude-desktop-with-fhs;
 
         # AI CLI tools from unstable
-        gemini-cli = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.gemini-cli;
-        codex = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.codex;
-        opencode = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.opencode;
-        claude-code = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code;
-        claude-code-monitor = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-monitor;
-        claude-code-acp = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-acp;
-        claude-code-router = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-router;
-        qwen-code = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.qwen-code;
+        gemini-cli = unstable.gemini-cli;
+        codex = unstable.codex;
+        opencode = unstable.opencode;
+        claude-code = unstable.claude-code;
+        claude-monitor = unstable.claude-monitor;
+        claude-code-acp = unstable.claude-code-acp;
+        claude-code-router = unstable.claude-code-router;
+        qwen-code = unstable.qwen-code;
       })
     ];
 
