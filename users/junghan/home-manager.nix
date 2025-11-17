@@ -68,6 +68,16 @@ in {
     git-lfs
     direnv
 
+    # AI CLI tools (from unstable)
+    gemini-cli
+    codex
+    opencode
+    claude-code
+    claude-code-monitor
+    claude-code-acp
+    claude-code-router
+    qwen-code
+
     # System tools
     neofetch
 
