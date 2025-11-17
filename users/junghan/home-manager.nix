@@ -76,6 +76,7 @@ in {
     claude-code-monitor
     claude-code-acp
     claude-code-router
+    qwen-code
 
     # System tools
     neofetch

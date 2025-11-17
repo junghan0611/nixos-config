@@ -44,6 +44,7 @@
         claude-code-monitor = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-monitor;
         claude-code-acp = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-acp;
         claude-code-router = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-router;
+        qwen-code = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.qwen-code;
       })
     ];
 
