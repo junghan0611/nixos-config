@@ -35,6 +35,15 @@
         ghostty = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.ghostty;
         # Claude Desktop with MCP support
         claude-desktop = inputs.claude-desktop.packages.${prev.system}.claude-desktop-with-fhs;
+
+        # AI CLI tools from unstable
+        gemini-cli = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.gemini-cli;
+        codex = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.codex;
+        opencode = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.opencode;
+        claude-code = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code;
+        claude-code-monitor = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-monitor;
+        claude-code-acp = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-acp;
+        claude-code-router = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.claude-code-router;
       })
     ];
 
