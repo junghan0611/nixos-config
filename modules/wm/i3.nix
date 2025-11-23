@@ -152,6 +152,7 @@
           ghostty  # Primary terminal
           kitty    # Backup terminal
           xfce.xfce4-terminal  # Alternative terminal
+          mpv
         ];
       };
     };

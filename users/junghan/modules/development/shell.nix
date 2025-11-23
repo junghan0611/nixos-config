@@ -6,6 +6,7 @@
     shfmt          # Shell formatter
     shellcheck     # Shell linter
     jq             # JSON processor
+    bash-language-server
   ];
 
   # thefuck is optional - enable if desired

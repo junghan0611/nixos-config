@@ -214,6 +214,26 @@
     broot
     onefetch
 
+    lsd
+    gawk # for tmux-fingers
+    unixtools.watch
+
+    diff-so-fancy # really good diff
+    icdiff # simple colorful diff replacement
+    difftastic # syntax aware diff (useful for conflicts)
+    ctags # code tag stuff
+    git-absorb # automatic git commit --fixup
+    git-crypt # encrypt git stuff
+    android-tools # adb and friends
+    entr # continuously run stuff
+    emacs-lsp-booster # lsp json translation proxy
+    jujutsu # better git wrapper
+    lazyjj # tui for jj
+    tz # timezone viewer
+    chafa # show images in terminal using half blocks
+    ddgr # search ddg from terminal
+    typos
+
     # Modern CLI tools
     fd
     ripgrep
@@ -225,6 +245,10 @@
     bottom
     lnav
     lazygit
+    axel
+    mermaid-cli
+    cloc
+    jira-cli-go
 
     # Networking tools
     dnsutils
@@ -233,6 +257,7 @@
     tailscale
     syncthing
     stc-cli
+    unixtools.netstat
 
     remmina # GUI RDP/VNC/SSH client
     freerdp # Command-line RDP client
@@ -247,6 +272,7 @@
     libvterm
     libtool
     cmake
+    quarto
 
     # Cloud and DevOps
     infisical
