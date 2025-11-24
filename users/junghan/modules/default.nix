@@ -8,6 +8,9 @@
     # Phase 3: i3 window manager configuration
     ./i3.nix
 
+    # Autorandr for automatic display management
+    ./autorandr.nix
+
     # Phase 4: Dunst notification daemon
     ./dunst.nix
 
