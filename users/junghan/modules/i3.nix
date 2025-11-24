@@ -394,7 +394,7 @@ in {
 
         # Keyboard layout
         # { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }  # For English-only
-        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104"; notification = false; }
+        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104 -option korean:ralt_hangul"; notification = false; }
 
         # System tray applets
         { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }

@@ -160,7 +160,7 @@
 
   # Environment variables for IME support
   environment.sessionVariables = {
-    GLFW_IM_MODULE = "ibus";  # Enable fcitx5 in kitty terminal
+    GLFW_IM_MODULE = "ibus";  # kitty uses ibus protocol (fcitx5 provides ibus compatibility)
   };
 
   # Additional packages for i3 environment

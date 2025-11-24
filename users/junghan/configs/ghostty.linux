@@ -5,6 +5,9 @@ font-size = 14.0
 
 term = xterm-ghostty
 
+# Window decoration: server = WM manages borders (i3 child-border works)
+window-decoration = server
+
 # 윈도우 패딩 (좌/우)
 window-padding-x = 10,10
 
