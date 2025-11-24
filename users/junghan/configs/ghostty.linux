@@ -1,7 +1,28 @@
 # Ghostty configuration for Linux/NixOS
-font-family = D2CodingLigature Nerd Font
-font-size = 12
-background-opacity = 0.95
+# font-family = D2CodingLigature Nerd Font
+font-family = Monoplex Nerd
+font-size = 14.0
+
+term = xterm-ghostty
+
+# 윈도우 패딩 (좌/우)
+window-padding-x = 10,10
+
+# 윈도우 패딩 (상/하)
+window-padding-y = 10,10
+
+# shell integration : none
+shell-integration = none
+shell-integration-features = cursor, sudo, no-title
+
+# 창, pane 등을 닫을 때 확인창을 표시하지 않음.
+confirm-close-surface = false
+
+# 마우스 스크롤 멀티플라리어
+mouse-scroll-multiplier = 0.7
+
+# 투명도 설정 : 95%
+background-opacity = 0.85
 background-blur-radius = 20
 mouse-hide-while-typing = true
 
@@ -43,25 +64,3 @@ palette = 14=#8ABEB7
 # White
 palette = 7=#707880
 palette = 15=#C5C8C6
-
-# Keybindings
-keybind = super+c=copy_to_clipboard
-keybind = super+v=paste_from_clipboard
-keybind = super+shift+c=copy_to_clipboard
-keybind = super+shift+v=paste_from_clipboard
-keybind = super+equal=increase_font_size:1
-keybind = super+minus=decrease_font_size:1
-keybind = super+zero=reset_font_size
-keybind = super+q=quit
-keybind = super+shift+comma=reload_config
-keybind = super+k=clear_screen
-keybind = super+n=new_window
-keybind = super+w=close_surface
-keybind = super+shift+w=close_window
-keybind = super+t=new_tab
-keybind = super+shift+left_bracket=previous_tab
-keybind = super+shift+right_bracket=next_tab
-keybind = super+d=new_split:right
-keybind = super+shift+d=new_split:down
-keybind = super+right_bracket=goto_split:next
-keybind = super+left_bracket=goto_split:previous

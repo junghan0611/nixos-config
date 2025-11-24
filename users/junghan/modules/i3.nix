@@ -119,6 +119,18 @@ in {
         ];
       };
 
+      # Force border on apps that request no decoration (like ghostty)
+      window.commands = [
+        {
+          command = "border normal 5";
+          criteria = { class = "com.mitchellh.ghostty"; };
+        }
+        {
+          command = "border normal 5";
+          criteria = { class = "ghostty"; };
+        }
+      ];
+
       focus = {
         followMouse = false;
       };
@@ -183,7 +195,7 @@ in {
         # Main keybindings
         {
           # Terminal
-          "${mod}+Return" = "exec ${pkgs.ghostty}/bin/ghostty --gtk-single-instance=true";
+          "${mod}+Return" = "exec ${pkgs.ghostty}/bin/ghostty --gtk-single-instance=false";
 
           # Kill window
           "${mod}+Shift+q" = "kill";

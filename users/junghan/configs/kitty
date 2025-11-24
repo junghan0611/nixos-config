@@ -1,90 +1,199 @@
-# Kitty configuration
+# ---------------------------------------------------------
+# Junughanacs Kitty terminal theme
+#
+# ---------------------------------------------------------
 
-# Font configuration
-font_family      D2CodingLigature Nerd Font
+term xterm-kitty
+
+#: The value of the TERM environment variable to set. Changing this
+#: can break many terminal programs, only change it if you know what
+#: you are doing, not because you read some advice on "Stack Overflow"
+#: to change it. The TERM variable is used by various programs to get
+#: information about the capabilities and behavior of the terminal. If
+#: you change it, depending on what programs you run, and how
+#: different the terminal you are changing it to is, various things
+#: from key-presses, to colors, to various advanced features may not
+#: work. Changing this option by reloading the config will only affect
+#: newly created windows.
+
+linux_display_server auto
+
+#: Choose between Wayland and X11 backends. By default, an appropriate
+#: backend based on the system state is chosen automatically. Set it
+#: to x11 or wayland to force the choice. Changing this option by
+#: reloading the config is not supported.
+
+# ---------------------------------------------------------
+
+# Fonts
+# font_family Sarasa Term K Nerd Font
+font_family Monoplex Nerd
+# font_family GLG Nerd Font Mono
+
+# Patched fonts (not recommended for Kitty)
+
+# Sarasa Term K
+#     Sarasa Term K (Sarasa-Term-K-Regular)
+#     Sarasa Term K Bold (Sarasa-Term-K-Bold)
+#     Sarasa Term K Bold Italic (Sarasa-Term-K-Bold-Italic)
+#     Sarasa Term K Italic (Sarasa-Term-K-Italic)
+#     Sarasa Term K Light (Sarasa-Term-K-Light)
+#     Sarasa Term K Light Italic (Sarasa-Term-K-Light-Italic)
+#     Sarasa Term K Semibold (Sarasa-Term-K-Semibold)
+#     Sarasa Term K Semibold Italic (Sarasa-Term-K-Semibold-Italic)
+#     Sarasa Term K Xlight (Sarasa-Term-K-Extralight)
+#     Sarasa Term K Xlight Italic (Sarasa-Term-K-Extralight-Italic)
+
 bold_font        auto
 italic_font      auto
 bold_italic_font auto
-font_size        12.0
 
-# Cursor
-cursor_shape beam
-cursor_blink_interval 0.5
+# ---------------------------------------------------------
+# Colorscheme / Icons
+# kitty +list-fonts --psnames | grep "Sarasa Term K"
+# Icons from NerdFont (install Nerdfont symbols only theme)
 
-# Scrollback
-scrollback_lines 10000
+# Font size
+# include ./permachine.conf
+font_size 14.0
+# font_size 13.5
+adjust_line_height 2
+adjust_column_width 0
+adjust_baseline 0
 
-# Mouse
-mouse_hide_wait 3.0
-url_style curly
+# `kitty +kitten themes` to browse available themes and apply one
+# `kitty +kitten themes theme-name` to change themes automatically
+# Favorite themese include: Catppuccin-Latte and Catppuccin-Mocha GitHub Light and GitHub Dark
+# ---------------------------------------------------------
+# detect_urls no
+# copy_on_select yes
+# select_by_word_characters :@-./_~?&=%+#
 
-# Terminal bell
-enable_audio_bell no
-visual_bell_duration 0.0
+# click_interval -1.0
+# mouse_hide_wait 0
+# focus_follows_mouse no
+# inactive_text_alpha 0.8
 
-# Window layout
-remember_window_size  yes
-initial_window_width  100
-initial_window_height 30
-window_padding_width  4
+# macos_option_as_alt yes
+# hide_window_decorations no
+# allow_remote_control yes
 
-# Tab bar
-tab_bar_edge top
-tab_bar_style powerline
-tab_powerline_style slanted
 
-# Color scheme (matches i3 theme)
-background #1D1F21
-foreground #C5C8C6
-cursor #C3FF00
+# ---------------------------------------------------------
+# https://codeberg.org/jao/elibs/raw/branch/main/data/kitty.conf
+# ---------------------------------------------------------
 
-# Black
-color0 #282A2E
-color8 #373B41
+# cursor_shape block
+# Important disable blinking
+# cursor_blink_interval -1
+# important
+shell_integration no-cursor
 
-# Red
-color1 #A54242
-color9 #CC6666
+disable_ligatures always
+box_drawing_scale 0.1, 0.5, 1, 2
 
-# Green
-color2  #8C9440
-color10 #B5BD68
+scrollback_lines 2000
+scrollback_lines 0
+scrollback_pager less +G -R
+wheel_scroll_multiplier 5.0
 
-# Yellow
-color3  #DE935F
-color11 #F0C674
+url_color #0087BD
+url_style curl
+detect_urls yes
 
-# Blue
-color4  #5F819D
-color12 #81A2BE
+copy_on_select yes
 
-# Magenta
-color5  #85678F
-color13 #B294BB
+select_by_word_characters :@-./_~?&=%+#
 
-# Cyan
-color6  #5E8D87
-color14 #8ABEB7
+# click_interval 0.5
+# mouse_hide_wait 1.0
 
-# White
-color7  #707880
-color15 #C5C8C6
+focus_follows_mouse no
 
-# Tab colors
-active_tab_background   #B5BD68
-active_tab_foreground   #1D1F21
-inactive_tab_background #373B41
-inactive_tab_foreground #707880
+# default 3
+input_delay 5
+sync_to_monitor yes
 
-# Keybindings
-map ctrl+shift+c copy_to_clipboard
-map ctrl+shift+v paste_from_clipboard
-map ctrl+shift+equal change_font_size all +1.0
-map ctrl+shift+minus change_font_size all -1.0
-map ctrl+shift+0 change_font_size all 0
-map ctrl+shift+t new_tab
-map ctrl+shift+w close_tab
-map ctrl+shift+right next_tab
-map ctrl+shift+left previous_tab
-map ctrl+shift+l next_layout
-map ctrl+shift+enter new_window
+window_alert_on_bell yes
+enable_audio_bell yes
+
+#remember_window_size  yes
+#initial_window_width  640
+#initial_window_height 400
+
+enabled_layouts *
+
+window_border_width 6
+# important! margin
+window_padding_width 10
+
+active_border_color #00ff00
+inactive_border_color #cccccc
+inactive_text_alpha 1.0
+
+# Kitty theme using the Sweet colours
+#
+# by torstein
+#
+# References:
+# - Based on the Dracula theme https://draculatheme.com/kitty
+# - Gtk theme https://github.com/EliverLara/Sweet.git
+# - Emacs theme https://github.com/2bruh4me/sweet-theme
+
+foreground            #b8c0d4
+background            #222235
+selection_foreground  #ffffff
+selection_background  #44475a
+
+url_color #8be9fd
+
+# black
+color0  #13131e
+color8  #6272a4
+
+# red
+color1  #f6717e
+color9  #ff4769
+
+# green
+color2  #06c993
+color10 #06c993
+active_border_color #06c993
+inactive_border_color #06c993
+
+# yellow
+color3  #f6ce55
+color11 #c7be5a
+
+# blue
+color4  #06c993
+color12 #d6acff
+
+# magenta
+color5  #e17df3
+color13 #ff92df
+
+# cyan
+color6  #f561ab
+color14 #a4ffff
+
+# white
+color7  #f8f8f2
+color15 #ffffff
+
+# Cursor colors
+cursor            #ff4769
+cursor_text_color background
+
+# Tab bar colors
+active_tab_foreground   #282a36
+active_tab_background   #f8f8f2
+inactive_tab_foreground #282a36
+inactive_tab_background #6272a4
+
+# Marks
+mark1_foreground #282a36
+mark1_background #ff5555
+
+map Hangul        send_text all \x1b\x1f\x50\x60\x1f
+map SHIFT+SPACE   send_text all \x1b\x1f\x50\x21\x1f
