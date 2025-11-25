@@ -69,6 +69,32 @@ in {
         foreground = solarized.base3;
         timeout = 0;
       };
+
+      # Claude Code notifications with sound
+      claudecode_sound = {
+        appname = "claude-code";
+        background = "#cc241d";
+        foreground = "#ebdbb2";
+        frame_color = "#fb4934";
+        urgency = "normal";
+        script = "${config.home.homeDirectory}/.config/dunst/aplay-claude.sh";
+      };
     };
+  };
+
+  # Deploy Claude Code notification scripts and sounds
+  home.file = {
+    ".config/dunst/claude-notify.sh" = {
+      source = ../configs/dunst/claude-notify.sh;
+      executable = true;
+    };
+    ".config/dunst/aplay-claude.sh" = {
+      text = ''
+        #!/usr/bin/env bash
+        ${pkgs.pulseaudio}/bin/paplay ${config.home.homeDirectory}/.config/dunst/bike-horn.wav &
+      '';
+      executable = true;
+    };
+    ".config/dunst/bike-horn.wav".source = ../configs/dunst/bike-horn.wav;
   };
 }

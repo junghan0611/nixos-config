@@ -21,3 +21,5 @@ temp
 *.ttf
 *.zip
 .nvimlog
+
+*.tmp
