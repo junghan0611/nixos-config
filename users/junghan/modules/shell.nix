@@ -286,15 +286,25 @@ in {
       # Vi mode
       setw -g mode-keys vi
 
+      # Vi-copy mode (v=select, y=copy, Ctrl-v=rectangle)
+      bind-key -T copy-mode-vi v send-keys -X begin-selection
+      bind-key -T copy-mode-vi C-v send-keys -X rectangle-toggle
+      bind-key -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "${pkgs.xclip}/bin/xclip -selection clipboard -i"
+      bind-key -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel "${pkgs.xclip}/bin/xclip -selection clipboard -i"
+
+      # Paste from system clipboard
+      bind ] run "${pkgs.xclip}/bin/xclip -selection clipboard -o | tmux load-buffer - && tmux paste-buffer"
+
       # Status bar
       set -g status-bg black
       set -g status-fg white
       set -g status-left '#[fg=green]#H '
       set -g status-right '#[fg=yellow]#(uptime | cut -d "," -f 3-) #[fg=cyan]%Y-%m-%d %H:%M '
 
-      # Window splitting
-      bind | split-window -h
-      bind - split-window -v
+      # Window splitting (current path)
+      bind | split-window -h -c "#{pane_current_path}"
+      bind - split-window -v -c "#{pane_current_path}"
+      bind c new-window -c "#{pane_current_path}"
 
       # Pane navigation
       bind h select-pane -L
@@ -302,8 +312,21 @@ in {
       bind k select-pane -U
       bind l select-pane -R
 
+      # Pane resize (Alt + arrows)
+      bind -n M-Left resize-pane -L 5
+      bind -n M-Right resize-pane -R 5
+      bind -n M-Up resize-pane -U 5
+      bind -n M-Down resize-pane -D 5
+
       # Reload config
       bind r source-file ~/.tmux.conf \; display "Config reloaded!"
+
+      # Window auto-rename off
+      set -g automatic-rename off
+      set -g allow-rename off
+
+      # Renumber windows
+      set -g renumber-windows on
     '';
   };
 }

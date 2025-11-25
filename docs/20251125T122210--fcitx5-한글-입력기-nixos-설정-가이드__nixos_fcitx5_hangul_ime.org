@@ -1,0 +1,243 @@
+#+title:      fcitx5 한글 입력기 NixOS 설정 가이드
+#+date:       [2025-11-25 Mon 12:22]
+#+filetags:   :nixos:fcitx5:hangul:ime:
+#+identifier: 20251125T122210
+
+* 개요
+
+NixOS에서 fcitx5 한글 입력기 설정에 대한 종합 가이드.
+
+** 목표
+- Emacs: Default 그룹 (영문 전용) - 자체 입력기 사용
+- 일반 앱: Korean 그룹 (한/영 전환 가능)
+- 그룹 간 일관된 전환
+- 앱별 입력기 그룹 자동 적용
+
+** 현재 문제점 (2025-11-25)
+1. 설정이 시스템 레벨과 사용자 레벨에 중복 분산
+2. 앱별 그룹 스위칭이 제대로 동작하지 않음
+3. kitty 터미널에서 한글 입력 불가 (IBUS 연결 문제)
+
+* 설정 계층 이해
+
+** NixOS 시스템 레벨 (i18n.inputMethod)
+위치: ~modules/wm/i3.nix~
+
+#+begin_src nix
+i18n.inputMethod = {
+  enable = true;
+  type = "fcitx5";
+  fcitx5 = {
+    addons = [ ... ];
+    ignoreUserConfig = true;  # 중요: 사용자 설정 무시
+    settings = {
+      inputMethod = { ... };   # profile 파일 생성
+      globalOptions = { ... }; # config 파일 생성
+      addons = { ... };        # conf/ 폴더 addon 설정
+    };
+  };
+};
+#+end_src
+
+생성되는 파일:
+- ~/run/current-system/etc/xdg/fcitx5/profile~
+- ~/run/current-system/etc/xdg/fcitx5/config~
+
+** Home Manager 사용자 레벨
+위치: ~users/junghan/home-manager.nix~
+
+#+begin_src nix
+home.file.".config/fcitx5/profile".text = ''...'';
+#+end_src
+
+생성되는 파일:
+- =~/.config/fcitx5/profile= (심볼릭 링크)
+
+** 우선순위
+1. ~ignoreUserConfig = true~ 시: 시스템 설정만 사용
+2. ~ignoreUserConfig = false~ 시: 사용자 설정 우선
+
+*현재 문제*: 둘 다 설정되어 있어 혼란 발생
+
+* 그룹(Group) 구조
+
+** Default 그룹 (영문 전용)
+#+begin_src ini
+[Groups/0]
+Name=Default
+Default Layout=us
+DefaultIM=keyboard-us
+
+[Groups/0/Items/0]
+Name=keyboard-us
+Layout=
+#+end_src
+
+목적: Emacs 등 자체 입력기 사용 앱
+
+** Korean 그룹 (한/영 전환)
+#+begin_src ini
+[Groups/1]
+Name=Korean
+Default Layout=kr-kr104
+DefaultIM=keyboard-kr-kr104
+
+[Groups/1/Items/0]
+Name=keyboard-kr-kr104
+Layout=kr-kr104
+
+[Groups/1/Items/1]
+Name=hangul
+Layout=kr-kr104
+#+end_src
+
+목적: 일반 앱에서 한글 입력
+
+* 핫키 설정
+
+** 현재 설정
+| 기능                     | 키              | 설명                            |
+|--------------------------+-----------------+---------------------------------|
+| TriggerKeys (한/영 전환) | Shift+Space     | 같은 그룹 내 입력기 전환        |
+| TriggerKeys              | Hangul          | 같은 그룹 내 입력기 전환        |
+| EnumerateGroupForward    | Super+Hangul    | 그룹 간 전환 (Default↔Korean)  |
+| EnumerateGroupForward    | Alt+Super+Bksp  | 그룹 간 전환                    |
+
+** 주의사항
+- ~TriggerKeys~: 현재 그룹 내에서 입력기 전환 (keyboard↔hangul)
+- ~EnumerateGroupForwardKeys~: 그룹 자체를 전환 (Default↔Korean)
+- Default 그룹에서는 hangul 입력기가 없으므로 TriggerKeys 의미 없음
+
+* XKB 키보드 설정
+
+** kr104 variant
+#+begin_src text
+xkb_symbols "kr104" {
+    // Right Alt → Hangul
+    // Right Ctrl → Hangul_Hanja
+};
+#+end_src
+
+~setxkbmap -layout kr -variant kr104~ 만으로 Right Alt가 Hangul 키가 됨.
+
+** korean:ralt_hangul 옵션
+추가 옵션이지만 kr104에 이미 포함되어 있어 중복.
+
+** 현재 적용 상태
+#+begin_src bash
+$ setxkbmap -query
+rules:      evdev
+model:      pc104
+layout:     kr
+variant:    kr104
+options:    terminate:ctrl_alt_bksp  # korean:ralt_hangul 미적용!
+#+end_src
+
+#+begin_src bash
+$ xmodmap -pke | grep -i hangul
+keycode 105 = Hangul_Hanja NoSymbol Hangul_Hanja
+keycode 108 = Hangul NoSymbol Hangul  # Right Alt = Hangul (OK)
+#+end_src
+
+* 앱별 그룹 설정 (Per-Application)
+
+** fcitx5의 앱별 설정 방식
+fcitx5는 앱별 입력 그룹을 기억하는 기능이 있음.
+
+설정 파일: ~conf/xcb.conf~ 또는 GUI에서 설정
+
+#+begin_src ini
+[PerAppIMGroup]
+emacs=Default
+ghostty=Korean
+firefox=Korean
+#+end_src
+
+** NixOS에서 설정
+#+begin_src nix
+i18n.inputMethod.fcitx5.settings.addons = {
+  xcb = {
+    globalSection = {
+      ShareInputState = "No";
+    };
+    sections = {
+      PerAppIMGroup = {
+        emacs = "Default";
+        ghostty = "Korean";
+        firefox = "Korean";
+      };
+    };
+  };
+};
+#+end_src
+
+* 터미널별 입력기 지원
+
+** ghostty
+- DBus frontend 사용 (fcitx5 직접 지원)
+- ~cap:4000000032~ - 잘 동작
+
+** kitty
+- GLFW 기반, ~GLFW_IM_MODULE=ibus~ 필요
+- fcitx5는 ibus 호환 레이어 제공
+- 현재 문제: IBUS daemon 연결 실패
+
+#+begin_src text
+Failed to connect to the IBUS daemon
+DBUS error: Empty address ''
+#+end_src
+
+원인 추정:
+1. fcitx5가 ibus 호환 모드로 실행되지 않음
+2. ~IBUS_ADDRESS~ 환경변수 미설정
+
+** Emacs
+- XIM 또는 자체 입력기 사용
+- LC_CTYPE이 en_US.UTF-8이면 XIM 버그로 입력 불가 (upstream 미수정)
+- 권장: Emacs 내장 입력기 사용, fcitx5는 Default 그룹 유지
+
+* 권장 설정 (통합안)
+
+** 1. 시스템 레벨만 사용
+~modules/wm/i3.nix~ 에서 모든 fcitx5 설정 관리.
+~home-manager.nix~ 의 profile 설정 제거.
+
+** 2. 그룹 구조
+- Group 0: Default (영문) - Emacs용
+- Group 1: Korean (한/영) - 일반 앱용
+
+** 3. 앱별 자동 그룹 적용
+~addons.xcb.sections.PerAppIMGroup~ 활용
+
+** 4. kitty 문제 해결
+별도 조사 필요 (bd issue: nixos-config-j0x)
+
+* 디버깅 명령어
+
+#+begin_src bash
+# fcitx5 상태 확인
+fcitx5-remote -g          # 현재 그룹
+fcitx5-remote -n          # 현재 입력기
+fcitx5-remote -s hangul   # hangul로 전환
+
+# 진단
+fcitx5-diagnose | less
+
+# xkb 확인
+setxkbmap -query
+xmodmap -pke | grep -i hangul
+
+# 환경변수 확인
+env | grep -E '(GTK_IM|QT_IM|XMODIFIERS|GLFW_IM)'
+#+end_src
+
+* 관련 bd 이슈
+
+- nixos-config-7l4: fcitx5 영문 그룹에서 Hangul 키 입력 안됨
+- nixos-config-j0x: kitty 한글 입력 안됨
+
+* 참고 자료
+
+- [[https://wiki.archlinux.org/title/Fcitx5][Arch Wiki: Fcitx5]]
+- [[https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayland][Fcitx5 on Wayland]]
+- [[https://wiki.archlinux.org/title/Xorg/Keyboard_configuration][Xorg Keyboard Configuration]]
