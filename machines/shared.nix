@@ -258,6 +258,7 @@
     syncthing
     stc-cli
     unixtools.netstat
+    awscli2
 
     remmina # GUI RDP/VNC/SSH client
     freerdp # Command-line RDP client

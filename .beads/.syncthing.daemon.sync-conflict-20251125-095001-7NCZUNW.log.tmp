@@ -1,0 +1,192 @@
+[2025-11-24 11:16:15] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-24 11:16:15] Using database: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-24 11:16:15] Database opened: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-24 11:16:15] Upgrading .beads/.gitignore...
+[2025-11-24 11:16:15] Warning: failed to upgrade .gitignore: open .beads/.gitignore: no such file or directory
+[2025-11-24 11:16:15] Repository fingerprint validated: f20c52d1
+[2025-11-24 11:16:15] Starting RPC server: /home/junghan/sync/emacs/nixos-config/.beads/bd.sock
+[2025-11-24 11:16:15] RPC server ready (socket listening)
+[2025-11-24 11:16:15] Registered in global registry
+[2025-11-24 11:16:15] Starting sync cycle...
+[2025-11-24 11:16:15] Exported to JSONL
+[2025-11-24 11:16:15] Pull failed: git pull failed: exit status 128
+error: 리베이스로 풀하기 할 수 없습니다: 스테이징하지 않은 변경 사항이 있습니다.
+error: 커밋하거나 스태시에 넣으십시오.
+
+[2025-11-24 11:16:15] Monitoring parent process (PID 0)
+[2025-11-24 11:16:15] Using event-driven mode
+[2025-11-24 11:18:55] Mutation detected: create nixos-config-s6k
+[2025-11-24 11:18:55] Export triggered by mutation events
+[2025-11-24 11:18:55] Starting export...
+[2025-11-24 11:18:55] Exported to JSONL
+[2025-11-24 11:18:55] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:18:55] Export complete
+[2025-11-24 11:18:56] Import triggered by file change
+[2025-11-24 11:18:56] Starting auto-import...
+[2025-11-24 11:18:56] Skipping import: JSONL content unchanged
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-bgt
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-4pb
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-qmk
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-oxb
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-eau
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-24n
+[2025-11-24 11:19:25] Mutation detected: create nixos-config-g3r
+[2025-11-24 11:19:26] Export triggered by mutation events
+[2025-11-24 11:19:26] Starting export...
+[2025-11-24 11:19:26] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:19:26] Exported to JSONL
+[2025-11-24 11:19:26] File change detected: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl (op: CHMOD)
+[2025-11-24 11:19:26] Export complete
+[2025-11-24 11:19:27] Import triggered by file change
+[2025-11-24 11:19:27] Starting auto-import...
+[2025-11-24 11:19:27] Skipping import: JSONL content unchanged
+[2025-11-24 11:20:07] Mutation detected: update nixos-config-qmk
+[2025-11-24 11:20:07] Mutation detected: update nixos-config-qmk
+[2025-11-24 11:20:07] Mutation detected: update nixos-config-oxb
+[2025-11-24 11:20:07] Mutation detected: update nixos-config-eau
+[2025-11-24 11:20:07] Mutation detected: update nixos-config-g3r
+[2025-11-24 11:20:07] Mutation detected: update nixos-config-g3r
+[2025-11-24 11:20:08] Export triggered by mutation events
+[2025-11-24 11:20:08] Starting export...
+[2025-11-24 11:20:08] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:20:08] Exported to JSONL
+[2025-11-24 11:20:08] Export complete
+[2025-11-24 11:20:09] Import triggered by file change
+[2025-11-24 11:20:09] Starting auto-import...
+[2025-11-24 11:20:09] Skipping import: JSONL content unchanged
+[2025-11-24 11:28:32] Mutation detected: create nixos-config-jx6
+[2025-11-24 11:28:33] Export triggered by mutation events
+[2025-11-24 11:28:33] Starting export...
+[2025-11-24 11:28:33] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:28:33] File change detected: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl (op: CHMOD)
+[2025-11-24 11:28:33] Exported to JSONL
+[2025-11-24 11:28:33] Export complete
+[2025-11-24 11:28:34] Import triggered by file change
+[2025-11-24 11:28:34] Starting auto-import...
+[2025-11-24 11:28:34] Skipping import: JSONL content unchanged
+[2025-11-24 11:29:15] Mutation detected: update nixos-config-jx6
+[2025-11-24 11:29:15] Export triggered by mutation events
+[2025-11-24 11:29:15] Starting export...
+[2025-11-24 11:29:15] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:29:15] Exported to JSONL
+[2025-11-24 11:29:15] Export complete
+[2025-11-24 11:29:16] Import triggered by file change
+[2025-11-24 11:29:16] Starting auto-import...
+[2025-11-24 11:29:16] Skipping import: JSONL content unchanged
+[2025-11-24 11:37:35] Mutation detected: update nixos-config-jx6
+[2025-11-24 11:37:35] Export triggered by mutation events
+[2025-11-24 11:37:35] Starting export...
+[2025-11-24 11:37:35] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:37:35] Exported to JSONL
+[2025-11-24 11:37:35] Export complete
+[2025-11-24 11:37:36] Import triggered by file change
+[2025-11-24 11:37:36] Starting auto-import...
+[2025-11-24 11:37:36] Skipping import: JSONL content unchanged
+[2025-11-24 11:38:03] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 11:38:03] File change detected: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl (op: CHMOD)
+[2025-11-24 11:38:03] Git ref change detected: /home/junghan/sync/emacs/nixos-config/.git/refs/heads/main.lock
+[2025-11-24 11:38:03] Git ref change detected: /home/junghan/sync/emacs/nixos-config/.git/refs/heads/main.lock
+[2025-11-24 11:38:04] Import triggered by file change
+[2025-11-24 11:38:04] Starting auto-import...
+[2025-11-24 11:38:04] Skipping import: JSONL content unchanged
+[2025-11-24 12:20:53] Mutation detected: create nixos-config-y0a
+[2025-11-24 12:20:53] Export triggered by mutation events
+[2025-11-24 12:20:53] Starting export...
+[2025-11-24 12:20:53] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 12:20:53] Exported to JSONL
+[2025-11-24 12:20:53] Export complete
+[2025-11-24 12:20:54] Import triggered by file change
+[2025-11-24 12:20:54] Starting auto-import...
+[2025-11-24 12:20:54] Skipping import: JSONL content unchanged
+[2025-11-24 12:21:08] Mutation detected: update nixos-config-y0a
+[2025-11-24 12:21:08] Mutation detected: update nixos-config-y0a
+[2025-11-24 12:21:09] Export triggered by mutation events
+[2025-11-24 12:21:09] Starting export...
+[2025-11-24 12:21:09] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 12:21:09] Exported to JSONL
+[2025-11-24 12:21:09] Export complete
+[2025-11-24 12:21:10] Import triggered by file change
+[2025-11-24 12:21:10] Starting auto-import...
+[2025-11-24 12:21:10] Skipping import: JSONL content unchanged
+[2025-11-24 12:21:14] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 12:21:14] File change detected: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl (op: CHMOD)
+[2025-11-24 12:21:14] Git ref change detected: /home/junghan/sync/emacs/nixos-config/.git/refs/heads/main.lock
+[2025-11-24 12:21:15] Import triggered by file change
+[2025-11-24 12:21:15] Starting auto-import...
+[2025-11-24 12:21:15] Skipping import: JSONL content unchanged
+[2025-11-24 12:51:07] Mutation detected: create nixos-config-j0x
+[2025-11-24 12:51:08] Export triggered by mutation events
+[2025-11-24 12:51:08] Starting export...
+[2025-11-24 12:51:08] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 12:51:08] Exported to JSONL
+[2025-11-24 12:51:08] Export complete
+[2025-11-24 12:51:09] Import triggered by file change
+[2025-11-24 12:51:09] Starting auto-import...
+[2025-11-24 12:51:09] Skipping import: JSONL content unchanged
+[2025-11-24 12:51:17] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl
+[2025-11-24 12:51:17] File change detected: /home/junghan/sync/emacs/nixos-config/.beads/beads.left.jsonl (op: CHMOD)
+[2025-11-24 12:51:17] Git ref change detected: /home/junghan/sync/emacs/nixos-config/.git/refs/heads/main.lock
+[2025-11-24 12:51:18] Import triggered by file change
+[2025-11-24 12:51:18] Starting auto-import...
+[2025-11-24 12:51:18] Skipping import: JSONL content unchanged
+[2025-11-24 12:52:57] Received signal terminated, shutting down...
+[2025-11-24 13:44:51] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-24 13:44:51] Using database: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-24 13:44:51] Database opened: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-24 13:44:51] Upgrading .beads/.gitignore...
+[2025-11-24 13:44:51] Warning: failed to upgrade .gitignore: open .beads/.gitignore: no such file or directory
+[2025-11-24 13:44:51] Repository fingerprint validated: f20c52d1
+[2025-11-24 13:44:51] Starting RPC server: /home/junghan/sync/emacs/nixos-config/.beads/bd.sock
+[2025-11-24 13:44:51] RPC server ready (socket listening)
+[2025-11-24 13:44:51] Registered in global registry
+[2025-11-24 13:44:51] Starting sync cycle...
+[2025-11-24 13:44:51] Exported to JSONL
+[2025-11-24 13:44:53] Pulled from remote
+[2025-11-24 13:44:53] Imported from JSONL
+[2025-11-24 13:44:53] Sync cycle complete
+[2025-11-24 13:44:53] Monitoring parent process (PID 0)
+[2025-11-24 13:44:53] Using event-driven mode
+[2025-11-24 13:44:58] Mutation detected: create nixos-config-7l4
+[2025-11-24 13:44:59] Export triggered by mutation events
+[2025-11-24 13:44:59] Starting export...
+[2025-11-24 13:44:59] Exported to JSONL
+[2025-11-24 13:44:59] JSONL file created: /home/junghan/sync/emacs/nixos-config/.beads/beads.base.jsonl
+[2025-11-24 13:44:59] Export complete
+[2025-11-24 13:45:00] Import triggered by file change
+[2025-11-24 13:45:00] Starting auto-import...
+[2025-11-24 13:45:00] Skipping import: JSONL content unchanged
+[2025-11-24 18:11:49] Received signal terminated, shutting down...
+[2025-11-25 09:20:50] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-25 09:20:50] Using database: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-25 09:20:50] Database opened: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-25 09:20:50] Upgrading .beads/.gitignore...
+[2025-11-25 09:20:50] Warning: failed to upgrade .gitignore: open .beads/.gitignore: no such file or directory
+[2025-11-25 09:20:50] Repository fingerprint validated: f20c52d1
+[2025-11-25 09:20:50] Starting RPC server: /home/junghan/sync/emacs/nixos-config/.beads/bd.sock
+[2025-11-25 09:20:50] RPC server ready (socket listening)
+[2025-11-25 09:20:50] Registered in global registry
+[2025-11-25 09:20:50] Starting sync cycle...
+[2025-11-25 09:20:50] Exported to JSONL
+[2025-11-25 09:20:50] Pull failed: git pull failed: exit status 128
+error: 리베이스로 풀하기 할 수 없습니다: 스테이징하지 않은 변경 사항이 있습니다.
+error: 커밋하거나 스태시에 넣으십시오.
+
+[2025-11-25 09:20:50] Monitoring parent process (PID 0)
+[2025-11-25 09:20:50] Using event-driven mode
+[2025-11-25 09:48:59] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-25 09:48:59] Using database: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-25 09:48:59] Database opened: /home/junghan/sync/emacs/nixos-config/.beads/beads.db
+[2025-11-25 09:48:59] Upgrading .beads/.gitignore...
+[2025-11-25 09:48:59] Warning: failed to upgrade .gitignore: open .beads/.gitignore: no such file or directory
+[2025-11-25 09:48:59] Repository fingerprint validated: f20c52d1
+[2025-11-25 09:48:59] Starting RPC server: /home/junghan/sync/emacs/nixos-config/.beads/bd.sock
+[2025-11-25 09:48:59] RPC server ready (socket listening)
+[2025-11-25 09:48:59] Registered in global registry
+[2025-11-25 09:48:59] Starting sync cycle...
+[2025-11-25 09:48:59] Exported to JSONL
+[2025-11-25 09:48:59] Pull failed: git pull failed: exit status 128
+error: 리베이스로 풀하기 할 수 없습니다: 스테이징하지 않은 변경 사항이 있습니다.
+error: 커밋하거나 스태시에 넣으십시오.
+
+[2025-11-25 09:48:59] Monitoring parent process (PID 0)
+[2025-11-25 09:48:59] Using event-driven mode

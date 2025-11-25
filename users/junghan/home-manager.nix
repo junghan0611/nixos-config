@@ -153,13 +153,13 @@ in {
       1=Korean
 
       [Groups/0]
-      Default Layout=us
-      DefaultIM=keyboard-us
+      Default Layout=kr-kr104
+      DefaultIM=keyboard-kr-kr104
       Name=Default
 
       [Groups/0/Items/0]
-      Layout=
-      Name=keyboard-us
+      Layout=kr-kr104
+      Name=keyboard-kr-kr104
 
       [Groups/1]
       Default Layout=kr-kr104

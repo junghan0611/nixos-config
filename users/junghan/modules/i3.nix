@@ -410,6 +410,9 @@ in {
 
         # Alternative: Force hangul activation on startup (if DefaultIM=hangul doesn't work)
         { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
+
+        # Auto-detect and apply monitor configuration
+        { command = "${pkgs.autorandr}/bin/autorandr --change --default laptop"; notification = false; }
       ];
     };
   };
