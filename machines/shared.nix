@@ -51,6 +51,22 @@
   # Set your time zone.
   time.timeZone = "Asia/Seoul";
 
+  # Time synchronization - force sync on resume from suspend
+  services.timesyncd = {
+    enable = true;
+    servers = [
+      "0.nixos.pool.ntp.org"
+      "1.nixos.pool.ntp.org"
+      "2.nixos.pool.ntp.org"
+      "3.nixos.pool.ntp.org"
+    ];
+  };
+
+  # Force time sync immediately after resume from suspend
+  powerManagement.resumeCommands = ''
+    ${pkgs.systemd}/bin/systemctl restart systemd-timesyncd.service
+  '';
+
   # Don't require password for sudo
   security.sudo.wheelNeedsPassword = false;
 
@@ -66,6 +82,9 @@
       ];
     }
   ];
+
+  # Enable nix-ld for running dynamically linked executables (필요: x86_64 환경에서 uvx 등)
+  programs.nix-ld.enable = true;
 
   # Virtualization settings
   virtualisation.docker.enable = true;

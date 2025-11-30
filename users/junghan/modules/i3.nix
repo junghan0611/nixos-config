@@ -26,7 +26,7 @@ let
     general {
         output_format = i3bar
         colors = true
-        interval = 1
+        interval = 5
         color_good = "${solarized.green}"
         color_bad = "${solarized.red}"
         color_degraded = "${solarized.yellow}"
@@ -45,6 +45,7 @@ let
         format = "Task: %content"
         path = "${config.home.homeDirectory}/.emacs.d/current-task"
         color_good = "${solarized.cyan}"
+        interval = 10
     }
 
     volume master {
@@ -53,6 +54,7 @@ let
         device = "default"
         mixer = "Master"
         mixer_idx = 0
+        interval = 1
     }
 
     battery all {
@@ -64,29 +66,36 @@ let
         status_full = "☻"
         path = "/sys/class/power_supply/BAT%d/uevent"
         low_threshold = 10
+        interval = 30
     }
 
     ethernet _first_ {
         format_up = "E: %ip (%speed)"
         format_down = "E: down"
+        interval = 10
     }
 
     disk "/" {
         format = "/ %avail"
+        interval = 30
     }
 
     load {
         format = "%1min"
+        interval = 5
     }
 
     memory {
         format = "%used / %total"
         threshold_degraded = "1G"
         format_degraded = "MEMORY < %available"
+        interval = 5
     }
 
     tztime local {
         format = "%Y-%m-%d %H:%M:%S"
+        timezone = "Asia/Seoul"
+        interval = 30
     }
   '';
 in {
