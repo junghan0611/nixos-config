@@ -9,20 +9,25 @@ let
   # Shell aliases
   shellAliases = {
     # Git aliases
-    ga = "git add";
-    gc = "git commit";
     gco = "git checkout";
-    gcp = "git cherry-pick";
+    gch = "git checkout HEAD";
     gdiff = "git diff";
+    gsta = "git status";
+    gadd = "git add -v";
+    gcom = "git commit";
+    gcomm = "git commit -m";
     gl = "git prettylog";
-    gp = "git push";
-    gs = "git status";
-    gt = "git tag";
+    glog = "git log --oneline --graph -10";
+    gbl = "git branch --list";
+    gpm = "git push -u origin main";
+    gpk = "git push -u origin ko";
+    gpull = "git pull";
 
     # Common aliases
-    ll = "ls -la";
     la = "ls -A";
     l = "ls -CF";
+    ll = "ls -la";
+
     ".." = "cd ..";
     "..." = "cd ../..";
 
