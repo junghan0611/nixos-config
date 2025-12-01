@@ -71,6 +71,15 @@ in {
     git-lfs
     direnv
 
+    # Programming Languages & Tools (CLI)
+    zig
+    zls              # Zig Language Server
+    clojure
+    clojure-lsp
+    mitscheme
+
+    google-clasp     # Google Apps Script CLI
+
     # AI CLI tools (from unstable)
     gemini-cli
     codex
@@ -130,8 +139,15 @@ in {
     keybase         # Encrypted communication
     yubikey-manager # YubiKey support
   ]) ++ (lib.optionals (isLinux && !isOracle) [
-    # x86_64 Linux-specific packages (not available on ARM)
+    # x86_64 Linux-specific packages (not available on ARM/Oracle VM)
     zotero          # Reference manager (x86_64 only)
+
+    # Editors & IDEs (GUI, excluded from Oracle VM)
+    zed-editor
+    vscode
+
+    # Collaboration (GUI, excluded from Oracle VM)
+    slack
   ]);
 
   #---------------------------------------------------------------------

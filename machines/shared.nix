@@ -163,7 +163,9 @@
       pretendard
       sarasa-gothic
       noto-fonts-cjk-sans  # Noto Sans CJK
-      noto-fonts-emoji     # Emoji support
+      noto-fonts-color-emoji     # Emoji support (color)
+      noto-fonts-monochrome-emoji  # Emoji support (monochrome)
+      noto-fonts-emoji-blob-bin  # Emoji with extended Blob support
       d2coding            # D2Coding (Korean coding font)
 
       # Nerd Fonts - try individual packages

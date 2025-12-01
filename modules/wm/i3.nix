@@ -16,7 +16,7 @@
       addons = with pkgs; [
         fcitx5-hangul       # Korean input engine
         fcitx5-gtk          # GTK integration
-        fcitx5-configtool   # Configuration GUI tool
+        qt6Packages.fcitx5-configtool   # Configuration GUI tool
       ];
       waylandFrontend = false;  # Currently using X11
 

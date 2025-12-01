@@ -37,12 +37,12 @@
     # Overlays to apply custom packages
     overlays = [
       (final: prev: let
-        unstable = mkUnstablePkgs prev.system;
+        unstable = mkUnstablePkgs prev.stdenv.hostPlatform.system;
       in {
         # Use unstable packages where needed
         ghostty = unstable.ghostty;
         # Claude Desktop with MCP support
-        claude-desktop = inputs.claude-desktop.packages.${prev.system}.claude-desktop-with-fhs;
+        claude-desktop = inputs.claude-desktop.packages.${prev.stdenv.hostPlatform.system}.claude-desktop-with-fhs;
 
         # AI CLI tools from unstable
         gemini-cli = unstable.gemini-cli;

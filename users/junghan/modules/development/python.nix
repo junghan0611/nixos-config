@@ -13,7 +13,7 @@
       ipykernel
       jupyter
       notebook
-      jupyter_core
+      jupyter-core
       jupyterlab
       pyzmq
       pandas

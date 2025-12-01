@@ -41,21 +41,24 @@ in {
   #---------------------------------------------------------------------
   programs.git = {
     enable = true;
-    userName = vars.username;
-    userEmail = vars.email;
 
-    aliases = {
-      co = "checkout";
-      ci = "commit";
-      st = "status";
-      br = "branch";
-      hist = "log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short";
-      type = "cat-file -t";
-      dump = "cat-file -p";
-      prettylog = "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(r) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative";
-    };
+    settings = {
+      user = {
+        name = vars.username;
+        email = vars.email;
+      };
 
-    extraConfig = {
+      alias = {
+        co = "checkout";
+        ci = "commit";
+        st = "status";
+        br = "branch";
+        hist = "log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short";
+        type = "cat-file -t";
+        dump = "cat-file -p";
+        prettylog = "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(r) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative";
+      };
+
       init.defaultBranch = "main";
       push.default = "current";
       pull.rebase = true;
@@ -100,14 +103,16 @@ in {
         status = "auto";
       };
     };
+  };
 
-    delta = {
-      enable = true;
-      options = {
-        navigate = true;
-        line-numbers = true;
-        syntax-theme = "Monokai Extended";
-      };
+  # Delta (git diff viewer)
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+    options = {
+      navigate = true;
+      line-numbers = true;
+      syntax-theme = "Monokai Extended";
     };
   };
 
