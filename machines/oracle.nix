@@ -60,8 +60,7 @@
     iftop
 
     # Basic tools
-    glxinfo
-    mesa-demos
+    # mesa-demos
   ];
 
   # Networking - Oracle Cloud specific

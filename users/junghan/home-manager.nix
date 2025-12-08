@@ -72,8 +72,8 @@ in {
     direnv
 
     # Programming Languages & Tools (CLI)
-    zig
-    zls              # Zig Language Server
+    zig_0_14
+    zls_0_14
     clojure
     clojure-lsp
     mitscheme
@@ -145,6 +145,7 @@ in {
     # Editors & IDEs (GUI, excluded from Oracle VM)
     zed-editor
     vscode
+    inkscape
 
     # Collaboration (GUI, excluded from Oracle VM)
     slack

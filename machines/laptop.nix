@@ -125,6 +125,8 @@
     # Audio control (PipeWire)
     pavucontrol      # GUI volume control
     pulseaudio       # Provides pactl command for PipeWire
+    # Network tools
+    net-tools        # ifconfig, netstat, etc.
   ];
 
   # Enable thermald for Intel CPU thermal management
