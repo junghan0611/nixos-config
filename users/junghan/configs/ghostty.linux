@@ -19,7 +19,7 @@ shell-integration = none
 shell-integration-features = cursor, sudo, no-title
 
 # 창, pane 등을 닫을 때 확인창을 표시하지 않음.
-confirm-close-surface = false
+confirm-close-surface = true
 
 # 마우스 스크롤 멀티플라리어
 mouse-scroll-multiplier = 0.7
@@ -67,3 +67,6 @@ palette = 14=#8ABEB7
 # White
 palette = 7=#707880
 palette = 15=#C5C8C6
+
+keybind = alt+u=scroll_page_up
+keybind = alt+v=scroll_page_down

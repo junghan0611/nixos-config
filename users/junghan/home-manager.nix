@@ -83,10 +83,10 @@ in {
     # AI CLI tools (from unstable)
     gemini-cli
     codex
-    opencode
+    # opencode
     claude-code
     claude-monitor
-    claude-code-acp
+    # claude-code-acp
     claude-code-router
     qwen-code
 

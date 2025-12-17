@@ -252,10 +252,25 @@ in {
     enable = true;
     pinentry.package = pkgs.pinentry-qt;
     enableBashIntegration = true;
+    # Cache passphrase for 24 hours (86400 seconds)
+    defaultCacheTtl = 86400;
+    maxCacheTtl = 86400;
     extraConfig = ''
       allow-emacs-pinentry
     '';
   };
+
+  # authinfo.gpg symlink for Emacs (gptel, etc.)
+  # Created conditionally via activation script if source file exists
+  home.activation.createAuthInfoLink = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    AUTH_FILE="${config.home.homeDirectory}/sync/org/authinfo.gpg"
+    AUTH_LINK="${config.home.homeDirectory}/.authinfo.gpg"
+    if [ -f "$AUTH_FILE" ]; then
+      if [ -L "$AUTH_LINK" ] || [ ! -e "$AUTH_LINK" ]; then
+        $DRY_RUN_CMD ln -sf "$AUTH_FILE" "$AUTH_LINK"
+      fi
+    fi
+  '';
 
   # Import GPG public key from claude-config
   # Note: Private key must be imported manually (requires passphrase):
