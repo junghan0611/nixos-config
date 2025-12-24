@@ -294,7 +294,7 @@ in {
   };
 
   #---------------------------------------------------------------------
-  # Tmux
+  # Tmux (hej-nixos-cluster 스타일 통일)
   #---------------------------------------------------------------------
   programs.tmux = {
     enable = true;
@@ -302,56 +302,58 @@ in {
     shortcut = "a";
     baseIndex = 1;
     escapeTime = 0;
-    historyLimit = 10000;
+    historyLimit = 50000;
+    keyMode = "vi";
+    clock24 = true;
 
     extraConfig = ''
-      # Mouse support
+      # OSC-52 클립보드 지원 (SSH 원격 복사)
+      set -g set-clipboard on
+      set -g allow-passthrough on
+
+      # 마우스 지원
       set -g mouse on
 
-      # Vi mode
-      setw -g mode-keys vi
-
-      # Vi-copy mode (v=select, y=copy, Ctrl-v=rectangle)
+      # Vi 복사 모드 with OSC-52
       bind-key -T copy-mode-vi v send-keys -X begin-selection
       bind-key -T copy-mode-vi C-v send-keys -X rectangle-toggle
-      bind-key -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "${pkgs.xclip}/bin/xclip -selection clipboard -i"
-      bind-key -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel "${pkgs.xclip}/bin/xclip -selection clipboard -i"
+      bind-key -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'cat | base64 -w0 | xargs -I{} printf "\033]52;c;{}\007"'
+      bind-key -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel 'cat | base64 -w0 | xargs -I{} printf "\033]52;c;{}\007"'
 
-      # Paste from system clipboard
-      bind ] run "${pkgs.xclip}/bin/xclip -selection clipboard -o | tmux load-buffer - && tmux paste-buffer"
-
-      # Status bar
-      set -g status-bg black
+      # 상태바 설정 (심플)
+      set -g status-bg colour235
       set -g status-fg white
-      set -g status-left '#[fg=green]#H '
-      set -g status-right '#[fg=yellow]#(uptime | cut -d "," -f 3-) #[fg=cyan]%Y-%m-%d %H:%M '
+      set -g status-left '#[fg=green]#S #[fg=yellow]#H '
+      set -g status-right '#[fg=cyan]%Y-%m-%d %H:%M'
 
-      # Window splitting (current path)
+      # 창 분할 키 (현재 경로 유지)
       bind | split-window -h -c "#{pane_current_path}"
       bind - split-window -v -c "#{pane_current_path}"
       bind c new-window -c "#{pane_current_path}"
 
-      # Pane navigation
+      # 창 이동 vim 스타일
       bind h select-pane -L
       bind j select-pane -D
       bind k select-pane -U
       bind l select-pane -R
 
-      # Pane resize (Alt + arrows)
+      # 창 크기 조절 (Alt + 방향키)
       bind -n M-Left resize-pane -L 5
       bind -n M-Right resize-pane -R 5
       bind -n M-Up resize-pane -U 5
       bind -n M-Down resize-pane -D 5
 
-      # Reload config
+      # 설정 리로드
       bind r source-file ~/.tmux.conf \; display "Config reloaded!"
 
-      # Window auto-rename off
-      set -g automatic-rename off
-      set -g allow-rename off
+      # 세션 로깅 (작업 기록용)
+      bind P pipe-pane -o "cat >>~/tmux-#W.log" \; display "Logging to ~/tmux-#W.log"
 
-      # Renumber windows
+      # 윈도우 자동 리넘버링
       set -g renumber-windows on
+
+      # 포커스 이벤트
+      set -g focus-events on
     '';
   };
 }
