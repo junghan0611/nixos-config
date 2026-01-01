@@ -53,6 +53,7 @@ in {
     bat
     eza
     fd
+    fswatch
     fzf
     gh
     htop
@@ -66,6 +67,7 @@ in {
     psmisc       # killall, fuser (ElleNajit)
 
     # Development
+    gitu
     lazygit
     delta
     git-lfs
@@ -88,7 +90,6 @@ in {
     claude-monitor
     # claude-code-acp
     claude-code-router
-    qwen-code
 
     # System tools
     neofetch

@@ -52,7 +52,6 @@
         claude-monitor = unstable.claude-monitor;
         claude-code-acp = unstable.claude-code-acp;
         claude-code-router = unstable.claude-code-router;
-        qwen-code = unstable.qwen-code;
       })
     ];
 

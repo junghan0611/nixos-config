@@ -211,6 +211,7 @@
 
     # Development tools
     tmux
+    zellij
     neovim
     tree-sitter
     fzf

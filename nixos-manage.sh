@@ -86,6 +86,10 @@ show_menu() {
     echo "    8) List generations (세대 목록)"
     echo "    9) Rollback (이전 세대로)"
     echo ""
+    echo -e "  ${YELLOW}Cleanup${NC}"
+    echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
+    echo "    d) Disk usage (디스크 사용량 확인)"
+    echo ""
     echo "    0) Exit"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -115,7 +119,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9): " choice
+        read -p "선택하세요 (0-9, c, d): " choice
 
         case $choice in
             1)
@@ -156,6 +160,36 @@ main() {
                 else
                     info "취소되었습니다."
                 fi
+                ;;
+            c|C)
+                echo ""
+                info "현재 디스크 사용량:"
+                df -h /
+                echo ""
+                info "세대 목록:"
+                sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
+                echo ""
+                warn "7일 이상 오래된 세대를 삭제하고 GC를 실행합니다. 계속하시겠습니까? (y/N)"
+                read -p "> " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    execute_cmd "sudo nix-collect-garbage -d --delete-older-than 7d"
+                    echo ""
+                    info "정리 후 디스크 사용량:"
+                    df -h /
+                else
+                    info "취소되었습니다."
+                fi
+                ;;
+            d|D)
+                echo ""
+                info "디스크 사용량:"
+                df -h /
+                echo ""
+                info "/nix 폴더 크기:"
+                du -sh /nix 2>/dev/null || echo "측정 중..."
+                echo ""
+                info "세대 목록:"
+                sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
                 ;;
             0)
                 info "종료합니다."
