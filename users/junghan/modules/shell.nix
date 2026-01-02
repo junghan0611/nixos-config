@@ -363,4 +363,37 @@ in {
       set -g focus-events on
     '';
   };
+
+  #---------------------------------------------------------------------
+  # Zellij (modern terminal multiplexer)
+  #---------------------------------------------------------------------
+  programs.zellij = {
+    enable = true;
+
+    settings = {
+      theme = "dracula";
+      default_shell = "bash";
+      pane_frames = true;
+      simplified_ui = false;
+      copy_on_select = true;
+      scrollback_editor = "vim";
+      mouse_mode = true;
+    };
+
+    themes = {
+      dracula = {
+        fg = "#F8F8F2";
+        bg = "#282A36";
+        black = "#21222C";
+        red = "#FF5555";
+        green = "#50FA7B";
+        yellow = "#F1FA8C";
+        blue = "#BD93F9";
+        magenta = "#FF79C6";
+        cyan = "#8BE9FD";
+        white = "#F8F8F2";
+        orange = "#FFB86C";
+      };
+    };
+  };
 }
