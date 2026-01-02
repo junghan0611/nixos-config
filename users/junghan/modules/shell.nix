@@ -259,9 +259,9 @@ in {
     enable = true;
     pinentry.package = pkgs.pinentry-qt;
     enableBashIntegration = true;
-    # Cache passphrase for 24 hours (86400 seconds)
-    defaultCacheTtl = 86400;
-    maxCacheTtl = 86400;
+    # Cache passphrase for 1 week (604800 seconds)
+    defaultCacheTtl = 604800;
+    maxCacheTtl = 604800;
     extraConfig = ''
       allow-emacs-pinentry
     '';
