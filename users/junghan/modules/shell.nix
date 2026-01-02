@@ -312,14 +312,13 @@ in {
     historyLimit = 50000;
     keyMode = "vi";
     clock24 = true;
+    mouse = true;
+    focusEvents = true;
 
     extraConfig = ''
       # OSC-52 클립보드 지원 (SSH 원격 복사)
       set -g set-clipboard on
       set -g allow-passthrough on
-
-      # 마우스 지원
-      set -g mouse on
 
       # Vi 복사 모드 with OSC-52
       bind-key -T copy-mode-vi v send-keys -X begin-selection
@@ -351,16 +350,13 @@ in {
       bind -n M-Down resize-pane -D 5
 
       # 설정 리로드
-      bind r source-file ~/.tmux.conf \; display "Config reloaded!"
+      bind r source-file ~/.config/tmux/tmux.conf \; display "Config reloaded!"
 
       # 세션 로깅 (작업 기록용)
       bind P pipe-pane -o "cat >>~/tmux-#W.log" \; display "Logging to ~/tmux-#W.log"
 
       # 윈도우 자동 리넘버링
       set -g renumber-windows on
-
-      # 포커스 이벤트
-      set -g focus-events on
     '';
   };
 
