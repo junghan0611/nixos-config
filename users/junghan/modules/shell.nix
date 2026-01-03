@@ -136,6 +136,9 @@ in {
     shellAliases = shellAliases;
 
     initExtra = ''
+      # GPG TTY 설정 (SSH 터미널에서 pinentry 작동 필수)
+      export GPG_TTY=$(tty)
+
       # Set up prompt
       PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
@@ -257,13 +260,15 @@ in {
 
   services.gpg-agent = {
     enable = true;
-    pinentry.package = pkgs.pinentry-qt;
+    # SSH 터미널 환경용 (pinentry-qt는 GUI 필요하여 터미널 손상)
+    pinentry.package = pkgs.pinentry-curses;
     enableBashIntegration = true;
-    # Cache passphrase for 1 week (604800 seconds)
-    defaultCacheTtl = 604800;
-    maxCacheTtl = 604800;
+    # Cache passphrase for 1 year (31536000 seconds)
+    defaultCacheTtl = 31536000;
+    maxCacheTtl = 31536000;
     extraConfig = ''
       allow-emacs-pinentry
+      allow-loopback-pinentry
     '';
   };
 
