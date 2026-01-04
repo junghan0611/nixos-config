@@ -76,6 +76,7 @@ in {
     # Programming Languages & Tools (CLI)
     zig_0_14
     zls_0_14
+    go
     clojure
     clojure-lsp
     mitscheme
