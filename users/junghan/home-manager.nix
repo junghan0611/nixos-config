@@ -73,6 +73,11 @@ in {
     git-lfs
     direnv
 
+    logdy
+    angle-grinder
+    lnav
+    tokei
+
     # Programming Languages & Tools (CLI)
     zig_0_14
     zls_0_14
@@ -87,7 +92,7 @@ in {
     gemini-cli
     codex
     # opencode
-    claude-code
+    # claude-code
     claude-monitor
     # claude-code-acp
     claude-code-router
@@ -106,6 +111,7 @@ in {
     afew
 
     # Media
+    sox          # Sample Rate Converter for audio
     yt-dlp       # YouTube downloader (ElleNajit)
     ffmpeg       # Video processing (ElleNajit)
   ] ++ (lib.optionals isLinux [
