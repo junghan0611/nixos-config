@@ -76,6 +76,7 @@ in {
     logdy
     angle-grinder
     lnav
+    grafana-loki     # logcli for Grafana Cloud Loki queries
     tokei
 
     # Programming Languages & Tools (CLI)
@@ -130,7 +131,8 @@ in {
     xlayoutdisplay  # Auto display layout
 
     # Desktop applications (ElleNajit platforms/linux.nix)
-    chromium        # Alternative browser
+    # chromium        # Alternative browser
+    google-chrome
     signal-desktop  # Messaging
     apvlv           # PDF viewer
     vlc             # Video player
@@ -151,7 +153,7 @@ in {
     zotero          # Reference manager (x86_64 only)
 
     # Editors & IDEs (GUI, excluded from Oracle VM)
-    zed-editor
+    # zed-editor
     vscode
     inkscape
 
