@@ -132,7 +132,6 @@ in {
 
     # Desktop applications (ElleNajit platforms/linux.nix)
     # chromium        # Alternative browser
-    google-chrome
     signal-desktop  # Messaging
     apvlv           # PDF viewer
     vlc             # Video player
@@ -150,6 +149,7 @@ in {
     yubikey-manager # YubiKey support
   ]) ++ (lib.optionals (isLinux && !isOracle) [
     # x86_64 Linux-specific packages (not available on ARM/Oracle VM)
+    google-chrome   # Browser (x86_64 only)
     zotero          # Reference manager (x86_64 only)
 
     # Editors & IDEs (GUI, excluded from Oracle VM)
