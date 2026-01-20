@@ -31,7 +31,7 @@ mouse-hide-while-typing = true
 
 # Clipboard settings
 clipboard-paste-protection = false
-copy-on-select = true
+copy-on-select = clipboard
 
 # Theme colors (matches i3 theme)
 background = #1D1F21
