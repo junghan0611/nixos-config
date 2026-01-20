@@ -88,6 +88,7 @@ show_menu() {
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
+    echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC)"
     echo "    d) Disk usage (디스크 사용량 확인)"
     echo ""
     echo "    0) Exit"
@@ -119,7 +120,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, c, d): " choice
+        read -p "선택하세요 (0-9, c/C, d): " choice
 
         case $choice in
             1)
@@ -161,7 +162,7 @@ main() {
                     info "취소되었습니다."
                 fi
                 ;;
-            c|C)
+            c)
                 echo ""
                 info "현재 디스크 사용량:"
                 df -h /
@@ -172,10 +173,79 @@ main() {
                 warn "7일 이상 오래된 세대를 삭제하고 GC를 실행합니다. 계속하시겠습니까? (y/N)"
                 read -p "> " confirm
                 if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                    execute_cmd "sudo nix-collect-garbage -d --delete-older-than 7d"
+                    execute_cmd "sudo nix-collect-garbage --delete-older-than 7d"
                     echo ""
                     info "정리 후 디스크 사용량:"
                     df -h /
+                else
+                    info "취소되었습니다."
+                fi
+                ;;
+            C)
+                echo ""
+                info "현재 디스크 사용량:"
+                df -h /
+                echo ""
+                info "/nix 폴더 크기:"
+                du -sh /nix 2>/dev/null || echo "측정 중..."
+                echo ""
+                info "GC roots 개수:"
+                nix-store --gc --print-roots 2>/dev/null | grep -v '/proc/' | wc -l
+                echo ""
+                info "Home-manager 세대 수:"
+                ls ~/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | wc -l
+                echo ""
+                info "정리 대상:"
+                echo "  - Nix 시스템: 7일 이상 오래된 세대"
+                echo "  - Home-manager: 7일 이상 오래된 세대"
+                echo "  - result 심볼릭 링크: ~/repos 하위"
+                echo "  - direnv 캐시: ~/repos 하위 .direnv/"
+                echo "  - 휴지통: ~/.local/share/Trash"
+                echo "  - 캐시: uv, pip, puppeteer, go-build, zig, nix"
+                echo "  - npm 캐시"
+                echo ""
+                warn "모든 Nix 관련 캐시를 정리합니다. 계속하시겠습니까? (y/N)"
+                read -p "> " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    info "1/8 휴지통 비우기..."
+                    rm -rf ~/.local/share/Trash/* 2>/dev/null && success "휴지통 정리 완료" || warn "휴지통이 비어있음"
+
+                    info "2/8 일반 캐시 정리..."
+                    rm -rf ~/.cache/uv ~/.cache/pip ~/.cache/puppeteer ~/.cache/go-build ~/.cache/zig ~/.cache/nix 2>/dev/null
+                    success "캐시 정리 완료"
+
+                    info "3/8 npm 캐시 정리..."
+                    npm cache clean --force 2>/dev/null && success "npm 캐시 정리 완료" || warn "npm 없음"
+
+                    info "4/8 result 심볼릭 링크 삭제..."
+                    find ~/repos -maxdepth 3 -name "result" -type l -delete 2>/dev/null
+                    success "result 링크 삭제 완료"
+
+                    info "5/8 direnv 캐시 정리..."
+                    find ~/repos -maxdepth 3 -type d -name ".direnv" -exec rm -rf {} + 2>/dev/null
+                    success "direnv 캐시 정리 완료"
+
+                    info "6/8 Home-manager 이전 세대 정리..."
+                    if [[ -d ~/.local/state/nix/profiles ]]; then
+                        # home-manager 프로파일에서 오래된 세대 삭제 (최근 3개만 유지)
+                        nix-env --delete-generations +3 -p ~/.local/state/nix/profiles/home-manager 2>/dev/null && success "Home-manager 세대 정리 완료 (최근 3개 유지)" || warn "Home-manager 프로파일 없음"
+                    else
+                        warn "Home-manager 프로파일 디렉토리 없음"
+                    fi
+
+                    info "7/8 사용자 Nix 프로파일 GC..."
+                    nix-collect-garbage --delete-older-than 7d 2>/dev/null
+                    success "사용자 프로파일 GC 완료"
+
+                    info "8/8 시스템 Nix GC 실행..."
+                    execute_cmd "sudo nix-collect-garbage --delete-older-than 7d"
+
+                    echo ""
+                    info "정리 후 디스크 사용량:"
+                    df -h /
+                    echo ""
+                    info "정리 후 /nix 폴더 크기:"
+                    du -sh /nix 2>/dev/null || echo "측정 중..."
                 else
                     info "취소되었습니다."
                 fi
@@ -188,8 +258,20 @@ main() {
                 info "/nix 폴더 크기:"
                 du -sh /nix 2>/dev/null || echo "측정 중..."
                 echo ""
-                info "세대 목록:"
+                info "현재 시스템 클로저 크기:"
+                nix path-info -Sh /run/current-system 2>/dev/null || echo "측정 실패"
+                echo ""
+                info "GC roots 개수:"
+                nix-store --gc --print-roots 2>/dev/null | grep -v '/proc/' | wc -l
+                echo ""
+                info "시스템 세대 목록:"
                 sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
+                echo ""
+                info "Home-manager 세대 수:"
+                ls ~/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | wc -l
+                echo ""
+                info "result 심볼릭 링크:"
+                find ~/repos -maxdepth 3 -name "result" -type l 2>/dev/null || echo "없음"
                 ;;
             0)
                 info "종료합니다."
