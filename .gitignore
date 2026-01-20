@@ -56,3 +56,6 @@ beads.right.meta.json
 !metadata.json
 !config.json
 .agent-shell
+
+# bv (beads viewer) local config and caches
+.bv/
