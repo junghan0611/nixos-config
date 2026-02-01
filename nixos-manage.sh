@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Configuration
 DEVICE_FILE="$HOME/.current-device"
 FLAKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VALID_HOSTS=("oracle" "nuc" "laptop")
+VALID_HOSTS=("oracle" "nuc" "laptop" "thinkpad")
 
 # Helper functions
 info() { echo -e "${BLUE}ℹ ${NC}$1"; }
@@ -31,6 +31,7 @@ check_device() {
         echo "  echo 'oracle-nixos' > ~/.current-device  # Oracle Cloud VM (하이픈 포함)"
         echo "  echo 'nuc' > ~/.current-device           # Intel NUC"
         echo "  echo 'laptop' > ~/.current-device        # Samsung Laptop"
+        echo "  echo 'thinkpad' > ~/.current-device      # ThinkPad P16s"
         exit 1
     fi
 
