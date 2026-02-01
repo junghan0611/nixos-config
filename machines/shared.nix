@@ -63,8 +63,11 @@
   };
 
   # Force time sync immediately after resume from suspend
+  # Also refresh py3status (i3 statusbar) to update time display
   powerManagement.resumeCommands = ''
     ${pkgs.systemd}/bin/systemctl restart systemd-timesyncd.service
+    # Refresh py3status for all users (SIGUSR1 forces module refresh)
+    ${pkgs.procps}/bin/pkill -USR1 py3status || true
   '';
 
   # Don't require password for sudo

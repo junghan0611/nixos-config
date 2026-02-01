@@ -21,6 +21,7 @@ temp
 *.ttf
 *.zip
 .nvimlog
+fonts/fonts
 
 *.tmp
 google_workspace_mcp_venv/

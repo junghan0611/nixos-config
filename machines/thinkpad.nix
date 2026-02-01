@@ -110,7 +110,7 @@
       libva
       libva-utils
       # Vulkan support
-      amdvlk
+      # amdvlk # deprecated pkgs
       # ROCm OpenCL (optional, for GPU compute)
       # rocmPackages.clr
     ];

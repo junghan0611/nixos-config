@@ -147,4 +147,36 @@ in {
       '';
     })
   ];
+
+  # Doom Emacs desktop entry for application launcher
+  xdg.desktopEntries.doomemacs = {
+    name = "Doom Emacs";
+    genericName = "Text Editor";
+    comment = "Doom Emacs - Edit text";
+    exec = "env GTK_IM_MODULE=emacs XMODIFIERS=@im=emacs EMACS=emacs DOOMDIR=${doomConfigPath} ${config.home.homeDirectory}/doomemacs/bin/doom run";
+    icon = "emacs";
+    terminal = false;
+    categories = [ "Development" "TextEditor" ];
+    mimeType = [
+      "text/english"
+      "text/plain"
+      "text/x-makefile"
+      "text/x-c++hdr"
+      "text/x-c++src"
+      "text/x-chdr"
+      "text/x-csrc"
+      "text/x-java"
+      "text/x-moc"
+      "text/x-pascal"
+      "text/x-tcl"
+      "text/x-tex"
+      "application/x-shellscript"
+      "text/x-c"
+      "text/x-c++"
+    ];
+    settings = {
+      StartupNotify = "true";
+      StartupWMClass = "DoomEmacs";
+    };
+  };
 }
