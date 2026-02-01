@@ -136,6 +136,23 @@ in {
       };
 
       #---------------------------------------------------------------------
+      # Workspace to monitor assignment
+      # eDP-1 (노트북): 1-5, HDMI-1 (외부 모니터): 6-10
+      #---------------------------------------------------------------------
+      workspaceOutputAssign = [
+        { workspace = "1"; output = "eDP-1"; }
+        { workspace = "2"; output = "eDP-1"; }
+        { workspace = "3"; output = "eDP-1"; }
+        { workspace = "4"; output = "eDP-1"; }
+        { workspace = "5"; output = "eDP-1"; }
+        { workspace = "6"; output = "HDMI-1"; }
+        { workspace = "7"; output = "HDMI-1"; }
+        { workspace = "8"; output = "HDMI-1"; }
+        { workspace = "9"; output = "HDMI-1"; }
+        { workspace = "10"; output = "HDMI-1"; }
+      ];
+
+      #---------------------------------------------------------------------
       # Colors (Custom from Xresources)
       #---------------------------------------------------------------------
       colors = {
@@ -412,7 +429,7 @@ in {
         { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
 
         # Auto-detect and apply monitor configuration
-        { command = "${pkgs.autorandr}/bin/autorandr --change --default laptop"; notification = false; }
+        { command = "${pkgs.autorandr}/bin/autorandr --change --default thinkpad"; notification = false; }
       ];
     };
   };
