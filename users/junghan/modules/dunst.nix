@@ -4,7 +4,7 @@
 
 let
   solarized = import ./solarized.nix;
-  fontName = "D2CodingLigature Nerd Font";
+  fontName = "D2Coding ligature";
   fontSize = 12;
 in {
   services.dunst = {

@@ -1,0 +1,85 @@
+# 2026-02-01 설치 기록
+# ThinkPad P16s Gen 2 NixOS 설치 가이드
+# USB에 이 폴더(nixos-config)를 통째로 복사해서 사용
+
+# ============================================
+# 1. USB 부팅 후 WiFi 연결
+# ============================================
+sudo systemctl start wpa_supplicant
+wpa_cli
+# > add_network
+# > set_network 0 ssid "YOUR_SSID"
+# > set_network 0 psk "YOUR_PASSWORD"
+# > enable_network 0
+# > quit
+
+# 연결 확인
+ping -c 3 google.com
+
+# ============================================
+# 2. USB 마운트 및 nixos-config 복사
+# ============================================
+# USB 확인
+lsblk
+
+# USB 마운트 (Ventoy면 첫번째 파티션)
+sudo mkdir -p /mnt/usb
+sudo mount /dev/sdb1 /mnt/usb   # 디바이스명 확인 후 변경
+
+# nixos-config 복사
+cp -r /mnt/usb/nixos-config /tmp/nixos-config
+cd /tmp/nixos-config
+
+# ============================================
+# 3. disko로 파티션 생성 + 마운트
+# ============================================
+# ⚠️ 주의: nvme0n1의 모든 데이터 삭제됨!
+sudo nix --experimental-features "nix-command flakes" run \
+  github:nix-community/disko -- --mode disko ./hosts/thinkpad/disk-config.nix
+
+# 마운트 확인
+mount | grep /mnt
+lsblk -f
+
+# ============================================
+# 4. UUID 업데이트
+# ============================================
+# 새 UUID 확인
+lsblk -f
+
+# hardware-configuration.nix 편집
+nano ./hosts/thinkpad/hardware-configuration.nix
+
+# 수정할 항목:
+#   - fileSystems."/".device UUID
+#   - fileSystems."/boot".device UUID
+#   - swapDevices UUID (주석 해제 후)
+
+# ============================================
+# 5. NixOS 설치
+# ============================================
+sudo nixos-install --flake .#thinkpad --no-root-passwd
+
+# ============================================
+# 6. 재부팅
+# ============================================
+reboot
+
+# ============================================
+# 설치 후 (NixOS 부팅 후)
+# ============================================
+# 디바이스 설정
+echo 'thinkpad' > ~/.current-device
+
+# 초기 비밀번호
+
+'password'
+
+# nixos-config 클론
+mkdir -p ~/repos/gh
+cd ~/repos/gh
+git clone https://github.com/junghan0611/nixos-config.git
+
+# 관리
+cd ~/repos/gh/nixos-config
+./nixos-manage.sh
