@@ -78,8 +78,8 @@ let
 
     disk "/" {
         format = "/ %avail"
-        min_width = "/ 000.0 GiB"
-        align = "left"
+        min_width = "  / 000.0 GiB  "
+        align = "center"
     }
 
     load {
@@ -97,7 +97,7 @@ let
     }
 
     tztime local {
-        format = "%Y-%m-%d %H:%M:%S"
+        format = "  %Y-%m-%d %H:%M:%S  "
         timezone = "Asia/Seoul"
     }
   '';
