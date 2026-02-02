@@ -52,6 +52,8 @@ let
         device = "default"
         mixer = "Master"
         mixer_idx = 0
+        min_width = "♪ 100%"
+        align = "left"
     }
 
     battery all {
@@ -63,25 +65,35 @@ let
         status_full = "☻"
         path = "/sys/class/power_supply/BAT%d/uevent"
         low_threshold = 10
+        min_width = "🔋 100% 00:00:00"
+        align = "left"
     }
 
     ethernet _first_ {
         format_up = "E: %ip (%speed)"
         format_down = "E: down"
+        min_width = "E: 000.000.000.000 (1000M)"
+        align = "left"
     }
 
     disk "/" {
         format = "/ %avail"
+        min_width = "/ 000.0 GiB"
+        align = "left"
     }
 
     load {
         format = "%1min"
+        min_width = "00.00"
+        align = "right"
     }
 
     memory {
         format = "%used / %total"
         threshold_degraded = "1G"
         format_degraded = "MEMORY < %available"
+        min_width = "00.00 GiB / 00.00 GiB"
+        align = "left"
     }
 
     tztime local {
