@@ -163,6 +163,9 @@
   # Bluetooth management
   services.blueman.enable = true;
 
+  # Autorandr for automatic display detection on hotplug
+  services.autorandr.enable = true;
+
   # Fwupd for firmware updates (ThinkPad LVFS support)
   services.fwupd.enable = true;
 
