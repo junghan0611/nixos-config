@@ -256,6 +256,20 @@ in {
   #---------------------------------------------------------------------
   # GPG
   #---------------------------------------------------------------------
+  # 중요: 패스프레이즈 캐시 동작 방식
+  #
+  # TTL 설정은 "한번 입력 후 지정 기간 동안 유지"를 의미합니다.
+  # 다음 상황에서는 최초 1회 패스프레이즈 입력이 필요합니다:
+  #   - nixos-rebuild switch 후 gpg-agent 서비스 재시작 시
+  #   - 시스템 재부팅 시
+  #   - gpgconf --kill gpg-agent 실행 후
+  #
+  # 이는 설정 오류가 아닌 정상적인 보안 동작입니다.
+  # 터미널에서 `pass show <entry>` 한 번 실행하면 이후 TTL 기간 동안 캐시됩니다.
+  #
+  # 캐시 상태 확인: gpg-connect-agent 'keyinfo --list' /bye
+  #   - 5번째 필드가 '1'이면 캐시됨, '-'이면 캐시 안 됨
+  #
   programs.gpg.enable = true;
 
   services.gpg-agent = {
@@ -263,7 +277,8 @@ in {
     # SSH 터미널 환경용 (pinentry-qt는 GUI 필요하여 터미널 손상)
     pinentry.package = pkgs.pinentry-curses;
     enableBashIntegration = true;
-    # Cache passphrase for 1 year (31536000 seconds)
+    # 패스프레이즈 캐시 유지 기간: 1년 (31536000초)
+    # 재부팅/rebuild 후 첫 입력 필요, 이후 1년간 유지
     defaultCacheTtl = 31536000;
     maxCacheTtl = 31536000;
     extraConfig = ''

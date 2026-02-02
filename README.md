@@ -62,6 +62,15 @@ users/junghan/modules/
 
 ## Installation
 
+### Device Profiles
+
+| Profile | Device | CPU | Usage |
+|---------|--------|-----|-------|
+| `thinkpad` | ThinkPad P16s Gen 2 | AMD Ryzen | Work laptop |
+| `laptop` | Samsung NT930SBE | Intel i7 | Personal laptop |
+| `nuc` | Intel NUC | Intel i7 4-Core | Home server |
+| `oracle` | Oracle Cloud VM | ARM (Ampere) | Remote server (Free Tier) |
+
 ### Prerequisites
 
 - NixOS 25.05+

@@ -92,6 +92,15 @@ users/junghan/modules/
 
 ## 설치
 
+### 디바이스 프로파일
+
+| 프로파일 | 디바이스 | CPU | 용도 |
+|---------|--------|-----|------|
+| `thinkpad` | ThinkPad P16s Gen 2 | AMD Ryzen | 회사 노트북 |
+| `laptop` | Samsung NT930SBE | Intel i7 | 개인 노트북 |
+| `nuc` | Intel NUC | Intel i7 4-Core | 홈 서버 |
+| `oracle` | Oracle Cloud VM | ARM (Ampere) | 원격 서버 (Free Tier) |
+
 ### 요구사항
 
 - NixOS 25.05+
@@ -273,4 +282,4 @@ MIT License
 
 ---
 
-**최종 업데이트**: 2025-10-08
+**최종 업데이트**: 2026-02-02

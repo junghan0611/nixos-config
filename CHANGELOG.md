@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-02
+
 ### Added
+- **thinkpad host** - ThinkPad P16s Gen 2 AMD 지원 추가
+  - autorandr 시스템 서비스 활성화 및 수동 전환 스크립트
+  - 워크스페이스-모니터 매핑 설정
+  - i3 디스플레이 및 resume 개선
 - **qwen-code** - Qwen AI code assistant CLI tool (from nixpkgs-unstable)
+
+### Changed
+- **i3/dunst**: 폰트명 통일 (D2Coding ligature)
+- **i3status**: 모듈에 min_width 추가로 레이아웃 안정화
+- **i3status**: 디스크/시간 모듈 여백 추가
+- **ghostty**: copy-on-select를 clipboard로 변경
+- **gpg**: pinentry-curses로 전환 (SSH 터미널 호환성)
+
+### Fixed
+- **gpg**: GPG 캐시 동작 설명 주석 추가 (nixos-rebuild 후 첫 입력 필요)
+- **home-manager**: google-chrome을 aarch64-linux(Oracle)에서 제외
 
 ## [0.1.0] - 2025-11-17
 
