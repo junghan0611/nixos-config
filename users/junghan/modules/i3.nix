@@ -9,8 +9,8 @@ let
   # Solarized color scheme
   solarized = import ./solarized.nix;
 
-  # Font configuration
-  fontName = "D2CodingLigature Nerd Font";
+  # Font configuration (monospace)
+  fontName = "D2Coding ligature";
   fontSize = 9;
   barFontSize = 11;
 
