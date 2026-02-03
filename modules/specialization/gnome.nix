@@ -7,19 +7,9 @@
       extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
     };
 
-    # Korean input method - fcitx5
-    i18n.inputMethod = {
-      enable = true;
-      type = "fcitx5";
-      fcitx5 = {
-        addons = with pkgs; [
-          fcitx5-hangul       # Korean input engine
-          fcitx5-gtk          # GTK integration
-          qt6Packages.fcitx5-configtool   # Configuration GUI tool
-        ];
-        waylandFrontend = false;
-      };
-    };
+    # Korean input method - kime (inherited from i3.nix)
+    # GNOME can use Wayland, where kime works well
+    # No need to redefine - uses the same kime config from modules/wm/i3.nix
 
     services.xserver = {
       enable = true;
