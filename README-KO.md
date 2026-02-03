@@ -103,7 +103,7 @@ users/junghan/modules/
 
 ### 요구사항
 
-- NixOS 25.05+
+- NixOS 25.11+
 - Flakes 활성화
 
 ### NUC / Laptop

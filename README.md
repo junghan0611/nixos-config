@@ -73,7 +73,7 @@ users/junghan/modules/
 
 ### Prerequisites
 
-- NixOS 25.05+
+- NixOS 25.11+
 - Flakes enabled
 
 ### Quick Start

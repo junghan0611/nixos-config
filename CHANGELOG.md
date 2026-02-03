@@ -107,7 +107,7 @@ When making changes to the configuration:
 Notable configuration state before changelog tracking:
 
 ### NixOS Base Configuration
-- **NixOS Version**: 25.05
+- **NixOS Version**: 25.11
 - **Architecture Support**: x86_64-linux, aarch64-linux
 - **Systems**: oracle (ARM VM), nuc (Intel NUC), laptop (Samsung NT930SBE)
 - **Window Manager**: i3wm (default), GNOME (specialization)
