@@ -120,6 +120,7 @@ in {
     xclip
     wl-clipboard
     firefox
+    microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
 
     # X11 utilities (ElleNajit)
