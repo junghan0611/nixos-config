@@ -204,8 +204,8 @@ in {
             - Hangul
             - Latin
             result: Consume
-          # Super+Space as alternative toggle
-          Super-Space:
+          # Shift+Space as alternative toggle
+          Shift-Space:
             behavior: !Toggle
             - Hangul
             - Latin
