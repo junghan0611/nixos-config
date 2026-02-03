@@ -22,6 +22,52 @@ let
   # py3status configuration (ElleNajit pattern)
   py3status = pkgs.python3Packages.py3status;
 
+  # Scratchpad toggle script (from regolith, improved)
+  # Shows scratchpad window if exists, otherwise creates it
+  # Improvements:
+  # - Timeout for i3-msg subscribe (prevents infinite wait)
+  # - Check mark existence via get_marks
+  scratchpad-toggle = pkgs.writeShellScript "scratchpad-toggle" ''
+    if [ $# -ne 2 ]; then
+      echo "Usage: $0 <i3_mark> <launch_cmd>"
+      exit 1
+    fi
+
+    I3_MARK=$1
+    LAUNCH_CMD=$2
+
+    # Check if mark already exists
+    mark_exists() {
+      ${pkgs.i3}/bin/i3-msg -t get_marks | ${pkgs.gnugrep}/bin/grep -q "\"$I3_MARK\""
+    }
+
+    scratchpad_show() {
+      ${pkgs.i3}/bin/i3-msg "[con_mark=$I3_MARK]" scratchpad show
+    }
+
+    # If mark exists, just toggle scratchpad visibility
+    if mark_exists; then
+      scratchpad_show
+      exit 0
+    fi
+
+    # No marked window exists, create one
+    eval "$LAUNCH_CMD" &
+
+    # Wait for window event with 10 second timeout
+    ${pkgs.coreutils}/bin/timeout 10 ${pkgs.i3}/bin/i3-msg -t subscribe '[ "window" ]' || {
+      echo "Warning: Timed out waiting for window" >&2
+      exit 1
+    }
+
+    # Mark the newly focused window
+    ${pkgs.i3}/bin/i3-msg mark "$I3_MARK"
+
+    # Move to scratchpad and show
+    ${pkgs.i3}/bin/i3-msg move scratchpad
+    scratchpad_show
+  '';
+
   i3status-conf = pkgs.writeText "i3status.conf" ''
     general {
         output_format = i3bar
@@ -334,6 +380,12 @@ in {
           "${mod}+Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot -u '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";
           "${mod}+Shift+Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot -s '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";
 
+          # Scratchpad (floating toggle windows)
+          # -c: create new frame, -s server: socket name, -a emacs: fallback if daemon not running
+          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s server -a ${pkgs.emacs}/bin/emacs'";
+          "${mod}+minus" = "scratchpad show";  # Show any scratchpad window
+          "${mod}+Shift+minus" = "move scratchpad";  # Move current window to scratchpad
+
           # Resize mode
           "${mod}+r" = "mode resize";
         }
@@ -434,11 +486,12 @@ in {
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
 
-        # Korean input method (fcitx5)
-        { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
+        # Korean input method - kime (started via /etc/xdg/autostart/kime.desktop)
+        # kime daemon is automatically started by NixOS i18n.inputMethod module
 
-        # Alternative: Force hangul activation on startup (if DefaultIM=hangul doesn't work)
-        { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
+        # [ARCHIVED] fcitx5 startup commands - kept for reference
+        # { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
+        # { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
 
         # Auto-detect and apply monitor configuration
         { command = "${pkgs.autorandr}/bin/autorandr --change --default thinkpad"; notification = false; }

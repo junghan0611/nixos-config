@@ -173,34 +173,116 @@ in {
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
 
-    # Force fcitx5 profile to ensure reproducibility
-    ".config/fcitx5/profile".text = ''
-      [GroupOrder]
-      0=Default
-      1=Korean
+    # kime Korean input method configuration
+    # Docs: https://github.com/Riey/kime/blob/develop/docs/CONFIGURATION.ko.md
+    ".config/kime/config.yaml".text = ''
+      daemon:
+        modules:
+        - Xim
+        - Indicator
+        # - Wayland  # Enable when using Wayland
 
-      [Groups/0]
-      Default Layout=us
-      DefaultIM=Keyboard-us
-      Name=Default
+      indicator:
+        icon_color: White
 
-      [Groups/0/Items/0]
-      Layout=
-      Name=keyboard-us
+      log:
+        global_level: WARN
 
-      [Groups/1]
-      Default Layout=kr-kr104
-      DefaultIM=keyboard-kr-kr104
-      Name=Korean
+      engine:
+        default_category: Latin
+        global_category_state: false
 
-      [Groups/1/Items/0]
-      Layout=kr-kr104
-      Name=keyboard-kr-kr104
+        global_hotkeys:
+          # Toggle Korean/English with Right Alt or Hangul key
+          AltR:
+            behavior: !Toggle
+            - Hangul
+            - Latin
+            result: Consume
+          Hangul:
+            behavior: !Toggle
+            - Hangul
+            - Latin
+            result: Consume
+          # Super+Space as alternative toggle
+          Super-Space:
+            behavior: !Toggle
+            - Hangul
+            - Latin
+            result: Consume
+          # Escape switches to English
+          Esc:
+            behavior: !Switch Latin
+            result: Bypass
 
-      [Groups/1/Items/1]
-      Layout=kr-kr104
-      Name=hangul
+        category_hotkeys:
+          Hangul:
+            # Right Ctrl or Hanja key for Hanja mode
+            ControlR:
+              behavior: !Mode Hanja
+              result: Consume
+            HangulHanja:
+              behavior: !Mode Hanja
+              result: Consume
+
+        mode_hotkeys:
+          Hanja:
+            Enter:
+              behavior: Commit
+              result: ConsumeIfProcessed
+            Tab:
+              behavior: Commit
+              result: ConsumeIfProcessed
+
+        candidate_font: D2Coding ligature
+        xim_preedit_font:
+        - D2Coding ligature
+        - 15.0
+
+        latin:
+          layout: Qwerty
+          preferred_direct: true
+
+        hangul:
+          layout: dubeolsik
+          word_commit: false
+          preedit_johab: Needed
+          addons:
+            all:
+            - ComposeChoseongSsang
+            dubeolsik:
+            - TreatJongseongAsChoseong
     '';
+
+    # [ARCHIVED] fcitx5 profile - kept for reference
+    # Reason: Switched to kime for simpler config
+    # ".config/fcitx5/profile".text = ''
+    #   [GroupOrder]
+    #   0=Default
+    #   1=Korean
+    #
+    #   [Groups/0]
+    #   Default Layout=us
+    #   DefaultIM=Keyboard-us
+    #   Name=Default
+    #
+    #   [Groups/0/Items/0]
+    #   Layout=
+    #   Name=keyboard-us
+    #
+    #   [Groups/1]
+    #   Default Layout=kr-kr104
+    #   DefaultIM=keyboard-kr-kr104
+    #   Name=Korean
+    #
+    #   [Groups/1/Items/0]
+    #   Layout=kr-kr104
+    #   Name=keyboard-kr-kr104
+    #
+    #   [Groups/1/Items/1]
+    #   Layout=kr-kr104
+    #   Name=hangul
+    # '';
 
     # Flameshot configuration with Denote timestamp pattern
     ".config/flameshot/flameshot.ini".text = ''
