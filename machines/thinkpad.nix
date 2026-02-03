@@ -158,6 +158,8 @@
     net-tools
     # Fingerprint (if available)
     fprintd
+    # Office suite (optional, thinkpad only)
+    libreoffice-fresh
   ];
 
   # Bluetooth management
