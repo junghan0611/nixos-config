@@ -421,6 +421,7 @@ in {
       bars = [{
         statusCommand = "${py3status}/bin/py3status -c ${i3status-conf}";
         position = "top";
+        trayOutput = "primary";  # Enable system tray for kime-indicator
         fonts = {
           names = [ fontName ];
           size = barFontSize * 1.0;
