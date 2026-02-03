@@ -416,10 +416,10 @@ in {
       };
 
       #---------------------------------------------------------------------
-      # Status bar (py3status with Emacs org-clock integration)
+      # Status bar (i3status - simpler, reliable tray support)
       #---------------------------------------------------------------------
       bars = [{
-        statusCommand = "${py3status}/bin/py3status -c ${i3status-conf}";
+        statusCommand = "${pkgs.i3status}/bin/i3status -c ${i3status-conf}";
         position = "top";
         trayOutput = "primary";  # Enable system tray for kime-indicator
         fonts = {
@@ -458,6 +458,12 @@ in {
             text = "#FFFFFF";
           };
         };
+
+        # Raw i3 config for system tray
+        extraConfig = ''
+          tray_output primary
+          tray_padding 4
+        '';
       }];
 
       #---------------------------------------------------------------------

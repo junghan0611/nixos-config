@@ -204,8 +204,8 @@ in {
             - Hangul
             - Latin
             result: Consume
-          # Shift+Space as alternative toggle
-          Shift-Space:
+          # Shift+Space as alternative toggle (S- is kime's Shift modifier)
+          S-Space:
             behavior: !Toggle
             - Hangul
             - Latin
