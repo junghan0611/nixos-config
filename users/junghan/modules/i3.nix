@@ -434,11 +434,12 @@ in {
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
 
-        # Korean input method (fcitx5)
-        { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
+        # Korean input method - kime (started via /etc/xdg/autostart/kime.desktop)
+        # kime daemon is automatically started by NixOS i18n.inputMethod module
 
-        # Alternative: Force hangul activation on startup (if DefaultIM=hangul doesn't work)
-        { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
+        # [ARCHIVED] fcitx5 startup commands - kept for reference
+        # { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
+        # { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
 
         # Auto-detect and apply monitor configuration
         { command = "${pkgs.autorandr}/bin/autorandr --change --default thinkpad"; notification = false; }
