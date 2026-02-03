@@ -486,8 +486,8 @@ in {
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
 
-        # Korean input method - kime (started via /etc/xdg/autostart/kime.desktop)
-        # kime daemon is automatically started by NixOS i18n.inputMethod module
+        # Korean input method - kime
+        { command = "${pkgs.kime}/bin/kime"; notification = false; }
 
         # [ARCHIVED] fcitx5 startup commands - kept for reference
         # { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
