@@ -5,6 +5,10 @@ font-size = 14.0
 
 term = xterm-ghostty
 
+# Scrollback buffer limit (1MB instead of default 10MB)
+# Reduces memory usage and improves performance with long Claude Code sessions
+scrollback-limit = 1000000
+
 # Window decoration: server = WM manages borders (i3 child-border works)
 window-decoration = server
 

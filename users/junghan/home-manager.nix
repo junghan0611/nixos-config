@@ -123,6 +123,9 @@ in {
     microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
 
+    # Terminal emulators (한글 입력 지원)
+    wezterm        # Rust-based, excellent Korean input support
+
     # X11 utilities (ElleNajit)
     xorg.xev        # X event viewer
     xorg.libxcvt    # cvt replacement
