@@ -173,6 +173,7 @@ in {
   home.file = {
     ".config/ghostty/config".text = builtins.readFile ./configs/ghostty.linux;
     ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
+    ".config/wezterm/wezterm.lua".text = builtins.readFile ./configs/wezterm.lua;
     ".inputrc".text = builtins.readFile ./configs/inputrc;
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
