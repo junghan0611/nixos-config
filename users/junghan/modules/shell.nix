@@ -326,7 +326,7 @@ in {
   programs.tmux = {
     enable = true;
     terminal = "screen-256color";
-    shortcut = "a";
+    # shortcut = "a";
     baseIndex = 1;
     escapeTime = 0;
     historyLimit = 50000;
@@ -336,6 +336,9 @@ in {
     focusEvents = true;
 
     extraConfig = ''
+      # Alt-c를 보조 prefix로 추가 (Ctrl-b와 병행)
+      set -g prefix2 M-c
+
       # OSC-52 클립보드 지원 (SSH 원격 복사)
       set -g set-clipboard on
       set -g allow-passthrough on
@@ -395,21 +398,24 @@ in {
       scrollback_editor = "vim";
       mouse_mode = true;
     };
-
-    themes = {
-      dracula = {
-        fg = "#F8F8F2";
-        bg = "#282A36";
-        black = "#21222C";
-        red = "#FF5555";
-        green = "#50FA7B";
-        yellow = "#F1FA8C";
-        blue = "#BD93F9";
-        magenta = "#FF79C6";
-        cyan = "#8BE9FD";
-        white = "#F8F8F2";
-        orange = "#FFB86C";
-      };
-    };
   };
+
+  # Zellij theme file (requires themes{} wrapper for zellij 0.43+)
+  xdg.configFile."zellij/themes/dracula.kdl".text = ''
+    themes {
+      dracula {
+        fg "#F8F8F2"
+        bg "#282A36"
+        black "#21222C"
+        red "#FF5555"
+        green "#50FA7B"
+        yellow "#F1FA8C"
+        blue "#BD93F9"
+        magenta "#FF79C6"
+        cyan "#8BE9FD"
+        white "#F8F8F2"
+        orange "#FFB86C"
+      }
+    }
+  '';
 }
