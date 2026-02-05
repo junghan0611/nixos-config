@@ -25,8 +25,9 @@ let
   # Scratchpad toggle script (from regolith, improved)
   # Shows scratchpad window if exists, otherwise creates it
   # Improvements:
+  # - Tracks window ID to avoid marking wrong window
+  # - Handles emacsclient fallback correctly
   # - Timeout for i3-msg subscribe (prevents infinite wait)
-  # - Check mark existence via get_marks
   scratchpad-toggle = pkgs.writeShellScript "scratchpad-toggle" ''
     if [ $# -ne 2 ]; then
       echo "Usage: $0 <i3_mark> <launch_cmd>"
@@ -45,27 +46,42 @@ let
       ${pkgs.i3}/bin/i3-msg "[con_mark=$I3_MARK]" scratchpad show
     }
 
+    # Get current focused window ID
+    get_focused_id() {
+      ${pkgs.i3}/bin/i3-msg -t get_tree | ${pkgs.jq}/bin/jq -r '.. | select(.focused? == true) | .id' 2>/dev/null | head -1
+    }
+
     # If mark exists, just toggle scratchpad visibility
     if mark_exists; then
       scratchpad_show
       exit 0
     fi
 
-    # No marked window exists, create one
+    # Save current window ID before launching
+    OLD_WINDOW_ID=$(get_focused_id)
+
+    # Launch the command
     eval "$LAUNCH_CMD" &
+    LAUNCH_PID=$!
 
-    # Wait for window event with 10 second timeout
-    ${pkgs.coreutils}/bin/timeout 10 ${pkgs.i3}/bin/i3-msg -t subscribe '[ "window" ]' || {
-      echo "Warning: Timed out waiting for window" >&2
-      exit 1
-    }
+    # Wait for new window with polling (more reliable than subscribe)
+    MAX_WAIT=50  # 5 seconds (50 * 100ms)
+    for i in $(seq 1 $MAX_WAIT); do
+      sleep 0.1
+      NEW_WINDOW_ID=$(get_focused_id)
 
-    # Mark the newly focused window
-    ${pkgs.i3}/bin/i3-msg mark "$I3_MARK"
+      # Check if we have a NEW focused window (different from before)
+      if [ -n "$NEW_WINDOW_ID" ] && [ "$NEW_WINDOW_ID" != "$OLD_WINDOW_ID" ]; then
+        # Mark and move to scratchpad
+        ${pkgs.i3}/bin/i3-msg mark "$I3_MARK"
+        ${pkgs.i3}/bin/i3-msg move scratchpad
+        scratchpad_show
+        exit 0
+      fi
+    done
 
-    # Move to scratchpad and show
-    ${pkgs.i3}/bin/i3-msg move scratchpad
-    scratchpad_show
+    echo "Warning: Timed out waiting for new window" >&2
+    exit 1
   '';
 
   i3status-conf = pkgs.writeText "i3status.conf" ''
@@ -327,8 +343,8 @@ in {
           "${mod}+Shift+Up" = "move up";
           "${mod}+Shift+Right" = "move right";
 
-          # Split orientation
-          "${mod}+b" = "split h";
+          # Split orientation (Regolith style: g=horizontal, v=vertical)
+          "${mod}+g" = "split h";
           "${mod}+v" = "split v";
 
           # Fullscreen
@@ -339,15 +355,15 @@ in {
           "${mod}+w" = "layout tabbed";
           "${mod}+e" = "layout toggle split";
 
-          # Toggle floating
-          "${mod}+Shift+space" = "floating toggle";
+          # Toggle floating (Regolith style: Shift+f)
+          "${mod}+Shift+f" = "floating toggle";
 
-          # Change focus between tiling/floating
-          "${mod}+space" = "focus mode_toggle";
+          # Change focus between tiling/floating (Regolith style: Shift+t)
+          "${mod}+Shift+t" = "focus mode_toggle";
 
-          # Focus parent/child
+          # Focus parent/child (Regolith style: a=parent, z=child)
           "${mod}+a" = "focus parent";
-          "${mod}+Shift+a" = "focus child";
+          "${mod}+z" = "focus child";
 
           # Workspace 10 (special case for 0 key)
           "${mod}+0" = "workspace number 10";
@@ -380,11 +396,11 @@ in {
           "${mod}+Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot -u '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";
           "${mod}+Shift+Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot -s '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";
 
-          # Scratchpad (floating toggle windows)
+          # Scratchpad (Regolith style: Ctrl+a=show, Ctrl+m=move)
           # -c: create new frame, -s server: socket name, -a emacs: fallback if daemon not running
           "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s server -a ${pkgs.emacs}/bin/emacs'";
-          "${mod}+minus" = "scratchpad show";  # Show any scratchpad window
-          "${mod}+Shift+minus" = "move scratchpad";  # Move current window to scratchpad
+          "${mod}+Ctrl+a" = "scratchpad show";
+          "${mod}+Ctrl+m" = "move scratchpad";
 
           # Resize mode
           "${mod}+r" = "mode resize";
