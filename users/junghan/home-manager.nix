@@ -146,6 +146,9 @@ in {
     usbutils        # USB tools
     gdmap           # Disk usage visualizer
     nmap            # Network scanner
+    libpcap         # nmap dependency (packet capture)
+    iproute2        # ip command
+    nettools        # ifconfig, arp, etc.
     iftop           # Network monitoring
 
     # Security (ElleNajit)
@@ -171,6 +174,11 @@ in {
   # (rofi configured via command-line options in modules/i3.nix)
   #---------------------------------------------------------------------
   home.file = {
+    # User scripts (~/.local/bin)
+    ".local/bin/scan-hubs" = {
+      source = ./../../scripts/scan-hubs.sh;
+      executable = true;
+    };
     ".config/ghostty/config".text = builtins.readFile ./configs/ghostty.linux;
     ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
     ".config/wezterm/wezterm.lua".text = builtins.readFile ./configs/wezterm.lua;
