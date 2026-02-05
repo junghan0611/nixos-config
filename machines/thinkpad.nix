@@ -142,6 +142,12 @@
     autoRepeatInterval = 30;
   };
 
+  # Java runtime (required for LibreOffice Java extensions like H2Orestart)
+  programs.java = {
+    enable = true;
+    package = pkgs.jdk17;
+  };
+
   # ThinkPad-specific packages
   environment.systemPackages = with pkgs; [
     # AMD GPU tools
