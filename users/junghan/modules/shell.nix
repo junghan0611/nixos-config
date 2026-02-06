@@ -12,6 +12,7 @@ let
     gco = "git checkout";
     gch = "git checkout HEAD";
     gdiff = "git diff";
+    gs = "git status";
     gsta = "git status";
     gadd = "git add -v";
     gcom = "git commit";
@@ -159,6 +160,26 @@ in {
         source ${pkgs.fzf}/share/fzf/key-bindings.bash
         source ${pkgs.fzf}/share/fzf/completion.bash
       fi
+
+      # emacsclient wrapper — 24bit true-color 자동 감지
+      # COLORTERM=truecolor인데 TERM의 colors < 257이면 *-direct terminfo로 전환
+      # ref: tecosaur doom config.org "Emacs client wrapper"
+      e() {
+          local term="$TERM"
+          if { [ "$COLORTERM" = truecolor ] || [ "$COLORTERM" = 24bit ]; } \
+              && [ "$(tput colors 2>/dev/null)" -lt 257 ]; then
+              local stub="''${TERM%%-*}"
+              if infocmp "''${stub}-direct" >/dev/null 2>&1; then
+                  term="''${stub}-direct"
+              else
+                  term="xterm-direct"
+              fi
+          fi
+          TERM="$term" emacsclient -s server -nw "$@"
+      }
+      alias v='e'
+      alias ec='emacsclient -s server -n'
+      alias ecn='emacsclient -s server -c -n'
 
       # Claude Config bash 설정 로드
       if [ -f "$HOME/claude-config/bash/bashrc" ]; then
@@ -322,36 +343,6 @@ in {
 
   #---------------------------------------------------------------------
   # Tmux
-  # -------------------------------------------------------------------
-  # [True-color 문제 해결 노트]
-  #
-  # 문제: tmux 안에서 Emacs(-nw) 실행 시 배경이 파란색으로 깨짐
-  #       ghostty 직접 실행이나 zellij 안에서는 정상
-  #
-  # 원인 체인:
-  #   1. NixOS의 tmux-256color terminfo에 RGB/Tc capability가 없음
-  #      → infocmp tmux-256color 하면 setrgbf/setrgbb 없음
-  #   2. Emacs가 TERM=tmux-256color를 보고 256색 모드로 폴백
-  #      → 테마의 #282A36 같은 24bit 색상이 가장 가까운 256색(파란색)으로 매핑
-  #   3. zellij는 TERM=xterm-256color를 사용하므로 이 문제가 없었음
-  #
-  # 해결 (3단계):
-  #   tmux 측:
-  #     - terminal = "tmux-256color" (tmux 전용 terminfo, screen-256color 대체)
-  #     - terminal-features에 RGB 추가 (tmux가 외부 터미널에 24bit 전달)
-  #     - terminal-overrides *:Tc (모든 터미널에 true-color 폴백)
-  #     - COLORTERM=truecolor 강제 설정 + update-environment에 추가
-  #   Emacs 측 (doomemacs-config/lisp/ui-config.el):
-  #     - term-file-aliases로 tmux-256color → xterm-direct 매핑
-  #     - COLORTERM=truecolor 강제 설정
-  #     - mode-line, tab-bar 등 UI face 배경도 unspecified-bg 처리
-  #
-  # 디버깅 명령:
-  #   tmux show-options -g default-terminal    # tmux-256color 확인
-  #   tmux show-options -s terminal-features   # RGB 포함 확인
-  #   tmux show-environment COLORTERM          # truecolor 확인
-  #   infocmp tmux-256color | grep setrgb      # terminfo 확인 (없어야 정상)
-  #   tmux kill-server                         # 설정 변경 후 반드시 서버 재시작!
   #---------------------------------------------------------------------
   programs.tmux = {
     enable = true;

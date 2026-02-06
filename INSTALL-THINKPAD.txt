@@ -83,3 +83,8 @@ git clone https://github.com/junghan0611/nixos-config.git
 # 관리
 cd ~/repos/gh/nixos-config
 ./nixos-manage.sh
+ /passes
+
+# 패키지 설치
+
+nix profile install nixpkgs#go
