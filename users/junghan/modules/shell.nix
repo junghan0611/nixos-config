@@ -321,12 +321,42 @@ in {
   };
 
   #---------------------------------------------------------------------
-  # Tmux (hej-nixos-cluster 스타일 통일)
+  # Tmux
+  # -------------------------------------------------------------------
+  # [True-color 문제 해결 노트]
+  #
+  # 문제: tmux 안에서 Emacs(-nw) 실행 시 배경이 파란색으로 깨짐
+  #       ghostty 직접 실행이나 zellij 안에서는 정상
+  #
+  # 원인 체인:
+  #   1. NixOS의 tmux-256color terminfo에 RGB/Tc capability가 없음
+  #      → infocmp tmux-256color 하면 setrgbf/setrgbb 없음
+  #   2. Emacs가 TERM=tmux-256color를 보고 256색 모드로 폴백
+  #      → 테마의 #282A36 같은 24bit 색상이 가장 가까운 256색(파란색)으로 매핑
+  #   3. zellij는 TERM=xterm-256color를 사용하므로 이 문제가 없었음
+  #
+  # 해결 (3단계):
+  #   tmux 측:
+  #     - terminal = "tmux-256color" (tmux 전용 terminfo, screen-256color 대체)
+  #     - terminal-features에 RGB 추가 (tmux가 외부 터미널에 24bit 전달)
+  #     - terminal-overrides *:Tc (모든 터미널에 true-color 폴백)
+  #     - COLORTERM=truecolor 강제 설정 + update-environment에 추가
+  #   Emacs 측 (doomemacs-config/lisp/ui-config.el):
+  #     - term-file-aliases로 tmux-256color → xterm-direct 매핑
+  #     - COLORTERM=truecolor 강제 설정
+  #     - mode-line, tab-bar 등 UI face 배경도 unspecified-bg 처리
+  #
+  # 디버깅 명령:
+  #   tmux show-options -g default-terminal    # tmux-256color 확인
+  #   tmux show-options -s terminal-features   # RGB 포함 확인
+  #   tmux show-environment COLORTERM          # truecolor 확인
+  #   infocmp tmux-256color | grep setrgb      # terminfo 확인 (없어야 정상)
+  #   tmux kill-server                         # 설정 변경 후 반드시 서버 재시작!
   #---------------------------------------------------------------------
   programs.tmux = {
     enable = true;
-    terminal = "screen-256color";
-    # shortcut = "a";
+    terminal = "tmux-256color"; # tmux 전용 terminfo (screen-256color보다 정확)
+    # shortcut = "a";           # 주석 = Ctrl-b 기본 prefix 사용
     baseIndex = 1;
     escapeTime = 0;
     historyLimit = 50000;
@@ -338,6 +368,20 @@ in {
     extraConfig = ''
       # Alt-c를 보조 prefix로 추가 (Ctrl-b와 병행)
       set -g prefix2 M-c
+
+      # True-color(24bit) 지원
+      # terminal-features: tmux → 외부 터미널 방향 (RGB 색상 패스스루)
+      # terminal-overrides: 모든 터미널에 Tc(true-color) 활성화
+      set -as terminal-features ",xterm-256color:RGB"
+      set -as terminal-features ",xterm-ghostty:RGB"
+      set -as terminal-features ",tmux-256color:RGB"
+      set -as terminal-overrides ",*:Tc"
+
+      # COLORTERM 전달: tmux 내부 프로세스(Emacs 등)가 true-color 감지용
+      # update-environment: 새 세션 생성 시 외부에서 가져올 변수 목록
+      # set-environment: tmux 글로벌 환경에 직접 설정 (폴백)
+      set -ga update-environment "COLORTERM"
+      set-environment -g COLORTERM "truecolor"
 
       # OSC-52 클립보드 지원 (SSH 원격 복사)
       set -g set-clipboard on
