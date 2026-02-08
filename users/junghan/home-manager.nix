@@ -79,10 +79,11 @@ in {
     grafana-loki     # logcli for Grafana Cloud Loki queries
     tokei
 
-    # Programming Languages & Tools (CLI)
-    zig_0_14
-    zls_0_14
+    # programming Languages & Tools (CLI)
+    zig
+    zls
     go
+    gopls
     clojure
     clojure-lsp
     mitscheme
@@ -166,6 +167,10 @@ in {
 
     # Collaboration (GUI, excluded from Oracle VM)
     slack
+
+    # zigbee and matter
+    zigbee2mqtt
+    python-matter-server
   ]);
 
   #---------------------------------------------------------------------
