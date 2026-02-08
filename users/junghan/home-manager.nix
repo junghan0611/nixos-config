@@ -117,10 +117,25 @@ in {
     yt-dlp       # YouTube downloader (ElleNajit)
     ffmpeg       # Video processing (ElleNajit)
   ] ++ (lib.optionals isLinux [
+    firefox
     # Linux-specific packages
     xclip
     wl-clipboard
-    firefox
+
+    # System utilities (ElleNajit)
+    powertop        # Power management
+    usbutils        # USB tools
+    gdmap           # Disk usage visualizer
+    nmap            # Network scanner
+    libpcap         # nmap dependency (packet capture)
+    iproute2        # ip command
+    nettools        # ifconfig, arp, etc.
+    iftop           # Network monitoring
+
+    # Security (ElleNajit)
+    keybase         # Encrypted communication
+    yubikey-manager # YubiKey support
+  ]) ++ (lib.optionals (isLinux && !isOracle) [
     microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
 
@@ -141,21 +156,6 @@ in {
     apvlv           # PDF viewer
     vlc             # Video player
     gimp            # Image editor
-
-    # System utilities (ElleNajit)
-    powertop        # Power management
-    usbutils        # USB tools
-    gdmap           # Disk usage visualizer
-    nmap            # Network scanner
-    libpcap         # nmap dependency (packet capture)
-    iproute2        # ip command
-    nettools        # ifconfig, arp, etc.
-    iftop           # Network monitoring
-
-    # Security (ElleNajit)
-    keybase         # Encrypted communication
-    yubikey-manager # YubiKey support
-  ]) ++ (lib.optionals (isLinux && !isOracle) [
     # x86_64 Linux-specific packages (not available on ARM/Oracle VM)
     google-chrome   # Browser (x86_64 only)
     zotero          # Reference manager (x86_64 only)
