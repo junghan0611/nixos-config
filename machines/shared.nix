@@ -208,6 +208,7 @@
     curl
     htop
     tree
+    zip
     unzip
     lsof
     iotop

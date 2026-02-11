@@ -39,12 +39,33 @@ Rust CLI tools installed via cargo. (None yet)
 
 Go CLI tools installed via go install. (None yet)
 
-## npm -g / npx
+## pnpm add -g
 
-Node.js global tools. (None yet)
+Node.js CLI tools installed via [pnpm](https://pnpm.io/).
+Installed to `~/.local/share/pnpm/global/`.
+
+| Package | Version | Description | Installed |
+|---------|---------|-------------|-----------|
+| cline | 2.0.5 | Autonomous coding agent CLI (terminal) | 2025-02-11 |
+
+### Commands
+
+```bash
+# List installed tools
+pnpm list -g --depth=0
+
+# Install
+pnpm add -g <package>
+
+# Upgrade
+pnpm add -g <package>@latest
+
+# Uninstall
+pnpm remove -g <package>
+```
 
 ## Maintenance
 
 - Review this list when setting up a new device
-- Periodically check for updates: `uv tool upgrade --all`
+- Periodically check for updates: `uv tool upgrade --all`, `pnpm add -g <pkg>@latest`
 - If a package becomes available in nixpkgs, migrate it to NixOS config
