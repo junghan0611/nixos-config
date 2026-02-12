@@ -3,7 +3,7 @@
 # Installs Zotero from official tar.xz with NixOS library wrapper
 #
 # Usage: ./install-zotero.sh [path-to-tarball]
-#   Default tarball: ~/Downloads/Zotero-8.0.3_linux-x86_64.tar.xz
+#   If no argument, auto-detects latest Zotero tarball in ~/Downloads
 #
 # What this script does:
 # 1. Extracts Zotero tar.xz to /opt/zotero
@@ -12,22 +12,47 @@
 
 set -e
 
+# Auto-detect latest Zotero tarball in ~/Downloads
+find_latest_tarball() {
+    local latest=""
+    local latest_ver="0"
+    for f in "$HOME/Downloads"/Zotero-*_linux-x86_64.tar.xz; do
+        [[ -f "$f" ]] || continue
+        # Extract version: Zotero-8.0.3_linux-x86_64.tar.xz → 8.0.3
+        local ver=$(basename "$f" | sed 's/Zotero-\(.*\)_linux-x86_64\.tar\.xz/\1/')
+        # Compare versions using sort -V (version sort)
+        if printf '%s\n%s\n' "$latest_ver" "$ver" | sort -V | tail -1 | grep -qx "$ver"; then
+            latest_ver="$ver"
+            latest="$f"
+        fi
+    done
+    echo "$latest"
+}
+
 # Configuration
-TARBALL="${1:-$HOME/Downloads/Zotero-8.0.3_linux-x86_64.tar.xz}"
+if [[ -n "$1" ]]; then
+    TARBALL="$1"
+else
+    TARBALL=$(find_latest_tarball)
+fi
 INSTALL_DIR="/opt/zotero"
 BIN_DIR="$HOME/bin"
 CACHE_FILE="$HOME/.cache/zotero-libs.sh"
 DESKTOP_DIR="$HOME/.local/share/applications"
 
-if [[ ! -f "$TARBALL" ]]; then
-    echo "Error: Tarball not found: $TARBALL"
+if [[ -z "$TARBALL" || ! -f "$TARBALL" ]]; then
+    echo "Error: No Zotero tarball found."
     echo "Usage: $0 [path-to-Zotero-tarball.tar.xz]"
+    echo "Or place Zotero-*_linux-x86_64.tar.xz in ~/Downloads"
     exit 1
 fi
 
-echo "=== Zotero 8 Installer for NixOS ==="
+VERSION=$(basename "$TARBALL" | sed 's/Zotero-\(.*\)_linux-x86_64\.tar\.xz/\1/')
+
+echo "=== Zotero $VERSION Installer for NixOS ==="
 echo ""
 echo "Tarball: $TARBALL"
+echo "Version: $VERSION"
 echo "Install: $INSTALL_DIR"
 echo ""
 
