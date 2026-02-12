@@ -158,7 +158,7 @@ in {
     gimp            # Image editor
     # x86_64 Linux-specific packages (not available on ARM/Oracle VM)
     google-chrome   # Browser (x86_64 only)
-    zotero          # Reference manager (x86_64 only)
+    # zotero        # Reference manager → 8.x manual install (scripts/install-zotero.sh)
 
     # Editors & IDEs (GUI, excluded from Oracle VM)
     # zed-editor
