@@ -22,6 +22,9 @@ let
   # py3status configuration (ElleNajit pattern)
   py3status = pkgs.python3Packages.py3status;
 
+  # Whisper voice input script
+  whisperScript = "${config.home.homeDirectory}/repos/gh/nixos-config/scripts/whisper-input.sh";
+
   # Scratchpad toggle script (from regolith, improved)
   # Shows scratchpad window if exists, otherwise creates it
   # Improvements:
@@ -353,7 +356,6 @@ in {
           # Container layout
           "${mod}+s" = "layout stacking";
           "${mod}+w" = "layout tabbed";
-          "${mod}+e" = "layout toggle split";
 
           # Toggle floating (Regolith style: Shift+f)
           "${mod}+Shift+f" = "floating toggle";
@@ -401,6 +403,17 @@ in {
           "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s server -a ${pkgs.emacs}/bin/emacs'";
           "${mod}+Ctrl+a" = "scratchpad show";
           "${mod}+Ctrl+m" = "move scratchpad";
+
+          # Browsers
+          "${mod}+Shift+Return" = "exec firefox";
+          "${mod}+Ctrl+Return" = "exec microsoft-edge";
+
+          # Additional terminal (WezTerm)
+          "${mod}+${alt}+Return" = "exec ${pkgs.wezterm}/bin/wezterm";
+
+          # Whisper voice input
+          "${mod}+e" = "exec --no-startup-id ${whisperScript}";
+          "F1" = "exec --no-startup-id ${whisperScript}";
 
           # Resize mode
           "${mod}+r" = "mode resize";

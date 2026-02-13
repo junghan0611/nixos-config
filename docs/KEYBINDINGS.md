@@ -10,11 +10,15 @@
 | 키 | 동작 |
 |----|------|
 | `Mod+Return` | 터미널 (Ghostty) |
+| `Mod+Alt+Return` | 터미널 (WezTerm) |
+| `Mod+Shift+Return` | 기본 브라우저 (Firefox) |
+| `Mod+Ctrl+Return` | Microsoft Edge |
 | `Mod+Shift+q` | 창 닫기 |
 | `Mod+d` | 앱 런처 (Rofi) |
 | `Mod+Shift+d` | 명령어 실행 (Rofi run) |
 | `Mod+Tab` | 창 전환 (Rofi window) |
 | `Mod+p` | 패스워드 매니저 (rofi-pass) |
+| `F1` / `Mod+e` | Whisper 음성 입력 |
 
 ## 포커스 이동
 
@@ -41,7 +45,6 @@
 | `Mod+f` | 전체화면 토글 |
 | `Mod+s` | 스택 레이아웃 |
 | `Mod+w` | 탭 레이아웃 |
-| `Mod+e` | 분할 레이아웃 토글 |
 
 ## Floating & Scratchpad (Regolith 스타일)
 
