@@ -14,7 +14,7 @@ AUDIO_FILE="$TEMPD/whisper-groq.wav"
 LOG_FILE="$TEMPD/whisper-groq.log"
 
 # Groq API 키 (환경변수 또는 pass)
-GROQ_API_KEY="${GROQ_API_KEY:-$(/usr/bin/pass api/groq/junghanacs 2>/dev/null || echo "")}"
+GROQ_API_KEY="${GROQ_API_KEY:-$(pass api/groq/junghanacs 2>/dev/null || echo "")}"
 
 # 자동 붙여넣기 (1=활성화, 0=클립보드만)
 AUTOPASTE=1
