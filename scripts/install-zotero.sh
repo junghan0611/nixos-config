@@ -164,10 +164,22 @@ source "$CACHE_FILE"
 # Set library paths (Zotero bundled libs + NixOS system libs)
 export LD_LIBRARY_PATH="$ZOTERO_DIR:$NIX_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-# Wayland/display
-export MOZ_ENABLE_WAYLAND=1
 export MOZ_ALLOW_DOWNGRADE=1
 export MOZ_LEGACY_PROFILES=1
+
+# Clean browser launcher: Zotero spawns Firefox via GIO, which inherits
+# LD_LIBRARY_PATH containing /opt/zotero. This causes libnss3.so version
+# conflicts. Prepend a clean firefox wrapper to PATH to strip LD_LIBRARY_PATH.
+WRAPPER_DIR="$HOME/.cache/zotero-wrappers"
+mkdir -p "$WRAPPER_DIR"
+REAL_FIREFOX=$(readlink -f "$(which firefox)")
+cat > "$WRAPPER_DIR/firefox" << FWEOF
+#!/bin/sh
+unset LD_LIBRARY_PATH
+exec "$REAL_FIREFOX" "\$@"
+FWEOF
+chmod +x "$WRAPPER_DIR/firefox"
+export PATH="$WRAPPER_DIR:$PATH"
 
 # Execute Zotero directly (bypass /bin/bash shebang issue on NixOS)
 ulimit -n 4096
