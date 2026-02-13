@@ -114,6 +114,7 @@ in {
 
     # Media
     sox          # Sample Rate Converter for audio
+    python312Packages.edge-tts  # Text-to-Speech (Microsoft Edge TTS)
     yt-dlp       # YouTube downloader (ElleNajit)
     ffmpeg       # Video processing (ElleNajit)
   ] ++ (lib.optionals isLinux [
