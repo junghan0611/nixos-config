@@ -123,6 +123,8 @@ in {
     xclip
     wl-clipboard
 
+    telegram-bot-api  # Telegram Bot API server (OpenClaw 등)
+
     # System utilities (ElleNajit)
     powertop        # Power management
     usbutils        # USB tools
@@ -139,6 +141,7 @@ in {
   ]) ++ (lib.optionals (isLinux && !isOracle) [
     microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
+    telegram-desktop  # Telegram 메신저
 
     # Terminal emulators (한글 입력 지원)
     wezterm        # Rust-based, excellent Korean input support
