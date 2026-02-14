@@ -304,7 +304,9 @@ in {
                   -show combi
               ''
             }";
-          "${mod}+Tab" = "exec ${pkgs.rofi}/bin/rofi -show window -font '${fontName} ${toString fontSize}'";
+          # Claude Code 창 순환 (✳ 타이틀 기반)
+          "${mod}+Tab" = "exec --no-startup-id ${config.home.homeDirectory}/repos/gh/nixos-config/scripts/claude-focus.sh next";
+          "${mod}+Shift+Tab" = "exec --no-startup-id ${config.home.homeDirectory}/repos/gh/nixos-config/scripts/claude-focus.sh prev";
           "${mod}+Shift+d" = "exec ${pkgs.rofi}/bin/rofi -show run -font '${fontName} ${toString fontSize}'";
 
           # Password manager (rofi-pass)
