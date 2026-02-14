@@ -87,6 +87,10 @@ show_menu() {
     echo "    8) List generations (세대 목록)"
     echo "    9) Rollback (이전 세대로)"
     echo ""
+    echo -e "  ${YELLOW}Peon-ping${NC}"
+    echo "    p) Preview packs (팩별 소리 미리듣기)"
+    echo "    P) Install peon-ping (사운드 설치)"
+    echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
     echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC)"
@@ -121,7 +125,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, c/C, d): " choice
+        read -p "선택하세요 (0-9, p/P, c/C/d): " choice
 
         case $choice in
             1)
@@ -250,6 +254,90 @@ main() {
                 else
                     info "취소되었습니다."
                 fi
+                ;;
+            p)
+                echo ""
+                PEON_SH="$HOME/.claude/hooks/peon-ping/peon.sh"
+                if [[ ! -f "$PEON_SH" ]]; then
+                    error "peon-ping이 설치되지 않았습니다. 먼저 'P'로 설치하세요."
+                else
+                    # Get pack list
+                    info "설치된 사운드 팩:"
+                    echo ""
+                    PACK_NAMES=()
+                    while IFS= read -r line; do
+                        # Parse: "  pack_name    Description *"
+                        name=$(echo "$line" | awk '{print $1}')
+                        [[ -n "$name" ]] && PACK_NAMES+=("$name")
+                    done < <(bash "$PEON_SH" packs list 2>/dev/null)
+
+                    if [[ ${#PACK_NAMES[@]} -eq 0 ]]; then
+                        error "설치된 팩이 없습니다."
+                    else
+                        for i in "${!PACK_NAMES[@]}"; do
+                            printf "    %2d) %s\n" "$((i+1))" "${PACK_NAMES[$i]}"
+                        done
+                        echo ""
+                        echo "     a) 전체 팩 순서대로 미리듣기"
+                        echo "     0) 돌아가기"
+                        echo ""
+
+                        CATEGORIES=("session.start" "task.complete" "input.required")
+                        ORIGINAL_PACK=$(bash "$PEON_SH" packs list 2>/dev/null | grep '\*' | awk '{print $1}')
+
+                        preview_pack() {
+                            local pack="$1"
+                            bash "$PEON_SH" packs use "$pack" >/dev/null 2>&1
+                            echo ""
+                            info "▶ [$pack]"
+                            for cat in "${CATEGORIES[@]}"; do
+                                printf "    %-20s " "$cat"
+                                bash "$PEON_SH" preview "$cat" 2>/dev/null
+                                sleep 0.5
+                            done
+                        }
+
+                        read -p "선택 (번호/a/0): " pack_choice
+                        case $pack_choice in
+                            0)
+                                info "취소"
+                                ;;
+                            a|A)
+                                for pack in "${PACK_NAMES[@]}"; do
+                                    preview_pack "$pack"
+                                done
+                                echo ""
+                                # Restore original
+                                if [[ -n "$ORIGINAL_PACK" ]]; then
+                                    bash "$PEON_SH" packs use "$ORIGINAL_PACK" >/dev/null 2>&1
+                                    success "원래 팩 복원: $ORIGINAL_PACK"
+                                fi
+                                ;;
+                            [0-9]|[0-9][0-9])
+                                idx=$((pack_choice - 1))
+                                if [[ $idx -ge 0 && $idx -lt ${#PACK_NAMES[@]} ]]; then
+                                    preview_pack "${PACK_NAMES[$idx]}"
+                                    echo ""
+                                    read -p "이 팩을 기본으로 설정? (y/N): " keep
+                                    if [[ "$keep" =~ ^[Yy]$ ]]; then
+                                        success "기본 팩: ${PACK_NAMES[$idx]}"
+                                    elif [[ -n "$ORIGINAL_PACK" ]]; then
+                                        bash "$PEON_SH" packs use "$ORIGINAL_PACK" >/dev/null 2>&1
+                                        info "원래 팩 복원: $ORIGINAL_PACK"
+                                    fi
+                                else
+                                    error "잘못된 번호입니다."
+                                fi
+                                ;;
+                            *)
+                                error "잘못된 선택입니다."
+                                ;;
+                        esac
+                    fi
+                fi
+                ;;
+            P)
+                execute_cmd "bash '$FLAKE_DIR/scripts/install-peon-ping.sh'"
                 ;;
             d|D)
                 echo ""

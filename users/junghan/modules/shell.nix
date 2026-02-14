@@ -35,6 +35,9 @@ let
     # NixOS specific
     rebuild = "sudo nixos-rebuild switch --flake .#$HOST";
     rebuild-test = "sudo nixos-rebuild test --flake .#$HOST";
+
+    # peon-ping (Claude Code event sounds)
+    peon = "bash $HOME/.claude/hooks/peon-ping/peon.sh";
   };
 in {
   #---------------------------------------------------------------------
@@ -180,6 +183,9 @@ in {
       alias v='e'
       alias ec='emacsclient -s server -n'
       alias ecn='emacsclient -s server -c -n'
+
+      # peon-ping tab completions
+      [ -f "$HOME/.claude/hooks/peon-ping/completions.bash" ] && source "$HOME/.claude/hooks/peon-ping/completions.bash"
 
       # Claude Config bash 설정 로드
       if [ -f "$HOME/claude-config/bash/bashrc" ]; then
