@@ -241,15 +241,23 @@ def main():
     attention_items = []
     error_items = []
 
-    # Process each subdirectory
+    # Process each subdirectory (2-level scan: if child has no .git, check grandchildren)
+    repos = []
     for item in sorted(target_dir.iterdir()):
         if not item.is_dir():
             continue
+        candidate = GitRepoInfo(item)
+        if candidate.has_git():
+            repos.append(candidate)
+        else:
+            # Scan one level deeper (category/group directories)
+            for sub in sorted(item.iterdir()):
+                if sub.is_dir():
+                    sub_candidate = GitRepoInfo(sub)
+                    if sub_candidate.has_git():
+                        repos.append(sub_candidate)
 
-        repo = GitRepoInfo(item)
-
-        if not repo.has_git():
-            continue
+    for repo in repos:
 
         stats['total'] += 1
 
