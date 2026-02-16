@@ -215,8 +215,10 @@ in {
     enableBashIntegration = true;
     settings = {
       # auto_sync = true;  # Disabled - manual sync only
-      sync_frequency = "5m";
+      sync_frequency = "1h";
       search_mode = "fuzzy";
+      filter_mode = "directory";
+      flags = [ "--disable-ctrl-r" ]; # "--disable-up-arrow" ]; 
     };
   };
 
@@ -226,6 +228,18 @@ in {
   programs.zoxide = {
     enable = true;
     enableBashIntegration = true;
+  };
+
+  #---------------------------------------------------------------------
+  # GLG toolbox (glg, greview.py)
+  #---------------------------------------------------------------------
+  home.file.".local/bin/glg" = {
+    source = ../../../scripts/glg;
+    executable = true;
+  };
+  home.file.".local/bin/greview.py" = {
+    source = ../../../scripts/greview.py;
+    executable = true;
   };
 
   #---------------------------------------------------------------------
