@@ -69,6 +69,8 @@
 
     allowedTCPPorts = [
       22     # SSH
+      80     # HTTP (Remark42 ACME challenge)
+      443    # HTTPS (Remark42)
       22000  # Syncthing sync
     ];
 
