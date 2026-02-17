@@ -7,9 +7,9 @@
 Oracle Cloud ARM VM에서 Docker로 운영, Telegram으로 모바일 상시 접근.
 
 - Gateway: =ws://127.0.0.1:18789= (SSH 터널 접근)
-- 채널: Telegram Bot
+- 채널: Telegram Bot, Mattermost (https://chat.junghanacs.com)
 - 이미지: =ghcr.io/openclaw/openclaw:latest= (ARM64 multi-arch 지원)
-- 모델: =anthropic/claude-opus-4-6=
+- 모델: =anthropic/claude-opus-4-6= (setup-token: Claude 구독 직통, 비용 별도 없음)
 
 * 사전 요구사항
 
@@ -170,6 +170,87 @@ docker logs openclaw-gateway --tail 20
 - 환경 (OS, 도구)
 - 컨테이너 내부 데이터 경로 (=/data/repos/gh=, =/data/org= 등)
 
+* Mattermost 채널 연동
+
+Mattermost는 OpenClaw 내장 채널 (별도 플러그인 불필요).
+
+** 사전 요구사항
+
+- Mattermost 인스턴스 운영 중 (=chat.junghanacs.com=)
+- System Console → Integrations → Bot Accounts → Enable: YES
+
+** 봇 계정 생성
+
+Mattermost System Console → Integrations → Bot Accounts → Add:
+
+- Username: =openclaw=
+- Display Name: =OpenClaw AI=
+- Role: Member (User 권한으로 충분)
+
+토큰 발급 (한 번만 표시됨). =openclaw.json= 에 입력:
+
+#+begin_src json
+{
+  "channels": {
+    "mattermost": {
+      "enabled": true,
+      "botToken": "<MATTERMOST_BOT_TOKEN>",
+      "baseUrl": "https://chat.junghanacs.com",
+      "dmPolicy": "pairing"
+    }
+  }
+}
+#+end_src
+
+Gateway 재시작 후 정상 로그:
+
+#+begin_example
+[mattermost] [default] starting channel
+[mattermost] connected as @openclaw
+#+end_example
+
+** 사용자 페어링
+
+DM 전송 → 봇이 페어링 코드 응답:
+
+#+begin_example
+openclaw pairing approve mattermost <CODE>
+#+end_example
+
+또는:
+
+#+begin_src bash
+cd ~/openclaw
+docker compose run --rm openclaw-cli pairing approve mattermost <CODE>
+#+end_src
+
+* 멀티 에이전트 (고급)
+
+OpenClaw는 채널별 독립 에이전트 라우팅 지원.
+각 에이전트마다 별도 워크스페이스, 모델, 페르소나 설정 가능.
+
+** 에이전트 추가
+
+#+begin_src bash
+# 새 에이전트 추가 (채널 바인딩 포함)
+docker compose run --rm openclaw-cli agents add work-agent \
+  --bind mattermost \
+  --model anthropic/claude-opus-4-6 \
+  --workspace /home/node/.openclaw/workspace-work
+
+# 에이전트 목록 확인
+docker compose run --rm openclaw-cli agents list
+#+end_src
+
+** 채널 바인딩 예시
+
+| 채널 | 에이전트 | 용도 |
+|------|----------|------|
+| telegram | (기본) | 개인 어시스턴트 |
+| mattermost | work-agent | 업무/자동화 허브 |
+
+에이전트별로 SOUL.md, USER.md, 도구 권한을 다르게 설정 가능.
+
 * SSH 터널링 (로컬 머신에서)
 
 #+begin_src bash
@@ -212,14 +293,17 @@ docker compose pull && docker compose up -d openclaw-gateway
 
 * 포트 현황 (Oracle VM)
 
-| Port  | Service   | Binding   | 방화벽 |
-|-------+-----------+-----------+--------|
-| 22    | SSH       | 0.0.0.0   | open   |
-| 80    | Remark42  | 0.0.0.0   | open   |
-| 443   | Remark42  | 0.0.0.0   | open   |
-| 8384  | Syncthing | 127.0.0.1 | closed |
-| 18789 | OpenClaw  | 127.0.0.1 | closed |
-| 22000 | Syncthing | 0.0.0.0   | open   |
+| Port  | Service    | Binding   | 방화벽 |
+|-------+------------+-----------+--------|
+| 22    | SSH        | 0.0.0.0   | open   |
+| 80    | Caddy      | 0.0.0.0   | open   |
+| 443   | Caddy      | 0.0.0.0   | open   |
+| 5432  | Postgres   | internal  | closed |
+| 8065  | Mattermost | internal  | closed |
+| 8080  | Remark42   | internal  | closed |
+| 8384  | Syncthing  | 127.0.0.1 | closed |
+| 18789 | OpenClaw   | 127.0.0.1 | closed |
+| 22000 | Syncthing  | 0.0.0.0   | open   |
 
 * 트러블슈팅
 
