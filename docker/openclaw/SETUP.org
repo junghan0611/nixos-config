@@ -1,0 +1,86 @@
+#+title: OpenClaw 배포 가이드 (Oracle VM)
+#+date: [2026-02-17 Mon]
+
+* 개요
+
+[[https://openclaw.ai][OpenClaw]] 개인 AI 어시스턴트 게이트웨이.
+Oracle Cloud ARM VM에서 Docker로 운영, Telegram으로 모바일 접근.
+
+- Gateway: ws://127.0.0.1:18789 (SSH 터널 접근)
+- 채널: Telegram Bot
+- 이미지: =ghcr.io/openclaw/openclaw:latest= (ARM64 multi-arch)
+
+* 사전 요구사항
+
+1. Docker + Docker Compose (Oracle VM에 이미 설치됨)
+2. Telegram Bot Token (@BotFather에서 생성, Remark42 봇과 별도)
+3. NixOS 방화벽: 변경 불필요 (localhost만 바인딩)
+
+* 배포
+
+#+begin_src bash
+# 1. 디렉토리 생성
+mkdir -p ~/openclaw/{config,workspace}
+
+# 2. docker-compose.yml 복사
+cp docker-compose.yml ~/openclaw/
+
+# 3. 초기 온보딩
+cd ~/openclaw
+docker compose run --rm --service-ports openclaw-cli onboard
+
+# 4. Telegram 채널 추가
+docker compose run --rm openclaw-cli channels add --channel telegram --token "<TELEGRAM_BOT_TOKEN>"
+
+# 5. Gateway 기동
+docker compose up -d openclaw-gateway
+
+# 6. 로그 확인
+docker compose logs -f openclaw-gateway
+#+end_src
+
+* SSH 터널링 (로컬 머신에서)
+
+#+begin_src bash
+ssh -N -L 18789:127.0.0.1:18789 junghan@<oracle-vm-ip>
+#+end_src
+
+브라우저: http://127.0.0.1:18789/
+
+* 관리
+
+#+begin_src bash
+cd ~/openclaw
+
+# 재시작
+docker compose up -d openclaw-gateway
+
+# 로그
+docker compose logs --tail=30 openclaw-gateway
+
+# 중지
+docker compose down
+
+# CLI 접근 (채널 추가, 설정 변경 등)
+docker compose run --rm openclaw-cli <command>
+
+# 업데이트
+docker compose pull && docker compose up -d openclaw-gateway
+#+end_src
+
+* 데이터 경로
+
+- 설정: =~/openclaw/config/openclaw.json=
+- 워크스페이스: =~/openclaw/workspace/=
+- 세션: =~/openclaw/config/agents/<agentId>/sessions/=
+
+* 포트 현황 (Oracle VM)
+
+| Port  | Service   | Binding   | 방화벽 |
+|-------+-----------+-----------+--------|
+| 22    | SSH       | 0.0.0.0   | open   |
+| 80    | Remark42  | 0.0.0.0   | open   |
+| 443   | Remark42  | 0.0.0.0   | open   |
+| 8384  | Syncthing | 127.0.0.1 | closed |
+| 18789 | OpenClaw  | 127.0.0.1 | closed |
+| 22000 | Syncthing | 0.0.0.0   | open   |

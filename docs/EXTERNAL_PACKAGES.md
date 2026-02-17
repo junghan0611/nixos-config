@@ -47,7 +47,7 @@ Installed to `~/.local/share/pnpm/global/`.
 | Package | Version | Description | Installed |
 |---------|---------|-------------|-----------|
 | cline | 2.0.5 | Autonomous coding agent CLI (terminal) | 2025-02-11 |
-| openclaw | latest | AI Gateway (Telegram + Claude Code) | 2025-02-12 |
+| openclaw | latest | AI Gateway (Telegram + Claude Code) | 2025-02-12 → Docker로 이전 |
 
 ### Commands
 
@@ -65,88 +65,24 @@ pnpm add -g <package>@latest
 pnpm remove -g <package>
 ```
 
-## OpenClaw Setup (Oracle VM)
+## OpenClaw (Oracle VM - Docker)
 
-Oracle VM에서 지식베이스 탐구용 AI 에이전트로 사용.
+Oracle VM에서 지식베이스 탐구용 AI 에이전트. Docker로 운영.
 
-### 설치
-
-```bash
-# Node.js 환경 준비
-nix-shell -p nodejs_22 corepack
-
-# pnpm 활성화
-corepack enable
-corepack prepare pnpm@latest --activate
-
-# OpenClaw 설치
-pnpm add -g openclaw@latest
-```
-
-### 설정
-
-**1. Telegram Bot 생성**
-
-Telegram에서 [@BotFather](https://t.me/BotFather) 접속:
-
-```
-/newbot
-Bot Name: junghan-knowledge-agent (또는 원하는 이름)
-Bot Username: junghan_kb_bot (고유해야 함)
-```
-
-Bot Token 받기 (예: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
-
-**2. OpenClaw Onboarding**
+> 상세 설정: [`docker/openclaw/SETUP.org`](../docker/openclaw/SETUP.org)
 
 ```bash
-# Onboarding (daemon 설치)
-openclaw onboard --install-daemon
-```
+# 배포
+cd ~/openclaw && docker compose up -d openclaw-gateway
 
-- **Telegram Bot Token**: 위에서 받은 토큰 입력
-- **Claude Code Token**: `claude-code auth token` 실행 후 토큰 입력
-
-### 접근 제한 설정
-
-`~/.openclaw/config.json`:
-
-```json
-{
-  "allowedPaths": [
-    "/home/junghan/repos/gh",
-    "/home/junghan/repos/work",
-    "/home/junghan/org"
-  ],
-  "restrictedPaths": [
-    "/home/junghan/.ssh",
-    "/home/junghan/.gnupg",
-    "/home/junghan/password-store"
-  ],
-  "capabilities": {
-    "read": true,
-    "write": false,
-    "execute": false
-  }
-}
-```
-
-### SSH 터널링 (로컬 머신)
-
-```bash
-# Firefox로 접속
+# SSH 터널 (로컬에서)
 ssh -N -L 18789:127.0.0.1:18789 junghan@<oracle-vm-ip>
+# → http://127.0.0.1:18789/
 ```
 
-브라우저: `http://127.0.0.1:18789/`
-
-### 용도
-
-- 코드베이스 분석 (~/repos/gh, ~/repos/work)
-- 지식베이스 탐구 (~/org)
-- **Telegram으로 모바일 상시 접근** (Galaxy Fold4)
-- 상시 대화형 AI 에이전트
-- 시스템 데몬 아님 (필요시 수동 실행)
+- Telegram으로 모바일 상시 접근 (Galaxy Fold4)
+- 코드베이스/지식베이스 탐구
+- 포트 18789 (localhost only, 방화벽 변경 불필요)
 
 ---
 

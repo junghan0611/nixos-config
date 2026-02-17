@@ -1,0 +1,53 @@
+services:
+  openclaw-gateway:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: "openclaw-gateway"
+    restart: unless-stopped
+    init: true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # localhost만 바인딩 (SSH 터널로 접근)
+    ports:
+      - "127.0.0.1:18789:18789"
+
+    environment:
+      - HOME=/home/node
+      - TERM=xterm-256color
+
+    # gateway는 컨테이너 내에서 lan 바인딩 필요
+    command: ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789"]
+
+    volumes:
+      - ./config:/home/node/.openclaw
+      - ./workspace:/home/node/.openclaw/workspace
+      # 지식베이스/코드베이스 (read-only)
+      - ~/repos/gh:/data/repos/gh:ro
+      - ~/repos/work:/data/repos/work:ro
+      - ~/org:/data/org:ro
+
+  openclaw-cli:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: "openclaw-cli"
+    profiles: ["cli"]
+    stdin_open: true
+    tty: true
+
+    environment:
+      - HOME=/home/node
+      - TERM=xterm-256color
+      - BROWSER=echo
+
+    entrypoint: ["node", "openclaw.mjs"]
+
+    volumes:
+      - ./config:/home/node/.openclaw
+      - ./workspace:/home/node/.openclaw/workspace
+      # 지식베이스/코드베이스 (read-only)
+      - ~/repos/gh:/data/repos/gh:ro
+      - ~/repos/work:/data/repos/work:ro
+      - ~/org:/data/org:ro
