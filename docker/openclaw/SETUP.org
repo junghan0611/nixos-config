@@ -229,25 +229,58 @@ docker compose run --rm openclaw-cli pairing approve mattermost <CODE>
 OpenClaw는 채널별 독립 에이전트 라우팅 지원.
 각 에이전트마다 별도 워크스페이스, 모델, 페르소나 설정 가능.
 
-** 에이전트 추가
+** Step 1: 채널 계정 추가
 
 #+begin_src bash
-# 새 에이전트 추가 (채널 바인딩 포함)
-docker compose run --rm openclaw-cli agents add work-agent \
-  --bind mattermost \
-  --model anthropic/claude-opus-4-6 \
-  --workspace /home/node/.openclaw/workspace-work
-
-# 에이전트 목록 확인
-docker compose run --rm openclaw-cli agents list
+# 두 번째 Telegram 봇 계정 추가 (account id: glg)
+docker compose run --rm openclaw-cli channels add \
+  --channel telegram \
+  --account glg \
+  --token '<TELEGRAM_BOT_TOKEN>' \
+  --name '힣(glg)'
 #+end_src
+
+** Step 2: 에이전트 생성
+
+#+begin_src bash
+# 에이전트 추가 (--bind 는 CLI standalone에서 동작 안 함 → Step 3에서 config 직접 수정)
+docker compose run --rm openclaw-cli agents add glg \
+  --model anthropic/claude-opus-4-6 \
+  --workspace /home/node/.openclaw/workspace-glg \
+  --non-interactive --json
+#+end_src
+
+** Step 3: 바인딩 설정 (⚠️ config 직접 수정 필수)
+
+*중요*: =--bind= 플래그는 Gateway가 없는 standalone CLI에서 동작하지 않음.
+=channels add= 성공 후에도 마찬가지. 바인딩은 반드시 =openclaw.json= 루트에 직접 추가.
+
+에이전트/채널 바인딩은 *agents 내부가 아닌 루트 레벨* =bindings= 배열에 설정:
+
+#+begin_src json
+{
+  "bindings": [
+    {
+      "agentId": "glg",
+      "match": { "channel": "telegram", "accountId": "glg" }
+    }
+  ]
+}
+#+end_src
+
+config 파일이 변경되면 Gateway가 hot reload로 자동 반영:
+
+#+begin_example
+[reload] config change applied (dynamic reads: agents.list, bindings)
+#+end_example
 
 ** 채널 바인딩 예시
 
-| 채널 | 에이전트 | 용도 |
-|------|----------|------|
-| telegram | (기본) | 개인 어시스턴트 |
-| mattermost | work-agent | 업무/자동화 허브 |
+| 채널 | 계정 ID | 에이전트 | 용도 |
+|------|---------|----------|------|
+| telegram | default | main | 개인 어시스턴트 |
+| telegram | glg | glg | 힣(glg) 디지털 가든 안내자 |
+| mattermost | default | main | 자동화 허브 |
 
 에이전트별로 SOUL.md, USER.md, 도구 권한을 다르게 설정 가능.
 
