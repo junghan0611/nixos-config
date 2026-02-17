@@ -88,6 +88,20 @@ users/junghan/modules/
 - Before: `home-manager.nix` 341줄
 - After: 118줄 (-65%, 모듈화)
 
+### 🐳 Docker 서비스 (Oracle VM)
+
+Oracle Cloud ARM VM에서 셀프호스팅 서비스 운영:
+
+| 서비스 | 포트 | 설명 |
+|--------|------|------|
+| [Remark42](https://remark42.com) | 80/443 | 셀프호스팅 댓글 시스템 (Let's Encrypt SSL) |
+| [OpenClaw](https://openclaw.ai) | 18789 | AI 어시스턴트 게이트웨이 (Telegram + Claude) |
+
+- Remark42: `comments.junghanacs.com` — GitHub/Google/Telegram/Anonymous 인증
+- OpenClaw: Telegram 봇으로 모바일 상시 AI 접근 — SSH 터널로 Web UI
+
+[`docker/`](./docker/) 디렉토리에 compose 파일 및 설정 가이드.
+
 ---
 
 ## 설치
@@ -99,7 +113,7 @@ users/junghan/modules/
 | `thinkpad` | ThinkPad P16s Gen 2 | AMD Ryzen | 회사 노트북 |
 | `laptop` | Samsung NT930SBE | Intel i7 | 개인 노트북 |
 | `nuc` | Intel NUC | Intel i7 4-Core | 홈 서버 |
-| `oracle` | Oracle Cloud VM | ARM (Ampere) | 원격 서버 (Free Tier) |
+| `oracle` | Oracle Cloud VM | ARM (Ampere) | 원격 서버 (Free Tier) + Docker 서비스 |
 
 ### 요구사항
 
@@ -257,6 +271,13 @@ nixos-config가 제공:
 
 - [CHANGELOG.md](./CHANGELOG.md) - 버전 히스토리 및 패키지 추적
 - [패키지 설치 가이드](./docs/PACKAGE_GUIDE.md) - 패키지 추가 방법 (AI 에이전트 및 사용자용)
+- [외부 패키지](./docs/EXTERNAL_PACKAGES.md) - NixOS 외부 패키지 (uv, pnpm, Docker)
+- [키바인딩 참조](./docs/KEYBINDINGS.md) - i3 키바인딩
+
+### Docker 서비스 가이드
+
+- [Remark42 설정](./docker/remark42/SETUP.org) - 댓글 시스템 배포
+- [OpenClaw 설정](./docker/openclaw/SETUP.org) - AI 게이트웨이 배포 (Telegram + Claude)
 
 ### 분석 및 전략
 
@@ -282,4 +303,4 @@ MIT License
 
 ---
 
-**최종 업데이트**: 2026-02-02
+**최종 업데이트**: 2026-02-17

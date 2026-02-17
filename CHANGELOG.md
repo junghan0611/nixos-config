@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-17
+
+### Added
+- **Docker services (Oracle VM)**
+  - **Remark42**: 셀프호스팅 댓글 시스템 (`comments.junghanacs.com`)
+    - Let's Encrypt 자동 SSL, GitHub/Google/Telegram/Anonymous 인증
+    - `docker/remark42/` — compose, 설정 가이드
+  - **OpenClaw**: AI 어시스턴트 게이트웨이 (Telegram + Claude)
+    - `ghcr.io/openclaw/openclaw:latest` (ARM64 multi-arch)
+    - Telegram 봇으로 모바일 상시 AI 접근
+    - repos/gh, repos/work, org read-only 마운트
+    - boot-md, session-memory hooks 활성화
+    - `docker/openclaw/` — compose, 설정 템플릿, 상세 가이드
+- **Oracle VM 방화벽**: HTTP/HTTPS (80, 443) 포트 개방 (Remark42용)
+- **i3**: Claude Code 창 순환 키바인딩 (Win+Tab/Shift+Tab)
+- **shell**: GLG 도구 모음 NixOS 배포
+- **home-manager**: `telegram-bot-api`, `telegram-desktop` 추가
+- **edge-tts**: Text-to-Speech 패키지 추가
+
+### Changed
+- **README**: Docker 서비스 섹션, 문서 링크 추가 (영/한)
+- **EXTERNAL_PACKAGES.md**: OpenClaw을 Docker 배포로 이전
+
+### Fixed
+- **greview**: 2단계 디렉토리 스캔 지원
+- **whisper**: `/usr/bin/pass`를 `pass`로 변경 (NixOS 호환)
+
 ## [0.2.0] - 2026-02-02
 
 ### Added

@@ -47,6 +47,20 @@ A comprehensive NixOS configuration for building **identical computing environme
 - Python, Nix, C/C++, LaTeX, Shell, Elisp
 - Tools: gh, lazygit, aider-chat, direnv
 
+### Docker Services (Oracle VM)
+
+Self-hosted services running on Oracle Cloud ARM VM:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| [Remark42](https://remark42.com) | 80/443 | Self-hosted comment system (Let's Encrypt SSL) |
+| [OpenClaw](https://openclaw.ai) | 18789 | AI assistant gateway (Telegram + Claude) |
+
+- Remark42: `comments.junghanacs.com` — GitHub/Google/Telegram/Anonymous auth
+- OpenClaw: Telegram bot for mobile AI access — SSH tunnel for Web UI
+
+See [`docker/`](./docker/) for compose files and setup guides.
+
 ### home-manager Modules
 
 ```
@@ -69,7 +83,7 @@ users/junghan/modules/
 | `thinkpad` | ThinkPad P16s Gen 2 | AMD Ryzen | Work laptop |
 | `laptop` | Samsung NT930SBE | Intel i7 | Personal laptop |
 | `nuc` | Intel NUC | Intel i7 4-Core | Home server |
-| `oracle` | Oracle Cloud VM | ARM (Ampere) | Remote server (Free Tier) |
+| `oracle` | Oracle Cloud VM | ARM (Ampere) | Remote server (Free Tier) + Docker services |
 
 ### Prerequisites
 
@@ -210,6 +224,13 @@ nixos-config provides:
 
 - [CHANGELOG.md](./CHANGELOG.md) - Version history and package tracking
 - [Package Installation Guide](./docs/PACKAGE_GUIDE.md) - How to add packages (for AI agents and users)
+- [External Packages](./docs/EXTERNAL_PACKAGES.md) - Non-NixOS packages (uv, pnpm, Docker)
+- [Keybindings Reference](./docs/KEYBINDINGS.md) - i3 keybindings
+
+### Docker Service Guides
+
+- [Remark42 Setup](./docker/remark42/SETUP.org) - Comment system deployment
+- [OpenClaw Setup](./docker/openclaw/SETUP.org) - AI gateway deployment (Telegram + Claude)
 
 ### Analysis and Strategy
 
