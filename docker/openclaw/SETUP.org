@@ -414,3 +414,30 @@ CLI 컨테이너가 자기 자신 IP로 gateway 연결 시도하여 실패하는
 ** Systemd unavailable
 Docker 컨테이너 내부에는 systemd가 없음. 정상 동작이며 무시 가능.
 Gateway는 =docker compose up -d= 로 관리.
+
+** Telegram default 봇 응답 없음 (=0/1 connected, 0 enabled=)
+원인: =agents.list= 의 main 에이전트에 =model= 미설정.
+onboard 과정에서 model이 자동 설정되지 않고 agents.list도 생성되지 않을 수 있음.
+
+확인:
+#+begin_src bash
+docker exec openclaw-gateway cat /home/node/.openclaw/openclaw.json | \
+  python3 -c "import json,sys; c=json.load(sys.stdin); \
+  [print(a['id'], a.get('model','없음')) for a in c['agents']['list']]"
+#+end_src
+
+수정: =openclaw.json= 에 직접 추가 (Gateway hot reload로 자동 반영):
+#+begin_src json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "main",
+        "model": "anthropic/claude-opus-4-6"
+      }
+    ]
+  }
+}
+#+end_src
+
+재현 방지: =openclaw.json.example= 에 =agents.list[main].model= 포함.

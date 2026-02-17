@@ -9,7 +9,13 @@
       "subagents": {
         "maxConcurrent": 8
       }
-    }
+    },
+    "list": [
+      {
+        "id": "main",
+        "model": "anthropic/claude-opus-4-6"
+      }
+    ]
   },
   "commands": {
     "native": "auto",
