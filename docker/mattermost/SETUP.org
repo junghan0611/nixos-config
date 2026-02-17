@@ -1,0 +1,159 @@
+#+title: Mattermost + Caddy 배포 가이드 (Oracle VM)
+#+date: [2026-02-17 Mon]
+
+* 개요
+
+Mattermost Team Edition 셀프호스팅 + Caddy 리버스 프록시.
+
+- URL: https://chat.junghanacs.com
+- 역할: OpenClaw AI 게이트웨이 채널 + 자동화 허브
+- SSL: Caddy 자동 Let's Encrypt (Remark42 인증서도 통합 관리)
+
+* 전체 서비스 구조
+
+#+begin_example
+인터넷 → Caddy (80/443)
+            ├── comments.junghanacs.com → remark42:8080
+            └── chat.junghanacs.com    → mattermost:8065
+                                              └── postgres:5432 (내부)
+
+OpenClaw (18789, localhost) → mattermost 채널 플러그인
+#+end_example
+
+공유 네트워크: =proxy= (Caddy가 생성, 나머지 서비스가 참여)
+
+* 사전 요구사항
+
+1. DNS: =chat.junghanacs.com= A 레코드 → Oracle VM 공인 IP
+2. DNS: =comments.junghanacs.com= A 레코드 → Oracle VM 공인 IP (기존)
+3. Oracle Cloud Security List: TCP 80, 443 인그레스 허용 (기존)
+4. NixOS 방화벽: 80, 443 이미 개방 (=machines/oracle.nix=)
+
+* Step 1: Remark42 중단 (기존 SSL 해제)
+
+Remark42가 80/443을 직접 점유하고 있으면 Caddy와 충돌.
+먼저 기존 Remark42를 중단.
+
+#+begin_src bash
+cd ~/remark42 && docker compose down
+#+end_src
+
+* Step 2: Caddy 기동 (proxy 네트워크 생성)
+
+#+begin_src bash
+mkdir -p ~/caddy/{data,config}
+cp ~/nixos-config/docker/caddy/docker-compose.yml ~/caddy/
+cp ~/nixos-config/docker/caddy/Caddyfile ~/caddy/
+
+cd ~/caddy && docker compose up -d
+#+end_src
+
+=proxy= 네트워크가 생성되고 Caddy가 80/443 점유.
+
+* Step 3: Remark42 재기동 (Caddy 네트워크 참여)
+
+#+begin_src bash
+# docker-compose.yml 업데이트 (nixos-config에서)
+cp ~/nixos-config/docker/remark42/docker-compose.yml ~/remark42/
+
+cd ~/remark42 && docker compose up -d
+#+end_src
+
+* Step 4: Mattermost 기동
+
+#+begin_src bash
+mkdir -p ~/mattermost/data/{config,data,logs,plugins,client/plugins}
+mkdir -p ~/mattermost/db
+cp ~/nixos-config/docker/mattermost/docker-compose.yml ~/mattermost/
+cp ~/nixos-config/docker/mattermost/.env.example ~/mattermost/.env
+
+# .env 편집 (POSTGRES_PASSWORD 입력)
+openssl rand -hex 16  # 비밀번호 생성
+#+end_src
+
+`.env` 편집 후:
+
+#+begin_src bash
+cd ~/mattermost && docker compose up -d
+#+end_src
+
+* Step 5: Mattermost 초기 설정
+
+브라우저에서 https://chat.junghanacs.com 접속:
+
+1. 관리자 계정 생성
+2. 팀 생성
+3. System Console → Bot Accounts → Enable Bot Account Creation: YES
+
+* Step 6: OpenClaw Mattermost 봇 계정 생성
+
+Mattermost System Console → Integrations → Bot Accounts → Add Bot Account:
+
+- Username: =openclaw=
+- Display Name: =OpenClaw AI=
+- Role: Member
+
+Bot 토큰 저장 (한 번만 표시됨).
+
+* Step 7: OpenClaw Mattermost 플러그인 설치
+
+#+begin_src bash
+cd ~/openclaw
+docker compose run --rm openclaw-cli plugins install @openclaw/mattermost
+#+end_src
+
+=openclaw.json= 에 Mattermost 채널 추가:
+
+#+begin_src json
+{
+  "channels": {
+    "mattermost": {
+      "enabled": true,
+      "botToken": "<BOT_TOKEN>",
+      "baseUrl": "https://chat.junghanacs.com",
+      "dmPolicy": "pairing"
+    }
+  }
+}
+#+end_src
+
+Gateway 재시작:
+
+#+begin_src bash
+docker compose restart openclaw-gateway
+#+end_src
+
+* 관리
+
+#+begin_src bash
+# Caddy 로그
+cd ~/caddy && docker compose logs --tail=30
+
+# Mattermost 로그
+cd ~/mattermost && docker compose logs --tail=30 mattermost
+
+# 전체 재시작 순서 (중요: Caddy 먼저)
+cd ~/caddy && docker compose up -d
+cd ~/remark42 && docker compose up -d
+cd ~/mattermost && docker compose up -d
+cd ~/openclaw && docker compose up -d
+#+end_src
+
+* Caddy 인증서 갱신
+
+Caddy가 자동으로 Let's Encrypt 인증서를 90일 주기로 갱신.
+인증서 저장 위치: =~/caddy/data/=
+
+* 포트 현황 (업데이트)
+
+| Port  | Service   | Binding   | 방화벽 |
+|-------+-----------+-----------+--------|
+| 22    | SSH       | 0.0.0.0   | open   |
+| 80    | Caddy     | 0.0.0.0   | open   |
+| 443   | Caddy     | 0.0.0.0   | open   |
+| 5432  | Postgres  | internal  | closed |
+| 8065  | Mattermost| internal  | closed |
+| 8080  | Remark42  | internal  | closed |
+| 8384  | Syncthing | 127.0.0.1 | closed |
+| 18789 | OpenClaw  | 127.0.0.1 | closed |
+| 22000 | Syncthing | 0.0.0.0   | open   |

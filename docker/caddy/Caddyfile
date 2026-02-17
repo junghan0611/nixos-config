@@ -1,0 +1,9 @@
+# Remark42 댓글 서버
+comments.junghanacs.com {
+    reverse_proxy remark42:8080
+}
+
+# Mattermost 채팅 서버
+chat.junghanacs.com {
+    reverse_proxy mattermost:8065
+}

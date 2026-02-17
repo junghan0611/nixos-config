@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mattermost-db
+    restart: unless-stopped
+
+    environment:
+      - POSTGRES_USER=mattermost
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=mattermost
+
+    volumes:
+      - ./db:/var/lib/postgresql/data
+
+    networks:
+      - mattermost-internal
+
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    container_name: mattermost
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+    environment:
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://mattermost:${POSTGRES_PASSWORD}@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      - MM_SERVICESETTINGS_SITEURL=https://chat.junghanacs.com
+      - MM_SERVICESETTINGS_LISTENADDRESS=:8065
+      # 외부 접근은 Caddy가 처리
+      - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mattermost
+      # 플러그인 (OpenClaw Mattermost 채널용)
+      - MM_PLUGINSETTINGS_ENABLE=true
+      - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
+
+    volumes:
+      - ./data/config:/mattermost/config
+      - ./data/data:/mattermost/data
+      - ./data/logs:/mattermost/logs
+      - ./data/plugins:/mattermost/plugins
+      - ./data/client/plugins:/mattermost/client/plugins
+
+    networks:
+      - mattermost-internal
+      - proxy         # Caddy 리버스 프록시 접근용
+
+networks:
+  mattermost-internal:
+    driver: bridge
+  proxy:
+    external: true   # Caddy가 생성한 네트워크

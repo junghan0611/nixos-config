@@ -1,0 +1,41 @@
+#+title: Caddy 리버스 프록시 설정 (Oracle VM)
+#+date: [2026-02-17 Mon]
+
+* 개요
+
+[[https://caddyserver.com][Caddy]] v2 리버스 프록시.
+Oracle Cloud ARM VM에서 모든 서비스의 TLS 자동 관리.
+
+- 인증서: Let's Encrypt 자동 발급/갱신
+- 역할: =comments.junghanacs.com= (Remark42), =chat.junghanacs.com= (Mattermost)
+- 공유 네트워크 =proxy= 생성자
+
+* 배포
+
+#+begin_src bash
+mkdir -p ~/caddy/{data,config}
+cp ~/nixos-config/docker/caddy/docker-compose.yml ~/caddy/
+cp ~/nixos-config/docker/caddy/Caddyfile ~/caddy/
+
+cd ~/caddy && docker compose up -d
+#+end_src
+
+* Caddyfile 수정
+
+새 서비스 추가 시 =~/caddy/Caddyfile= 편집 후 reload:
+
+#+begin_src bash
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+#+end_src
+
+재시작 없이 인증서 포함 즉시 반영.
+
+* 인증서 확인
+
+#+begin_src bash
+# 인증서 목록
+docker compose exec caddy caddy list-certificates
+
+# 로그
+docker compose logs --tail=30 caddy
+#+end_src

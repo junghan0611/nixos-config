@@ -28,6 +28,15 @@
       }
     }
   },
+  "messages": {
+    "tts": {
+      "provider": "edge",
+      "auto": "off",
+      "edge": {
+        "voice": "ko-KR-HyunsuMultilingualNeural"
+      }
+    }
+  },
   "channels": {
     "telegram": {
       "enabled": true,
@@ -40,6 +49,12 @@
       },
       "groupPolicy": "allowlist",
       "streamMode": "partial"
+    },
+    "mattermost": {
+      "enabled": false,
+      "botToken": "<MATTERMOST_BOT_TOKEN>",
+      "baseUrl": "https://chat.junghanacs.com",
+      "dmPolicy": "pairing"
     }
   },
   "gateway": {

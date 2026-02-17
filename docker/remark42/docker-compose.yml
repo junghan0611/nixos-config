@@ -11,19 +11,16 @@ services:
         max-size: "10m"
         max-file: "5"
 
-    # Remark42 자체 HTTPS (Let's Encrypt)
-    ports:
-      - "80:8080"
-      - "443:8443"
+    # 포트 직접 노출 없음 — Caddy 리버스 프록시가 처리
+    expose:
+      - "8080"
 
     environment:
       - REMARK_URL=https://comments.junghanacs.com
       - SECRET=${SECRET}
       - SITE=notes,www
-      - SSL_TYPE=auto
-      - SSL_PORT=8443
-      - SSL_ACME_EMAIL=${SSL_ACME_EMAIL}
-      - SSL_ACME_LOCATION=/srv/var/acme
+      # SSL은 Caddy가 처리
+      - SSL_TYPE=none
       - ALLOWED_HOSTS=comments.junghanacs.com,notes.junghanacs.com,www.junghanacs.com
       # Auth providers
       - AUTH_GITHUB_CID=${AUTH_GITHUB_CID}
@@ -39,3 +36,10 @@ services:
 
     volumes:
       - ./var:/srv/var
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true   # Caddy가 생성한 네트워크
