@@ -51,13 +51,26 @@ A comprehensive NixOS configuration for building **identical computing environme
 
 Self-hosted services running on Oracle Cloud ARM VM:
 
-| Service | Port | Description |
-|---------|------|-------------|
-| [Remark42](https://remark42.com) | 80/443 | Self-hosted comment system (Let's Encrypt SSL) |
-| [OpenClaw](https://openclaw.ai) | 18789 | AI assistant gateway (Telegram + Claude) |
+| Service | URL | Description |
+|---------|-----|-------------|
+| [Caddy](https://caddyserver.com) | reverse proxy | Auto HTTPS (Let's Encrypt) for all services |
+| [Remark42](https://remark42.com) | `comments.junghanacs.com` | Self-hosted comment system |
+| [Mattermost](https://mattermost.com) | `chat.junghanacs.com` | Team chat + OpenClaw integration hub |
+| [OpenClaw](https://openclaw.ai) | `localhost:18789` (SSH tunnel) | AI assistant gateway |
 
-- Remark42: `comments.junghanacs.com` — GitHub/Google/Telegram/Anonymous auth
-- OpenClaw: Telegram bot for mobile AI access — SSH tunnel for Web UI
+**OpenClaw features:**
+- Telegram bots: personal (`main` agent) + 힣(glg) digital garden guide
+- Mattermost channel: `@openclaw` bot in `chat.junghanacs.com`
+- Multi-agent routing: each bot → independent agent with own workspace
+- Web UI (Control UI): SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 oracle` → `http://127.0.0.1:18789/`
+
+**run.sh shortcuts** (from laptop):
+```bash
+./run.sh  # then:
+# t) Start OpenClaw SSH tunnel + dashboard
+# r) Restart Oracle Docker services
+# s) Oracle Docker service status
+```
 
 See [`docker/`](./docker/) for compose files and setup guides.
 
@@ -230,7 +243,8 @@ nixos-config provides:
 ### Docker Service Guides
 
 - [Remark42 Setup](./docker/remark42/SETUP.org) - Comment system deployment
-- [OpenClaw Setup](./docker/openclaw/SETUP.org) - AI gateway deployment (Telegram + Claude)
+- [Mattermost Setup](./docker/mattermost/SETUP.org) - Team chat + bot integration
+- [OpenClaw Setup](./docker/openclaw/SETUP.org) - AI gateway deployment (multi-agent, Telegram + Mattermost)
 
 ### Analysis and Strategy
 

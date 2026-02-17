@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-17
+
+### Added
+- **run.sh**: Oracle VM 원격 관리 메뉴 추가 (Remote 섹션)
+  - `t) OpenClaw SSH 터널 시작/종료` (`ssh -N -L 18789:127.0.0.1:18789 oracle`)
+  - `r) Oracle Docker 서비스 재시작` (openclaw-gateway / caddy+mattermost / 전체)
+  - `s) Oracle Docker 서비스 상태` (`docker ps`)
+- **OpenClaw**: Mattermost 채널 연동 (`@openclaw` 봇, `chat.junghanacs.com`)
+  - Gmail SMTP 설정 (smtp.gmail.com:587 STARTTLS)
+  - 방문자 초대 링크 채널
+- **OpenClaw**: 멀티 에이전트 — 힣(glg) 에이전트
+  - 두 번째 Telegram 봇 (`@glg_junghanacs_bot`)
+  - `agents/glg/SOUL.md`, `agents/glg/IDENTITY.md` 생성
+  - 디지털 가든 안내자 페르소나 (notes.junghanacs.com)
+- **OpenClaw**: Control UI (대시보드) 접속 절차 문서화
+  - Docker 환경 device pairing 이슈 해결: `docker exec` 방식
+  - `SETUP.org` 재현 가능한 device pairing 절차 추가
+
+### Changed
+- **README/README-KO**: Docker 서비스 테이블에 Mattermost, Caddy 추가
+- **README/README-KO**: run.sh Oracle 관리 단축키 안내 추가
+- **docs links**: Mattermost SETUP.org 링크 추가
+
 ## [0.3.0] - 2026-02-17
 
 ### Added

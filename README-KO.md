@@ -92,13 +92,26 @@ users/junghan/modules/
 
 Oracle Cloud ARM VM에서 셀프호스팅 서비스 운영:
 
-| 서비스 | 포트 | 설명 |
-|--------|------|------|
-| [Remark42](https://remark42.com) | 80/443 | 셀프호스팅 댓글 시스템 (Let's Encrypt SSL) |
-| [OpenClaw](https://openclaw.ai) | 18789 | AI 어시스턴트 게이트웨이 (Telegram + Claude) |
+| 서비스 | URL | 설명 |
+|--------|-----|------|
+| [Caddy](https://caddyserver.com) | 리버스 프록시 | 전체 서비스 자동 HTTPS (Let's Encrypt) |
+| [Remark42](https://remark42.com) | `comments.junghanacs.com` | 셀프호스팅 댓글 시스템 |
+| [Mattermost](https://mattermost.com) | `chat.junghanacs.com` | 팀 채팅 + OpenClaw 연동 허브 |
+| [OpenClaw](https://openclaw.ai) | `localhost:18789` (SSH 터널) | AI 어시스턴트 게이트웨이 |
 
-- Remark42: `comments.junghanacs.com` — GitHub/Google/Telegram/Anonymous 인증
-- OpenClaw: Telegram 봇으로 모바일 상시 AI 접근 — SSH 터널로 Web UI
+**OpenClaw 기능:**
+- Telegram 봇: 개인 (`main` 에이전트) + 힣(glg) 디지털 가든 안내자
+- Mattermost 채널: `chat.junghanacs.com`의 `@openclaw` 봇
+- 멀티 에이전트 라우팅: 봇별 독립 에이전트 + 워크스페이스
+- Web UI (Control UI): SSH 터널 `ssh -N -L 18789:127.0.0.1:18789 oracle` → `http://127.0.0.1:18789/`
+
+**run.sh 단축키** (노트북에서):
+```bash
+./run.sh  # 이후:
+# t) OpenClaw SSH 터널 시작 + 대시보드
+# r) Oracle Docker 서비스 재시작
+# s) Oracle Docker 서비스 상태
+```
 
 [`docker/`](./docker/) 디렉토리에 compose 파일 및 설정 가이드.
 
@@ -277,7 +290,8 @@ nixos-config가 제공:
 ### Docker 서비스 가이드
 
 - [Remark42 설정](./docker/remark42/SETUP.org) - 댓글 시스템 배포
-- [OpenClaw 설정](./docker/openclaw/SETUP.org) - AI 게이트웨이 배포 (Telegram + Claude)
+- [Mattermost 설정](./docker/mattermost/SETUP.org) - 팀 채팅 + 봇 연동
+- [OpenClaw 설정](./docker/openclaw/SETUP.org) - AI 게이트웨이 배포 (멀티 에이전트, Telegram + Mattermost)
 
 ### 분석 및 전략
 

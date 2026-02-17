@@ -91,6 +91,11 @@ show_menu() {
     echo "    p) Preview packs (팩별 소리 미리듣기)"
     echo "    P) Install peon-ping (사운드 설치)"
     echo ""
+    echo -e "  ${YELLOW}Remote (Oracle VM)${NC}"
+    echo "    t) OpenClaw 터널 시작/종료 (→ http://127.0.0.1:18789/)"
+    echo "    r) Oracle Docker 서비스 재시작"
+    echo "    s) Oracle Docker 서비스 상태"
+    echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
     echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC)"
@@ -125,7 +130,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, p/P, c/C/d): " choice
+        read -p "선택하세요 (0-9, p/P, c/C/d, t/r/s): " choice
 
         case $choice in
             1)
@@ -338,6 +343,56 @@ main() {
                 ;;
             P)
                 execute_cmd "bash '$FLAKE_DIR/scripts/install-peon-ping.sh'"
+                ;;
+            t)
+                echo ""
+                TUNNEL_PID=$(pgrep -f "ssh.*-L 18789" 2>/dev/null || true)
+                if [[ -n "$TUNNEL_PID" ]]; then
+                    warn "OpenClaw 터널 실행 중 (PID: $TUNNEL_PID)"
+                    read -p "종료하시겠습니까? (y/N): " kill_it
+                    if [[ "$kill_it" =~ ^[Yy]$ ]]; then
+                        pkill -f "ssh.*-L 18789" && success "터널 종료됨"
+                    else
+                        info "유지됩니다."
+                    fi
+                else
+                    info "SSH 터널 시작: oracle → localhost:18789"
+                    ssh -f -N -L 18789:127.0.0.1:18789 oracle
+                    sleep 1
+                    NEW_PID=$(pgrep -f "ssh.*-L 18789" 2>/dev/null || true)
+                    success "터널 시작됨 (PID: $NEW_PID)"
+                    info "대시보드: http://127.0.0.1:18789/"
+                fi
+                ;;
+            r)
+                echo ""
+                echo "재시작할 서비스 선택:"
+                echo "  1) openclaw-gateway"
+                echo "  2) caddy + mattermost"
+                echo "  3) 전체 Oracle Docker 서비스"
+                echo "  0) 취소"
+                read -p "> " svc_choice
+                case $svc_choice in
+                    1)
+                        execute_cmd "ssh oracle 'cd ~/openclaw && docker compose restart openclaw-gateway'"
+                        ;;
+                    2)
+                        execute_cmd "ssh oracle 'cd ~/nixos-config/docker && docker compose -f caddy/docker-compose.yml -f mattermost/docker-compose.yml restart'"
+                        ;;
+                    3)
+                        execute_cmd "ssh oracle 'cd ~/openclaw && docker compose restart openclaw-gateway'"
+                        execute_cmd "ssh oracle 'cd ~/nixos-config/docker && docker compose -f caddy/docker-compose.yml restart && docker compose -f mattermost/docker-compose.yml restart'"
+                        ;;
+                    0)
+                        info "취소됩니다."
+                        ;;
+                    *)
+                        error "잘못된 선택입니다."
+                        ;;
+                esac
+                ;;
+            s)
+                execute_cmd "ssh oracle 'docker ps --format \"table {{.Names}}\t{{.Status}}\t{{.Ports}}\"'"
                 ;;
             d|D)
                 echo ""
