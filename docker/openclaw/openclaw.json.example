@@ -51,7 +51,7 @@
       "streamMode": "partial"
     },
     "mattermost": {
-      "enabled": false,
+      "enabled": true,
       "botToken": "<MATTERMOST_BOT_TOKEN>",
       "baseUrl": "https://chat.junghanacs.com",
       "dmPolicy": "pairing"

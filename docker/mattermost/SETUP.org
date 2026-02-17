@@ -95,14 +95,10 @@ Mattermost System Console → Integrations → Bot Accounts → Add Bot Account:
 
 Bot 토큰 저장 (한 번만 표시됨).
 
-* Step 7: OpenClaw Mattermost 플러그인 설치
+* Step 7: OpenClaw Mattermost 채널 설정
 
-#+begin_src bash
-cd ~/openclaw
-docker compose run --rm openclaw-cli plugins install @openclaw/mattermost
-#+end_src
-
-=openclaw.json= 에 Mattermost 채널 추가:
+Mattermost는 OpenClaw 내장 채널이므로 별도 플러그인 설치 불필요.
+=openclaw.json= 에 Mattermost 채널 추가 (=enabled: true= 로 변경):
 
 #+begin_src json
 {

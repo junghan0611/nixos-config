@@ -16,7 +16,7 @@ services:
       - mattermost-internal
 
   mattermost:
-    image: mattermost/mattermost-team-edition:latest
+    image: ngrie/mattermost-team-edition-arm:latest  # ARM64 (공식 이미지 ARM64 미지원)
     container_name: mattermost
     restart: unless-stopped
     depends_on:
@@ -32,6 +32,8 @@ services:
       # 플러그인 (OpenClaw Mattermost 채널용)
       - MM_PLUGINSETTINGS_ENABLE=true
       - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
+
+    command: ["mattermost", "server"]
 
     volumes:
       - ./data/config:/mattermost/config
