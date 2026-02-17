@@ -7,3 +7,8 @@ comments.junghanacs.com {
 chat.junghanacs.com {
     reverse_proxy mattermost:8065
 }
+
+# OpenClaw 대시보드
+openclaw.junghanacs.com {
+    reverse_proxy openclaw-gateway:18789
+}

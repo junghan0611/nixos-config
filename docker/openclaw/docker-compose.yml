@@ -30,6 +30,9 @@ services:
       - ~/repos/work:/data/repos/work:ro
       - ~/org:/data/org:ro
 
+    networks:
+      - proxy          # Caddy 리버스 프록시 접근용
+
   openclaw-cli:
     image: ghcr.io/openclaw/openclaw:latest
     container_name: "openclaw-cli"
@@ -51,3 +54,7 @@ services:
       - ~/repos/gh:/data/repos/gh:ro
       - ~/repos/work:/data/repos/work:ro
       - ~/org:/data/org:ro
+
+networks:
+  proxy:
+    external: true   # Caddy가 생성한 네트워크
