@@ -1,0 +1,41 @@
+services:
+  remark42:
+    image: ghcr.io/umputun/remark42:latest
+    container_name: "remark42"
+    hostname: "remark42"
+    restart: always
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # Remark42 자체 HTTPS (Let's Encrypt)
+    ports:
+      - "80:8080"
+      - "443:8443"
+
+    environment:
+      - REMARK_URL=https://comments.junghanacs.com
+      - SECRET=${SECRET}
+      - SITE=notes,www
+      - SSL_TYPE=auto
+      - SSL_PORT=8443
+      - SSL_ACME_EMAIL=${SSL_ACME_EMAIL}
+      - SSL_ACME_LOCATION=/srv/var/acme
+      - ALLOWED_HOSTS=comments.junghanacs.com,notes.junghanacs.com,www.junghanacs.com
+      # Auth providers
+      - AUTH_GITHUB_CID=${AUTH_GITHUB_CID}
+      - AUTH_GITHUB_CSEC=${AUTH_GITHUB_CSEC}
+      - AUTH_GOOGLE_CID=${AUTH_GOOGLE_CID}
+      - AUTH_GOOGLE_CSEC=${AUTH_GOOGLE_CSEC}
+      - AUTH_TELEGRAM=true
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - AUTH_ANON=true
+      # Admin
+      - ADMIN_SHARED_ID=${ADMIN_SHARED_ID}
+      - ADMIN_SHARED_EMAIL=${ADMIN_SHARED_EMAIL}
+
+    volumes:
+      - ./var:/srv/var

@@ -1,0 +1,69 @@
+#+title: Remark42 댓글 서버 설정 가이드
+#+date: [2026-02-17 Mon]
+
+* 개요
+
+[[https://remark42.com][Remark42]] 셀프호스팅 댓글 시스템.
+Oracle Cloud ARM VM (comments.junghanacs.com)에서 Docker로 운영.
+
+- URL: https://comments.junghanacs.com
+- 대상 사이트: notes.junghanacs.com (site_id=notes), junghanacs.com (site_id=www)
+- 인증: GitHub, Google, Telegram, Anonymous
+- SSL: Let's Encrypt 자동 (SSL_TYPE=auto, 90일 주기 자동 갱신)
+
+* 사전 요구사항
+
+1. DNS A 레코드: =comments.junghanacs.com= → Oracle VM 공인 IP
+2. Oracle Cloud Security List: TCP 80, 443 인그레스 허용 (Source Port: All)
+3. NixOS 방화벽: =machines/oracle.nix= 에서 80, 443 개방
+
+* 배포
+
+#+begin_src bash
+# 1. 디렉토리 생성
+mkdir -p ~/remark42/var
+
+# 2. docker-compose.yml 복사
+cp docker-compose.yml ~/remark42/
+
+# 3. .env 설정
+cp .env.example ~/remark42/.env
+# .env 편집하여 OAuth 키, SECRET 등 입력
+
+# 4. 기동
+cd ~/remark42 && docker compose up -d
+
+# 5. 로그 확인
+docker compose logs -f
+#+end_src
+
+* OAuth 콜백 URL
+
+| Provider | Callback URL                                              |
+|----------+-----------------------------------------------------------|
+| GitHub   | https://comments.junghanacs.com/auth/github/callback      |
+| Google   | https://comments.junghanacs.com/auth/google/callback      |
+| Telegram | 토큰만 필요 (@BotFather)                                  |
+
+* 관리
+
+#+begin_src bash
+# 재시작
+cd ~/remark42 && docker compose up -d
+
+# 로그
+docker compose logs --tail=30
+
+# 중지
+docker compose down
+
+# 백업 (자동: ~/remark42/var/backup/)
+ls ~/remark42/var/backup/
+#+end_src
+
+* 데이터 경로
+
+- DB: =~/remark42/var/notes.db=, =~/remark42/var/www.db=
+- 인증서: =~/remark42/var/acme/=
+- 백업: =~/remark42/var/backup/= (24시간 주기 자동)
+- 아바타: =~/remark42/var/avatars/=
