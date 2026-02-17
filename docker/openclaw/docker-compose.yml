@@ -1,6 +1,9 @@
 services:
   openclaw-gateway:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openclaw-custom:latest
     container_name: "openclaw-gateway"
     restart: unless-stopped
     init: true
@@ -35,7 +38,10 @@ services:
       - proxy          # Caddy 리버스 프록시 접근용
 
   openclaw-cli:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openclaw-custom:latest
     container_name: "openclaw-cli"
     profiles: ["cli"]
     stdin_open: true
