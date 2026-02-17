@@ -1,51 +1,182 @@
-#+title: OpenClaw 배포 가이드 (Oracle VM)
+#+title: OpenClaw Docker 배포 가이드 (Oracle VM)
 #+date: [2026-02-17 Mon]
 
 * 개요
 
 [[https://openclaw.ai][OpenClaw]] 개인 AI 어시스턴트 게이트웨이.
-Oracle Cloud ARM VM에서 Docker로 운영, Telegram으로 모바일 접근.
+Oracle Cloud ARM VM에서 Docker로 운영, Telegram으로 모바일 상시 접근.
 
-- Gateway: ws://127.0.0.1:18789 (SSH 터널 접근)
+- Gateway: =ws://127.0.0.1:18789= (SSH 터널 접근)
 - 채널: Telegram Bot
-- 이미지: =ghcr.io/openclaw/openclaw:latest= (ARM64 multi-arch)
+- 이미지: =ghcr.io/openclaw/openclaw:latest= (ARM64 multi-arch 지원)
+- 모델: =anthropic/claude-opus-4-6=
 
 * 사전 요구사항
 
-1. Docker + Docker Compose (Oracle VM에 이미 설치됨)
-2. Telegram Bot Token (@BotFather에서 생성, Remark42 봇과 별도)
-3. NixOS 방화벽: 변경 불필요 (localhost만 바인딩)
+1. Docker + Docker Compose (NixOS =shared.nix= 에서 =virtualisation.docker.enable = true=)
+2. Telegram Bot Token (@BotFather에서 생성)
+3. Anthropic 계정 (Claude 구독 또는 API Key)
+4. NixOS 방화벽: 변경 불필요 (localhost만 바인딩)
 
-* 배포
+* Step 1: Telegram Bot 생성
+
+Telegram에서 [[https://t.me/BotFather][@BotFather]] 접속:
+
+#+begin_example
+/newbot
+Bot Name: <표시 이름>
+Bot Username: <고유 username, _bot으로 끝나야 함>
+#+end_example
+
+Bot Token 받기 (예: =1234567890:ABCdefGHIjklMNOpqrsTUVwxyz=)
+
+* Step 2: 디렉토리 구성
 
 #+begin_src bash
-# 1. 디렉토리 생성
-mkdir -p ~/openclaw/{config,workspace}
+# 배포 디렉토리 생성
+mkdir -p ~/openclaw/config/credentials
+mkdir -p ~/openclaw/config/agents/main/sessions
+mkdir -p ~/openclaw/workspace
 
-# 2. docker-compose.yml 복사
-cp docker-compose.yml ~/openclaw/
-
-# 3. 초기 온보딩
-cd ~/openclaw
-docker compose run --rm --service-ports openclaw-cli onboard
-
-# 4. Telegram 채널 추가
-docker compose run --rm openclaw-cli channels add --channel telegram --token "<TELEGRAM_BOT_TOKEN>"
-
-# 5. Gateway 기동
-docker compose up -d openclaw-gateway
-
-# 6. 로그 확인
-docker compose logs -f openclaw-gateway
+# docker-compose.yml 복사 (nixos-config 리포에서)
+cp ~/nixos-config/docker/openclaw/docker-compose.yml ~/openclaw/
 #+end_src
+
+* Step 3: Docker 이미지 풀
+
+#+begin_src bash
+cd ~/openclaw
+docker pull ghcr.io/openclaw/openclaw:latest
+#+end_src
+
+* Step 4: openclaw.json 초기 설정
+
+=openclaw.json.example= 을 기반으로 설정 파일을 생성한다.
+
+#+begin_src bash
+cp ~/nixos-config/docker/openclaw/openclaw.json.example ~/openclaw/config/openclaw.json
+#+end_src
+
+편집하여 토큰 입력:
+
+#+begin_src bash
+# Gateway 토큰 생성
+openssl rand -hex 24
+# 출력값을 openclaw.json의 gateway.auth.token에 입력
+
+# Telegram Bot Token을 channels.telegram.botToken에 입력
+#+end_src
+
+=~/openclaw/config/openclaw.json= 에서 교체할 값:
+- =<TELEGRAM_BOT_TOKEN>= → @BotFather에서 받은 토큰
+- =<GATEWAY_TOKEN>= → =openssl rand -hex 24= 출력값
+
+보안:
+
+#+begin_src bash
+chmod 700 ~/openclaw/config
+#+end_src
+
+*주의*: =channels add --channel telegram= CLI는 동작하지 않음.
+Telegram 채널은 반드시 =openclaw.json= 에 직접 설정해야 함.
+
+* Step 5: 비대화형 온보딩 (구조 초기화)
+
+#+begin_src bash
+cd ~/openclaw
+docker compose run --rm openclaw-cli onboard \
+  --non-interactive \
+  --accept-risk \
+  --flow quickstart \
+  --auth-choice skip \
+  --skip-channels \
+  --skip-skills \
+  --skip-daemon \
+  --skip-ui \
+  --skip-health \
+  --gateway-bind lan \
+  --gateway-port 18789 \
+  --json
+#+end_src
+
+이 단계는 워크스페이스 구조(AGENTS.md, SOUL.md 등)를 생성한다.
+Gateway가 =openclaw.json= 을 덮어쓸 수 있으므로, Step 4의 설정이 유지되는지 확인.
+
+* Step 6: Anthropic 인증 (대화형)
+
+#+begin_src bash
+cd ~/openclaw
+docker compose run --rm openclaw-cli onboard \
+  --flow quickstart \
+  --auth-choice setup-token \
+  --skip-channels \
+  --skip-skills \
+  --skip-daemon \
+  --skip-ui
+#+end_src
+
+인증 방식 옵션:
+- =setup-token=: Claude 구독 계정 토큰 (권장)
+- =oauth=: OAuth 브라우저 인증
+- =anthropic-api-key=: API Key 직접 입력
+
+대화형 프롬프트에서 Hooks 선택:
+- =boot-md=: 세션 시작 시 시스템 프롬프트 자동 로드
+- =session-memory=: =/new= 시 세션 컨텍스트를 메모리에 저장
+
+* Step 7: Gateway 기동
+
+#+begin_src bash
+cd ~/openclaw
+docker compose up -d openclaw-gateway
+#+end_src
+
+로그 확인:
+
+#+begin_src bash
+docker logs openclaw-gateway --tail 20
+#+end_src
+
+정상 기동 확인 메시지:
+
+#+begin_example
+[gateway]    agent model: anthropic/claude-opus-4-6
+[gateway]    listening on ws://0.0.0.0:18789
+[hooks]      loaded 4 internal hook handlers
+[telegram]   [default] starting provider (@<your_bot_username>)
+#+end_example
+
+* Step 8: Telegram 페어링
+
+1. Telegram에서 봇에게 아무 메시지 전송
+2. 봇이 pairing code를 응답함:
+   #+begin_example
+   Pairing code: XXXXXXX
+   #+end_example
+3. 승인:
+   #+begin_src bash
+   cd ~/openclaw
+   docker compose run --rm openclaw-cli pairing approve telegram XXXXXXX
+   #+end_src
+4. 다시 Telegram에서 메시지 전송 → 봇이 응답하면 완료!
+
+* Step 9: USER.md 커스텀 (선택)
+
+=~/openclaw/workspace/USER.md= 를 편집하여 사용자 정보를 기록.
+봇이 세션 시작 시 이 파일을 읽고 사용자 컨텍스트를 파악한다.
+
+포함할 내용:
+- 이름, 언어, 타임존
+- 환경 (OS, 도구)
+- 컨테이너 내부 데이터 경로 (=/data/repos/gh=, =/data/org= 등)
 
 * SSH 터널링 (로컬 머신에서)
 
 #+begin_src bash
-ssh -N -L 18789:127.0.0.1:18789 junghan@<oracle-vm-ip>
+ssh -N -L 18789:127.0.0.1:18789 <user>@<oracle-vm-ip>
 #+end_src
 
-브라우저: http://127.0.0.1:18789/
+브라우저: =http://127.0.0.1:18789/=
 
 * 관리
 
@@ -53,7 +184,7 @@ ssh -N -L 18789:127.0.0.1:18789 junghan@<oracle-vm-ip>
 cd ~/openclaw
 
 # 재시작
-docker compose up -d openclaw-gateway
+docker compose restart openclaw-gateway
 
 # 로그
 docker compose logs --tail=30 openclaw-gateway
@@ -61,7 +192,7 @@ docker compose logs --tail=30 openclaw-gateway
 # 중지
 docker compose down
 
-# CLI 접근 (채널 추가, 설정 변경 등)
+# CLI 접근 (페어링, 설정 변경 등)
 docker compose run --rm openclaw-cli <command>
 
 # 업데이트
@@ -70,9 +201,14 @@ docker compose pull && docker compose up -d openclaw-gateway
 
 * 데이터 경로
 
-- 설정: =~/openclaw/config/openclaw.json=
-- 워크스페이스: =~/openclaw/workspace/=
-- 세션: =~/openclaw/config/agents/<agentId>/sessions/=
+| 호스트 경로                            | 컨테이너 경로                   | 용도         |
+|----------------------------------------+---------------------------------+--------------|
+| =~/openclaw/config/openclaw.json=      | =/home/node/.openclaw/=         | 설정 (rw)    |
+| =~/openclaw/workspace/=                | =/home/node/.openclaw/workspace= | 워크스페이스 |
+| =~/openclaw/config/credentials/=       | =/home/node/.openclaw/credentials= | 인증 (rw) |
+| =~/repos/gh=                           | =/data/repos/gh=                | 개인 리포 (ro) |
+| =~/repos/work=                         | =/data/repos/work=              | 회사 리포 (ro) |
+| =~/org=                                | =/data/org=                     | 지식베이스 (ro) |
 
 * 포트 현황 (Oracle VM)
 
@@ -84,3 +220,26 @@ docker compose pull && docker compose up -d openclaw-gateway
 | 8384  | Syncthing | 127.0.0.1 | closed |
 | 18789 | OpenClaw  | 127.0.0.1 | closed |
 | 22000 | Syncthing | 0.0.0.0   | open   |
+
+* 트러블슈팅
+
+** =Unknown channel: telegram=
+=channels add --channel telegram= CLI는 동작하지 않음.
+=openclaw.json= 에 직접 =channels.telegram= 섹션을 설정해야 함.
+=openclaw.json.example= 참고.
+
+** =Gateway auth is set to token, but no token is configured=
+=openclaw.json= 의 =gateway.auth.token= 에 토큰이 누락됨.
+=openssl rand -hex 24= 로 생성하여 입력.
+
+** =HTTP 401: authentication_error: Invalid bearer token=
+Anthropic 인증이 안 됨. Step 6을 다시 실행:
+=docker compose run --rm openclaw-cli onboard --auth-choice setup-token --skip-channels --skip-skills --skip-daemon --skip-ui=
+
+** =Health check failed: gateway closed (1006 abnormal closure)=
+CLI 컨테이너와 Gateway 컨테이너가 별개여서 발생하는 일시적 현상.
+Gateway 컨테이너가 =Up= 상태이면 무시 가능.
+
+** Systemd unavailable
+Docker 컨테이너 내부에는 systemd가 없음. 정상 동작이며 무시 가능.
+Gateway는 =docker compose up -d= 로 관리.
