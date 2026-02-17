@@ -284,13 +284,52 @@ config 파일이 변경되면 Gateway가 hot reload로 자동 반영:
 
 에이전트별로 SOUL.md, USER.md, 도구 권한을 다르게 설정 가능.
 
-* SSH 터널링 (로컬 머신에서)
+* SSH 터널링 + 대시보드 접속
+
+** SSH 터널 (로컬 머신에서)
 
 #+begin_src bash
 ssh -N -L 18789:127.0.0.1:18789 <user>@<oracle-vm-ip>
 #+end_src
 
 브라우저: =http://127.0.0.1:18789/=
+
+** Device Pairing (첫 접속 시 필수)
+
+브라우저에서 접속하면 "disconnected (1008): pairing required" 표시됨.
+Docker 컨테이너 내부에서는 SSH 터널도 bridge IP(172.x.x.x)로 보이므로
+auto-approval이 작동하지 않음. 수동 승인 필요:
+
+*방법 1*: gateway 컨테이너 내부에서 직접 실행 (권장):
+
+#+begin_src bash
+# 브라우저에서 대시보드 접속 시도 (1008 에러 발생)
+# pending request 확인:
+docker exec openclaw-gateway node openclaw.mjs devices list
+
+# 출력된 Request ID로 승인:
+docker exec openclaw-gateway node openclaw.mjs devices approve <requestId>
+#+end_src
+
+*방법 2*: CLI 컨테이너에서 gateway URL + token 명시:
+
+#+begin_src bash
+GATEWAY_TOKEN="<your-gateway-token>"
+
+docker compose run --rm openclaw-cli devices list \
+  --url ws://openclaw-gateway:18789 \
+  --token "$GATEWAY_TOKEN"
+
+docker compose run --rm openclaw-cli devices approve <requestId> \
+  --url ws://openclaw-gateway:18789 \
+  --token "$GATEWAY_TOKEN"
+#+end_src
+
+승인 후 대시보드에서 토큰 입력 창에 =gateway.auth.token= 값 입력.
+같은 브라우저 프로필이면 재승인 불필요.
+
+*주의*: =docker compose run --rm openclaw-cli devices list= (플래그 없이)는
+CLI 컨테이너가 자기 자신 IP로 연결 시도하여 실패함. 반드시 =--url= 명시.
 
 * 관리
 
@@ -306,8 +345,8 @@ docker compose logs --tail=30 openclaw-gateway
 # 중지
 docker compose down
 
-# CLI 접근 (페어링, 설정 변경 등)
-docker compose run --rm openclaw-cli <command>
+# CLI 접근 (게이트웨이 연결 필요한 명령은 --url --token 명시)
+docker exec openclaw-gateway node openclaw.mjs <command>
 
 # 업데이트
 docker compose pull && docker compose up -d openclaw-gateway
@@ -353,9 +392,20 @@ docker compose pull && docker compose up -d openclaw-gateway
 Anthropic 인증이 안 됨. Step 6을 다시 실행:
 =docker compose run --rm openclaw-cli onboard --auth-choice setup-token --skip-channels --skip-skills --skip-daemon --skip-ui=
 
-** =Health check failed: gateway closed (1006 abnormal closure)=
-CLI 컨테이너와 Gateway 컨테이너가 별개여서 발생하는 일시적 현상.
-Gateway 컨테이너가 =Up= 상태이면 무시 가능.
+** =disconnected (1008): pairing required= (대시보드 접속 시)
+Docker 컨테이너 내부에서 SSH 터널 연결도 bridge IP(172.x.x.x)로 보여
+auto-approval이 작동하지 않음. Device pairing 섹션의 방법 1 참고.
+
+#+begin_src bash
+docker exec openclaw-gateway node openclaw.mjs devices list
+docker exec openclaw-gateway node openclaw.mjs devices approve <requestId>
+#+end_src
+
+** =gateway closed (1006)= (CLI 컨테이너에서 명령 실행 시)
+CLI 컨테이너가 자기 자신 IP로 gateway 연결 시도하여 실패하는 정상 현상.
+두 가지 해결책:
+1. =docker exec openclaw-gateway node openclaw.mjs <command>= 사용
+2. =--url ws://openclaw-gateway:18789 --token <token>= 플래그 명시
 
 ** Systemd unavailable
 Docker 컨테이너 내부에는 systemd가 없음. 정상 동작이며 무시 가능.
