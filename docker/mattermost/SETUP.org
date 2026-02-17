@@ -135,6 +135,71 @@ cd ~/mattermost && docker compose up -d
 cd ~/openclaw && docker compose up -d
 #+end_src
 
+* Step 8: Gmail SMTP 이메일 알림 설정
+
+방문자 메시지 도착 시 이메일 알림 수신.
+
+** Gmail 앱 비밀번호 생성
+
+1. https://myaccount.google.com/security
+2. 2단계 인증 활성화 확인
+3. "앱 비밀번호" 검색 → 생성 (16자리)
+
+** mmctl로 적용
+
+#+begin_src bash
+cd ~/mattermost
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.SMTPServer smtp.gmail.com
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.SMTPPort 587
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.EnableSMTPAuth true
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.ConnectionSecurity STARTTLS
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.SMTPUsername your@gmail.com
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.SMTPPassword 'xxxx xxxx xxxx xxxx'
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.FeedbackEmail your@gmail.com
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.ReplyToAddress your@gmail.com
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.FeedbackName '힣(glg)'
+docker compose exec mattermost ./bin/mmctl --local config set EmailSettings.SendEmailNotifications true
+#+end_src
+
+* Step 9: 방문자 채팅 채널 구성
+
+방문자가 초대 링크로 가입 후 @openclaw 봇과 대화.
+
+** 채널 생성
+
+#+begin_src bash
+cd ~/mattermost
+docker compose exec mattermost ./bin/mmctl --local channel create \
+  --team <team-name> \
+  --name visitors \
+  --display-name '방문자 채팅' \
+  --purpose '힣(glg) AI와 대화하는 공간'
+#+end_src
+
+** 팀 초대 링크 생성 (API)
+
+#+begin_src bash
+ADMIN_TOKEN='<your-api-token>'
+TEAM_ID=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
+  https://chat.junghanacs.com/api/v4/teams/name/<team-name> | \
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+
+curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  https://chat.junghanacs.com/api/v4/teams/$TEAM_ID/regenerate_invite_id
+# 출력된 invite_id로 링크 생성:
+# https://chat.junghanacs.com/signup_user_complete/?id=<invite_id>
+#+end_src
+
+** 방문자 흐름
+
+#+begin_example
+방문자 → 초대 링크 클릭 → 가입 → 방문자 채팅 채널 입장
+       → @openclaw DM → 페어링 코드 수신
+관리자 → pairing approve → 대화 시작 (전체 로그 Mattermost 저장)
+#+end_example
+
+*참고*: Guest Accounts는 Enterprise 플랜 필요. 일반 계정 가입으로 대체.
+
 * Caddy 인증서 갱신
 
 Caddy가 자동으로 Let's Encrypt 인증서를 90일 주기로 갱신.
