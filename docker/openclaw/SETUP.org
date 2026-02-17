@@ -250,6 +250,36 @@ docker compose run --rm openclaw-cli agents add glg \
   --non-interactive --json
 #+end_src
 
+** Step 2-5: ⚠️ default 계정도 accounts에 명시 필수
+
+Telegram =accounts= 에 항목이 하나라도 생기면 OpenClaw는 *멀티 계정 모드*로 전환.
+이 모드에서는 =accounts= 에 명시된 계정만 시작되며, root-level =botToken= 은 무시됨.
+따라서 *default 봇도 반드시 =accounts.default= 에 추가*해야 함:
+
+#+begin_src json
+{
+  "channels": {
+    "telegram": {
+      "botToken": "<DEFAULT_TOKEN>",
+      "accounts": {
+        "default": {
+          "enabled": true,
+          "botToken": "<DEFAULT_TOKEN>",
+          "dmPolicy": "pairing",
+          "groupPolicy": "allowlist",
+          "streamMode": "partial"
+        },
+        "glg": {
+          "enabled": true,
+          "botToken": "<GLG_TOKEN>",
+          ...
+        }
+      }
+    }
+  }
+}
+#+end_src
+
 ** Step 3: 바인딩 설정 (⚠️ config 직접 수정 필수)
 
 *중요*: =--bind= 플래그는 Gateway가 없는 standalone CLI에서 동작하지 않음.

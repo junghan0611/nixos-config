@@ -54,7 +54,16 @@
         }
       },
       "groupPolicy": "allowlist",
-      "streamMode": "partial"
+      "streamMode": "partial",
+      "accounts": {
+        "default": {
+          "enabled": true,
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
+          "dmPolicy": "pairing",
+          "groupPolicy": "allowlist",
+          "streamMode": "partial"
+        }
+      }
     },
     "mattermost": {
       "enabled": true,
