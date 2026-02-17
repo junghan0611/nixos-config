@@ -354,14 +354,18 @@ docker compose pull && docker compose up -d openclaw-gateway
 
 * 데이터 경로
 
-| 호스트 경로                            | 컨테이너 경로                   | 용도         |
-|----------------------------------------+---------------------------------+--------------|
-| =~/openclaw/config/openclaw.json=      | =/home/node/.openclaw/=         | 설정 (rw)    |
-| =~/openclaw/workspace/=                | =/home/node/.openclaw/workspace= | 워크스페이스 |
-| =~/openclaw/config/credentials/=       | =/home/node/.openclaw/credentials= | 인증 (rw) |
-| =~/repos/gh=                           | =/data/repos/gh=                | 개인 리포 (ro) |
-| =~/repos/work=                         | =/data/repos/work=              | 회사 리포 (ro) |
-| =~/org=                                | =/data/org=                     | 지식베이스 (ro) |
+배포 디렉토리: =~/openclaw/= → =~/sync/family/openclaw/= 심볼릭링크
+(Syncthing으로 기기간 동기화, private git으로 버전 관리)
+
+| 호스트 경로                                 | 컨테이너 경로                         | 용도           |
+|---------------------------------------------+---------------------------------------+----------------|
+| =~/openclaw/config/=                        | =/home/node/.openclaw/=               | 전체 설정 (rw) |
+| =~/openclaw/config/workspace/=              | =/home/node/.openclaw/workspace=      | main 워크스페이스 |
+| =~/openclaw/config/workspace-glg/=          | =/home/node/.openclaw/workspace-glg=  | glg 워크스페이스 |
+| =~/openclaw/config/credentials/=            | =/home/node/.openclaw/credentials=    | 인증 (rw)      |
+| =~/repos/gh=                                | =/data/repos/gh=                      | 개인 리포 (ro) |
+| =~/repos/work=                              | =/data/repos/work=                    | 회사 리포 (ro) |
+| =~/org=                                     | =/data/org=                           | 지식베이스 (ro) |
 
 * 포트 현황 (Oracle VM)
 

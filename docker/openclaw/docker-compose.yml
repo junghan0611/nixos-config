@@ -24,13 +24,14 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
-      - ./workspace:/home/node/.openclaw/workspace
+      # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스 (read-only)
       - ~/repos/gh:/data/repos/gh:ro
       - ~/repos/work:/data/repos/work:ro
       - ~/org:/data/org:ro
 
     networks:
+      - default        # CLI 컨테이너와 통신용
       - proxy          # Caddy 리버스 프록시 접근용
 
   openclaw-cli:
@@ -49,7 +50,7 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
-      - ./workspace:/home/node/.openclaw/workspace
+      # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스 (read-only)
       - ~/repos/gh:/data/repos/gh:ro
       - ~/repos/work:/data/repos/work:ro
