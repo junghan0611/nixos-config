@@ -1,0 +1,3 @@
+# Caddy runtime data (TLS certificates, config cache)
+data/
+config/

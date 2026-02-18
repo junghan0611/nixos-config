@@ -35,7 +35,7 @@ services:
       - ADMIN_SHARED_EMAIL=${ADMIN_SHARED_EMAIL}
 
     volumes:
-      - ./var:/srv/var
+      - /home/junghan/docker-data/remark42/var:/srv/var
 
     networks:
       - proxy

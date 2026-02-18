@@ -11,8 +11,8 @@ services:
 
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./data:/data        # TLS 인증서 영구 저장
-      - ./config:/config    # Caddy 설정 캐시
+      - /home/junghan/docker-data/caddy/data:/data
+      - /home/junghan/docker-data/caddy/config:/config
 
     networks:
       - proxy

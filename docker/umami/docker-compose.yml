@@ -10,7 +10,7 @@ services:
       - POSTGRES_DB=umami
 
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - /home/junghan/docker-data/umami/db:/var/lib/postgresql/data
 
     networks:
       - umami-internal

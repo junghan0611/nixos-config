@@ -10,7 +10,7 @@ services:
       - POSTGRES_DB=mattermost
 
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - /home/junghan/docker-data/mattermost/db:/var/lib/postgresql/data
 
     networks:
       - mattermost-internal
@@ -36,11 +36,11 @@ services:
     command: ["mattermost", "server"]
 
     volumes:
-      - ./data/config:/mattermost/config
-      - ./data/data:/mattermost/data
-      - ./data/logs:/mattermost/logs
-      - ./data/plugins:/mattermost/plugins
-      - ./data/client/plugins:/mattermost/client/plugins
+      - /home/junghan/docker-data/mattermost/data/config:/mattermost/config
+      - /home/junghan/docker-data/mattermost/data/data:/mattermost/data
+      - /home/junghan/docker-data/mattermost/data/logs:/mattermost/logs
+      - /home/junghan/docker-data/mattermost/data/plugins:/mattermost/plugins
+      - /home/junghan/docker-data/mattermost/data/client/plugins:/mattermost/client/plugins
 
     networks:
       - mattermost-internal
