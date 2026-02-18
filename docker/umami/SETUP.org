@@ -1,0 +1,99 @@
+#+title: Umami 웹 애널리틱스 배포 가이드 (Oracle VM)
+#+date: [2026-02-18 Tue]
+
+* 개요
+
+[[https://umami.is][Umami]] — 프라이버시 중심 셀프호스팅 웹 애널리틱스.
+쿠키 없음, GDPR 준수, 경량 (~150MB RAM).
+
+- URL: =https://analytics.junghanacs.com=
+- 이미지: =ghcr.io/umami-software/umami:postgresql-latest= (ARM64 지원)
+- DB: PostgreSQL 16 (Umami 전용, Mattermost와 분리)
+
+* 사전 요구사항
+
+1. DNS: =analytics.junghanacs.com= → Oracle VM 공인 IP (A 레코드)
+2. Docker + Docker Compose
+3. Caddy 리버스 프록시 (=proxy= 네트워크)
+
+* Step 1: 디렉토리 및 환경 변수
+
+#+begin_src bash
+mkdir -p ~/nixos-config/docker/umami
+cd ~/nixos-config/docker/umami
+
+# .env 생성
+cat > .env << EOF
+POSTGRES_PASSWORD=$(openssl rand -hex 16)
+APP_SECRET=$(openssl rand -hex 32)
+EOF
+#+end_src
+
+* Step 2: 서비스 시작
+
+#+begin_src bash
+cd ~/nixos-config/docker/umami
+docker compose up -d
+#+end_src
+
+정상 로그:
+#+begin_example
+umami-db  | ... database system is ready to accept connections
+umami     | ... Listening on http://0.0.0.0:3000
+#+end_example
+
+* Step 3: Caddy 리로드
+
+#+begin_src bash
+cd ~/nixos-config/docker/caddy
+docker compose restart caddy
+#+end_src
+
+Caddy가 =analytics.junghanacs.com= 에 대한 Let's Encrypt 인증서를 자동 발급.
+
+* Step 4: 초기 설정
+
+1. =https://analytics.junghanacs.com= 접속
+2. 기본 로그인: =admin= / =umami=
+3. *즉시 비밀번호 변경* (Settings → Profile)
+4. Settings → Websites → Add Website:
+   - Name: =junghanacs garden=
+   - Domain: =notes.junghanacs.com=
+5. Website ID 복사 (Quartz 설정에 필요)
+
+* Step 5: Quartz 설정
+
+=quartz.config.ts= 에서:
+
+#+begin_src typescript
+analytics: {
+  provider: 'umami',
+  host: 'https://analytics.junghanacs.com',
+  websiteId: '<website-id-from-step-4>'
+}
+#+end_src
+
+* 관리
+
+#+begin_src bash
+cd ~/nixos-config/docker/umami
+
+# 재시작
+docker compose restart
+
+# 로그
+docker compose logs --tail=30 umami
+
+# 업데이트
+docker compose pull && docker compose up -d
+
+# 중지
+docker compose down
+#+end_src
+
+* 데이터 경로
+
+| 호스트 경로 | 용도 |
+|---+----|
+| =~/nixos-config/docker/umami/db/= | PostgreSQL 데이터 |
+| =~/nixos-config/docker/umami/.env= | 시크릿 (git 제외) |

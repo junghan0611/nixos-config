@@ -7,3 +7,8 @@ comments.junghanacs.com {
 chat.junghanacs.com {
     reverse_proxy mattermost:8065
 }
+
+# Umami 웹 애널리틱스
+analytics.junghanacs.com {
+    reverse_proxy umami:3000
+}
