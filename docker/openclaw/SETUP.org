@@ -166,12 +166,25 @@ docker logs openclaw-gateway --tail 20
    #+begin_example
    Pairing code: XXXXXXX
    #+end_example
-3. 승인:
+3. pending 요청 확인:
    #+begin_src bash
-   cd ~/openclaw
-   docker compose run --rm openclaw-cli pairing approve telegram XXXXXXX
+   # default 봇
+   docker exec openclaw-gateway node openclaw.mjs pairing list --channel telegram
+
+   # 특정 계정 (멀티계정 모드)
+   docker exec openclaw-gateway node openclaw.mjs pairing list --channel telegram --account glg
    #+end_src
-4. 다시 Telegram에서 메시지 전송 → 봇이 응답하면 완료!
+4. 승인:
+   #+begin_src bash
+   # default 봇
+   docker exec openclaw-gateway node openclaw.mjs pairing approve telegram <CODE>
+
+   # 특정 계정 (멀티계정 모드)
+   docker exec openclaw-gateway node openclaw.mjs pairing approve telegram <CODE> --account glg
+   #+end_src
+5. 다시 Telegram에서 메시지 전송 → 봇이 응답하면 완료!
+
+*참고*: =run.sh= 의 =p) 페어링 승인= 메뉴로 간편하게 실행 가능.
 
 * Step 9: USER.md 커스텀 (선택)
 

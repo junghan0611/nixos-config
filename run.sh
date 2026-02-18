@@ -95,6 +95,7 @@ show_menu() {
     echo "    t) OpenClaw 터널 시작/종료 (→ http://127.0.0.1:18789/)"
     echo "    r) Oracle Docker 서비스 재시작"
     echo "    s) Oracle Docker 서비스 상태"
+    echo "    a) OpenClaw 페어링 승인"
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
@@ -393,6 +394,61 @@ main() {
                 ;;
             s)
                 execute_cmd "ssh oracle 'docker ps --format \"table {{.Names}}\t{{.Status}}\t{{.Ports}}\"'"
+                ;;
+            a)
+                echo ""
+                info "=== OpenClaw 페어링 pending 목록 ==="
+                echo ""
+                echo "  1) default 봇 (Telegram)"
+                echo "  2) glg 봇 (Telegram)"
+                echo "  3) Mattermost"
+                echo "  0) 취소"
+                echo ""
+                read -p "채널 선택: " PAIR_CHANNEL
+                case $PAIR_CHANNEL in
+                    1)
+                        PAIR_ACCOUNT_OPT=""
+                        PAIR_LABEL="Telegram default"
+                        ;;
+                    2)
+                        PAIR_ACCOUNT_OPT="--account glg"
+                        PAIR_LABEL="Telegram glg"
+                        ;;
+                    3)
+                        PAIR_ACCOUNT_OPT="--channel mattermost"
+                        PAIR_LABEL="Mattermost"
+                        ;;
+                    0)
+                        info "취소됩니다."
+                        break
+                        ;;
+                    *)
+                        error "잘못된 선택입니다."
+                        break
+                        ;;
+                esac
+
+                if [[ "$PAIR_CHANNEL" == "3" ]]; then
+                    PAIR_CMD="docker exec openclaw-gateway node openclaw.mjs pairing list --channel mattermost"
+                else
+                    PAIR_CMD="docker exec openclaw-gateway node openclaw.mjs pairing list --channel telegram $PAIR_ACCOUNT_OPT"
+                fi
+
+                info "$PAIR_LABEL 페어링 요청 목록:"
+                ssh oracle "$PAIR_CMD"
+
+                echo ""
+                read -p "승인할 코드 입력 (빈값=취소): " PAIR_CODE
+                if [[ -n "$PAIR_CODE" ]]; then
+                    if [[ "$PAIR_CHANNEL" == "3" ]]; then
+                        APPROVE_CMD="docker exec openclaw-gateway node openclaw.mjs pairing approve mattermost $PAIR_CODE"
+                    else
+                        APPROVE_CMD="docker exec openclaw-gateway node openclaw.mjs pairing approve telegram $PAIR_CODE $PAIR_ACCOUNT_OPT"
+                    fi
+                    execute_cmd "ssh oracle '$APPROVE_CMD'"
+                else
+                    info "취소됩니다."
+                fi
                 ;;
             d|D)
                 echo ""
