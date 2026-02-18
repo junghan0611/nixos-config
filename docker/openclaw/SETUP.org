@@ -428,6 +428,64 @@ config 파일이 변경되면 Gateway가 hot reload로 자동 반영:
 
 에이전트별로 SOUL.md, USER.md, 도구 권한을 다르게 설정 가능.
 
+** ⚠️ 세션 격리 (=session.dmScope=) — 멀티유저 봇의 핵심
+
+*기본값 =main= 에서는 모든 사용자의 DM이 하나의 세션으로 합쳐진다.*
+A 사용자와의 대화 내용이 B 사용자 세션에 그대로 노출되고,
+봇이 모든 사용자를 동일인으로 착각한다.
+
+*공개 봇(glg 등 여러 사용자 대상)은 반드시 =per-account-channel-peer= 로 변경해야 한다.*
+
+=openclaw.json= 최상위 레벨에 설정:
+
+#+begin_src json
+{
+  "session": {
+    "dmScope": "per-account-channel-peer"
+  }
+}
+#+end_src
+
+| =dmScope= 값 | 세션 키 형식 | 용도 |
+|---------------+--------------+------|
+| =main= (기본) | =agent:<agentId>:main= | 개인 전용 (1인 사용) |
+| =per-peer= | =agent:<agentId>:dm:<userId>= | 채널 무관 사용자별 |
+| =per-channel-peer= | =agent:<agentId>:<channel>:dm:<userId>= | 채널+사용자별 |
+| =per-account-channel-peer= | =agent:<agentId>:<channel>:<accountId>:dm:<userId>= | 계정+채널+사용자별 *(권장)* |
+
+참고: [[https://docs.openclaw.ai/concepts/session]]
+
+*** 적용 후 기존 세션 정리
+
+=dmScope= 변경 후에는 기존 단일 세션을 백업/삭제해야 새 키로 세션이 생성된다:
+
+#+begin_src bash
+cd ~/openclaw/config/agents/glg/sessions
+mv sessions.json sessions.json.bak
+mv *.jsonl *.jsonl.bak
+#+end_src
+
+Gateway 재시작하면 각 사용자별 독립 세션이 자동 생성된다.
+
+*** USER.md 멀티유저 대응
+
+=dmScope= 변경과 함께 에이전트의 =USER.md= 도 변경 필수.
+특정 사용자 하드코딩(=Name: 정한=) 대신 멀티유저 구조로:
+
+#+begin_example
+## 사용자 식별
+
+각 텔레그램 DM은 사용자별 독립 세션이다.
+메시지의 발신자 정보(이름, username, user id)로 사용자를 식별한다.
+
+## 알려진 사용자
+
+| 이름 | Telegram ID | 관계 | 호칭 |
+|------|------------|------|------|
+| 정한 | 123861330 | 봇 운영자 | 힣님 |
+| 김현진 | 81880552 | 가족 | 현진님 |
+#+end_example
+
 * SSH 터널링 + 대시보드 접속
 
 ** SSH 터널 (로컬 머신에서)

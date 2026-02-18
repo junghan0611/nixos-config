@@ -72,6 +72,9 @@
       "dmPolicy": "pairing"
     }
   },
+  "session": {
+    "dmScope": "per-account-channel-peer"
+  },
   "gateway": {
     "port": 18789,
     "mode": "local",
