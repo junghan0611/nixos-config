@@ -124,6 +124,7 @@ in {
     wl-clipboard
 
     telegram-bot-api  # Telegram Bot API server (OpenClaw 등)
+    tdlib             # TDLib (telega.el 의존성)
 
     # System utilities (ElleNajit)
     powertop        # Power management
@@ -141,7 +142,7 @@ in {
   ]) ++ (lib.optionals (isLinux && !isOracle) [
     microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
-    telegram-desktop  # Telegram 메신저
+    # telegram-desktop  # Telegram 메신저 (한글 입력 불가)
 
     # Terminal emulators (한글 입력 지원)
     wezterm        # Rust-based, excellent Korean input support
