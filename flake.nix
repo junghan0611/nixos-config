@@ -58,6 +58,9 @@
         # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
         microsoft-edge = pinned.microsoft-edge;
 
+        # TDLib from unstable (telega.el requires >= 1.8.60)
+        tdlib = unstable.tdlib;
+
         # AI CLI tools from unstable
         gemini-cli = unstable.gemini-cli;
         codex = unstable.codex;
