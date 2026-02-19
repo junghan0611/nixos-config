@@ -236,10 +236,12 @@ in {
   home.file.".local/bin/glg" = {
     source = ../../../scripts/glg;
     executable = true;
+    force = true;
   };
   home.file.".local/bin/greview.py" = {
     source = ../../../scripts/greview.py;
     executable = true;
+    force = true;
   };
 
   #---------------------------------------------------------------------
