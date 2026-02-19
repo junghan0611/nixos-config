@@ -19,6 +19,10 @@
     # Unstable nixpkgs for newer packages
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
+    # Pinned nixpkgs for packages with broken upstream URLs
+    # Edge 144.0.3719.115 — update this rev when nixpkgs fixes Edge URL
+    nixpkgs-pinned.url = "github:NixOS/nixpkgs/3aadb7ca9eac2891d52a9dec199d9580a6e2bf44";
+
     # Claude Desktop for Linux (unofficial)
     claude-desktop = {
       url = "github:k3d3/claude-desktop-linux-flake";
@@ -34,18 +38,25 @@
       config.allowUnfree = true;
     };
 
+    # Pinned pkgs for packages with broken upstream URLs
+    mkPinnedPkgs = system: import inputs.nixpkgs-pinned {
+      inherit system;
+      config.allowUnfree = true;
+    };
+
     # Overlays to apply custom packages
     overlays = [
       (final: prev: let
         unstable = mkUnstablePkgs prev.stdenv.hostPlatform.system;
+        pinned = mkPinnedPkgs prev.stdenv.hostPlatform.system;
       in {
         # Use unstable packages where needed
         ghostty = unstable.ghostty;
         # Claude Desktop with MCP support
         claude-desktop = inputs.claude-desktop.packages.${prev.stdenv.hostPlatform.system}.claude-desktop-with-fhs;
 
-        # Unfree browser (stable channel URL lags behind releases)
-        microsoft-edge = unstable.microsoft-edge;
+        # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
+        microsoft-edge = pinned.microsoft-edge;
 
         # AI CLI tools from unstable
         gemini-cli = unstable.gemini-cli;
