@@ -243,6 +243,11 @@ in {
     executable = true;
     force = true;
   };
+  home.file.".local/bin/peon-setup" = {
+    source = ../../../scripts/peon-setup;
+    executable = true;
+    force = true;
+  };
 
   #---------------------------------------------------------------------
   # fd (find alternative)

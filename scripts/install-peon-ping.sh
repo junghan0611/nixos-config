@@ -30,7 +30,7 @@ INSTALL_DIR="$HOME/.claude/hooks/peon-ping"
 echo ""
 echo "[2/7] Patching shebangs for NixOS (/bin/bash → /usr/bin/env bash)..."
 
-for f in "$INSTALL_DIR"/*.sh "$INSTALL_DIR"/adapters/*.sh; do
+for f in "$INSTALL_DIR"/*.sh "$INSTALL_DIR"/scripts/*.sh "$INSTALL_DIR"/adapters/*.sh; do
   [ -f "$f" ] || continue
   if head -1 "$f" | grep -q '^#!/bin/bash'; then
     sed -i '1s|^#!/bin/bash|#!/usr/bin/env bash|' "$f"

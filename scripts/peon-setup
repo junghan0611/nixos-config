@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# peon-setup: 현재 프로젝트의 peon-ping 사운드 팩 설정
+# Usage:
+#   peon-setup <pack>       — 현재 디렉토리에 팩 설정
+#   peon-setup              — 현재 설정 확인 + 사용 가능한 팩 목록
+#   peon-setup --install    — 모든 팩 다운로드
+set -euo pipefail
+
+PEON_DIR="$HOME/.claude/hooks/peon-ping"
+PEON_SH="$PEON_DIR/peon.sh"
+
+if [ ! -f "$PEON_SH" ]; then
+  echo "Error: peon-ping이 설치되지 않았습니다"
+  echo "  bash ~/repos/gh/nixos-config/scripts/install-peon-ping.sh"
+  exit 1
+fi
+
+# --install: 모든 팩 다운로드
+if [ "${1:-}" = "--install" ]; then
+  echo "모든 사운드 팩 다운로드 중..."
+  "$PEON_SH" packs install --all
+  exit 0
+fi
+
+# 사용 가능한 팩 목록
+available_packs() {
+  ls "$PEON_DIR/packs/" 2>/dev/null
+}
+
+# 인자 없이 실행: 현재 상태 표시
+if [ $# -eq 0 ]; then
+  echo "=== peon-setup ==="
+  echo ""
+
+  # 현재 프로젝트 설정 확인
+  local_config=".claude/hooks/peon-ping/config.json"
+  if [ -f "$local_config" ]; then
+    current=$(python3 -c "import json; print(json.load(open('$local_config')).get('active_pack','(없음)'))" 2>/dev/null || echo "(파싱 오류)")
+    echo "현재 프로젝트: $(pwd)"
+    echo "활성 팩: $current"
+  else
+    echo "현재 프로젝트: $(pwd)"
+    echo "활성 팩: (설정 없음 — 전역 설정 사용)"
+  fi
+
+  echo ""
+  echo "사용 가능한 팩:"
+  for pack in $(available_packs); do
+    echo "  $pack"
+  done
+
+  echo ""
+  echo "사용법: peon-setup <pack-name>"
+  exit 0
+fi
+
+PACK="$1"
+
+# 팩 존재 확인
+if [ ! -d "$PEON_DIR/packs/$PACK" ]; then
+  echo "Error: '$PACK' 팩을 찾을 수 없습니다"
+  echo ""
+  echo "사용 가능한 팩:"
+  for pack in $(available_packs); do
+    echo "  $pack"
+  done
+  exit 1
+fi
+
+# 프로젝트 설정 디렉토리 생성 및 config 작성
+CONFIG_DIR=".claude/hooks/peon-ping"
+CONFIG_FILE="$CONFIG_DIR/config.json"
+
+mkdir -p "$CONFIG_DIR"
+cat > "$CONFIG_FILE" << EOF
+{
+  "active_pack": "$PACK"
+}
+EOF
+
+echo "$(pwd) → $PACK"
