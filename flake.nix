@@ -44,6 +44,9 @@
         # Claude Desktop with MCP support
         claude-desktop = inputs.claude-desktop.packages.${prev.stdenv.hostPlatform.system}.claude-desktop-with-fhs;
 
+        # Unfree browser (stable channel URL lags behind releases)
+        microsoft-edge = unstable.microsoft-edge;
+
         # AI CLI tools from unstable
         gemini-cli = unstable.gemini-cli;
         codex = unstable.codex;
