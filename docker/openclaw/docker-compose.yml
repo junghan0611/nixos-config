@@ -18,6 +18,7 @@ services:
     ports:
       - "127.0.0.1:18789:18789"
 
+    env_file: .env
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
