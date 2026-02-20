@@ -29,9 +29,13 @@ services:
       - ./config:/home/node/.openclaw
       # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스 (read-only)
-      - ~/repos/gh:/data/repos/gh:ro
-      - ~/repos/work:/data/repos/work:ro
-      - ~/org:/data/org:ro
+      - ~/repos/gh:/home/node/repos/gh:ro
+      - ~/repos/work:/home/node/repos/work:ro
+      - ~/org:/home/node/org:ro
+      # Google Workspace CLI 인증 (read-only)
+      - ~/.gccli:/home/node/.gccli:ro
+      - ~/.gdcli:/home/node/.gdcli:ro
+      - ~/.gmcli:/home/node/.gmcli:ro
 
     networks:
       - default        # CLI 컨테이너와 통신용
@@ -58,9 +62,13 @@ services:
       - ./config:/home/node/.openclaw
       # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스 (read-only)
-      - ~/repos/gh:/data/repos/gh:ro
-      - ~/repos/work:/data/repos/work:ro
-      - ~/org:/data/org:ro
+      - ~/repos/gh:/home/node/repos/gh:ro
+      - ~/repos/work:/home/node/repos/work:ro
+      - ~/org:/home/node/org:ro
+      # Google Workspace CLI 인증 (read-only)
+      - ~/.gccli:/home/node/.gccli:ro
+      - ~/.gdcli:/home/node/.gdcli:ro
+      - ~/.gmcli:/home/node/.gmcli:ro
 
 networks:
   proxy:

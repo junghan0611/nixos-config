@@ -96,6 +96,7 @@ show_menu() {
     echo "    r) Oracle Docker 서비스 재시작"
     echo "    s) Oracle Docker 서비스 상태"
     echo "    a) OpenClaw 페어링 승인"
+    echo "    k) OpenClaw 스킬 설치/업데이트 (pi-skills → workspace)"
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
@@ -131,7 +132,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, p/P, c/C/d, t/r/s): " choice
+        read -p "선택하세요 (0-9, p/P, c/C/d, t/r/s/k): " choice
 
         case $choice in
             1)
@@ -448,6 +449,81 @@ main() {
                     execute_cmd "ssh oracle '$APPROVE_CMD'"
                 else
                     info "취소됩니다."
+                fi
+                ;;
+            k)
+                echo ""
+                if [[ "$DEVICE" != "oracle" ]]; then
+                    error "이 기능은 Oracle VM에서만 사용 가능합니다."
+                    break
+                fi
+                PI_SKILLS_DIR="$HOME/pi-skills"
+                OPENCLAW_DIR="$HOME/openclaw"
+                WORKSPACE_SKILLS="$OPENCLAW_DIR/config/workspace/skills"
+                CONTAINER="openclaw-gateway"
+
+                if [[ ! -d "$PI_SKILLS_DIR" ]]; then
+                    error "pi-skills 디렉토리가 없습니다: $PI_SKILLS_DIR"
+                    break
+                fi
+
+                # default workspace에 설치할 스킬 목록
+                SKILL_COPY=(brave-search youtube-transcript medium-extractor transcribe)
+                SKILL_LINK=(denotecli ghcli bibcli gccli gdcli gmcli)
+                info "=== OpenClaw 스킬 설치 (default workspace) ==="
+                echo ""
+                echo "  복사 (npm 포함): ${SKILL_COPY[*]}"
+                echo "  복사 (CLI):      ${SKILL_LINK[*]}"
+                echo "  글로벌 CLI:      gccli gdcli gmcli (Dockerfile에 포함)"
+                echo ""
+                warn "스킬을 설치/업데이트합니다. 계속하시겠습니까? (y/N)"
+                read -p "> " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    mkdir -p "$WORKSPACE_SKILLS"
+
+                    info "1/3 스킬 복사 (npm 스킬 + node_modules 포함)..."
+                    for skill in "${SKILL_COPY[@]}"; do
+                        if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
+                            rsync -a --delete "$PI_SKILLS_DIR/$skill/" "$WORKSPACE_SKILLS/$skill/"
+                            success "$skill"
+                        else
+                            warn "$skill: 소스 없음"
+                        fi
+                    done
+
+                    info "2/3 스킬 복사 (CLI 스킬)..."
+                    for skill in "${SKILL_LINK[@]}"; do
+                        if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
+                            rsync -a --delete --exclude='node_modules' "$PI_SKILLS_DIR/$skill/" "$WORKSPACE_SKILLS/$skill/"
+                            success "$skill"
+                        else
+                            warn "$skill: 소스 없음"
+                        fi
+                    done
+
+                    info "3/3 글로벌 CLI 확인 (Dockerfile에서 설치)..."
+                    for name in gccli gdcli gmcli; do
+                        if docker exec "$CONTAINER" which "$name" &>/dev/null; then
+                            success "$name: 설치됨"
+                        else
+                            warn "$name: 미설치 — Docker 이미지 재빌드 필요 (r 메뉴 또는 docker compose build)"
+                        fi
+                    done
+
+                    echo ""
+                    info "4/4 glg workspace에도 동기화..."
+                    WORKSPACE_SKILLS_GLG="$OPENCLAW_DIR/config/workspace-glg/skills"
+                    mkdir -p "$WORKSPACE_SKILLS_GLG"
+                    rsync -a --delete "$WORKSPACE_SKILLS/" "$WORKSPACE_SKILLS_GLG/"
+                    success "glg 동기화 완료"
+
+                    echo ""
+                    info "설치된 스킬 목록:"
+                    ls "$WORKSPACE_SKILLS/"
+                    echo ""
+                    success "스킬 설치 완료! gateway 재시작 필요 시: r) 메뉴 사용"
+                else
+                    info "취소되었습니다."
                 fi
                 ;;
             d|D)
