@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Claude Code 창 순환 스크립트
-# 창 타이틀에 ✳ 가 있는 X window를 순환하며 포커스
+# Claude Code 타이틀 접두사: ✳(입력대기) ●(승인필요) ⠂⠐(생각중 스피너)
 # 사용법: claude-focus.sh [next|prev]
 #   next (기본): 다음 Claude Code 창으로 이동
 #   prev: 이전 Claude Code 창으로 이동
@@ -9,10 +9,10 @@ set -euo pipefail
 
 DIRECTION="${1:-next}"
 
-# ✳ 가 타이틀에 있는 창 목록 (i3 tree에서 가져옴 — workspace 순서 보장)
+# ✳(작업중) 또는 ●(대기중) 가 타이틀에 있는 창 목록 (i3 tree에서 가져옴 — workspace 순서 보장)
 mapfile -t WINDOWS < <(
     i3-msg -t get_tree 2>/dev/null | \
-    jq -r '.. | select(.window_properties?.title? // .name? | strings | test("✳")) | .id' 2>/dev/null
+    jq -r '.. | select(.window_properties?.title? // .name? | strings | test("[✳●]")) | .id' 2>/dev/null
 )
 
 COUNT=${#WINDOWS[@]}
