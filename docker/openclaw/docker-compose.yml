@@ -36,6 +36,8 @@ services:
       - ~/.gccli:/home/node/.gccli:ro
       - ~/.gdcli:/home/node/.gdcli:ro
       - ~/.gmcli:/home/node/.gmcli:ro
+      # GitHub CLI 인증 (read-only)
+      - ~/.config/gh:/home/node/.config/gh:ro
 
     networks:
       - default        # CLI 컨테이너와 통신용
@@ -69,6 +71,8 @@ services:
       - ~/.gccli:/home/node/.gccli:ro
       - ~/.gdcli:/home/node/.gdcli:ro
       - ~/.gmcli:/home/node/.gmcli:ro
+      # GitHub CLI 인증 (read-only)
+      - ~/.config/gh:/home/node/.config/gh:ro
 
 networks:
   proxy:
