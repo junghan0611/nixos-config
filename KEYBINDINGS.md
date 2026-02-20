@@ -16,7 +16,8 @@
 | `Mod+Shift+q` | 창 닫기 |
 | `Mod+d` | 앱 런처 (Rofi) |
 | `Mod+Shift+d` | 명령어 실행 (Rofi run) |
-| `Mod+Tab` | 창 전환 (Rofi window) |
+| `Mod+Tab` | Claude Code 다음 창 순환 (✳/●) |
+| `Mod+Shift+Tab` | Claude Code 이전 창 순환 |
 | `Mod+p` | 패스워드 매니저 (rofi-pass) |
 | `F1` / `Mod+e` | Whisper 음성 입력 |
 
@@ -119,6 +120,18 @@
 |----|------|
 | `Mod+i` | 입력 필드 Emacs로 편집 (edit-input) |
 | `Mod+c` | Compositor (picom) 토글 |
+
+## WezTerm
+
+> 설정 파일: `users/junghan/configs/wezterm.lua`
+
+| 키 | 동작 |
+|----|------|
+| `Ctrl+Shift+X` | Copy Mode 진입 (vim 키바인딩으로 선택/복사) |
+| `Ctrl+Shift+C` | 선택 영역 복사 |
+| `Ctrl+Shift+V` | 붙여넣기 |
+| 마우스 드래그 | 텍스트 선택 → 자동 복사 |
+| `ALT+Return` | 비활성화 (WezTerm 전체화면 충돌 방지) |
 
 ---
 

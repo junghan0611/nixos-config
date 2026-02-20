@@ -5,7 +5,7 @@ local config = wezterm.config_builder()
 -- Window appearance
 config.window_background_opacity = 0.85
 config.text_background_opacity = 0.85
-config.window_decorations = "RESIZE"
+config.window_decorations = "TITLE | RESIZE"
 
 -- Tab bar
 config.tab_bar_at_bottom = false
