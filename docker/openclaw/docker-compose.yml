@@ -14,6 +14,14 @@ services:
         max-size: "10m"
         max-file: "5"
 
+    # Node.js 22 undici가 IPv6 우선 시도 → Oracle Cloud에서 fetch 실패
+    # Telegram 이미지 다운로드 등 외부 API 호출에 영향
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
     # localhost만 바인딩 (SSH 터널로 접근)
     ports:
       - "127.0.0.1:18789:18789"
@@ -55,6 +63,12 @@ services:
     profiles: ["cli"]
     stdin_open: true
     tty: true
+
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     environment:
       - HOME=/home/node
