@@ -39,6 +39,8 @@ services:
       - ~/.gmcli:/home/node/.gmcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # 공유 작업 공간 (read-write, Syncthing 동기화)
+      - ./shared:/home/node/shared
 
     networks:
       - default        # CLI 컨테이너와 통신용
@@ -74,6 +76,8 @@ services:
       - ~/.gmcli:/home/node/.gmcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # 공유 작업 공간 (read-write, Syncthing 동기화)
+      - ./shared:/home/node/shared
 
 networks:
   proxy:
