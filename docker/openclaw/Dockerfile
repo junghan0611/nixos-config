@@ -19,7 +19,4 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && apt-get update && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Google Workspace CLI (gccli, gdcli, gmcli)
-RUN npm install -g @mariozechner/gccli @mariozechner/gdcli @mariozechner/gmcli
-
 USER node

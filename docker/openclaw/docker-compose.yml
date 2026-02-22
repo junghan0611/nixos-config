@@ -30,6 +30,7 @@ services:
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
+      - GOG_KEYRING_PASSWORD=gogcli
 
     # gateway는 컨테이너 내에서 lan 바인딩 필요
     command: ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789"]
@@ -41,10 +42,8 @@ services:
       - ~/repos/gh:/home/node/repos/gh:ro
       - ~/repos/work:/home/node/repos/work:ro
       - ~/org:/home/node/org:ro
-      # Google Workspace CLI 인증 (read-only)
-      - ~/.gccli:/home/node/.gccli:ro
-      - ~/.gdcli:/home/node/.gdcli:ro
-      - ~/.gmcli:/home/node/.gmcli:ro
+      # Google Workspace CLI (gogcli) 인증 (read-only)
+      - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
       # 공유 작업 공간 (read-write, Syncthing 동기화)
@@ -74,6 +73,7 @@ services:
       - HOME=/home/node
       - TERM=xterm-256color
       - BROWSER=echo
+      - GOG_KEYRING_PASSWORD=gogcli
 
     entrypoint: ["node", "openclaw.mjs"]
 
@@ -84,10 +84,8 @@ services:
       - ~/repos/gh:/home/node/repos/gh:ro
       - ~/repos/work:/home/node/repos/work:ro
       - ~/org:/home/node/org:ro
-      # Google Workspace CLI 인증 (read-only)
-      - ~/.gccli:/home/node/.gccli:ro
-      - ~/.gdcli:/home/node/.gdcli:ro
-      - ~/.gmcli:/home/node/.gmcli:ro
+      # Google Workspace CLI (gogcli) 인증 (read-only)
+      - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
       # 공유 작업 공간 (read-write, Syncthing 동기화)

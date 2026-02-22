@@ -469,12 +469,11 @@ main() {
 
                 # default workspace에 설치할 스킬 목록
                 SKILL_COPY=(brave-search youtube-transcript medium-extractor transcribe)
-                SKILL_LINK=(denotecli ghcli bibcli gccli gdcli gmcli)
+                SKILL_LINK=(denotecli ghcli bibcli gogcli)
                 info "=== OpenClaw 스킬 설치 (default workspace) ==="
                 echo ""
                 echo "  복사 (npm 포함): ${SKILL_COPY[*]}"
                 echo "  복사 (CLI):      ${SKILL_LINK[*]}"
-                echo "  글로벌 CLI:      gccli gdcli gmcli (Dockerfile에 포함)"
                 echo ""
                 warn "스킬을 설치/업데이트합니다. 계속하시겠습니까? (y/N)"
                 read -p "> " confirm
@@ -501,17 +500,8 @@ main() {
                         fi
                     done
 
-                    info "3/3 글로벌 CLI 확인 (Dockerfile에서 설치)..."
-                    for name in gccli gdcli gmcli; do
-                        if docker exec "$CONTAINER" which "$name" &>/dev/null; then
-                            success "$name: 설치됨"
-                        else
-                            warn "$name: 미설치 — Docker 이미지 재빌드 필요 (r 메뉴 또는 docker compose build)"
-                        fi
-                    done
-
                     echo ""
-                    info "4/4 glg workspace에도 동기화..."
+                    info "3/3 glg workspace에도 동기화..."
                     WORKSPACE_SKILLS_GLG="$OPENCLAW_DIR/config/workspace-glg/skills"
                     mkdir -p "$WORKSPACE_SKILLS_GLG"
                     rsync -a --delete "$WORKSPACE_SKILLS/" "$WORKSPACE_SKILLS_GLG/"
