@@ -100,6 +100,7 @@ in {
     claude-code-router
 
     # System tools
+    fortune
     neofetch
 
     # Editors (moved to modules/emacs.nix)
@@ -184,6 +185,9 @@ in {
   # (rofi configured via command-line options in modules/i3.nix)
   #---------------------------------------------------------------------
   home.file = {
+    # Fortune data files (~/.fortunes)
+    ".fortunes".source = ./../../fortunes;
+
     # User scripts (~/.local/bin)
     ".local/bin/scan-hubs" = {
       source = ./../../scripts/scan-hubs.sh;
