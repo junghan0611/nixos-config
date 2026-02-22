@@ -1,0 +1,132 @@
+#+title: Synapse (Matrix) 서버 셋업
+#+filetags: :docker:matrix:synapse:
+
+* 개요
+
+자체 호스팅 Matrix 홈서버. OpenClaw 봇의 Matrix 채널 백엔드.
+
+- 이미지: =matrixdotorg/synapse:v1.147.1=
+- DB: PostgreSQL 15
+- 리버스 프록시: Caddy (=matrix.junghanacs.com=)
+- Federation: 초기 비활성화
+
+* 1단계: 데이터 디렉토리 생성
+
+#+begin_src bash
+mkdir -p ~/docker-data/synapse/{data,postgres}
+#+end_src
+
+* 2단계: 설정 파일 생성
+
+#+begin_src bash
+cd ~/nixos-config/docker/synapse
+docker compose run --rm \
+  -e SYNAPSE_SERVER_NAME=matrix.junghanacs.com \
+  -e SYNAPSE_REPORT_STATS=no \
+  synapse generate
+#+end_src
+
+=~/docker-data/synapse/data/homeserver.yaml= 생성됨.
+
+* 3단계: homeserver.yaml 수정
+
+** PostgreSQL 연결
+
+#+begin_src yaml
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: synapse_db_pass_changeme
+    database: synapse
+    host: synapse-db
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+#+end_src
+
+** Federation 비활성화 (초기)
+
+#+begin_src yaml
+federation_domain_whitelist: []
+#+end_src
+
+** 등록 비활성화 (관리자만 생성)
+
+#+begin_src yaml
+enable_registration: false
+#+end_src
+
+* 4단계: Caddy 설정 추가
+
+=~/nixos-config/docker/caddy/Caddyfile= 에 추가:
+
+#+begin_src
+matrix.junghanacs.com {
+    reverse_proxy synapse:8008
+}
+#+end_src
+
+* 5단계: 서비스 시작
+
+#+begin_src bash
+cd ~/nixos-config/docker/synapse && docker compose up -d
+cd ~/nixos-config/docker/caddy && docker compose restart caddy
+#+end_src
+
+* 6단계: 관리자 계정 생성
+
+#+begin_src bash
+# registration_shared_secret이 homeserver.yaml에 있어야 함
+docker exec -it synapse register_new_matrix_user \
+  http://localhost:8008 -c /data/homeserver.yaml -a -u admin -p <password>
+#+end_src
+
+봇 계정 생성 (default, glg):
+
+#+begin_src bash
+docker exec -it synapse register_new_matrix_user \
+  http://localhost:8008 -c /data/homeserver.yaml -u openclaw-bot -p <password>
+docker exec -it synapse register_new_matrix_user \
+  http://localhost:8008 -c /data/homeserver.yaml -u glg-bot -p <password>
+#+end_src
+
+* 7단계: OpenClaw Matrix 채널 설정
+
+=~/openclaw/config/openclaw.json= 에 추가:
+
+#+begin_src json
+"matrix": {
+  "enabled": true,
+  "homeserver": "https://matrix.junghanacs.com",
+  "dmPolicy": "pairing",
+  "groupPolicy": "allowlist",
+  "encryption": true,
+  "accounts": {
+    "default": {
+      "enabled": true,
+      "userId": "@openclaw-bot:matrix.junghanacs.com",
+      "accessToken": "<토큰>",
+      "dmPolicy": "pairing",
+      "encryption": true
+    },
+    "glg": {
+      "name": "힣(glg)",
+      "enabled": true,
+      "userId": "@glg-bot:matrix.junghanacs.com",
+      "accessToken": "<토큰>",
+      "dmPolicy": "pairing",
+      "encryption": true
+    }
+  }
+}
+#+end_src
+
+* 8단계: E2EE 디바이스 검증
+
+봇 계정 로그인 후 Element 클라이언트에서 디바이스 검증 수행.
+크립토 상태: =~/.openclaw/matrix/accounts/= 에 저장됨.
+
+* DNS 설정
+
+- =matrix.junghanacs.com= → Oracle VM IP (A 레코드)

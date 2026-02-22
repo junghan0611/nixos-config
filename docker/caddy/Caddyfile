@@ -12,3 +12,8 @@ chat.junghanacs.com {
 analytics.junghanacs.com {
     reverse_proxy umami:3000
 }
+
+# Matrix (Synapse) 홈서버
+matrix.junghanacs.com {
+    reverse_proxy synapse:8008
+}
