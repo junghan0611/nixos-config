@@ -98,12 +98,15 @@ Oracle Cloud ARM VM에서 셀프호스팅 서비스 운영:
 | [Remark42](https://remark42.com) | `comments.junghanacs.com` | 셀프호스팅 댓글 시스템 |
 | [Mattermost](https://mattermost.com) | `chat.junghanacs.com` | 팀 채팅 + OpenClaw 연동 허브 |
 | [OpenClaw](https://openclaw.ai) | `localhost:18789` (SSH 터널) | AI 어시스턴트 게이트웨이 |
+| [Umami](https://umami.is) | 셀프호스팅 | 프라이버시 중심 웹 애널리틱스 |
 
 **OpenClaw 기능:**
 - Telegram 봇: 개인 (`main` 에이전트) + 힣(glg) 디지털 가든 안내자
 - Mattermost 채널: `chat.junghanacs.com`의 `@openclaw` 봇
 - 멀티 에이전트 라우팅: 봇별 독립 에이전트 + 워크스페이스
+- 커스텀 Dockerfile: gh CLI, ripgrep, fd, jq, tree, 스킬 설치 지원
 - Web UI (Control UI): SSH 터널 `ssh -N -L 18789:127.0.0.1:18789 oracle` → `http://127.0.0.1:18789/`
+- 설정 관리: private repo [openclaw-config](https://github.com/junghan0611/openclaw-config) (Oracle VM 에이전트 워크스페이스)
 
 **run.sh 단축키** (노트북에서):
 ```bash
@@ -114,6 +117,12 @@ Oracle Cloud ARM VM에서 셀프호스팅 서비스 운영:
 ```
 
 [`docker/`](./docker/) 디렉토리에 compose 파일 및 설정 가이드.
+
+### 🎲 Fortune
+
+Kevin Kelly의 삶의 조언 fortune 데이터:
+- `fortunes/advice/` — *Excellent Advice for Living*, 68 Bits, 99 Additional Bits
+- home-manager로 `~/.fortunes`에 배포
 
 ---
 
@@ -292,6 +301,7 @@ nixos-config가 제공:
 - [Remark42 설정](./docker/remark42/SETUP.org) - 댓글 시스템 배포
 - [Mattermost 설정](./docker/mattermost/SETUP.org) - 팀 채팅 + 봇 연동
 - [OpenClaw 설정](./docker/openclaw/SETUP.org) - AI 게이트웨이 배포 (멀티 에이전트, Telegram + Mattermost)
+- [Umami 설정](./docker/umami/SETUP.org) - 웹 애널리틱스 배포
 
 ### 분석 및 전략
 
@@ -317,4 +327,4 @@ MIT License
 
 ---
 
-**최종 업데이트**: 2026-02-17
+**최종 업데이트**: 2026-02-22

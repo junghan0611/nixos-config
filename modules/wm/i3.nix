@@ -134,6 +134,7 @@
       # xkb.layout = "us";  # For English-only systems
       layout = "kr";
       variant = "kr104";  # Korean (101/104-key compatible) - maps Right Alt to Hangul, Right Ctrl to Hanja
+      options = "caps:menu";  # CapsLock → Menu key (used as Hangul toggle in Emacs)
     };
     dpi = 96;  # Adjust based on your display
 

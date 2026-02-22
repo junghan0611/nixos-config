@@ -513,7 +513,7 @@ in {
 
         # Keyboard layout
         # { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }  # For English-only
-        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104 -option korean:ralt_hangul"; notification = false; }
+        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104 -option korean:ralt_hangul -option caps:menu"; notification = false; }
 
         # SNI to XEmbed proxy (required for kime-indicator in i3bar)
         { command = "${pkgs.snixembed}/bin/snixembed --fork"; notification = false; }

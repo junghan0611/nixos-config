@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **i3/xkb**: CapsLock → Menu 키 매핑 추가 (Emacs 한/영 토글용)
+- **microsoft-edge**: 144.0.3719.115 → 145.0.3800.70 업데이트 (144 크래시 해결, pinned rev 갱신)
+
+## [0.3.2] - 2026-02-22
+
+### Added
+- **fortune**: `fortune` 패키지 + Kevin Kelly advice 데이터
+  - `fortunes/advice/`: *Excellent Advice for Living*, 68 Bits, 99 Additional Bits
+  - `~/.fortunes`로 home-manager 배포
+- **OpenClaw**: Docker 환경 강화
+  - 커스텀 Dockerfile: `gh` CLI, `curl`, `ripgrep`, `fd`, `jq`, `tree` 추가
+  - 스킬(skills) 설치 기능 추가
+  - shared rw 폴더 + 이미지/서브에이전트 설정 동기화
+  - `env_file` 지원 (GROQ_API_KEY)
+  - gh CLI 인증 마운트
+  - IPv6 비활성화
+- **Umami**: 셀프호스팅 웹 애널리틱스 추가 (`docker/umami/`)
+- **peon-ping**: NixOS shebang 패치, `peon-setup` 전역 명령어, `--langs` 옵션
+- **WezTerm**: 타이틀바 활성화 및 키바인딩 문서 정비
+
+### Changed
+- **Docker**: 데이터 볼륨을 `~/docker-data/`로 분리
+- **tdlib**: unstable로 전환 (telega.el >= 1.8.60 요구)
+- **telegram-desktop**: 비활성화 (한글 입력 불가)
+- **flake.lock**: nixpkgs 최신 업데이트
+
+### Fixed
+- **OpenClaw**: 2026.2.19 → 2026.2.17 롤백 (서브에이전트 호환성 문제)
+- **OpenClaw**: Telegram 멀티계정 모드 — default 계정 `accounts`에 명시 필수
+- **OpenClaw**: main 에이전트 model 미설정 수정
+- **microsoft-edge**: nixpkgs-pinned(144)로 고정 (빌드 실패 해결)
+- **home-manager**: GLG 스크립트 파일 충돌 해결 (force=true)
+- **claude-focus.sh**: ● 대기 상태 패턴 추가
+- **umami**: .env 시크릿 제거, .gitignore 추가
+
 ## [0.3.1] - 2026-02-17
 
 ### Added

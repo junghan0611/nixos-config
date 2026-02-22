@@ -57,12 +57,15 @@ Self-hosted services running on Oracle Cloud ARM VM:
 | [Remark42](https://remark42.com) | `comments.junghanacs.com` | Self-hosted comment system |
 | [Mattermost](https://mattermost.com) | `chat.junghanacs.com` | Team chat + OpenClaw integration hub |
 | [OpenClaw](https://openclaw.ai) | `localhost:18789` (SSH tunnel) | AI assistant gateway |
+| [Umami](https://umami.is) | self-hosted | Privacy-focused web analytics |
 
 **OpenClaw features:**
 - Telegram bots: personal (`main` agent) + 힣(glg) digital garden guide
 - Mattermost channel: `@openclaw` bot in `chat.junghanacs.com`
 - Multi-agent routing: each bot → independent agent with own workspace
+- Custom Dockerfile: gh CLI, ripgrep, fd, jq, tree, skills support
 - Web UI (Control UI): SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 oracle` → `http://127.0.0.1:18789/`
+- Config managed in private repo: [openclaw-config](https://github.com/junghan0611/openclaw-config) (Oracle VM agent workspace)
 
 **run.sh shortcuts** (from laptop):
 ```bash
@@ -84,6 +87,12 @@ users/junghan/modules/
 ```
 
 **Before:** 341 lines → **After:** 118 lines (-65%)
+
+### Fortune
+
+Custom fortune data with Kevin Kelly's life advice:
+- `fortunes/advice/` — *Excellent Advice for Living*, 68 Bits, 99 Additional Bits
+- Deployed to `~/.fortunes` via home-manager
 
 ---
 
@@ -245,6 +254,7 @@ nixos-config provides:
 - [Remark42 Setup](./docker/remark42/SETUP.org) - Comment system deployment
 - [Mattermost Setup](./docker/mattermost/SETUP.org) - Team chat + bot integration
 - [OpenClaw Setup](./docker/openclaw/SETUP.org) - AI gateway deployment (multi-agent, Telegram + Mattermost)
+- [Umami Setup](./docker/umami/SETUP.org) - Web analytics deployment
 
 ### Analysis and Strategy
 

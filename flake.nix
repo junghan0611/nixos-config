@@ -20,8 +20,8 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
     # Pinned nixpkgs for packages with broken upstream URLs
-    # Edge 144.0.3719.115 — update this rev when nixpkgs fixes Edge URL
-    nixpkgs-pinned.url = "github:NixOS/nixpkgs/3aadb7ca9eac2891d52a9dec199d9580a6e2bf44";
+    # Edge 145.0.3800.70 — update this rev when nixpkgs fixes Edge URL
+    nixpkgs-pinned.url = "github:NixOS/nixpkgs/372b99478f80";
 
     # Claude Desktop for Linux (unofficial)
     claude-desktop = {
