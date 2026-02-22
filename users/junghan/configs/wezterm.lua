@@ -37,6 +37,17 @@ config.keys = {
         mods = "ALT",
         action = wezterm.action.DisableDefaultAssignment,
     },
+    -- Half-page scrolling (matches evil-scroll-up/down)
+    {
+        key = "u",
+        mods = "ALT",
+        action = wezterm.action.ScrollByPage(-0.5),
+    },
+    {
+        key = "v",
+        mods = "ALT",
+        action = wezterm.action.ScrollByPage(0.5),
+    },
 }
 
 return config
