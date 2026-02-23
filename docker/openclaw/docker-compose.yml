@@ -42,6 +42,8 @@ services:
       - ~/repos/gh:/home/node/repos/gh:ro
       - ~/repos/work:/home/node/repos/work:ro
       - ~/org:/home/node/org:ro
+      # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
+      - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (read-only)
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
@@ -84,6 +86,8 @@ services:
       - ~/repos/gh:/home/node/repos/gh:ro
       - ~/repos/work:/home/node/repos/work:ro
       - ~/org:/home/node/org:ro
+      # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
+      - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (read-only)
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
