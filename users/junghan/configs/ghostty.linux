@@ -73,5 +73,5 @@ palette = 14=#8ABEB7
 palette = 7=#707880
 palette = 15=#C5C8C6
 
-keybind = alt+u=scroll_page_half_up
-keybind = alt+v=scroll_page_half_down
+keybind = alt+u=scroll_page_fractional:-0.5
+keybind = alt+v=scroll_page_fractional:0.5
