@@ -37,7 +37,44 @@ Rust CLI tools installed via cargo. (None yet)
 
 ## go install
 
-Go CLI tools installed via go install. (None yet)
+Go CLI tools installed via go install.
+
+| Package     | Version | Description                                                 | Installed  |
+|-------------|---------|-------------------------------------------------------------|------------|
+| CLIProxyAPI | latest  | Claude/Gemini 구독을 OpenAI 호환 API로 노출하는 로컬 프록시 | 2026-02-25 |
+
+### CLIProxyAPI 설치 및 설정
+
+Claude Max 구독($100/월)을 로컬 OpenAI 호환 API로 사용.
+gptel, llm.el 등 Emacs AI 패키지에서 빠른 채팅용(1~3초).
+
+> ⚠️ ToS: Anthropic은 2026.02.20부터 서드파티 OAuth 사용을 명시적으로 금지.
+> 개인 로컬 사용 전용. 공개하지 않을 것.
+
+```bash
+# 방법 1: 커뮤니티 인스톨러 (바이너리 + systemd)
+curl -fsSL https://raw.githubusercontent.com/brokechubb/cliproxyapi-installer/refs/heads/master/cliproxyapi-installer | bash
+
+1. Navigate to CLIProxyAPI:
+   cd /home/junghan/cliproxyapi
+
+2. Set up authentication (choose one or more):
+   ./cli-proxy-api --login           # For Gemini
+   ./cli-proxy-api --codex-login     # For OpenAI
+   ./cli-proxy-api --claude-login    # For Claude
+   ./cli-proxy-api --qwen-login      # For Qwen
+   ./cli-proxy-api --iflow-login     # For iFlow
+
+3. Start the service:
+   ./cli-proxy-api
+
+4. Or run as a systemd service:
+   systemctl --user enable cliproxyapi.service
+   systemctl --user start cliproxyapi.service
+   systemctl --user status cliproxyapi.service
+```
+
+Emacs 설정은 `doomemacs-config/lisp/ai-gptel-local-proxy.el` (로컬 전용, .gitignore)
 
 ## pnpm add -g
 

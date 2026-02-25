@@ -130,6 +130,7 @@ in {
     # System utilities (ElleNajit)
     powertop        # Power management
     usbutils        # USB tools
+    minicom         # Serial port terminal
     gdmap           # Disk usage visualizer
     nmap            # Network scanner
     libpcap         # nmap dependency (packet capture)
