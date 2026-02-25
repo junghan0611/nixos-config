@@ -114,3 +114,15 @@ git push                # Push to remote
 ```
 
 <!-- end-bv-agent-instructions -->
+
+## OpenClaw 작업 체크리스트
+
+`docker/openclaw/` 또는 원격 `~/openclaw/` 변경 시 확인:
+
+- [ ] **채널/플러그인 추가** → `stignore/local-family`에 `openclaw/config/<새경로>` 추가 + `~/sync/family/.stignore` 배포
+- [ ] **Dockerfile 변경** → `~/openclaw/Dockerfile`과 `docker/openclaw/Dockerfile` 양쪽 동기화
+- [ ] **docker-compose.yml 변경** → 양쪽 동기화
+- [ ] **새 스킬에 SQLite 사용** → `docker-compose.yml`에 해당 데이터 경로 rw 마운트 추가
+- [ ] **Go 바이너리 추가** → `CGO_ENABLED=0` 정적 빌드, 양쪽 workspace 동기화
+- [ ] **버전 업데이트** → FROM 태그 고정, 서브에이전트 + announce 테스트 (2026.2.19+ ws:// 주의)
+- [ ] **openclaw-config 커밋** → 별도 리포(`junghan0611/openclaw-config`)에도 push
