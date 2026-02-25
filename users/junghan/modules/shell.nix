@@ -140,6 +140,9 @@ in {
     shellAliases = shellAliases;
 
     initExtra = ''
+      # Ctrl+D로 셸 종료 방지 (10회 연속 입력 시에만 종료)
+      export IGNOREEOF=10
+
       # GPG TTY 설정 (SSH 터미널에서 pinentry 작동 필수)
       export GPG_TTY=$(tty)
 
