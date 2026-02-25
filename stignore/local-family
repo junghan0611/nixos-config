@@ -6,3 +6,24 @@
 public
 resources
 bak
+
+// OpenClaw runtime (Oracle VM에서만 필요, Syncthing 충돌 방지)
+openclaw/config/matrix
+openclaw/config/telegram
+openclaw/config/agents/*/sessions
+openclaw/config/subagents
+openclaw/config/cron
+openclaw/config/logs
+openclaw/config/devices
+openclaw/config/identity
+openclaw/config/canvas
+openclaw/config/completions
+openclaw/config/credentials
+openclaw/config/media/inbound
+openclaw/config/update-check.json
+openclaw/config/exec-approvals.json
+openclaw/config/openclaw.json.bak*
+openclaw/config/workspace/.git
+openclaw/config/workspace/.openclaw
+openclaw/config/workspace-glg/.git
+openclaw/config/workspace-glg/.openclaw
