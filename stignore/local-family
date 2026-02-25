@@ -11,6 +11,7 @@ bak
 openclaw/config/matrix
 openclaw/config/telegram
 openclaw/config/agents/*/sessions
+openclaw/config/agents/*/agent/auth-profiles.json
 openclaw/config/subagents
 openclaw/config/cron
 openclaw/config/logs
