@@ -1,0 +1,5 @@
+// ~/sync/markdown 전용 패턴
+*.part
+public
+resources
+bak

@@ -1,0 +1,8 @@
+// ~/sync/family 전용 패턴
+
+// assets
+*.part
+*.webp
+public
+resources
+bak

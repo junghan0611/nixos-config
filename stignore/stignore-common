@@ -1,0 +1,86 @@
+// stignore-common : Syncthing 공통 무시 패턴
+// 관리: ~/repos/gh/nixos-config/stignore/
+// 배포: nixos-config/run.sh → 's) Syncthing stignore 배포'
+// 참고: https://docs.syncthing.net/users/ignoring
+//
+// 각 디바이스의 ~/sync/*/.stignore 에서:
+//   #include stignore-common
+
+// === OS / 에디터 ===
+.DS_Store
+.sw*
+*.swp
+*~
+.vscode
+.idea
+*.iml
+
+// === Clojure / JVM ===
+.calva
+.classpath
+.clj-kondo/.cache
+.cpcache
+.eastwood
+.factorypath
+.java-version
+.lein-*
+.lsp/.cache
+.lsp/sqlite.db
+.nrepl-history
+.nrepl-port
+.portal
+.project
+.rebel_readline_history
+.socket-repl-port
+*.class
+*.jar
+classes
+target
+
+// === Node.js ===
+node_module*
+package-lock.json
+yarn.lock
+.npm
+.yarn
+
+// === Python ===
+venv
+.venv
+__pycache__
+*.pyc
+*.pyo
+.eggs
+*.egg-info
+.pytest_cache
+
+// === Rust ===
+/target
+
+// === Go ===
+*.[568vq]
+[568vq].out
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+_testmain.go
+*.exe
+*.test
+
+// === 빌드 출력 ===
+_site
+_gen
+_obj
+_test
+.next
+.nuxt
+.output
+.cache
+.parcel-cache
+.turbo
+
+// === Hugo ===
+.hugo_build.lock
+static/ltximg

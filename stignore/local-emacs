@@ -1,0 +1,13 @@
+// ~/sync/emacs 전용 패턴
+.settings
+.mcfly.history.*
+.zsh_history.laptop
+org-mode-master
+beads.db*
+dist/
+build/
+
+// Python 가상환경 (scripts 하위)
+scripts/*/venv/
+scripts/*/.venv/
+scripts/*/env/

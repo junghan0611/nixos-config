@@ -1,0 +1,6 @@
+// ~/sync/videos 전용 패턴
+*.part
+*.webp
+public
+resources
+bak

@@ -1,0 +1,24 @@
+// ~/sync/org 전용 패턴
+*.tmp
+
+// Obsidian
+.obsidian/workspace-mobile.json
+.obsidian/workspace.json
+.obsidian/app.json
+.obsidian/appearance.json
+.obsidian/plugins
+.obsidian/community-plugins.json
+md/.obsidian/
+
+// Org-roam
+org-roam.db
+org-roam.db-journal
+.orgids
+
+// 제외 디렉토리
+mail
+mydotfiles
+obsd
+logseq/assets
+cheat
+screenshot

@@ -98,6 +98,10 @@ show_menu() {
     echo "    a) OpenClaw 페어링 승인"
     echo "    k) OpenClaw 스킬 설치/업데이트 (pi-skills → workspace)"
     echo ""
+    echo -e "  ${YELLOW}Syncthing${NC}"
+    echo "    i) stignore 배포 (~/sync/*/.stignore)"
+    echo "    I) stignore 상태 확인"
+    echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
     echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC)"
@@ -132,7 +136,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, p/P, c/C/d, t/r/s/k): " choice
+        read -p "선택하세요 (0-9, p/P, i/I, c/C/d, t/r/s/k): " choice
 
         case $choice in
             1)
@@ -515,6 +519,12 @@ main() {
                 else
                     info "취소되었습니다."
                 fi
+                ;;
+            i)
+                execute_cmd "bash '$FLAKE_DIR/scripts/setup-stignore.sh' deploy"
+                ;;
+            I)
+                execute_cmd "bash '$FLAKE_DIR/scripts/setup-stignore.sh' diff"
                 ;;
             d|D)
                 echo ""

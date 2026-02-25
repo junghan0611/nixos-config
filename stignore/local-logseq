@@ -1,0 +1,16 @@
+// ~/sync/logseq 전용 패턴
+.obsidian/workspace
+
+// Zotero
+better-bibtex.*
+zotero.sqlite
+zotero/*
+zotero/better-bibtex
+zotero/storage
+
+// Denote
+Document/notes
+Document/vlog
+
+// Calibre
+Documents/calibre/metadata.db

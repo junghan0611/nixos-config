@@ -1,0 +1,47 @@
+// ~/sync/code 전용 패턴
+
+// LaTeX
+*.aux
+*.fls
+*.fn
+*.ky
+*.log
+*.pg
+*.toc
+*.tp
+*.vr
+*.idx
+*.ilg
+*.ind
+*.out
+
+// SICP PDF artifacts
+sicp-pdf/fig/chap*/Fig*.pdf
+sicp-pdf/fig/icons/*_chess_queen.pdf
+sicp-pdf/coverpage.pdf
+sicp-pdf/sicp.tex
+sicp-pdf/sicp.fdb_latexmk
+sicp-pdf/exercises.tex
+sicp-pdf/figures.tex
+
+// ClojureScript
+.shadow-cljs
+
+// Quarto
+/.quarto/
+site_libs/
+figs/
+*.html
+*_files/
+_extensions/
+*.quarto_ipynb
+.ccls-cache
+
+// 특정 경로
+/.cache/**
+/dock-control.sh
+public/js
+
+// Hugo (junghanacs)
+junghanacs/notes.junghanacs.com/public
+junghanacs/junghanacs.github.io/public
