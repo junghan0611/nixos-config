@@ -102,6 +102,10 @@ show_menu() {
     echo "    i) stignore 배포 (~/sync/*/.stignore)"
     echo "    I) stignore 상태 확인"
     echo ""
+    echo -e "  ${YELLOW}External Packages${NC}"
+    echo "    e) 외부 패키지 버전 체크"
+    echo "    E) 외부 패키지 업그레이드"
+    echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
     echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC)"
@@ -136,7 +140,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, p/P, i/I, c/C/d, t/r/s/k): " choice
+        read -p "선택하세요 (0-9, p/P, e/E, i/I, c/C/d, t/r/s/k): " choice
 
         case $choice in
             1)
@@ -548,6 +552,187 @@ main() {
                 echo ""
                 info "result 심볼릭 링크:"
                 find ~/repos -maxdepth 3 -name "result" -type l 2>/dev/null || echo "없음"
+                ;;
+            e)
+                echo ""
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo -e "${GREEN}External Packages - Version Check${NC}"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo ""
+
+                _ext_has_update=0
+
+                # --- GitHub Release Binaries ---
+                echo -e "${YELLOW}[GitHub Release Binaries]${NC}"
+
+                declare -A _ext_gh=(
+                    [gt]="steveyegge/gastown"
+                    [bd]="steveyegge/beads"
+                    [bv]="Dicklesworthstone/beads_viewer"
+                    [br]="Dicklesworthstone/beads_rust"
+                )
+                declare -A _ext_gh_current
+                declare -A _ext_gh_latest
+
+                for cmd in gt bd bv br; do
+                    repo="${_ext_gh[$cmd]}"
+                    # current version
+                    case $cmd in
+                        gt) cur=$($cmd version 2>/dev/null | awk '{print $3}') ;;
+                        bd) cur=$($cmd version 2>/dev/null | awk '{print $3}') ;;
+                        bv) bv_out=$(timeout 5 $cmd -check-update 2>/dev/null || true)
+                            cur=$(echo "$bv_out" | grep -oP 'current: \K[v\d.]+' || true)
+                            if [[ -z "$cur" ]]; then
+                                if echo "$bv_out" | grep -q "New version"; then
+                                    cur="outdated"
+                                elif [[ -x "$HOME/.local/bin/bv" ]]; then
+                                    cur="installed"
+                                fi
+                            fi ;;
+                        br) cur=$($cmd version 2>/dev/null | awk '{print $3}') ;;
+                    esac
+                    cur="${cur#v}"
+                    # latest version
+                    lat=$(curl -sf "https://api.github.com/repos/${repo}/releases/latest" | jq -r '.tag_name // empty' 2>/dev/null)
+                    lat="${lat#v}"
+
+                    _ext_gh_current[$cmd]="$cur"
+                    _ext_gh_latest[$cmd]="$lat"
+
+                    if [[ -z "$cur" ]]; then
+                        echo -e "  ${RED}✗${NC} $cmd: not installed (latest: ${lat:-?})"
+                    elif [[ "$cur" == "outdated" ]]; then
+                        echo -e "  ${YELLOW}⬆${NC} $cmd: update available → $lat"
+                        _ext_has_update=1
+                    elif [[ "$cur" == "installed" || "$cur" == "$lat" ]]; then
+                        if [[ "$cur" == "installed" ]]; then
+                            echo -e "  ${GREEN}✓${NC} $cmd: installed (up to date)"
+                        else
+                            echo -e "  ${GREEN}✓${NC} $cmd: $cur (up to date)"
+                        fi
+                    else
+                        echo -e "  ${YELLOW}⬆${NC} $cmd: $cur → $lat"
+                        _ext_has_update=1
+                    fi
+                done
+
+                # --- pnpm global ---
+                echo ""
+                echo -e "${YELLOW}[pnpm global]${NC}"
+
+                declare -A _ext_npm=(
+                    [claude-agent-acp]="@zed-industries/claude-agent-acp"
+                    [pi-acp]="pi-acp"
+                )
+
+                for label in claude-agent-acp pi-acp; do
+                    pkg="${_ext_npm[$label]}"
+                    cur=$(pnpm list -g 2>/dev/null | grep "$label" | grep -oP '[\d.]+$')
+                    lat=$(npm view "$pkg" version 2>/dev/null)
+
+                    if [[ -z "$cur" ]]; then
+                        echo -e "  ${RED}✗${NC} $label: not installed (latest: ${lat:-?})"
+                    elif [[ "$cur" == "$lat" ]]; then
+                        echo -e "  ${GREEN}✓${NC} $label: $cur (up to date)"
+                    else
+                        echo -e "  ${YELLOW}⬆${NC} $label: $cur → $lat"
+                        _ext_has_update=1
+                    fi
+                done
+
+                # --- uv tools ---
+                echo ""
+                echo -e "${YELLOW}[uv tools]${NC}"
+                if command -v uv &>/dev/null; then
+                    uv tool list 2>/dev/null | grep -E '^\w' | while read -r line; do
+                        echo -e "  ${GREEN}✓${NC} $line"
+                    done
+                else
+                    echo -e "  ${RED}✗${NC} uv not found"
+                fi
+
+                echo ""
+                if [[ $_ext_has_update -eq 1 ]]; then
+                    warn "업데이트 가능한 패키지가 있습니다. E)를 눌러 업그레이드하세요."
+                else
+                    success "모든 외부 패키지가 최신입니다."
+                fi
+
+                unset _ext_gh _ext_gh_current _ext_gh_latest _ext_npm _ext_has_update
+                ;;
+            E)
+                echo ""
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo -e "${GREEN}External Packages - Upgrade${NC}"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo ""
+
+                echo "  1) gt  - GitHub Release binary"
+                echo "  2) bd  - curl installer"
+                echo "  3) bv  - bv --update (self-update)"
+                echo "  4) br  - curl installer"
+                echo "  5) pnpm global (claude-agent-acp, pi-acp)"
+                echo "  6) uv tools"
+                echo "  a) ALL (전부 업그레이드)"
+                echo "  0) 취소"
+                echo ""
+                read -p "선택: " up_choice
+
+                _do_gt() {
+                    local lat
+                    lat=$(curl -sf https://api.github.com/repos/steveyegge/gastown/releases/latest | jq -r '.tag_name // empty')
+                    lat="${lat#v}"
+                    if [[ -z "$lat" ]]; then error "gt 최신 버전 확인 실패"; return 1; fi
+                    info "gt $lat 설치 중..."
+                    curl -sL "https://github.com/steveyegge/gastown/releases/download/v${lat}/gastown_${lat}_linux_amd64.tar.gz" \
+                        | tar xz -C ~/.local/bin/ gt
+                    chmod +x ~/.local/bin/gt
+                    success "gt $(gt version 2>/dev/null | awk '{print $3}')"
+                }
+                _do_bd() {
+                    info "bd 설치 중..."
+                    curl -sSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash
+                    success "bd $(bd version 2>/dev/null | awk '{print $3}')"
+                }
+                _do_bv() {
+                    info "bv 업데이트 중..."
+                    bv -update -yes 2>/dev/null || \
+                        curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh?$(date +%s)" | bash
+                    success "bv updated"
+                }
+                _do_br() {
+                    info "br 설치 중..."
+                    curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
+                    success "br $(br version 2>/dev/null | awk '{print $3}')"
+                }
+                _do_pnpm() {
+                    info "pnpm global 업그레이드 중..."
+                    pnpm add -g @zed-industries/claude-agent-acp@latest pi-acp@latest
+                    success "pnpm global updated"
+                }
+                _do_uv() {
+                    info "uv tools 업그레이드 중..."
+                    uv tool upgrade --all 2>/dev/null || warn "uv tool upgrade 실패"
+                    success "uv tools updated"
+                }
+
+                case $up_choice in
+                    1) _do_gt ;;
+                    2) _do_bd ;;
+                    3) _do_bv ;;
+                    4) _do_br ;;
+                    5) _do_pnpm ;;
+                    6) _do_uv ;;
+                    a)
+                        _do_gt; _do_bd; _do_bv; _do_br; _do_pnpm; _do_uv
+                        echo ""
+                        success "전체 업그레이드 완료!"
+                        ;;
+                    0) info "취소" ;;
+                    *) error "잘못된 선택" ;;
+                esac
+
+                unset -f _do_gt _do_bd _do_bv _do_br _do_pnpm _do_uv
                 ;;
             0)
                 info "종료합니다."
