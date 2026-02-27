@@ -124,5 +124,18 @@ git push                # Push to remote
 - [ ] **docker-compose.yml 변경** → 양쪽 동기화
 - [ ] **새 스킬에 SQLite 사용** → `docker-compose.yml`에 해당 데이터 경로 rw 마운트 추가
 - [ ] **Go 바이너리 추가** → `CGO_ENABLED=0` 정적 빌드, 양쪽 workspace 동기화
-- [ ] **버전 업데이트** → FROM 태그 고정, 서브에이전트 + announce 테스트 (2026.2.19+ ws:// 주의)
+- [ ] **버전 업데이트** → FROM 태그 고정, 서브에이전트 + announce 테스트
 - [ ] **openclaw-config 커밋** → 별도 리포(`junghan0611/openclaw-config`)에도 push
+
+### OpenClaw 재시작 판단 기준
+
+**재시작 필요:**
+- 새 스킬 디렉토리 추가/삭제 (Telegram 슬래시 커맨드 등록 변경)
+- `openclaw.json` 설정 변경
+- Dockerfile / docker-compose.yml 변경
+- 버전 업데이트
+
+**재시작 불필요:**
+- SKILL.md 내용 수정 — 에이전트가 매 호출 시 `read` 도구로 동적 로딩
+- workspace 파일 수정 (AGENTS.md, SOUL.md, USER.md, MEMORY.md 등)
+- 스킬 내 스크립트/바이너리 교체 (경로 동일하면)
