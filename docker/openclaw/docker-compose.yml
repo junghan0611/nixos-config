@@ -51,6 +51,8 @@ services:
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # 디바이스 식별 (에이전트 공통 필터링)
+      - ~/.current-device:/home/node/.current-device:ro
 
     networks:
       - default        # CLI 컨테이너와 통신용
@@ -95,6 +97,8 @@ services:
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # 디바이스 식별 (에이전트 공통 필터링)
+      - ~/.current-device:/home/node/.current-device:ro
 
 networks:
   proxy:
