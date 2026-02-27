@@ -53,6 +53,10 @@ services:
       - ~/.config/gh:/home/node/.config/gh:ro
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
+      # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
+      - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
+      - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
+      - /run/user/1000/emacs:/run/emacs:ro
 
     networks:
       - default        # CLI 컨테이너와 통신용
@@ -99,6 +103,10 @@ services:
       - ~/.config/gh:/home/node/.config/gh:ro
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
+      # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
+      - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
+      - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
+      - /run/user/1000/emacs:/run/emacs:ro
 
 networks:
   proxy:
