@@ -41,15 +41,16 @@ services:
       # 지식베이스/코드베이스 (read-only)
       - ~/repos/gh:/home/node/repos/gh:ro
       - ~/repos/work:/home/node/repos/work:ro
+      - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:ro
+      # 봇 활동 기록 (rw 오버라이드 — 봇이 Denote 파일 직접 생성)
+      - ~/org/botlog:/home/node/org/botlog:rw
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (read-only)
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
-      # 공유 작업 공간 (read-write, Syncthing 동기화)
-      - ./shared:/home/node/shared
 
     networks:
       - default        # CLI 컨테이너와 통신용
@@ -81,19 +82,19 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
-      # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스 (read-only)
       - ~/repos/gh:/home/node/repos/gh:ro
       - ~/repos/work:/home/node/repos/work:ro
+      - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:ro
+      # 봇 활동 기록 (rw 오버라이드 — 봇이 Denote 파일 직접 생성)
+      - ~/org/botlog:/home/node/org/botlog:rw
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (read-only)
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
-      # 공유 작업 공간 (read-write, Syncthing 동기화)
-      - ./shared:/home/node/shared
 
 networks:
   proxy:
