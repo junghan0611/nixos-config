@@ -4,11 +4,10 @@
 
 | Item | Value |
 |------|-------|
-| **Running version** | `2026.2.17` |
-| **Dockerfile FROM** | `ghcr.io/openclaw/openclaw:2026.2.17` |
-| **Latest stable** | `2026.2.26` (2026-02-27) |
-| **Last attempted** | `2026.2.19` → **롤백** |
-| **Gap** | 9 releases behind (2026.2.19 ~ 2026.2.26) |
+| **Running version** | `2026.2.26` |
+| **Dockerfile FROM** | `ghcr.io/openclaw/openclaw:2026.2.26` |
+| **Upgraded** | 2026-02-27 (from 2026.2.17, skipping 2026.2.19 롤백) |
+| **ws:// Docker 이슈** | ✅ 해결됨 (서브에이전트 spawn 정상) |
 
 ## 현재 텔레그램 운영 현황
 
@@ -98,18 +97,18 @@ gogcli, lifetract, medium-extractor, punchout, transcribe, youtube-transcript
 - [x] 텔레그램 관련 변경 분류
 - [x] 현재 스킬/세션/설정 상태 확인
 
-### Phase 2: 업그레이드 실행
-- [ ] 2026.2.26 이미지 pull
-- [ ] Dockerfile 변경 + 빌드
-- [ ] 컨테이너 교체 + 서브에이전트 spawn 테스트
-- [ ] Telegram DM 대화 테스트 (정한님 세션)
-- [ ] streaming 설정 마이그레이션 확인 (`streamMode` → `streaming`)
+### Phase 2: 업그레이드 실행 ✅ (2026-02-27)
+- [x] 2026.2.26 이미지 pull
+- [x] Dockerfile 변경 + 빌드
+- [x] 컨테이너 교체 + 서브에이전트 spawn 테스트 ✅
+- [x] Telegram DM 대화 테스트 (정한님 세션) ✅
+- [x] streaming 설정 마이그레이션 확인
 
-### Phase 3: 안정화
-- [ ] Dockerfile/docker-compose.yml 양쪽 동기화
-- [ ] nixos-config 커밋
-- [ ] MEMORY.md 버전 정보 수정
-- [ ] 이 문서 업데이트
+### Phase 3: 안정화 ✅ (2026-02-28)
+- [x] Dockerfile/docker-compose.yml 양쪽 동기화
+- [x] nixos-config 커밋
+- [x] 구 이미지 정리 (2026.2.17, 2026.2.19, dangling — ~9GB 회수)
+- [x] 이 문서 업데이트
 
 ## BREAKING Changes Checklist (2026.2.17 → 2026.2.26)
 
