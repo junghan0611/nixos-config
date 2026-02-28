@@ -8,8 +8,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     tree \
     curl \
+    ffmpeg \
+    python3-minimal \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd
+
+# yt-dlp (pip — GitHub binary download가 불안정)
+RUN pip install --no-cache-dir --break-system-packages yt-dlp
+
+# summarize CLI (@steipete/summarize — URL/파일/미디어 요약)
+RUN npm install -g @steipete/summarize \
+    && mkdir -p /home/node/.summarize \
+    && echo '{"model":{"id":"openrouter/google/gemini-3-flash-preview"}}' > /home/node/.summarize/config.json \
+    && chown -R node:node /home/node/.summarize
 
 # GitHub CLI (gh)
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
