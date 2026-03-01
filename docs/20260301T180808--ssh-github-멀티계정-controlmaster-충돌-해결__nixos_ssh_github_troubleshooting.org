@@ -1,0 +1,113 @@
+#+title:      SSH GitHub 멀티계정 ControlMaster 충돌 해결
+#+date:       [2026-03-01 Sun 18:08]
+#+filetags:   :nixos:ssh:github:troubleshooting:
+#+identifier: 20260301T180808
+#+export_file_name: 20260301T180808.md
+
+* 문제
+
+GitHub 멀티계정(junghan0611, junghanacs, jhkim2goqual) 사용 시,
+~git push~ 에서 잘못된 계정으로 인증되거나 패스워드 입력창이 뜨는 문제.
+
+** 증상
+
+- ~git push~ 시 ~Permission denied~ 또는 패스워드 프롬프트
+- ~ssh -T git@github.com~ 결과가 의도한 계정과 다름
+- 첫 번째 접속한 계정의 세션이 다른 계정까지 오염
+
+** 원인
+
+~Host *~ 의 ~ControlMaster auto~ + ~ControlPath~ 설정이 GitHub Host들보다 먼저 적용됨.
+
+GitHub 별칭 Host들(github.com, github-junghanacs.com, github-goqual.com)이
+모두 같은 ~HostName github.com~ 을 사용하므로,
+*동일한 소켓 파일* (~git@github.com-22~)을 공유하게 됨.
+
+#+begin_example
+# 문제 시나리오:
+1. git push (github-junghanacs.com) → 소켓 생성 (junghanacs 세션)
+2. git push (github.com)            → 캐시된 소켓 재사용 → junghanacs로 인증 → 실패!
+#+end_example
+
+** SSH config에서 ~Host *~ 는 "먼저 매칭된 값 우선" 이 아니라 "항상 적용"
+
+SSH config 규칙:
+- 구체적 Host 블록의 값이 ~Host *~ 보다 우선
+- *단, 구체적 Host에 해당 옵션이 없으면 ~Host *~ 값이 적용됨*
+- 순서가 아닌 구체성(specificity)으로 결정
+
+즉 GitHub Host에 ~ControlPath~ 를 명시하지 않으면 ~Host *~ 의 ~ControlPath~ 가 적용됨.
+
+* 해결
+
+** 1. GitHub Host들에 ~ControlPath none~ 추가
+
+소켓 공유를 완전히 비활성화:
+
+#+begin_src conf
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+    ControlPath none
+#+end_src
+
+** 2. GitHub Host들을 ~Host *~ 위에 배치
+
+확실한 우선순위 보장:
+
+#+begin_src conf
+# === GitHub 멀티계정 (ControlPath none 필수) ===
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+    ControlPath none
+
+Host github-junghanacs.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_rsa_junghanacs_gmail
+    IdentitiesOnly yes
+    ControlPath none
+
+Host github-goqual.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_rsa_jhkim2goqual
+    IdentitiesOnly yes
+    ControlPath none
+
+# === 기본 설정 ===
+Host *
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPersist 600
+#+end_src
+
+** 3. 소켓 캐시가 꼬였을 때 응급 처치
+
+#+begin_src bash
+rm -f ~/.ssh/sockets/git@github.com-22
+#+end_src
+
+* 계정 매핑
+
+| Host                    | 키                         | GitHub 계정    | 용도              |
+|-------------------------+----------------------------+----------------+-------------------|
+| ~github.com~            | ~id_rsa~                   | junghan0611    | 개인 (기본)       |
+| ~github-junghanacs.com~ | ~id_rsa_junghanacs_gmail~  | junghanacs     | 가든/블로그        |
+| ~github-goqual.com~     | ~id_rsa_jhkim2goqual~      | jhkim2goqual   | 회사              |
+| ~github-proton.com~     | ~junghan0611_proton~       | junghan0611    | 개인 (proton 키)  |
+
+* 검증
+
+#+begin_src bash
+ssh -T git@github.com              # → Hi junghan0611!
+ssh -T git@github-junghanacs.com   # → Hi junghanacs!
+ssh -T git@github-goqual.com       # → Hi jhkim2goqual!
+#+end_src
+
+세 결과가 각각 다른 계정이면 정상.
