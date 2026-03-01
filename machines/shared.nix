@@ -25,8 +25,15 @@
     '';
 
     settings = {
-      substituters = ["https://cache.nixos.org"];
-      trusted-public-keys = ["cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="];
+      trusted-users = [ "root" "junghan" ];
+      substituters = [
+        "https://cache.nixos.org"
+        "https://nix-wpe-webkit.cachix.org"
+      ];
+      trusted-public-keys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        "nix-wpe-webkit.cachix.org-1:ItCjHkz1Y5QcwqI9cTGNWHzcox4EqcXqKvOygxpwYHE="
+      ];
       auto-optimise-store = true;
     };
 
