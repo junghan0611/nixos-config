@@ -21,6 +21,16 @@ success() { echo -e "${GREEN}✓${NC} $1"; }
 warn() { echo -e "${YELLOW}⚠${NC} $1"; }
 error() { echo -e "${RED}✗${NC} $1"; }
 
+# Fix SSH ControlMaster socket conflict for GitHub multi-account
+# See: ~/org/llmlog/ SSH GitHub 멀티계정 ControlMaster 충돌 해결
+fix_ssh_github() {
+    local socket="$HOME/.ssh/sockets/git@github.com-22"
+    if [[ -S "$socket" ]]; then
+        rm -f "$socket"
+        info "SSH GitHub 소켓 캐시 제거 (멀티계정 충돌 방지)"
+    fi
+}
+
 # Check current device
 check_device() {
     if [[ ! -f "$DEVICE_FILE" ]]; then
@@ -136,6 +146,7 @@ execute_cmd() {
 # Main loop
 main() {
     cd "$FLAKE_DIR"
+    fix_ssh_github
     check_device
 
     while true; do
