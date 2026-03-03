@@ -115,6 +115,19 @@ git push                # Push to remote
 
 <!-- end-bv-agent-instructions -->
 
+## OpenClaw 봇 구성 (Oracle VM)
+
+| 에이전트 | 모델 | 텔레그램 봇 | 인증 |
+|---------|------|------------|------|
+| main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 |
+| glg | anthropic/claude-opus-4-6 | @glg_junghanacs_bot | Anthropic 정액제 |
+| deepseek | deepseek/deepseek-reasoner | @glg_deepseek_bot | DeepSeek API 직접 |
+| gemini | openrouter/google/gemini-3.1-pro-preview | @glg_gemini_bot | OpenRouter |
+
+- 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
+- workspace 독립, skills 공유 (glg 기준 복사)
+- 프레이밍 없음 — 각 모델이 대화하며 자리잡음
+
 ## OpenClaw 작업 체크리스트
 
 `docker/openclaw/` 또는 원격 `~/openclaw/` 변경 시 확인:
