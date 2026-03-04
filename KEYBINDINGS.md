@@ -16,8 +16,8 @@
 | `Mod+Shift+q` | 창 닫기 |
 | `Mod+d` | 앱 런처 (Rofi) |
 | `Mod+Shift+d` | 명령어 실행 (Rofi run) |
-| `Mod+Tab` | Claude Code 다음 창 순환 (✳/●) |
-| `Mod+Shift+Tab` | Claude Code 이전 창 순환 |
+| `Mod+Tab` | 워크스페이스 순환 (다음, 현재 출력) |
+| `Mod+Shift+Tab` | 워크스페이스 순환 (이전, 현재 출력) |
 | `Mod+p` | 패스워드 매니저 (rofi-pass) |
 | `F1` / `Mod+e` | Whisper 음성 입력 |
 
@@ -93,7 +93,13 @@
 | `Mod+n` | 알림 닫기 |
 | `Mod+Shift+n` | 모든 알림 닫기 |
 | `Mod+`` ` (grave) | 알림 히스토리 보기 |
-| `Mod+.` | 알림 액션 실행 |
+| `Mod+Shift+.` | 알림 액션 실행 |
+
+## 포커스 토글 (i3-swap-focus)
+
+| 키 | 동작 |
+|----|------|
+| `Mod+.` | 마지막 두 창 사이 포커스 토글 |
 
 ## 미디어 & 밝기
 

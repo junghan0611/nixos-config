@@ -25,6 +25,80 @@ let
   # Whisper voice input script
   whisperScript = "${config.home.homeDirectory}/repos/gh/nixos-config/scripts/whisper-input.sh";
 
+  # i3-swap-focus: 마지막 두 창 사이 포커스 토글 (레골리스 방식)
+  # https://codeberg.org/olivierlm/i3-swap-focus
+  swapFocusPy = pkgs.writeText "i3-swap-focus.py" ''
+    #! /usr/bin/env python3
+    import os
+    import asyncio
+    import argparse
+    import signal
+    import atexit
+    from i3ipc.aio import Connection
+
+    pid_file = '{XDG_RUNTIME_DIR}/swap_focus.pid'.format_map(os.environ)
+    window_stack = []
+    config = {}
+
+    async def on_signal(i3):
+        if window_stack:
+            window_id = window_stack.pop()
+            if config["stay_in_workspace"]:
+                current_workspace = (await i3.get_tree()).find_focused().workspace().id
+                container = (await i3.get_tree()).find_by_id(window_id)
+                if not container:
+                    window_stack.append(window_id)
+                    return
+                window_workspace = container.workspace().id
+                if current_workspace != window_workspace:
+                    window_stack.append(window_id)
+                    return
+            cmd = f'[con_id={window_id}] focus'
+            await i3.command(cmd)
+
+    def exit_handler():
+        os.remove(pid_file)
+
+    def on_window(conn, event):
+        if "ignore_focus" in event.container.marks:
+            return
+        if event.change == 'focus':
+            if not window_stack or event.container.id != window_stack[0]:
+                window_stack.insert(0, event.container.id)
+                if len(window_stack) > 2:
+                    del window_stack[2:]
+
+    async def run():
+        with open(pid_file, 'w') as file:
+            file.write(str(os.getpid()))
+        atexit.register(exit_handler)
+        i3 = await Connection(auto_reconnect=True).connect()
+        loop = asyncio.get_event_loop()
+        loop.add_signal_handler(signal.SIGUSR1, lambda: asyncio.create_task(on_signal(i3)))
+        i3.on('window::focus', on_window)
+        await i3.main()
+
+    def main():
+        parser = argparse.ArgumentParser(description='i3 script to toggle between last windows.')
+        parser.add_argument('--stay-in-workspace', action=argparse.BooleanOptionalAction, default=False)
+        config["stay_in_workspace"] = parser.parse_args().stay_in_workspace
+        asyncio.run(run())
+
+    main()
+  '';
+
+  swapFocusScript = pkgs.writeShellScript "i3-swap-focus" ''
+    exec ${pkgs.python3.withPackages (ps: [ ps.i3ipc ])}/bin/python3 ${swapFocusPy} "$@"
+  '';
+
+  # i3 startup wrapper: 기존 데몬 종료 후 재시작
+  # i3에서 `;`는 i3 명령 분리자이므로 반드시 별도 스크립트로 감싸야 함
+  swapFocusStartup = pkgs.writeShellScript "i3-swap-focus-start" ''
+    [ -f "$XDG_RUNTIME_DIR/swap_focus.pid" ] && kill "$(cat "$XDG_RUNTIME_DIR/swap_focus.pid")" 2>/dev/null
+    sleep 0.3
+    exec ${swapFocusScript}
+  '';
+
   # Scratchpad toggle script (from regolith, improved)
   # Shows scratchpad window if exists, otherwise creates it
   # Improvements:
@@ -304,9 +378,9 @@ in {
                   -show combi
               ''
             }";
-          # Claude Code 창 순환 (✳ 타이틀 기반)
-          "${mod}+Tab" = "exec --no-startup-id ${config.home.homeDirectory}/repos/gh/nixos-config/scripts/claude-focus.sh next";
-          "${mod}+Shift+Tab" = "exec --no-startup-id ${config.home.homeDirectory}/repos/gh/nixos-config/scripts/claude-focus.sh prev";
+          # 워크스페이스 순환 (현재 출력 기준)
+          "${mod}+Tab" = "workspace next_on_output";
+          "${mod}+Shift+Tab" = "workspace prev_on_output";
           "${mod}+Shift+d" = "exec ${pkgs.rofi}/bin/rofi -show run -font '${fontName} ${toString fontSize}'";
 
           # Password manager (rofi-pass)
@@ -322,7 +396,10 @@ in {
           "${mod}+n" = "exec ${pkgs.dunst}/bin/dunstctl close";
           "${mod}+Shift+n" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
           "${mod}+grave" = "exec ${pkgs.dunst}/bin/dunstctl history-pop";
-          "${mod}+period" = "exec ${pkgs.dunst}/bin/dunstctl action";
+          "${mod}+Shift+period" = "exec ${pkgs.dunst}/bin/dunstctl action";
+
+          # i3-swap-focus: 마지막 두 창 사이 포커스 토글 (레골리스 방식)
+          "${mod}+period" = "exec --no-startup-id pkill -USR1 -F \"$XDG_RUNTIME_DIR/swap_focus.pid\"";
 
           # Focus (vim keys)
           "${mod}+h" = "focus left";
@@ -536,6 +613,10 @@ in {
 
         # Auto-detect and apply monitor configuration
         { command = "${pkgs.autorandr}/bin/autorandr --change --default thinkpad"; notification = false; }
+
+        # i3-swap-focus 데몬: Super+period로 마지막 두 창 토글
+        # always=true + pkill 가드: i3 restart 후에도 데몬 재기동
+        { command = "${swapFocusStartup}"; notification = false; always = true; }
       ];
     };
   };
