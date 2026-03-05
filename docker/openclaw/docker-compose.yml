@@ -31,6 +31,7 @@ services:
       - HOME=/home/node
       - TERM=xterm-256color
       - GOG_KEYRING_PASSWORD=gogcli
+      - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1  # 서브에이전트 ws:// Docker bridge 허용
 
     # gateway는 컨테이너 내에서 lan 바인딩 필요
     command: ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789"]
