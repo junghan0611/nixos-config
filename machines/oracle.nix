@@ -77,7 +77,8 @@
     allowedUDPPorts = [
       21027  # Syncthing discovery
       22000  # Syncthing QUIC
-    ] ++ (lib.range 60000 61000);  # mosh
+      # mosh: 22번 포트로 사용 중, 외부 UDP 불필요
+    ];
   };
 
   # Oracle Cloud Volume management
@@ -105,6 +106,44 @@
     "net.ipv4.tcp_congestion_control" = "bbr";
     "net.core.default_qdisc" = "fq";
   };
+
+  # ============================================================
+  # Security hardening (Oracle VM — 공인 IP 노출 서버)
+  # ============================================================
+
+  # P0: SSH 패스워드 인증 끄기 (shared.nix의 true를 mkForce override)
+  services.openssh.settings.PasswordAuthentication = lib.mkForce false;
+  services.openssh.settings.KbdInteractiveAuthentication = lib.mkForce false;
+
+  # P0: fail2ban — SSH 무차별 대입 공격 차단
+  services.fail2ban = {
+    enable = true;
+    maxretry = 3;
+    bantime = "1h";
+    bantime-increment = {
+      enable = true;      # 반복 공격 시 밴 시간 점진적 증가
+      maxtime = "168h";   # 최대 7일
+    };
+  };
+
+  # P1: sudo 패스워드 요구 (shared.nix의 NOPASSWD override)
+  # 개인 PC는 편의상 NOPASSWD 유지, 클라우드 서버만 패스워드 요구
+  security.sudo.wheelNeedsPassword = lib.mkForce true;
+  security.sudo.extraRules = lib.mkForce [
+    {
+      users = [ "junghan" ];
+      commands = [
+        {
+          command = "${pkgs.systemd}/bin/systemctl";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/nixos-rebuild";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   # Oracle Cloud specific notes
   system.nixos.tags = [ "oracle-cloud" "arm64" ];
