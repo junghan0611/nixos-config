@@ -27,9 +27,9 @@ in {
 
         # Geometry (geometry → width/height/offset/origin in dunst 1.5+)
         width = 600;
-        height = 300;
+        height = "(0, 300)";
         origin = "top-right";
-        offset = "40x40";
+        offset = "(40, 40)";
 
         # Timeout
         idle_threshold = 120;
