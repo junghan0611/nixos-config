@@ -15,10 +15,9 @@ in {
         # Font
         font = "${fontName} ${toString fontSize}";
 
-        # Markup
-        allow_markup = true;
-        format = ''<b>%s</b>
-%b'';
+        # Markup (allow_markup → markup in dunst 1.5+)
+        markup = "full";
+        format = "<b>%s</b>\\n%b";
 
         # Sorting
         sort = true;
@@ -26,8 +25,11 @@ in {
         # Alignment
         alignment = "left";
 
-        # Geometry
-        geometry = "600x15-40+40";
+        # Geometry (geometry → width/height/offset/origin in dunst 1.5+)
+        width = 600;
+        height = 300;
+        origin = "top-right";
+        offset = "40x40";
 
         # Timeout
         idle_threshold = 120;
@@ -45,11 +47,10 @@ in {
 
         # Icon
         max_icon_size = 45;
-      };
 
-      frame = {
-        width = 0;
-        color = solarized.base01;
+        # Frame (frame section → global in dunst 1.5+)
+        frame_width = 0;
+        frame_color = solarized.base01;
       };
 
       urgency_low = {
