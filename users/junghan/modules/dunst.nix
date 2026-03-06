@@ -67,7 +67,7 @@ in {
       urgency_critical = {
         background = solarized.red;
         foreground = solarized.base3;
-        timeout = 0;
+        timeout = 10;
       };
 
       # Claude Code notifications (visual only — sound handled by peon-ping hooks)
