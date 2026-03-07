@@ -9,11 +9,27 @@ TEMPD="/dev/shm"
 AUDIO_FILE="$TEMPD/whisper-ptt.wav"
 LOG_FILE="$TEMPD/whisper-ptt.log"
 PID_FILE="$TEMPD/whisper-ptt.pid"
-GROQ_API_KEY="${GROQ_API_KEY:-$(pass api/groq/junghanacs 2>/dev/null || echo "")}"
+# shellcheck source=/dev/null
+[[ -f ~/.env.local ]] && source ~/.env.local
+GROQ_API_KEY="${GROQ_API_KEY:-}"
 AUTOPASTE=1
+NOTIFY_ID=99111  # dunstify replace ID (고정값)
 #---END CONFIG---
 
 log() { echo "[$(date '+%H:%M:%S')] $*" >> "$LOG_FILE"; }
+
+# dunstify wrapper: 같은 ID로 알림 교체
+ptt_notify() {
+    local urgency="${1:-normal}"
+    local title="$2"
+    local body="${3:-}"
+    local timeout="${4:-0}"  # 0 = 사라지지 않음
+    dunstify -r "$NOTIFY_ID" -u "$urgency" -t "$timeout" "$title" "$body"
+}
+
+ptt_notify_close() {
+    dunstify -C "$NOTIFY_ID"
+}
 
 cmd_start() {
     # 이미 녹음 중이면 무시 (키 반복 방지)
@@ -28,7 +44,7 @@ cmd_start() {
     fi
 
     if [[ -z "$GROQ_API_KEY" ]]; then
-        notify-send -u critical "🎙️ PTT" "API 키 없음"
+        ptt_notify critical "🎙️ PTT" "API 키 없음" 5000
         exit 1
     fi
 
@@ -41,7 +57,7 @@ cmd_start() {
     echo "$rec_pid" > "$PID_FILE"
 
     log "=== PTT 녹음 시작 (PID $rec_pid) ==="
-    notify-send -t 800 "🎙️ PTT" "녹음 중..."
+    ptt_notify normal "🎙️ 녹음 중..." "F1 떼면 전송"  # timeout=0, 계속 표시
 }
 
 cmd_stop() {
@@ -88,7 +104,7 @@ cmd_stop() {
 
     if [[ "$filesize" -lt 1000 ]]; then
         log "녹음이 너무 짧음"
-        notify-send -u low -t 1000 "🎙️ PTT" "너무 짧음"
+        ptt_notify low "🎙️ PTT" "너무 짧음" 2000
         rm -f "$AUDIO_FILE"
         return 0
     fi
@@ -98,12 +114,12 @@ cmd_stop() {
     header=$(head -c 4 "$AUDIO_FILE" 2>/dev/null || echo "")
     if [[ "$header" != "RIFF" ]]; then
         log "WAV 헤더 손상 — RIFF 아님: $header"
-        notify-send -u critical "🎙️ PTT" "녹음 파일 손상"
+        ptt_notify critical "🎙️ PTT" "녹음 파일 손상" 3000
         rm -f "$AUDIO_FILE"
         return 1
     fi
 
-    notify-send -t 800 "🎙️ PTT" "변환 중..."
+    ptt_notify normal "🎙️ PTT" "변환 중..."  # 계속 표시
 
     # Groq API 호출
     local RESPONSE
@@ -123,7 +139,7 @@ cmd_stop() {
         local ERROR
         ERROR=$(echo "$RESPONSE" | jq -r '.error.message // "알 수 없는 오류"')
         log "변환 실패: $ERROR"
-        notify-send -u critical "🎙️ PTT" "실패: $ERROR"
+        ptt_notify critical "🎙️ PTT" "실패: $ERROR" 3000
         rm -f "$AUDIO_FILE"
         return 1
     fi
@@ -137,7 +153,7 @@ cmd_stop() {
         xdotool key ctrl+shift+v
     fi
 
-    notify-send -t 1500 "🎙️ PTT" "완료 (${#TEXT}자)"
+    ptt_notify normal "🎙️ PTT" "완료 (${#TEXT}자)" 2000
     rm -f "$AUDIO_FILE"
 }
 
