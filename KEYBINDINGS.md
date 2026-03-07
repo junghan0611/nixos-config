@@ -19,7 +19,8 @@
 | `Mod+Tab` | 워크스페이스 순환 (다음, 현재 출력) |
 | `Mod+Shift+Tab` | 워크스페이스 순환 (이전, 현재 출력) |
 | `Mod+p` | 패스워드 매니저 (rofi-pass) |
-| `F1` / `Mod+e` | Whisper 음성 입력 |
+| `F1` (누르고 떼기) | Whisper 워키토키 (PTT) 음성 입력 |
+| `Mod+e` | Whisper 음성 입력 (침묵 감지 자동 종료) |
 
 ## 포커스 이동
 

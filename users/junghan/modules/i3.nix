@@ -25,6 +25,9 @@ let
   # Whisper voice input script
   whisperScript = "${config.home.homeDirectory}/repos/gh/nixos-config/scripts/whisper-input.sh";
 
+  # Whisper PTT (Push-to-Talk / 워키토키) script
+  whisperPttScript = "${config.home.homeDirectory}/repos/gh/nixos-config/scripts/whisper-ptt.sh";
+
   # i3-swap-focus: 마지막 두 창 사이 포커스 토글 (레골리스 방식)
   # https://codeberg.org/olivierlm/i3-swap-focus
   swapFocusPy = pkgs.writeText "i3-swap-focus.py" ''
@@ -490,9 +493,11 @@ in {
           # Additional terminal (WezTerm)
           "${mod}+${alt}+Return" = "exec ${pkgs.wezterm}/bin/wezterm";
 
-          # Whisper voice input
+          # Whisper voice input (toggle: silence detection)
           "${mod}+e" = "exec --no-startup-id ${whisperScript}";
-          "F1" = "exec --no-startup-id ${whisperScript}";
+
+          # Whisper PTT 워키토키 (F1 누르면 녹음, 떼면 전송)
+          "F1" = "exec --no-startup-id ${whisperPttScript} start";
 
           # Resize mode
           "${mod}+r" = "mode resize";
@@ -619,5 +624,11 @@ in {
         { command = "${swapFocusStartup}"; notification = false; always = true; }
       ];
     };
+
+    # --release 바인딩은 keybindings map에서 지원 안 하므로 extraConfig로
+    extraConfig = ''
+      # Whisper PTT: F1 떼면 녹음 중지 + 전송
+      bindsym --release F1 exec --no-startup-id ${whisperPttScript} stop
+    '';
   };
 }
