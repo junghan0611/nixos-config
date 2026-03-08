@@ -139,6 +139,7 @@ git push                # Push to remote
 - [ ] **Go 바이너리 추가** → `CGO_ENABLED=0` 정적 빌드, 양쪽 workspace 동기화
 - [ ] **버전 업데이트** → FROM 태그 고정, 서브에이전트 + announce 테스트
 - [ ] **openclaw-config 커밋** → 별도 리포(`junghan0611/openclaw-config`)에도 push
+- [ ] **스킬 SKILL.md 변경** → pi-skills(SSOT)에서 봇 3개 workspace로 rsync 동기화. 재시작 불필요
 
 ### OpenClaw 재시작 판단 기준
 
