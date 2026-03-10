@@ -63,6 +63,7 @@ in {
     watch
     ncdu
     duf
+    gdu
     procs
     psmisc       # killall, fuser (ElleNajit)
 
