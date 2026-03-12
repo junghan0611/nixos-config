@@ -37,41 +37,8 @@ mouse-hide-while-typing = true
 clipboard-paste-protection = false
 copy-on-select = clipboard
 
-# Theme colors (matches i3 theme)
-background = #1D1F21
-foreground = #C5C8C6
-
-# Black
-palette = 0=#282A2E
-palette = 8=#373B41
-
-# Red
-palette = 1=#A54242
-palette = 9=#CC6666
-
-# Green
-palette = 2=#8C9440
-palette = 10=#B5BD68
-
-# Yellow
-palette = 3=#DE935F
-palette = 11=#F0C674
-
-# Blue
-palette = 4=#5F819D
-palette = 12=#81A2BE
-
-# Magenta
-palette = 5=#85678F
-palette = 13=#B294BB
-
-# Cyan
-palette = 6=#5E8D87
-palette = 14=#8ABEB7
-
-# White
-palette = 7=#707880
-palette = 15=#C5C8C6
+# Theme
+theme = Dracula
 
 keybind = alt+u=scroll_page_fractional:-0.5
 keybind = alt+v=scroll_page_fractional:0.5
