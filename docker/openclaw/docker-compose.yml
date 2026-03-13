@@ -32,6 +32,7 @@ services:
       - TERM=xterm-256color
       - GOG_KEYRING_PASSWORD=gogcli
       - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1  # 서브에이전트 ws:// Docker bridge 허용
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
 
     # gateway는 컨테이너 내에서 lan 바인딩 필요
     command: ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789"]
@@ -56,6 +57,7 @@ services:
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
       - ~/cookies.txt:/home/node/cookies.txt:ro
+      - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
       - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
@@ -108,6 +110,7 @@ services:
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
       - ~/cookies.txt:/home/node/cookies.txt:ro
+      - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
       - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
