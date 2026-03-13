@@ -117,6 +117,17 @@ git push                # Push to remote
 
 ## OpenClaw 봇 구성 (Oracle VM)
 
+> **SSOT**: `oracle:~/openclaw/` (private 리포). 이 공개 리포에는 Dockerfile/docker-compose.yml 구조만 백업.
+> `openclaw.json`은 API 키 포함이라 git 추적하지 않음 (`.gitignore`).
+> 상세 운영 문서: `oracle:~/openclaw/README.md`
+
+| 항목 | SSOT | 이 리포 |
+|------|------|---------|
+| openclaw.json | oracle (실행) | ❌ gitignore |
+| Dockerfile | oracle | `docker/openclaw/` (백업, 롤백용) |
+| docker-compose.yml | oracle | `docker/openclaw/` (백업, 롤백용) |
+| .env (API 키) | oracle | ❌ 절대 포함 안 함 |
+
 | 에이전트 | 모델 | 텔레그램 봇 | 인증 |
 |---------|------|------------|------|
 | main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 |
@@ -127,6 +138,8 @@ git push                # Push to remote
 - 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
 - workspace 독립, skills 공유 (glg 기준 복사)
 - 프레이밍 없음 — 각 모델이 대화하며 자리잡음
+- **현재 버전: 2026.3.12**
+- **Memory Search: Gemini Embedding 2** (768d, hybrid+MMR+temporalDecay)
 
 ## OpenClaw 작업 체크리스트
 
