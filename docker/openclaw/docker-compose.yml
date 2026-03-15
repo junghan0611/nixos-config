@@ -57,6 +57,8 @@ services:
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
       - ~/cookies.txt:/home/node/cookies.txt:ro
+      # LanceDB 벡터 DB (knowledge-search 스킬용)
+      - ~/.pi/agent/memory:/home/node/.pi/agent/memory:ro
       - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
@@ -110,6 +112,8 @@ services:
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
       - ~/cookies.txt:/home/node/cookies.txt:ro
+      # LanceDB 벡터 DB (knowledge-search 스킬용)
+      - ~/.pi/agent/memory:/home/node/.pi/agent/memory:ro
       - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
