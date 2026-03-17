@@ -3,17 +3,22 @@ comments.junghanacs.com {
     reverse_proxy remark42:8080
 }
 
-# Mattermost 채팅 서버
-chat.junghanacs.com {
-    reverse_proxy mattermost:8065
-}
-
 # Umami 웹 애널리틱스
 analytics.junghanacs.com {
     reverse_proxy umami:3000
 }
 
-# Matrix (Synapse) 홈서버
-matrix.junghanacs.com {
-    reverse_proxy synapse:8008
+# Geworfen 어젠다 뷰어
+agenda.junghanacs.com {
+    reverse_proxy 172.18.0.1:3333
 }
+
+# # Mattermost 채팅 서버 (비활성)
+# chat.junghanacs.com {
+#     reverse_proxy mattermost:8065
+# }
+
+# # Matrix (Synapse) 홈서버 (비활성)
+# matrix.junghanacs.com {
+#     reverse_proxy synapse:8008
+# }
