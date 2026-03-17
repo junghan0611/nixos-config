@@ -132,7 +132,7 @@ git push                # Push to remote
 |---------|------|------------|------|
 | main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 |
 | glg | anthropic/claude-opus-4-6 | @glg_junghanacs_bot | Anthropic 정액제 |
-| deepseek | deepseek/deepseek-reasoner | @glg_deepseek_bot | DeepSeek API 직접 |
+| gpt | openrouter/openai/gpt-5.4 | @glg_gpt_bot | OpenRouter |
 | gemini | openrouter/google/gemini-3.1-pro-preview | @glg_gemini_bot | OpenRouter |
 
 - 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
