@@ -141,6 +141,32 @@ git push                # Push to remote
 - **현재 버전: 2026.3.12**
 - **Memory Search: Gemini Embedding 2** (768d, hybrid+MMR+temporalDecay)
 
+### 스킬 경로 구조
+
+```
+~/repos/gh/agent-config/          # SSOT 리포
+├── skills/                       # 스킬 디렉토리 (SSOT)
+│   ├── dictcli/                  # dictcli 바이너리 + graph.edn + SKILL.md
+│   ├── knowledge-search/         # LanceDB org 시맨틱 검색
+│   ├── agenda/, botlog/, ...     # 기타 스킬
+│   └── (총 25개)
+├── pi-extensions/
+│   └── semantic-memory/          # Gemini Embedding 2 + LanceDB (pi 전용)
+└── run.sh                        # setup/build/index 통합 커맨드
+
+~/.pi/agent/skills/pi-skills → ~/repos/gh/agent-config/skills  (심링크)
+~/.pi/agent/memory/
+├── sessions.lance                # 세션 JSONL 임베딩 (pi 전용)
+└── org.lance                     # ~/org 3000+ 노트 임베딩 (봇도 공유)
+```
+
+**배포 흐름**: `agent-config/skills/` (SSOT) → rsync → `oracle:~/openclaw/config/workspace-*/skills/`
+
+**pi vs 봇 차이**:
+- pi 에이전트: `pi-extensions/semantic-memory`가 `session_search` + `knowledge_search` 제공
+- OpenClaw 봇: `knowledge-search` 스킬이 LanceDB를 직접 쿼리 (Docker ro 마운트)
+- `dictcli`: 양쪽 모두 동일 바이너리 사용
+
 ## OpenClaw 작업 체크리스트
 
 `docker/openclaw/` 또는 원격 `~/openclaw/` 변경 시 확인:
