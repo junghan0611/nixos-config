@@ -37,6 +37,11 @@ services:
       # 정적 리소스 (HTML, CSS, fonts)
       - ~/repos/gh/geworfen/resources/public:/app/resources/public:ro
 
+      # --- 데이터 (stats용, read-only) ---
+      # Java user.home = /root (Docker root user, /etc/passwd 기준)
+      - ~/sync/org:/root/sync/org:ro
+      - ~/repos/gh/notes/content:/root/repos/gh/notes/content:ro
+
       # --- Nix store (바이너리 런타임) ---
       # geworfen native-image가 링크된 glibc
       - /nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:/nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:ro
