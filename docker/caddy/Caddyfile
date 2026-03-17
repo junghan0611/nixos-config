@@ -10,7 +10,7 @@ analytics.junghanacs.com {
 
 # Geworfen 어젠다 뷰어
 agenda.junghanacs.com {
-    reverse_proxy 172.18.0.1:3333
+    reverse_proxy geworfen:3333
 }
 
 # # Mattermost 채팅 서버 (비활성)

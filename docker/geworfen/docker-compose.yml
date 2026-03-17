@@ -1,0 +1,57 @@
+# geworfen — existence data WebTUI viewer
+# GraalVM native binary + Emacs agent-server bridge
+#
+# 의존성:
+#   1. geworfen 바이너리:  ~/repos/gh/geworfen/target/geworfen-aarch64
+#   2. Emacs agent-server: /run/user/1000/emacs/agent-server 소켓
+#   3. Caddy proxy 네트워크
+#
+# 실행: docker compose up -d
+# 로그: docker compose logs -f
+
+services:
+  geworfen:
+    image: debian:bookworm-slim
+    container_name: geworfen
+    restart: unless-stopped
+
+    working_dir: /app
+
+    # geworfen 바이너리 실행
+    command: ["/app/geworfen-aarch64"]
+
+    environment:
+      - PORT=3333
+      - HOME=/home/junghan
+      # emacsclient PATH — Nix store 바이너리 직접 참조
+      - PATH=/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2/bin:/usr/bin:/bin
+      # emacsclient -s agent-server 소켓 탐색 경로
+      - XDG_RUNTIME_DIR=/run/user/1000
+
+    ports:
+      - "127.0.0.1:3333:3333"
+
+    volumes:
+      # --- 바이너리 ---
+      - ~/repos/gh/geworfen/target/geworfen-aarch64:/app/geworfen-aarch64:ro
+      # 정적 리소스 (HTML, CSS, fonts)
+      - ~/repos/gh/geworfen/resources/public:/app/resources/public:ro
+
+      # --- Nix store (바이너리 런타임) ---
+      # geworfen native-image가 링크된 glibc
+      - /nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:/nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:ro
+
+      # --- Emacs agent-server 연결 ---
+      # emacsclient 바이너리
+      - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
+      # emacsclient가 링크된 glibc
+      - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
+      # Emacs 소켓 (agent-server)
+      - /run/user/1000/emacs:/run/user/1000/emacs:ro
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
