@@ -67,6 +67,20 @@ in {
     procs
     psmisc       # killall, fuser (ElleNajit)
 
+    # Essential UNIX utilities (agent-friendly)
+    bc             # 계산기 (에이전트 수식 계산)
+    sqlite-interactive  # sqlite3 CLI (에이전트 DB 조회)
+    pv             # pipe viewer (진행률 표시)
+    dos2unix       # 줄바꿈 변환
+    socat          # 다목적 소켓 릴레이
+    mtr            # traceroute + ping 통합
+    whois          # 도메인 조회
+    parallel       # GNU parallel (병렬 처리)
+
+    # Data processing (에이전트 데이터 파이프라인)
+    miller         # mlr: JSON/CSV/TSV 변환·필터·집계
+    htmlq          # HTML → 텍스트 추출 (jq for HTML)
+
     # Development
     gitu
     lazygit
