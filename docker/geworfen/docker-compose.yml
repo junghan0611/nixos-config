@@ -23,6 +23,7 @@ services:
     environment:
       - PORT=3333
       - HOME=/home/junghan
+      - TZ=Asia/Seoul
       # emacsclient PATH — Nix store 바이너리 직접 참조
       - PATH=/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2/bin:/usr/bin:/bin
       # emacsclient -s agent-server 소켓 탐색 경로
