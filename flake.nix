@@ -55,6 +55,9 @@
         # Claude Desktop with MCP support
         claude-desktop = inputs.claude-desktop.packages.${prev.stdenv.hostPlatform.system}.claude-desktop-with-fhs;
 
+        # Chrome 146 from unstable (145.0.7632.116 crashpad SIGTRAP crash)
+        google-chrome = unstable.google-chrome;
+
         # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
         microsoft-edge = pinned.microsoft-edge;
 
