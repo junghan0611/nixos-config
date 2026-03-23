@@ -128,18 +128,32 @@ git push                # Push to remote
 | docker-compose.yml | oracle | `docker/openclaw/` (백업, 롤백용) |
 | .env (API 키) | oracle | ❌ 절대 포함 안 함 |
 
-| 에이전트 | 모델 | 텔레그램 봇 | 인증 |
-|---------|------|------------|------|
-| main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 |
-| glg | anthropic/claude-opus-4-6 | @glg_junghanacs_bot | Anthropic 정액제 |
-| gpt | openrouter/openai/gpt-5.4 | @glg_gpt_bot | OpenRouter |
-| gemini | openrouter/google/gemini-3.1-pro-preview | @glg_gemini_bot | OpenRouter |
+| 에이전트 | 모델 | 텔레그램 봇 | 인증 | 호스트 workspace 경로 |
+|---------|------|------------|------|----------------------|
+| main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 | `config/workspace/` |
+| glg | anthropic/claude-opus-4-6 | @glg_junghanacs_bot | Anthropic 정액제 | `config/workspace-glg/` |
+| gpt | openrouter/openai/gpt-5.4 | @glg_gpt_bot | OpenRouter | `config/workspace-gpt/` |
+| gemini | openrouter/google/gemini-3.1-pro-preview | @glg_gemini_bot | OpenRouter | `config/workspace-gemini/` |
 
 - 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
 - workspace 독립, skills 공유 (glg 기준 복사)
 - 프레이밍 없음 — 각 모델이 대화하며 자리잡음
 - **현재 버전: 2026.3.12**
 - **Memory Search: Gemini Embedding 2** (768d, hybrid+MMR+temporalDecay)
+
+### Workspace 경로 매핑 (필수 숙지)
+
+Docker 볼륨: `./config:/home/node/.openclaw`
+
+| 에이전트 | 호스트 경로 | Docker 내 경로 |
+|---------|------------|---------------|
+| **main** | `~/openclaw/config/workspace/` | `/home/node/.openclaw/workspace/` |
+| **glg** | `~/openclaw/config/workspace-glg/` | `/home/node/.openclaw/workspace-glg/` |
+| **gpt** | `~/openclaw/config/workspace-gpt/` | `/home/node/.openclaw/workspace-gpt/` |
+| **gemini** | `~/openclaw/config/workspace-gemini/` | `/home/node/.openclaw/workspace-gemini/` |
+
+> ⚠️ **main은 `workspace/`** (기본 경로). `workspace-main/` 폴더는 존재하지 않는다.
+> `openclaw.json`에서 main은 workspace를 오버라이드하지 않으므로 defaults의 `/home/node/.openclaw/workspace`를 사용한다.
 
 ### 스킬 경로 구조
 
@@ -160,7 +174,8 @@ git push                # Push to remote
 └── org.lance                     # ~/org 3000+ 노트 임베딩 (봇도 공유)
 ```
 
-**배포 흐름**: `agent-config/skills/` (SSOT) → rsync → `oracle:~/openclaw/config/workspace-*/skills/`
+**배포 흐름**: `agent-config/skills/` (SSOT) → rsync → `oracle:~/openclaw/config/workspace{,-glg,-gpt,-gemini}/skills/`
+> 주의: main은 `workspace/`이다. `workspace-main/`이 아님. 4개 경로 모두 동기화할 것.
 
 **pi vs 봇 차이**:
 - pi 에이전트: `pi-extensions/semantic-memory`가 `session_search` + `knowledge_search` 제공
@@ -178,7 +193,7 @@ git push                # Push to remote
 - [ ] **Go 바이너리 추가** → `CGO_ENABLED=0` 정적 빌드, 양쪽 workspace 동기화
 - [ ] **버전 업데이트** → FROM 태그 고정, 서브에이전트 + announce 테스트
 - [ ] **openclaw-config 커밋** → 별도 리포(`junghan0611/openclaw-config`)에도 push
-- [ ] **스킬 SKILL.md 변경** → pi-skills(SSOT)에서 봇 3개 workspace로 rsync 동기화. 재시작 불필요
+- [ ] **스킬 SKILL.md 변경** → agent-config/skills(SSOT)에서 봇 4개 workspace(`workspace/`, `workspace-glg/`, `workspace-gpt/`, `workspace-gemini/`)로 동기화. 재시작 불필요
 
 ### OpenClaw 재시작 판단 기준
 
