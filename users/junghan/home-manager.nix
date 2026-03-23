@@ -95,6 +95,7 @@ in {
     tokei
 
     # programming Languages & Tools (CLI)
+    bun             # JavaScript runtime (from unstable)
     zig
     zls
     go
