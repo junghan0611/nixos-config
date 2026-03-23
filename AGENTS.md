@@ -138,7 +138,7 @@ git push                # Push to remote
 - 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
 - workspace 독립, skills 공유 (glg 기준 복사)
 - 프레이밍 없음 — 각 모델이 대화하며 자리잡음
-- **현재 버전: 2026.3.12**
+- **현재 버전: 2026.3.22**
 - **Memory Search: Gemini Embedding 2** (768d, hybrid+MMR+temporalDecay)
 
 ### Workspace 경로 매핑 (필수 숙지)
