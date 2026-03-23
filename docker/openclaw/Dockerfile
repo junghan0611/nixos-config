@@ -1,4 +1,4 @@
-FROM ghcr.io/openclaw/openclaw:2026.3.13-1
+FROM ghcr.io/openclaw/openclaw:2026.3.22
 
 USER root
 
@@ -31,11 +31,8 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && apt-get update && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Matrix 플러그인 의존성 설치
-# devDependencies에 pnpm workspace:* 프로토콜이 있어 npm 호환 불가 → 제거 후 설치
-RUN cd /app/extensions/matrix && \
-    node -e "const p=require('./package.json'); delete p.devDependencies; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2))" && \
-    npm install && \
-    chown -R node:node /app/extensions/matrix/node_modules
+# Matrix 플러그인: 3.22에서 matrix-js-sdk로 전면 교체됨.
+# 현재 미사용 (plugins.entries.matrix.enabled=false)
+# 추후 필요 시 새 SDK 방식으로 재설치
 
 USER node
