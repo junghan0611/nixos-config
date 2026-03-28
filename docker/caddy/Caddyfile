@@ -1,5 +1,9 @@
 # Remark42 댓글 서버
 comments.junghanacs.com {
+    # Dev auth는 외부 접근 차단 (봇멘트 내부 전용)
+    @dev_auth path /auth/dev/*
+    respond @dev_auth 403
+
     reverse_proxy remark42:8080
 }
 

@@ -30,6 +30,8 @@ services:
       - AUTH_TELEGRAM=true
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - AUTH_ANON=true
+      # 봇멘트 전용 Dev auth (Caddy에서 외부 차단)
+      - AUTH_DEV=true
       # Admin
       - ADMIN_SHARED_ID=${ADMIN_SHARED_ID}
       - ADMIN_SHARED_EMAIL=${ADMIN_SHARED_EMAIL}
