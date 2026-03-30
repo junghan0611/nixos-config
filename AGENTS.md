@@ -157,6 +157,18 @@ git push                # Push to remote
 
 **Gemini CLI OAuth client credentials**: `.env`의 `GEMINI_CLI_OAUTH_CLIENT_ID/SECRET` — 로컬 gemini CLI 바이너리에서 추출.
 
+**⚠️ 중요: CLI 토큰 복사 금지** — 로컬 Codex/Gemini CLI의 토큰을 `auth-profiles.json`에 수동 복사하면 안 된다.
+OpenAI는 refresh_token을 1회용으로 처리하므로 (`refresh_token_reused` 에러), 반드시 Docker 내에서 정식 OAuth 로그인을 실행해야 한다:
+```bash
+# Codex
+docker compose run -it --rm openclaw-cli models auth login --provider openai-codex
+# Gemini (client credentials 필수)
+docker compose run -it --rm \
+  -e GEMINI_CLI_OAUTH_CLIENT_ID=<from-gemini-cli-binary> \
+  -e GEMINI_CLI_OAUTH_CLIENT_SECRET=<from-gemini-cli-binary> \
+  openclaw-cli models auth login --provider google-gemini-cli
+```
+
 ### Workspace 경로 매핑 (필수 숙지)
 
 Docker 볼륨: `./config:/home/node/.openclaw`
