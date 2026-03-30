@@ -68,6 +68,7 @@ in {
     psmisc       # killall, fuser (ElleNajit)
 
     # Essential UNIX utilities (agent-friendly)
+    bubblewrap     # sandbox (codex 등에서 필요)
     bc             # 계산기 (에이전트 수식 계산)
     sqlite-interactive  # sqlite3 CLI (에이전트 DB 조회)
     pv             # pipe viewer (진행률 표시)
