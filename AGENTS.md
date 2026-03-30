@@ -132,8 +132,8 @@ git push                # Push to remote
 |---------|------|------------|------|----------------------|
 | main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 | `config/workspace/` |
 | glg | anthropic/claude-opus-4-6 | @glg_junghanacs_bot | Anthropic 정액제 | `config/workspace-glg/` |
-| gpt | openrouter/openai/gpt-5.4 | @glg_gpt_bot | OpenRouter | `config/workspace-gpt/` |
-| gemini | openrouter/google/gemini-3.1-pro-preview | @glg_gemini_bot | OpenRouter | `config/workspace-gemini/` |
+| gpt | github-copilot/gpt-5.4 | @glg_gpt_bot | GitHub Copilot Pro+ | `config/workspace-gpt/` |
+| gemini | github-copilot/gemini-3.1-pro-preview | @glg_gemini_bot | GitHub Copilot Pro+ | `config/workspace-gemini/` |
 
 - 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
 - workspace 독립, skills 공유 (glg 기준 복사)
