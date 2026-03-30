@@ -132,14 +132,30 @@ git push                # Push to remote
 |---------|------|------------|------|----------------------|
 | main | anthropic/claude-opus-4-6 | @junghan_openclaw_bot | Anthropic 정액제 | `config/workspace/` |
 | glg | anthropic/claude-opus-4-6 | @glg_junghanacs_bot | Anthropic 정액제 | `config/workspace-glg/` |
-| gpt | github-copilot/gpt-5.4 | @glg_gpt_bot | GitHub Copilot Pro+ | `config/workspace-gpt/` |
-| gemini | github-copilot/gemini-2.5-pro | @glg_gemini_bot | GitHub Copilot Pro+ | `config/workspace-gemini/` |
+| gpt | openai-codex/gpt-5.4 | @glg_gpt_bot | ChatGPT Plus OAuth | `config/workspace-gpt/` |
+| gemini | google-gemini-cli/gemini-3.1-pro-preview | @glg_gemini_bot | Google OAuth (Gemini CLI) | `config/workspace-gemini/` |
 
 - 서브에이전트: Claude Sonnet 4.6 (전 에이전트 공통)
 - workspace 독립, skills 공유 (glg 기준 복사)
 - 프레이밍 없음 — 각 모델이 대화하며 자리잡음
-- **현재 버전: 2026.3.24**
+- **현재 버전: 2026.3.28**
 - **Memory Search: Gemini Embedding 2** (768d, hybrid+MMR+temporalDecay)
+
+### 유료 구독 및 인증 체계 (2026-03-30 기준)
+
+**원칙: 프론티어 모델은 정액제 구독으로, API 키는 임베딩 전용.**
+힣봇군단에 연결이 중단되는 일 없이 안정적으로 운영하기 위함.
+
+| 구독 | 월 비용 | 에이전트 | 용도 | 인증 방식 |
+|------|---------|-----------|------|----------|
+| Anthropic Max | 정액제 | main, glg (+ 전체 서브에이전트) | Claude Opus 4.6 / Sonnet 4.6 | API Key (`anthropic:default`) |
+| ChatGPT Plus/Pro | ₩29,000 | gpt | GPT-5.4 (1M+ context) | OAuth (`openai-codex`) |
+| Google AI Pro | ₩29,000 | gemini | Gemini 3.1 Pro (full context) | OAuth (`google-gemini-cli`) |
+| Gemini API Key | 종량제 | 전체 (공유) | 세션 메모리 임베딩 (Gemini Embedding 2) | `GEMINI_API_KEY` in .env |
+
+**OAuth 토큰 갱신**: Codex/Gemini CLI의 refresh_token으로 자동 갱신. 로컬 CLI에서 재로그인 시 `auth-profiles.json` 동기화 필요.
+
+**Gemini CLI OAuth client credentials**: `.env`의 `GEMINI_CLI_OAUTH_CLIENT_ID/SECRET` — 로컬 gemini CLI 바이너리에서 추출.
 
 ### Workspace 경로 매핑 (필수 숙지)
 
