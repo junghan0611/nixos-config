@@ -1,15 +1,23 @@
 # Emacs configuration
 # Based on ElleNajit's Doom Emacs setup
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, currentSystemName ? "thinkpad", ... }:
 
 let
   # Doom Emacs paths
   doomEmacsPath = "${config.home.homeDirectory}/.emacs.d";
   doomConfigPath = "${config.home.homeDirectory}/.doom.d";
+
+  # Server (headless) vs Desktop
+  isHeadless = builtins.elem currentSystemName [ "oracle" "nuc" ];
+  emacsPackage = if isHeadless then pkgs.emacs-nox else pkgs.emacs-gtk;
 in {
   # Enable Emacs
+  # - Desktop (thinkpad/laptop): emacs-gtk (GTK3 + X11) — 마우스 커서, 파일 다이얼로그, context-menu가 GTK 테마 따름
+  # - Server (oracle/nuc): emacs-nox — GUI 불필요, X11 의존성 제거
+  # - emacs-pgtk는 Wayland용이라 i3wm(X11)에서는 gtk가 적합
   programs.emacs = {
     enable = true;
+    package = emacsPackage;
     extraPackages = epkgs: [
       epkgs.vterm
       epkgs.mu4e
@@ -68,13 +76,15 @@ in {
 
     # Writing tools
     languagetool
+  ] ++ (lib.optionals (!isHeadless) [
+    # === Desktop-only packages (GUI required) ===
 
     # Doom Emacs Desktop entries
     (makeDesktopItem {
       name = "Doom Emacs";
       desktopName = "Doom Emacs";
       icon = "emacs";
-      exec = "${pkgs.emacs}/bin/emacs";
+      exec = "${emacsPackage}/bin/emacs";
       categories = [ "Development" "TextEditor" ];
     })
 
@@ -82,7 +92,7 @@ in {
       name = "Doom Emacs (Debug Mode)";
       desktopName = "Doom Emacs (Debug Mode)";
       icon = "emacs";
-      exec = "${pkgs.emacs}/bin/emacs --debug-init";
+      exec = "${emacsPackage}/bin/emacs --debug-init";
       categories = [ "Development" "TextEditor" ];
     })
 
@@ -147,37 +157,39 @@ in {
         rm /tmp/EDIT
       '';
     })
-  ];
+  ]);
 
-  # Doom Emacs desktop entry for application launcher
-  xdg.desktopEntries.doomemacs = {
-    name = "Doom Emacs";
-    genericName = "Text Editor";
-    comment = "Doom Emacs - Edit text";
-    exec = "env GTK_IM_MODULE=emacs XMODIFIERS=@im=emacs EMACS=emacs DOOMDIR=${doomConfigPath} ${config.home.homeDirectory}/doomemacs/bin/doom run";
-    icon = "emacs";
-    terminal = false;
-    categories = [ "Development" "TextEditor" ];
-    mimeType = [
-      "text/english"
-      "text/plain"
-      "text/x-makefile"
-      "text/x-c++hdr"
-      "text/x-c++src"
-      "text/x-chdr"
-      "text/x-csrc"
-      "text/x-java"
-      "text/x-moc"
-      "text/x-pascal"
-      "text/x-tcl"
-      "text/x-tex"
-      "application/x-shellscript"
-      "text/x-c"
-      "text/x-c++"
-    ];
-    settings = {
-      StartupNotify = "true";
-      StartupWMClass = "DoomEmacs";
+  # Doom Emacs desktop entry for application launcher (desktop only)
+  xdg.desktopEntries = lib.mkIf (!isHeadless) {
+    doomemacs = {
+      name = "Doom Emacs";
+      genericName = "Text Editor";
+      comment = "Doom Emacs - Edit text";
+      exec = "env GTK_IM_MODULE=emacs XMODIFIERS=@im=emacs EMACS=emacs DOOMDIR=${doomConfigPath} ${config.home.homeDirectory}/doomemacs/bin/doom run";
+      icon = "emacs";
+      terminal = false;
+      categories = [ "Development" "TextEditor" ];
+      mimeType = [
+        "text/english"
+        "text/plain"
+        "text/x-makefile"
+        "text/x-c++hdr"
+        "text/x-c++src"
+        "text/x-chdr"
+        "text/x-csrc"
+        "text/x-java"
+        "text/x-moc"
+        "text/x-pascal"
+        "text/x-tcl"
+        "text/x-tex"
+        "application/x-shellscript"
+        "text/x-c"
+        "text/x-c++"
+      ];
+      settings = {
+        StartupNotify = "true";
+        StartupWMClass = "DoomEmacs";
+      };
     };
   };
 }

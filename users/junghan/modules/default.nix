@@ -23,6 +23,9 @@
     # Phase 6: Emacs configuration
     ./emacs.nix
 
+    # GTK dark theme (desktop only)
+    ./gtk.nix
+
     # Email (mu4e + mbsync)
     ./email.nix
 

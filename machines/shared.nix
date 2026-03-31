@@ -96,6 +96,9 @@
   # Enable nix-ld for running dynamically linked executables (필요: x86_64 환경에서 uvx 등)
   programs.nix-ld.enable = true;
 
+  # dconf — home-manager gtk 모듈이 내부적으로 필요로 함
+  programs.dconf.enable = true;
+
   # Virtualization settings
   virtualisation.docker.enable = true;
 

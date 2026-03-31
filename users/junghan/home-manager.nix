@@ -22,6 +22,9 @@ let
     # Default to nuc for backward compatibility
     import ../../hosts/nuc/vars.nix;
 in {
+  # Pass currentSystemName to submodules (emacs.nix 등에서 headless 분기에 사용)
+  _module.args.currentSystemName = currentSystemName;
+
   # Import modular configuration
   imports = [
     ./modules
