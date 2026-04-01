@@ -481,8 +481,8 @@ in {
           "${mod}+Shift+Print" = "exec --no-startup-id ${pkgs.scrot}/bin/scrot -s '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/'";
 
           # Scratchpad (Regolith style: Ctrl+a=show, Ctrl+m=move)
-          # -c: create new frame, -s server: socket name, -a emacs: fallback if daemon not running
-          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s server -a ${pkgs.emacs}/bin/emacs'";
+          # -s user: GUI Emacs 소켓 (agent daemon은 -s server 사용)
+          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s user -a ${pkgs.emacs}/bin/emacs'";
           "${mod}+Ctrl+a" = "scratchpad show";
           "${mod}+Ctrl+m" = "move scratchpad";
 

@@ -26,7 +26,8 @@ in {
 
   # Session variables
   home.sessionVariables = {
-    EDITOR = "emacsclient";
+    # GUI Emacs는 "user" 소켓, agent daemon은 "server" 소켓
+    EDITOR = "emacsclient -s user";
   };
 
   # Add Doom Emacs bin to PATH
@@ -150,7 +151,7 @@ in {
         sleep 0.2
         xdotool key ctrl+a ctrl+c
         xclip -out -selection clipboard > /tmp/EDIT
-        emacsclient -c /tmp/EDIT
+        emacsclient -s user -c /tmp/EDIT
         xclip -in -selection clipboard < /tmp/EDIT
         sleep 0.2
         xdotool key ctrl+v

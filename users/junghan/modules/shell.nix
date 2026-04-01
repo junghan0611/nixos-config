@@ -181,11 +181,11 @@ in {
                   term="xterm-direct"
               fi
           fi
-          TERM="$term" emacsclient -s server -nw "$@"
+          TERM="$term" emacsclient -s user -nw "$@"
       }
       alias v='e'
-      alias ec='emacsclient -s server -n'
-      alias ecn='emacsclient -s server -c -n'
+      alias ec='emacsclient -s user -n'
+      alias ecn='emacsclient -s user -c -n'
 
       # peon-ping tab completions
       [ -f "$HOME/.claude/hooks/peon-ping/completions.bash" ] && source "$HOME/.claude/hooks/peon-ping/completions.bash"
