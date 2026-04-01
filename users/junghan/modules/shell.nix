@@ -45,7 +45,16 @@ in {
   #---------------------------------------------------------------------
   home.sessionVariables = {
     TERM = "xterm-256color";
+    PNPM_HOME = "/home/${vars.username}/.local/share/pnpm";
   };
+
+  # Session PATH — ~/.profile에 기록되어 SSH 비인터랙티브에서도 유효
+  home.sessionPath = [
+    "/home/${vars.username}/.local/share/pnpm"
+    "/home/${vars.username}/.local/bin"
+    "/home/${vars.username}/go/bin"
+    "/home/${vars.username}/bin"
+  ];
 
   #---------------------------------------------------------------------
   # Git
@@ -152,14 +161,8 @@ in {
       # Better ls colors
       eval "$(dircolors -b)"
 
-      export PNPM_HOME="/home/${vars.username}/.local/share/pnpm"
-      case ":$PATH:" in
-        *":$PNPM_HOME:"*) ;;
-        *) export PATH="$PNPM_HOME:$PATH" ;;
-      esac
-
-      # User specific paths
-      export PATH=~/.local/bin:$PATH
+      # PNPM_HOME, ~/.local/bin, go/bin, bin — sessionPath로 이동됨
+      # (SSH 비인터랙티브에서도 유효하도록 ~/.profile에 기록)
 
       # FZF key bindings
       if command -v fzf &> /dev/null; then
