@@ -161,8 +161,14 @@ in {
       # Better ls colors
       eval "$(dircolors -b)"
 
-      # PNPM_HOME, ~/.local/bin, go/bin, bin — sessionPath로 이동됨
-      # (SSH 비인터랙티브에서도 유효하도록 ~/.profile에 기록)
+      export PNPM_HOME="/home/${vars.username}/.local/share/pnpm"
+      case ":$PATH:" in
+        *":$PNPM_HOME:"*) ;;
+        *) export PATH="$PNPM_HOME:$PATH" ;;
+      esac
+
+      # User specific paths
+      export PATH=~/.local/bin:$PATH
 
       # FZF key bindings
       if command -v fzf &> /dev/null; then
