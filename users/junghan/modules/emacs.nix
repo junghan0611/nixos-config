@@ -162,6 +162,19 @@ in {
 
   # Doom Emacs desktop entry for application launcher (desktop only)
   xdg.desktopEntries = lib.mkIf (!isHeadless) {
+    # emacsclient: nixpkgs 기본 desktop entry 오버라이드 (-s user 추가)
+    emacsclient = {
+      name = "Emacs (Client)";
+      genericName = "Text Editor";
+      comment = "Connect to Doom Emacs daemon";
+      exec = "${emacsPackage}/bin/emacsclient -s user --alternate-editor= --create-frame %F";
+      icon = "emacs";
+      terminal = false;
+      categories = [ "Development" "TextEditor" ];
+      settings = {
+        StartupWMClass = "Emacs";
+      };
+    };
     doomemacs = {
       name = "Doom Emacs";
       genericName = "Text Editor";
