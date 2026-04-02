@@ -213,19 +213,23 @@ Do not upgrade blindly.
 Preferred flow:
 1. inspect current live version
 2. read `~/openclaw/README.md` change history and notes
-3. discuss what changed since the current version
-4. identify what matters for this deployment
+3. fetch upstream release/compare context before touching anything
+   - release page pattern: `https://github.com/openclaw/openclaw/releases/tag/v<version>`
+   - compare page pattern: `https://github.com/openclaw/openclaw/compare/v<from>...v<to>`
+   - GitHub API compare also uses `v`-prefixed tags
+4. discuss what changed since the current version
+5. identify what matters for this deployment
    - embeddings / memory search
    - Telegram behavior
    - sessions
    - auth
    - approval prompts
    - runtime compatibility
-5. predict likely breakage before touching anything
-6. update runtime files in `~/openclaw/`
-7. validate the bots
-8. sync public-safe Dockerfile/compose changes back into `nixos-config`
-9. commit both repos when appropriate
+6. predict likely breakage before touching anything
+7. update runtime files in `~/openclaw/`
+8. validate the bots
+9. sync public-safe Dockerfile/compose changes back into `nixos-config`
+10. commit both repos when appropriate
 
 ## Required validation after OpenClaw changes
 
@@ -264,6 +268,10 @@ Keep these aligned intentionally:
 
 Do not assume the public copy is live.
 Do not assume the live copy is publishable.
+
+When a workflow mistake is discovered during real work, record the correction in
+`AGENTS.md` if it is likely to recur. Operational retrieval mistakes count too
+(e.g. OpenClaw release tags requiring `v` prefixes).
 
 ## Skills and related repos
 
@@ -320,6 +328,19 @@ PY
 Restart OpenClaw gateway on Oracle:
 ```bash
 cd ~/openclaw && docker compose restart openclaw-gateway
+```
+
+Fetch OpenClaw release notes / compare pages:
+```bash
+# Release page
+https://github.com/openclaw/openclaw/releases/tag/v2026.4.1
+
+# Compare page
+https://github.com/openclaw/openclaw/compare/v2026.3.31...v2026.4.1
+
+# GitHub API compare
+curl -H 'User-Agent: pi' -s \
+  https://api.github.com/repos/openclaw/openclaw/compare/v2026.3.31...v2026.4.1
 ```
 
 ## Operating principle

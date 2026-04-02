@@ -4,9 +4,9 @@
 
 | Item | Value |
 |------|-------|
-| **Running version** | `2026.2.26` |
-| **Dockerfile FROM** | `ghcr.io/openclaw/openclaw:2026.2.26` |
-| **Upgraded** | 2026-02-27 (from 2026.2.17, skipping 2026.2.19 롤백) |
+| **Running version** | `2026.4.1` |
+| **Dockerfile FROM** | `ghcr.io/openclaw/openclaw:2026.4.1` |
+| **Upgraded** | 2026-04-02 (from 2026.3.31) |
 | **ws:// Docker 이슈** | ✅ 해결됨 (서브에이전트 spawn 정상) |
 
 ## 현재 텔레그램 운영 현황
