@@ -40,7 +40,7 @@ services:
     # Dev auth가 자기 자신의 OAuth 서버(8084)에 접근하도록
     # comments.junghanacs.com을 내부 IP로 해석 (외부 DNS 우회)
     extra_hosts:
-      - "comments.junghanacs.com:172.18.0.3"
+      - "comments.junghanacs.com:127.0.0.1"
 
     volumes:
       - /home/junghan/docker-data/remark42/var:/srv/var
