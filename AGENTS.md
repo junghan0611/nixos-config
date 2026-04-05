@@ -178,6 +178,13 @@ Known workspace mapping:
 Important invariant:
 - main uses `workspace/`, not `workspace-main/`
 
+Current model routing (2026-04-06):
+- Anthropic flat-rate access blocked for third-party apps (OpenClaw)
+- All Claude models routed through GitHub Copilot Pro+ tokens
+- glg (힣봇): `github-copilot/claude-sonnet-4.6` — family life-support, fast response
+- main: `github-copilot/claude-opus-4.6` — deep work
+- Parallel strategy: pi-telegram based persistent pi bot on Oracle under evaluation
+
 ## OpenClaw change policy
 
 When changing OpenClaw behavior, prioritize continuity over elegance.
