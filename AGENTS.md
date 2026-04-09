@@ -288,15 +288,44 @@ When a workflow mistake is discovered during real work, record the correction in
 
 OpenClaw skills and related agent tooling are maintained outside this repo.
 Not every tool available in `pi` is deployed into OpenClaw bot workspaces.
-Deployment and synchronization are handled via `agent-config` and runtime
-workspace copies.
 
-When that context matters, verify the current source of truth before changing
-runtime workspaces.
+### Skill deployment flow
 
-Examples:
-- `agent-config` for skills and semantic memory tooling
-- `~/openclaw/config/workspace*` for deployed runtime copies
+```text
+agent-config (SSOT)
+  └── pi-skills/ (스킬 소스 + 빌드)
+        ↓ git pull on Oracle
+~/pi-skills/ (Oracle 로컬)
+        ↓ run.sh k)
+~/openclaw/config/workspace*/skills/ (봇별 배포)
+```
+
+Operator entrypoint: `run.sh k)` (Oracle 전용)
+
+### Skill inventory
+
+| 분류 | 스킬 | 비고 |
+|------|------|------|
+| npm (node_modules 포함) | brave-search, youtube-transcript, medium-extractor, transcribe, summarize | 통째 복사 |
+| CLI (바이너리/쉘) | denotecli, ghcli, bibcli, gogcli, gitcli, lifetract, dictcli | node_modules 제외 |
+
+### Per-agent skill policy
+
+| 에이전트 | workspace | 스킬 범위 | 이유 |
+|---------|-----------|-----------|------|
+| main | `workspace/` | 전체 | 범용 deep work |
+| glg | `workspace-glg/` | 전체 | 가족 라이프 에이전트 |
+| gpt | `workspace-gpt/` | 전체 | GPT 범용 |
+| gemini | `workspace-gemini/` | 전체 | Gemini 범용 |
+| mini | `workspace-mini/` | denotecli만 | 포맷팅/교정 전담 — 최소 도구 |
+
+### Deployment rules
+
+- `run.sh k)`가 main workspace에 먼저 설치 → glg, gpt, gemini에 rsync
+- mini는 별도 — 지정 스킬만 개별 복사, 나머지 삭제
+- 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요
+- SKILL.md 내용만 변경 시 재시작 불필요 (동적 로딩)
+- Go 바이너리는 pi-skills에서 arm64 빌드 후 배포 (git에 넣지 않음)
 
 ## Commit policy
 

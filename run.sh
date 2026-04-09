@@ -479,58 +479,100 @@ main() {
                 PI_SKILLS_DIR="$HOME/pi-skills"
                 OPENCLAW_DIR="$HOME/openclaw"
                 WORKSPACE_SKILLS="$OPENCLAW_DIR/config/workspace/skills"
-                CONTAINER="openclaw-gateway"
 
                 if [[ ! -d "$PI_SKILLS_DIR" ]]; then
                     error "pi-skills 디렉토리가 없습니다: $PI_SKILLS_DIR"
                     break
                 fi
 
-                # default workspace에 설치할 스킬 목록
-                SKILL_COPY=(brave-search youtube-transcript medium-extractor transcribe)
-                SKILL_LINK=(denotecli ghcli bibcli gogcli)
-                info "=== OpenClaw 스킬 설치 (default workspace) ==="
+                # 스킬 분류
+                #   npm: node_modules 포함 복사
+                #   cli: node_modules 제외 복사 (Go 바이너리 등)
+                SKILL_NPM=(brave-search youtube-transcript medium-extractor transcribe summarize)
+                SKILL_CLI=(denotecli ghcli bibcli gogcli gitcli lifetract dictcli)
+
+                # 에이전트별 스킬 배포 정책
+                #   full: 전체 스킬 (main, glg, gpt, gemini)
+                #   mini: denotecli만
+                AGENTS_FULL=(workspace workspace-glg workspace-gpt workspace-gemini)
+                AGENTS_MINI=(workspace-mini)
+                MINI_SKILLS=(denotecli)
+
+                info "=== OpenClaw 스킬 배포 (pi-skills → workspace) ==="
                 echo ""
-                echo "  복사 (npm 포함): ${SKILL_COPY[*]}"
-                echo "  복사 (CLI):      ${SKILL_LINK[*]}"
+                echo "  npm 스킬: ${SKILL_NPM[*]}"
+                echo "  CLI 스킬: ${SKILL_CLI[*]}"
+                echo ""
+                echo "  전체 배포: ${AGENTS_FULL[*]}"
+                echo "  최소 배포: ${AGENTS_MINI[*]} (${MINI_SKILLS[*]})"
                 echo ""
                 warn "스킬을 설치/업데이트합니다. 계속하시겠습니까? (y/N)"
                 read -p "> " confirm
                 if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                    mkdir -p "$WORKSPACE_SKILLS"
 
-                    info "1/3 스킬 복사 (npm 스킬 + node_modules 포함)..."
-                    for skill in "${SKILL_COPY[@]}"; do
+                    # 1. main workspace에 전체 스킬 설치
+                    info "1/3 main workspace에 스킬 설치..."
+                    mkdir -p "$WORKSPACE_SKILLS"
+                    for skill in "${SKILL_NPM[@]}"; do
                         if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
                             rsync -a --delete "$PI_SKILLS_DIR/$skill/" "$WORKSPACE_SKILLS/$skill/"
-                            success "$skill"
+                            success "$skill (npm)"
                         else
                             warn "$skill: 소스 없음"
                         fi
                     done
-
-                    info "2/3 스킬 복사 (CLI 스킬)..."
-                    for skill in "${SKILL_LINK[@]}"; do
+                    for skill in "${SKILL_CLI[@]}"; do
                         if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
                             rsync -a --delete --exclude='node_modules' "$PI_SKILLS_DIR/$skill/" "$WORKSPACE_SKILLS/$skill/"
-                            success "$skill"
+                            success "$skill (cli)"
                         else
                             warn "$skill: 소스 없음"
                         fi
                     done
 
+                    # 2. full 에이전트들에 main → rsync
                     echo ""
-                    info "3/3 glg workspace에도 동기화..."
-                    WORKSPACE_SKILLS_GLG="$OPENCLAW_DIR/config/workspace-glg/skills"
-                    mkdir -p "$WORKSPACE_SKILLS_GLG"
-                    rsync -a --delete "$WORKSPACE_SKILLS/" "$WORKSPACE_SKILLS_GLG/"
-                    success "glg 동기화 완료"
+                    info "2/3 전체 스킬 동기화 → glg, gpt, gemini..."
+                    for ws in "${AGENTS_FULL[@]}"; do
+                        [[ "$ws" == "workspace" ]] && continue  # main은 이미 설치됨
+                        WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
+                        mkdir -p "$WS_SKILLS"
+                        rsync -a --delete "$WORKSPACE_SKILLS/" "$WS_SKILLS/"
+                        success "$ws"
+                    done
+
+                    # 3. mini에 최소 스킬만 배포
+                    echo ""
+                    info "3/3 최소 스킬 배포 → mini..."
+                    for ws in "${AGENTS_MINI[@]}"; do
+                        WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
+                        mkdir -p "$WS_SKILLS"
+                        # mini는 지정 스킬만 개별 복사, 나머지 삭제
+                        # 먼저 기존 스킬 정리
+                        for existing in "$WS_SKILLS"/*/; do
+                            skill_name=$(basename "$existing")
+                            if [[ ! " ${MINI_SKILLS[*]} " =~ " ${skill_name} " ]]; then
+                                rm -rf "$existing"
+                            fi
+                        done
+                        for skill in "${MINI_SKILLS[@]}"; do
+                            if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
+                                rsync -a --delete --exclude='node_modules' "$PI_SKILLS_DIR/$skill/" "$WS_SKILLS/$skill/"
+                                success "$ws/$skill"
+                            else
+                                warn "$skill: 소스 없음"
+                            fi
+                        done
+                    done
 
                     echo ""
-                    info "설치된 스킬 목록:"
+                    info "main workspace 스킬 목록:"
                     ls "$WORKSPACE_SKILLS/"
                     echo ""
-                    success "스킬 설치 완료! gateway 재시작 필요 시: r) 메뉴 사용"
+                    info "mini workspace 스킬 목록:"
+                    ls "$OPENCLAW_DIR/config/workspace-mini/skills/" 2>/dev/null || echo "  (없음)"
+                    echo ""
+                    success "스킬 배포 완료! 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요: r) 메뉴"
                 else
                     info "취소되었습니다."
                 fi
