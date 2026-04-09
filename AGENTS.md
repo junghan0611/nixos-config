@@ -174,16 +174,20 @@ Known workspace mapping:
 - `workspace-glg/` → glg
 - `workspace-gpt/` → gpt
 - `workspace-gemini/` → gemini
+- `workspace-mini/` → mini
 
 Important invariant:
 - main uses `workspace/`, not `workspace-main/`
 
-Current model routing (2026-04-06):
-- Anthropic flat-rate access blocked for third-party apps (OpenClaw)
+Current model routing (2026-04-09):
+- Anthropic flat-rate access blocked for third-party apps (OpenClaw, pi)
 - All Claude models routed through GitHub Copilot Pro+ tokens
 - glg (힣봇): `github-copilot/claude-sonnet-4.6` — family life-support, fast response
 - main: `github-copilot/claude-opus-4.6` — deep work
-- Parallel strategy: pi-telegram based persistent pi bot on Oracle under evaluation
+- gpt: `openai-codex/gpt-5.4`
+- gemini: `github-copilot/gemini-3.1-pro-preview`
+- mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇. gpt-5.4-mini, gemini-3-flash도 사용 가능
+- Parallel strategy: pi + claude-agent-sdk-pi로 로컬 하네스 복원 중
 
 ## OpenClaw change policy
 
