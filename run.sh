@@ -476,7 +476,7 @@ main() {
                     error "이 기능은 Oracle VM에서만 사용 가능합니다."
                     break
                 fi
-                PI_SKILLS_DIR="$HOME/pi-skills"
+                PI_SKILLS_DIR="$HOME/.pi/agent/skills/pi-skills"
                 OPENCLAW_DIR="$HOME/openclaw"
                 WORKSPACE_SKILLS="$OPENCLAW_DIR/config/workspace/skills"
 
