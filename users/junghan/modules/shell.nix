@@ -148,6 +148,12 @@ in {
 
     shellAliases = shellAliases;
 
+    # non-interactive SSH (scp, rsync, claude delegate 등)에서도
+    # hm-session-vars.sh 환경변수를 로드하기 위해 interactive guard 전에 실행
+    bashrcExtra = ''
+      [[ -f ~/.profile ]] && . ~/.profile
+    '';
+
     initExtra = ''
       # Ctrl+D로 셸 종료 방지 (10회 연속 입력 시에만 종료)
       export IGNOREEOF=10
