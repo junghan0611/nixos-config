@@ -1,4 +1,4 @@
-# i3 (X11) with kime Korean input
+# i3 (X11) with fcitx5 Korean input
 # Default window manager configuration
 { pkgs, lib, ... }: {
   # We need an XDG portal for various applications to work properly
@@ -8,121 +8,123 @@
     config.common.default = "*";
   };
 
-  # Korean input method - kime (lightweight Rust-based IME)
-  # Switched from fcitx5 for simplicity and better Wayland support
-  i18n.inputMethod = {
-    enable = true;
-    type = "kime";
-    kime.iconColor = "White";  # System tray icon color
-  };
-
-  # [ARCHIVED] fcitx5 configuration - kept for reference
-  # Reason: Switching to kime for simpler config and better performance
+  # [ARCHIVED] kime configuration - kept for reference
+  # Reason: kime X11 Consume blocks Hangul/S-Space from reaching Kitty/KKP (2026-04-11)
   # i18n.inputMethod = {
   #   enable = true;
-  #   type = "fcitx5";
-  #   fcitx5 = {
-  #     addons = with pkgs; [
-  #       fcitx5-hangul       # Korean input engine
-  #       fcitx5-gtk          # GTK integration
-  #       qt6Packages.fcitx5-configtool   # Configuration GUI tool
-  #     ];
-  #     waylandFrontend = false;  # Currently using X11
-  #
-  #     # Ensure reproducibility - ignore user config files
-  #     ignoreUserConfig = true;
-  #
-  #     settings = {
-  #       inputMethod = {
-  #         # Default group (0) - English only, for Emacs and apps that control IME
-  #         "Groups/0" = {
-  #           "Name" = "Default";
-  #           "Default Layout" = "us";
-  #           "DefaultIM" = "keyboard-us";
-  #         };
-  #         "Groups/0/Items/0" = {
-  #           "Name" = "keyboard-us";
-  #           "Layout" = "";
-  #         };
-  #
-  #         # Korean group (1) - for general applications with Korean input
-  #         "Groups/1" = {
-  #           "Name" = "Korean";
-  #           "Default Layout" = "kr-kr104";
-  #           "DefaultIM" = "keyboard-kr-kr104";
-  #         };
-  #         "Groups/1/Items/0" = {
-  #           "Name" = "keyboard-kr-kr104";
-  #           "Layout" = "kr-kr104";
-  #         };
-  #         "Groups/1/Items/1" = {
-  #           "Name" = "hangul";
-  #           "Layout" = "kr-kr104";
-  #         };
-  #
-  #         "GroupOrder" = {
-  #           "0" = "Default";
-  #           "1" = "Korean";
-  #         };
-  #       };
-  #       globalOptions = {
-  #         "Hotkey" = {
-  #           "EnumerateWithTriggerKeys" = "True";
-  #           "EnumerateSkipFirst" = "False";
-  #           "ModifierOnlyKeyTimeout" = "250";
-  #         };
-  #         "Hotkey/TriggerKeys" = {
-  #           "0" = "Shift+space";
-  #           "1" = "Hangul";
-  #         };
-  #         "Hotkey/EnumerateGroupForwardKeys" = {
-  #           "0" = "Alt+Super+BackSpace";
-  #           "1" = "Super+Hangul";
-  #           "2" = "Super+Right Alt";
-  #         };
-  #         "Hotkey/ActivateKeys" = {
-  #           "0" = "Hangul_Hanja";
-  #         };
-  #         "Hotkey/DeactivateKeys" = {
-  #           "0" = "Hangul_Romaja";
-  #         };
-  #         "Hotkey/PrevPage" = {
-  #           "0" = "Up";
-  #         };
-  #         "Hotkey/NextPage" = {
-  #           "0" = "Down";
-  #         };
-  #         "Hotkey/PrevCandidate" = {
-  #           "0" = "Shift+Tab";
-  #         };
-  #         "Hotkey/NextCandidate" = {
-  #           "0" = "Tab";
-  #         };
-  #         "Hotkey/TogglePreedit" = {
-  #           "0" = "Control+Alt+P";
-  #         };
-  #         "Behavior" = {
-  #           "ActiveByDefault" = "False";
-  #           "resetStateWhenFocusIn" = "No";
-  #           "ShareInputState" = "No";
-  #           "PreeditEnabledByDefault" = "True";
-  #           "ShowInputMethodInformation" = "True";
-  #           "showInputMethodInformationWhenFocusIn" = "False";
-  #           "CompactInputMethodInformation" = "True";
-  #           "ShowFirstInputMethodInformation" = "True";
-  #           "DefaultPageSize" = "5";
-  #           "PreloadInputMethod" = "True";
-  #           "AllowInputMethodForPassword" = "False";
-  #           "ShowPreeditForPassword" = "False";
-  #           "AutoSavePeriod" = "30";
-  #         };
-  #       };
-  #       # Hangul addon settings are managed through GUI (fcitx5-configtool)
-  #       # The settings are stored in ~/.config/fcitx5/conf/hangul.conf
-  #       addons = { };
-  #     };
-  #   };
+  #   type = "kime";
+  #   kime.iconColor = "White";
   # };
+
+  # Korean input method - fcitx5
+  # Restored from kime: fcitx5 supports per-app group separation
+  # Group 0 (Default) = English only → Hangul/S-Space passthrough to Kitty/KKP
+  # Group 1 (Korean) = hangul engine for general apps
+  i18n.inputMethod = {
+    enable = true;
+    type = "fcitx5";
+    fcitx5 = {
+      addons = with pkgs; [
+        fcitx5-hangul       # Korean input engine
+        fcitx5-gtk          # GTK integration
+        qt6Packages.fcitx5-configtool   # Configuration GUI tool
+      ];
+      waylandFrontend = false;  # Currently using X11
+
+      # Ensure reproducibility - ignore user config files
+      ignoreUserConfig = true;
+
+      settings = {
+        inputMethod = {
+          # Default group (0) - English only, for Emacs and apps that control IME
+          "Groups/0" = {
+            "Name" = "Default";
+            "Default Layout" = "us";
+            "DefaultIM" = "keyboard-us";
+          };
+          "Groups/0/Items/0" = {
+            "Name" = "keyboard-us";
+            "Layout" = "";
+          };
+
+          # Korean group (1) - for general applications with Korean input
+          "Groups/1" = {
+            "Name" = "Korean";
+            "Default Layout" = "kr-kr104";
+            "DefaultIM" = "keyboard-kr-kr104";
+          };
+          "Groups/1/Items/0" = {
+            "Name" = "keyboard-kr-kr104";
+            "Layout" = "kr-kr104";
+          };
+          "Groups/1/Items/1" = {
+            "Name" = "hangul";
+            "Layout" = "kr-kr104";
+          };
+
+          "GroupOrder" = {
+            "0" = "Default";
+            "1" = "Korean";
+          };
+        };
+        globalOptions = {
+          "Hotkey" = {
+            "EnumerateWithTriggerKeys" = "True";
+            "EnumerateSkipFirst" = "False";
+            "ModifierOnlyKeyTimeout" = "250";
+          };
+          "Hotkey/TriggerKeys" = {
+            "0" = "Shift+space";
+            "1" = "Hangul";
+          };
+          "Hotkey/EnumerateGroupForwardKeys" = {
+            "0" = "Alt+Super+BackSpace";
+            "1" = "Super+Hangul";
+            "2" = "Super+Right Alt";
+          };
+          "Hotkey/ActivateKeys" = {
+            "0" = "Hangul_Hanja";
+          };
+          "Hotkey/DeactivateKeys" = {
+            "0" = "Hangul_Romaja";
+          };
+          "Hotkey/PrevPage" = {
+            "0" = "Up";
+          };
+          "Hotkey/NextPage" = {
+            "0" = "Down";
+          };
+          "Hotkey/PrevCandidate" = {
+            "0" = "Shift+Tab";
+          };
+          "Hotkey/NextCandidate" = {
+            "0" = "Tab";
+          };
+          "Hotkey/TogglePreedit" = {
+            "0" = "Control+Alt+P";
+          };
+          "Behavior" = {
+            "ActiveByDefault" = "False";
+            "resetStateWhenFocusIn" = "No";
+            "ShareInputState" = "No";
+            "PreeditEnabledByDefault" = "True";
+            "ShowInputMethodInformation" = "True";
+            "showInputMethodInformationWhenFocusIn" = "False";
+            "CompactInputMethodInformation" = "True";
+            "ShowFirstInputMethodInformation" = "True";
+            "DefaultPageSize" = "5";
+            "PreloadInputMethod" = "True";
+            "AllowInputMethodForPassword" = "False";
+            "ShowPreeditForPassword" = "False";
+            "AutoSavePeriod" = "30";
+          };
+        };
+        # Hangul addon settings are managed through GUI (fcitx5-configtool)
+        # The settings are stored in ~/.config/fcitx5/conf/hangul.conf
+        addons = { };
+      };
+    };
+  };
 
   # Display manager configuration
   services.displayManager.defaultSession = "none+i3";
@@ -169,9 +171,9 @@
   };
 
   # Environment variables for IME support
-  # Note: GTK_IM_MODULE, QT_IM_MODULE, XMODIFIERS are set by i18n.inputMethod.type = "kime"
+  # Note: GTK_IM_MODULE, QT_IM_MODULE, XMODIFIERS are set by i18n.inputMethod.type = "fcitx5"
   environment.sessionVariables = {
-    GLFW_IM_MODULE = "ibus";  # kitty uses ibus protocol (kime provides ibus compatibility)
+    GLFW_IM_MODULE = "ibus";  # kitty uses ibus protocol (fcitx5 provides ibus compatibility)
   };
 
   # Additional packages for i3 environment

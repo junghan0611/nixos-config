@@ -157,7 +157,7 @@ in
 
       # 개발 도구
       python312
-      nodejs_22
+      nodejs_24
       pam
       gcc
       gh  # github

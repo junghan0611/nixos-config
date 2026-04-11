@@ -232,7 +232,7 @@
     delta
     git-lfs
     python312
-    nodejs_22
+    nodejs_24
     pnpm
     uv
     gh  # GitHub CLI

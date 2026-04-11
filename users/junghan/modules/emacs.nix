@@ -70,7 +70,7 @@ in {
     asciidoctor-with-extensions  # AsciiDoc processor (hwpx conversion)
 
     # Node.js (for LSP servers)
-    nodejs_22
+    nodejs_24
 
     # Terminal emulation (vterm)
     libvterm
