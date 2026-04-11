@@ -222,86 +222,25 @@ in {
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
 
-    # kime Korean input method configuration
+    # [ARCHIVED] kime configuration - kept for reference
+    # Reason: kime X11 Consume blocks Hangul/S-Space from reaching Kitty/KKP (2026-04-11)
     # Docs: https://github.com/Riey/kime/blob/develop/docs/CONFIGURATION.ko.md
-    ".config/kime/config.yaml".text = ''
-      daemon:
-        modules:
-        - Xim
-        - Indicator
-        # - Wayland  # Enable when using Wayland
-
-      indicator:
-        icon_color: White
-
-      log:
-        global_level: WARN
-
-      engine:
-        default_category: Latin
-        global_category_state: false
-
-        global_hotkeys:
-          # Toggle Korean/English with Right Alt or Hangul key
-          AltR:
-            behavior: !Toggle
-            - Hangul
-            - Latin
-            result: Consume
-          Hangul:
-            behavior: !Toggle
-            - Hangul
-            - Latin
-            result: Consume
-          # Shift+Space as alternative toggle (S- is kime's Shift modifier)
-          S-Space:
-            behavior: !Toggle
-            - Hangul
-            - Latin
-            result: Consume
-          # Escape switches to English
-          Esc:
-            behavior: !Switch Latin
-            result: Bypass
-
-        category_hotkeys:
-          Hangul:
-            # Right Ctrl or Hanja key for Hanja mode
-            ControlR:
-              behavior: !Mode Hanja
-              result: Consume
-            HangulHanja:
-              behavior: !Mode Hanja
-              result: Consume
-
-        mode_hotkeys:
-          Hanja:
-            Enter:
-              behavior: Commit
-              result: ConsumeIfProcessed
-            Tab:
-              behavior: Commit
-              result: ConsumeIfProcessed
-
-        candidate_font: D2Coding ligature
-        xim_preedit_font:
-        - D2Coding ligature
-        - 15.0
-
-        latin:
-          layout: Qwerty
-          preferred_direct: true
-
-        hangul:
-          layout: dubeolsik
-          word_commit: false
-          preedit_johab: Needed
-          addons:
-            all:
-            - ComposeChoseongSsang
-            dubeolsik:
-            - TreatJongseongAsChoseong
-    '';
+    # ".config/kime/config.yaml".text = ''
+    #   daemon:
+    #     modules:
+    #     - Xim
+    #     - Indicator
+    #     indicator:
+    #       icon_color: White
+    #     log:
+    #       global_level: WARN
+    #     engine:
+    #       default_category: Latin
+    #       global_hotkeys:
+    #         AltR/Hangul/S-Space: Toggle [Hangul, Latin] Consume
+    #         Esc: Switch Latin Bypass
+    #       hangul: dubeolsik, word_commit: false
+    # '';
 
     # [ARCHIVED] fcitx5 profile - kept for reference
     # Reason: Switched to kime for simpler config

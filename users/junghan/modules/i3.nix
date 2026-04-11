@@ -534,7 +534,7 @@ in {
       bars = [{
         statusCommand = "${pkgs.i3status}/bin/i3status -c ${i3status-conf}";
         position = "top";
-        trayOutput = "primary";  # Enable system tray for kime-indicator
+        trayOutput = "primary";  # Enable system tray for fcitx5 indicator
         fonts = {
           names = [ fontName ];
           size = barFontSize * 1.0;
@@ -597,7 +597,7 @@ in {
         # { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }  # For English-only
         { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104 -option korean:ralt_hangul -option caps:menu"; notification = false; }
 
-        # SNI to XEmbed proxy (required for kime-indicator in i3bar)
+        # SNI to XEmbed proxy (required for fcitx5 indicator in i3bar)
         { command = "${pkgs.snixembed}/bin/snixembed --fork"; notification = false; }
 
         # System tray applets
@@ -609,12 +609,13 @@ in {
 
         # Notifications are handled by services.dunst (see modules/dunst.nix)
 
-        # Korean input method - kime
-        { command = "${pkgs.kime}/bin/kime"; notification = false; }
+        # Korean input method - fcitx5
+        { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
+        { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
 
-        # [ARCHIVED] fcitx5 startup commands - kept for reference
-        # { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
-        # { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
+        # [ARCHIVED] kime startup - kept for reference
+        # Reason: kime X11 Consume blocks Hangul/S-Space from reaching Kitty/KKP (2026-04-11)
+        # { command = "${pkgs.kime}/bin/kime"; notification = false; }
 
         # Auto-detect and apply monitor configuration
         { command = "${pkgs.autorandr}/bin/autorandr --change --default thinkpad"; notification = false; }
