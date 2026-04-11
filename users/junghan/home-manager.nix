@@ -215,7 +215,8 @@ in {
       executable = true;
     };
     ".config/ghostty/config".text = builtins.readFile ./configs/ghostty.linux;
-    ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
+    # kitty: NixOS 관리에서 분리 — 직접 ~/.config/kitty/kitty.conf 편집으로 테스트 중
+    # ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
     ".config/wezterm/wezterm.lua".text = builtins.readFile ./configs/wezterm.lua;
     ".inputrc".text = builtins.readFile ./configs/inputrc;
     # Wallpaper for i3
