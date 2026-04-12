@@ -28,6 +28,9 @@ config.color_scheme = "Modus Vivendi"
 config.window_close_confirmation = "AlwaysPrompt"
 config.audible_bell = "Disabled"
 
+-- Kitty graphics protocol (for kitty-graphics.el in terminal Emacs)
+config.enable_kitty_graphics = true
+
 -- Scrollback (Emacs TUI가 화면 제어하므로 최소화)
 config.scrollback_lines = 1000
 config.enable_scroll_bar = false

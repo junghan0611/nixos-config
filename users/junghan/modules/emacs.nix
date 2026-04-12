@@ -67,6 +67,7 @@ in {
     # Document processing
     pandoc
     imagemagick
+    ghostscript  # PDF viewer (doc-view-mode)
     asciidoctor-with-extensions  # AsciiDoc processor (hwpx conversion)
 
     # Node.js (for LSP servers)
