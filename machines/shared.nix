@@ -171,19 +171,18 @@
       # Basic fonts
       liberation_ttf
       dejavu_fonts
+      noto-fonts           # Noto Sans/Serif + Symbols + Symbols2 + Math
+      symbola              # Unicode symbol coverage (math, emoji fallback)
 
       # Korean fonts
       pretendard
       sarasa-gothic
-      noto-fonts-cjk-sans  # Noto Sans CJK
-      noto-fonts-color-emoji     # Emoji support (color)
+      noto-fonts-cjk-sans    # Noto Sans CJK
+      noto-fonts-cjk-serif   # Noto Serif CJK (인쇄/PDF용)
+      noto-fonts-color-emoji       # Emoji support (color)
       noto-fonts-monochrome-emoji  # Emoji support (monochrome)
-      noto-fonts-emoji-blob-bin  # Emoji with extended Blob support
-      d2coding            # D2Coding (Korean coding font)
-
-      # Nerd Fonts - try individual packages
-      # (nerdfonts.override { fonts = [ "JetBrainsMono" "FiraCode" ]; })
-      # Temporarily comment out until we find the right package names
+      noto-fonts-emoji-blob-bin    # Emoji with extended Blob support
+      d2coding               # D2Coding (Korean coding font)
 
       # English coding fonts
       jetbrains-mono

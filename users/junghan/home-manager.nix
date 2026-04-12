@@ -217,7 +217,8 @@ in {
     ".config/ghostty/config".text = builtins.readFile ./configs/ghostty.linux;
     # kitty: NixOS 관리에서 분리 — 직접 ~/.config/kitty/kitty.conf 편집으로 테스트 중
     # ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
-    ".config/wezterm/wezterm.lua".text = builtins.readFile ./configs/wezterm.lua;
+    # wezterm: NixOS 관리에서 분리 — 직접 ~/.config/wezterm/wezterm.lua 편집으로 테스트 중
+    # ".config/wezterm/wezterm.lua".text = builtins.readFile ./configs/wezterm.lua;
     ".inputrc".text = builtins.readFile ./configs/inputrc;
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
