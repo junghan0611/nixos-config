@@ -175,19 +175,22 @@ Known workspace mapping:
 - `workspace-gpt/` → gpt
 - `workspace-gemini/` → gemini
 - `workspace-mini/` → mini
+- `workspace-bbot/` → bbot
 
 Important invariant:
 - main uses `workspace/`, not `workspace-main/`
+- `workspace-bbot/` is a split-out B(비) workspace for ACP experiments
 
-Current model routing (2026-04-09):
+Current model routing (2026-04-12):
 - Anthropic flat-rate access blocked for third-party apps (OpenClaw, pi)
 - All Claude models routed through GitHub Copilot Pro+ tokens
 - glg (힣봇): `github-copilot/claude-sonnet-4.6` — family life-support, fast response
-- main: `github-copilot/claude-opus-4.6` — deep work
+- main: `github-copilot/claude-opus-4.6` at rest, but the operational fast-chat path for the default bot is **ACP Claude Sonnet 4.6** via `/acp spawn claude --bind here --cwd /home/node/.openclaw/workspace` + `/acp model claude-sonnet-4-6`
+- bbot (`@glg_b_bot`): `github-copilot/claude-opus-4.6` — B(비) workspace split, ACP/identity experiments
 - gpt: `openai-codex/gpt-5.4`
 - gemini: `github-copilot/gemini-3.1-pro-preview`
 - mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇. gpt-5.4-mini, gemini-3-flash도 사용 가능
-- Parallel strategy: pi + claude-agent-sdk-pi로 로컬 하네스 복원 중
+- ACP runtime: `acpx`, currently `allowedAgents=["claude"]`, `maxConcurrentSessions=3`
 
 ## OpenClaw change policy
 
@@ -201,9 +204,26 @@ Rules:
 - test real execution, not just config syntax
 
 For family-facing bots:
-- avoid workflows that require manual model switching
+- avoid workflows that require manual model switching unless the operator explicitly chose ACP mode for that conversation
 - prefer the least surprising behavior
 - optimize for stable replies
+
+## ACP / ACPX operational notes
+
+OpenClaw ACP sessions are conversation-bound overlays, not permanent replacements for `agents.list`.
+Treat `/acp spawn ... --bind here` as rebinding one chat thread to an ACP harness session.
+
+Important corrections learned from real work:
+- **`workspace/skills` != Claude native skills.** OpenClaw workspace skills are for OpenClaw's own workspace snapshot/prompt system.
+- Claude ACP sessions primarily discover skills from **`~/.claude/skills`**.
+- Therefore, if a Claude ACP session must see OpenClaw bot skills today, you need either:
+  - a Claude-side skill overlay/sync (current workaround), or
+  - a future MCP bridge that exposes workspace skills as tools (preferred long-term)
+- Current runtime workaround on Oracle: `config/claude-skills-bbot/` is mounted to `/home/node/.claude/skills` for bbot/ACP experiments.
+- `~/.claude` must be **rw**, not ro, because Claude writes `session-env/` and `projects/` during ACP sessions.
+- If ACP says `Authentication required`, check that `~/.claude` is actually mounted inside the container.
+- If Claude skills suddenly disappear, check broken absolute symlinks inside `~/.claude` and ensure `/home/junghan/repos/gh` is mounted for compatibility.
+- If ACP says `max concurrent sessions reached`, either close stale sessions or raise `acp.maxConcurrentSessions` in `openclaw.json`.
 
 ## Approval / exec policy
 
@@ -264,6 +284,16 @@ Restart required when changing:
 - OpenClaw version
 - adding/removing skill directories that affect command registration
 
+**Recreate (not simple restart) is required when changing volume mounts**, especially:
+- `~/.claude` auth/runtime mount
+- compatibility mounts for broken absolute symlinks
+- Claude skill overlay mounts
+
+Use:
+```bash
+cd ~/openclaw && docker compose up -d --force-recreate openclaw-gateway
+```
+
 Restart usually not required when changing:
 - workspace text files like `AGENTS.md`, `SOUL.md`, `USER.md`, `MEMORY.md`
 - SKILL.md content only
@@ -317,7 +347,13 @@ Operator entrypoint: `run.sh k)` (Oracle 전용)
 | glg | `workspace-glg/` | 전체 | 가족 라이프 에이전트 |
 | gpt | `workspace-gpt/` | 전체 | GPT 범용 |
 | gemini | `workspace-gemini/` | 전체 | Gemini 범용 |
+| bbot | `workspace-bbot/` | 전체 + Claude-side overlay | B(비) ACP 실험 분리 |
 | mini | `workspace-mini/` | denotecli만 | 포맷팅/교정 전담 — 최소 도구 |
+
+Note:
+- `workspace*/skills`는 OpenClaw workspace skill system이다.
+- Claude ACP 세션이 실제로 보는 native skills는 `~/.claude/skills`다.
+- 두 체계는 자동 동기화되지 않는다.
 
 ### Deployment rules
 

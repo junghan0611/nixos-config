@@ -42,6 +42,7 @@ services:
       # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스 (read-only)
       - ~/repos/gh:/home/node/repos/gh:ro
+      - ~/repos/gh:/home/junghan/repos/gh:ro  # ~/.claude absolute symlink compatibility
       - ~/repos/work:/home/node/repos/work:ro
       - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:ro
@@ -54,6 +55,10 @@ services:
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
+      - ~/.claude:/home/node/.claude
+      # bbot용 Claude skills overlay (OpenClaw bot skills + agent-config skills union)
+      - ./config/claude-skills-bbot:/home/node/.claude/skills:ro
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
@@ -98,6 +103,7 @@ services:
       - ./config:/home/node/.openclaw
       # 지식베이스/코드베이스 (read-only)
       - ~/repos/gh:/home/node/repos/gh:ro
+      - ~/repos/gh:/home/junghan/repos/gh:ro  # ~/.claude absolute symlink compatibility
       - ~/repos/work:/home/node/repos/work:ro
       - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:ro
@@ -110,6 +116,10 @@ services:
       - ~/.config/gogcli:/home/node/.config/gogcli:ro
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
+      - ~/.claude:/home/node/.claude
+      # bbot용 Claude skills overlay (OpenClaw bot skills + agent-config skills union)
+      - ./config/claude-skills-bbot:/home/node/.claude/skills:ro
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
