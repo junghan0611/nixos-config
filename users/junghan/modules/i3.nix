@@ -613,6 +613,9 @@ in {
         { command = "${pkgs.fcitx5}/bin/fcitx5 -d -s 3"; notification = false; }
         { command = "sleep 1 && ${pkgs.fcitx5}/bin/fcitx5-remote -s hangul"; notification = false; }
 
+        # fcitx5 per-app 그룹 자동 전환 (wezterm → Default, 그 외 → Korean)
+        { command = "$HOME/.local/bin/i3-fcitx5-group"; notification = false; }
+
         # [ARCHIVED] kime startup - kept for reference
         # Reason: kime X11 Consume blocks Hangul/S-Space from reaching Kitty/KKP (2026-04-11)
         # { command = "${pkgs.kime}/bin/kime"; notification = false; }

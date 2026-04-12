@@ -12,22 +12,25 @@ config.tab_bar_at_bottom = false
 config.use_fancy_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = true
 
--- Font (D2Coding for consistency with ghostty/i3)
-config.font = wezterm.font("D2Coding ligature", { weight = "Regular", italic = false })
-config.font_size = 14.0
+-- Font
+config.font = wezterm.font_with_fallback({
+    "GLG Nerd Font Mono",
+    "Noto Emoji",          -- monochrome emoji (no color)
+})
+config.font_size = 15.1
 
 -- Window size
 config.initial_cols = 120
 config.initial_rows = 35
 
 -- Color scheme
-config.color_scheme = "Dracula (Official)"
+config.color_scheme = "Modus Vivendi"
+config.window_close_confirmation = "AlwaysPrompt"
 config.audible_bell = "Disabled"
 
--- Scrollback settings (optimized for Claude Code)
-config.scrollback_lines = 10000  -- Limit to prevent memory bloat
-config.enable_scroll_bar = true
-config.scroll_to_bottom_on_input = true
+-- Scrollback (Emacs TUI가 화면 제어하므로 최소화)
+config.scrollback_lines = 1000
+config.enable_scroll_bar = false
 
 -- Key bindings
 config.keys = {
@@ -37,17 +40,11 @@ config.keys = {
         mods = "ALT",
         action = wezterm.action.DisableDefaultAssignment,
     },
-    -- Half-page scrolling (matches evil-scroll-up/down)
-    {
-        key = "u",
-        mods = "ALT",
-        action = wezterm.action.ScrollByPage(-0.5),
-    },
-    {
-        key = "v",
-        mods = "ALT",
-        action = wezterm.action.ScrollByPage(0.5),
-    },
+    -- term-keys: Right Alt → Emacs <Hangul> (fcitx5 기본그룹에서 Alt_R로 통과)
+    {key = "RightAlt", mods = "", action = wezterm.action{SendString="\x1b\x1f\x50\x60\x1f"}},
+    -- term-keys: Shift+Space → Emacs S-SPC
+    {key = "Space", mods = "SHIFT", action = wezterm.action{SendString="\x1b\x1f\x50\x21\x1f"}},
+    -- M-u, M-v → Emacs로 통과 (wezterm이 가로채지 않음)
 }
 
 return config

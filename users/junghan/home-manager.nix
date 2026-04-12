@@ -217,8 +217,15 @@ in {
     ".config/ghostty/config".text = builtins.readFile ./configs/ghostty.linux;
     # kitty: NixOS 관리에서 분리 — 직접 ~/.config/kitty/kitty.conf 편집으로 테스트 중
     # ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
-    # wezterm: NixOS 관리에서 분리 — 직접 ~/.config/wezterm/wezterm.lua 편집으로 테스트 중
-    # ".config/wezterm/wezterm.lua".text = builtins.readFile ./configs/wezterm.lua;
+    # wezterm: 레포 파일로 직접 symlink (편집 가능, nix store 경유 아님)
+    ".config/wezterm/wezterm.lua".source = config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/wezterm.lua";
+
+    # i3-fcitx5-group: 포커스 창에 따라 fcitx5 그룹 자동 전환
+    ".local/bin/i3-fcitx5-group" = {
+      source = ./configs/i3-fcitx5-group.sh;
+      executable = true;
+    };
     ".inputrc".text = builtins.readFile ./configs/inputrc;
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
