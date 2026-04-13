@@ -219,7 +219,7 @@ Important corrections learned from real work:
 - Therefore, if a Claude ACP session must see OpenClaw bot skills today, you need either:
   - a Claude-side skill overlay/sync (current workaround), or
   - a future MCP bridge that exposes workspace skills as tools (preferred long-term)
-- Current runtime workaround on Oracle: `config/claude-skills-bbot/` is mounted to `/home/node/.claude/skills` for bbot/ACP experiments.
+- Current runtime workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/.claude/skills` for all ACP sessions.
 - `~/.claude` must be **rw**, not ro, because Claude writes `session-env/` and `projects/` during ACP sessions.
 - If ACP says `Authentication required`, check that `~/.claude` is actually mounted inside the container.
 - If Claude skills suddenly disappear, check broken absolute symlinks inside `~/.claude` and ensure `/home/junghan/repos/gh` is mounted for compatibility.
@@ -357,7 +357,7 @@ Note:
 
 ### Deployment rules
 
-- `run.sh k)`가 main workspace에 먼저 설치 → glg, gpt, gemini, bbot에 rsync → claude-skills-bbot에도 동기화
+- `run.sh k)`가 main workspace에 먼저 설치 → glg, gpt, gemini, bbot에 rsync → claude-skills에도 동기화
 - mini는 별도 — 지정 스킬만 개별 복사, 나머지 삭제
 - 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요
 - SKILL.md 내용만 변경 시 재시작 불필요 (동적 로딩)

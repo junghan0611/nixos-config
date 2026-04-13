@@ -57,8 +57,8 @@ services:
       - ~/.config/gh:/home/node/.config/gh:ro
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
       - ~/.claude:/home/node/.claude
-      # bbot용 Claude skills overlay (OpenClaw bot skills + agent-config skills union)
-      - ./config/claude-skills-bbot:/home/node/.claude/skills:ro
+      # Claude ACP skills (모든 ACP 세션이 공유)
+      - ./config/claude-skills:/home/node/.claude/skills:ro
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
@@ -118,8 +118,8 @@ services:
       - ~/.config/gh:/home/node/.config/gh:ro
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
       - ~/.claude:/home/node/.claude
-      # bbot용 Claude skills overlay (OpenClaw bot skills + agent-config skills union)
-      - ./config/claude-skills-bbot:/home/node/.claude/skills:ro
+      # Claude ACP skills (모든 ACP 세션이 공유)
+      - ./config/claude-skills:/home/node/.claude/skills:ro
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)

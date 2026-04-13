@@ -498,7 +498,7 @@ main() {
                 AGENTS_MINI=(workspace-mini)
                 MINI_SKILLS=(denotecli)
                 # Claude ACP 스킬 오버레이 (bbot ACP 세션이 ~/.claude/skills로 봄)
-                CLAUDE_SKILLS_BBOT="$OPENCLAW_DIR/config/claude-skills-bbot"
+                CLAUDE_SKILLS="$OPENCLAW_DIR/config/claude-skills"
 
                 info "=== OpenClaw 스킬 배포 (pi-skills → workspace) ==="
                 echo ""
@@ -567,14 +567,14 @@ main() {
                         done
                     done
 
-                    # 4. claude-skills-bbot 동기화 (ACP 세션이 ~/.claude/skills로 봄)
+                    # 4. claude-skills 동기화 (ACP 세션이 ~/.claude/skills로 봄)
                     echo ""
-                    info "4/4 Claude ACP 스킬 동기화 → claude-skills-bbot..."
-                    if [[ -d "$CLAUDE_SKILLS_BBOT" ]]; then
-                        rsync -a --delete "$WORKSPACE_SKILLS/" "$CLAUDE_SKILLS_BBOT/"
-                        success "claude-skills-bbot"
+                    info "4/4 Claude ACP 스킬 동기화 → claude-skills..."
+                    if [[ -d "$CLAUDE_SKILLS" ]]; then
+                        rsync -a --delete "$WORKSPACE_SKILLS/" "$CLAUDE_SKILLS/"
+                        success "claude-skills"
                     else
-                        warn "claude-skills-bbot 디렉토리 없음: $CLAUDE_SKILLS_BBOT"
+                        warn "claude-skills 디렉토리 없음: $CLAUDE_SKILLS"
                     fi
 
                     echo ""
@@ -584,8 +584,8 @@ main() {
                     info "mini workspace 스킬 목록:"
                     ls "$OPENCLAW_DIR/config/workspace-mini/skills/" 2>/dev/null || echo "  (없음)"
                     echo ""
-                    info "claude-skills-bbot 스킬 목록:"
-                    ls "$CLAUDE_SKILLS_BBOT/" 2>/dev/null || echo "  (없음)"
+                    info "claude-skills 스킬 목록:"
+                    ls "$CLAUDE_SKILLS/" 2>/dev/null || echo "  (없음)"
                     echo ""
                     success "스킬 배포 완료! 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요: r) 메뉴"
                 else
