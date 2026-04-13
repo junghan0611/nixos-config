@@ -10,7 +10,7 @@ config.window_decorations = "TITLE | RESIZE"
 -- Tab bar
 config.tab_bar_at_bottom = false
 config.use_fancy_tab_bar = true
-config.hide_tab_bar_if_only_one_tab = true
+config.hide_tab_bar_if_only_one_tab = false
 
 -- Font
 config.font = wezterm.font_with_fallback({
@@ -24,7 +24,7 @@ config.initial_cols = 120
 config.initial_rows = 35
 
 -- Color scheme
-config.color_scheme = "Modus Vivendi"
+config.color_scheme = 'Modus Vivendi Tinted (Gogh)'
 config.window_close_confirmation = "AlwaysPrompt"
 config.audible_bell = "Disabled"
 
