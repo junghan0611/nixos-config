@@ -492,11 +492,13 @@ main() {
                 SKILL_CLI=(denotecli ghcli bibcli gogcli gitcli lifetract dictcli)
 
                 # 에이전트별 스킬 배포 정책
-                #   full: 전체 스킬 (main, glg, gpt, gemini)
+                #   full: 전체 스킬 (main, glg, gpt, gemini, bbot)
                 #   mini: denotecli만
-                AGENTS_FULL=(workspace workspace-glg workspace-gpt workspace-gemini)
+                AGENTS_FULL=(workspace workspace-glg workspace-gpt workspace-gemini workspace-bbot)
                 AGENTS_MINI=(workspace-mini)
                 MINI_SKILLS=(denotecli)
+                # Claude ACP 스킬 오버레이 (bbot ACP 세션이 ~/.claude/skills로 봄)
+                CLAUDE_SKILLS_BBOT="$OPENCLAW_DIR/config/claude-skills-bbot"
 
                 info "=== OpenClaw 스킬 배포 (pi-skills → workspace) ==="
                 echo ""
@@ -565,12 +567,25 @@ main() {
                         done
                     done
 
+                    # 4. claude-skills-bbot 동기화 (ACP 세션이 ~/.claude/skills로 봄)
+                    echo ""
+                    info "4/4 Claude ACP 스킬 동기화 → claude-skills-bbot..."
+                    if [[ -d "$CLAUDE_SKILLS_BBOT" ]]; then
+                        rsync -a --delete "$WORKSPACE_SKILLS/" "$CLAUDE_SKILLS_BBOT/"
+                        success "claude-skills-bbot"
+                    else
+                        warn "claude-skills-bbot 디렉토리 없음: $CLAUDE_SKILLS_BBOT"
+                    fi
+
                     echo ""
                     info "main workspace 스킬 목록:"
                     ls "$WORKSPACE_SKILLS/"
                     echo ""
                     info "mini workspace 스킬 목록:"
                     ls "$OPENCLAW_DIR/config/workspace-mini/skills/" 2>/dev/null || echo "  (없음)"
+                    echo ""
+                    info "claude-skills-bbot 스킬 목록:"
+                    ls "$CLAUDE_SKILLS_BBOT/" 2>/dev/null || echo "  (없음)"
                     echo ""
                     success "스킬 배포 완료! 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요: r) 메뉴"
                 else

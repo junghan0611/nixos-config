@@ -357,7 +357,7 @@ Note:
 
 ### Deployment rules
 
-- `run.sh k)`가 main workspace에 먼저 설치 → glg, gpt, gemini에 rsync
+- `run.sh k)`가 main workspace에 먼저 설치 → glg, gpt, gemini, bbot에 rsync → claude-skills-bbot에도 동기화
 - mini는 별도 — 지정 스킬만 개별 복사, 나머지 삭제
 - 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요
 - SKILL.md 내용만 변경 시 재시작 불필요 (동적 로딩)
