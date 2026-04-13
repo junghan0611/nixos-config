@@ -58,7 +58,7 @@ services:
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
       - ~/.claude:/home/node/.claude
       # Claude ACP skills (모든 ACP 세션이 공유)
-      - ./config/claude-skills:/home/node/.claude/skills:ro
+      - ./config/claude-skills:/home/node/.claude/skills:rw
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
@@ -119,7 +119,7 @@ services:
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
       - ~/.claude:/home/node/.claude
       # Claude ACP skills (모든 ACP 세션이 공유)
-      - ./config/claude-skills:/home/node/.claude/skills:ro
+      - ./config/claude-skills:/home/node/.claude/skills:rw
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
