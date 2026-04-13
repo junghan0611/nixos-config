@@ -494,10 +494,12 @@ in {
           "${mod}+${alt}+Return" = "exec ${pkgs.wezterm}/bin/wezterm";
 
           # Whisper voice input (toggle: silence detection)
-          "${mod}+e" = "exec --no-startup-id ${whisperScript}";
+          # DISABLED: Mod+e conflicts with Emacs/pi window switching
+          # "${mod}+e" = "exec --no-startup-id ${whisperScript}";
 
           # Whisper PTT 워키토키 (F1 누르면 녹음, 떼면 전송)
-          "F1" = "exec --no-startup-id ${whisperPttScript} start";
+          # DISABLED: F1 conflicts with Emacs/pi window switching
+          # "F1" = "exec --no-startup-id ${whisperPttScript} start";
 
           # Resize mode
           "${mod}+r" = "mode resize";
@@ -632,7 +634,8 @@ in {
     # --release 바인딩은 keybindings map에서 지원 안 하므로 extraConfig로
     extraConfig = ''
       # Whisper PTT: F1 떼면 녹음 중지 + 전송
-      bindsym --release F1 exec --no-startup-id ${whisperPttScript} stop
+      # DISABLED: F1 conflicts with Emacs/pi window switching
+      # bindsym --release F1 exec --no-startup-id ${whisperPttScript} stop
     '';
   };
 }
