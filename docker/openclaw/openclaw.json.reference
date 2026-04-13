@@ -1,0 +1,502 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.4.8",
+    "lastTouchedAt": "2026-04-08T08:29:29.836Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-02T14:51:44.899Z",
+    "lastRunVersion": "2026.2.26",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "anthropic:default": {
+        "provider": "anthropic",
+        "mode": "token"
+      },
+      "github-copilot:github": {
+        "provider": "github-copilot",
+        "mode": "token"
+      },
+      "openai-codex:junghanacs@gmail.com": {
+        "provider": "openai-codex",
+        "mode": "oauth"
+      },
+      "google-gemini-cli:junghanacs@gmail.com": {
+        "provider": "google-gemini-cli",
+        "mode": "oauth"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {}
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-6"
+      },
+      "models": {
+        "anthropic/claude-sonnet-4-6": {},
+        "anthropic/claude-opus-4-6": {
+          "alias": "opus"
+        },
+        "openai-codex/gpt-5.4": {},
+        "google-gemini-cli/gemini-3.1-pro-preview": {
+          "alias": "gemini31"
+        },
+        "google-gemini-cli/gemini-3-pro-preview": {
+          "alias": "gemini30"
+        },
+        "google-gemini-cli/gemini-2.5-pro": {
+          "alias": "gemini25"
+        },
+        "github-copilot/claude-opus-4.6": {
+          "alias": "copilot-opus46"
+        },
+        "github-copilot/gemini-3.1-pro-preview": {
+          "alias": "copilot-gemini31"
+        },
+        "github-copilot/gpt-5.4": {
+          "alias": "copilot-gpt54"
+        },
+        "github-copilot/gpt-5-mini": {
+          "alias": "copilot-gpt5mini"
+        },
+        "github-copilot/gpt-5.4-mini": {
+          "alias": "copilot-gpt54mini"
+        },
+        "github-copilot/gemini-3-flash": {
+          "alias": "copilot-gemini3flash"
+        }
+      },
+      "workspace": "/home/node/.openclaw/workspace",
+      "memorySearch": {
+        "sources": [
+          "memory",
+          "sessions"
+        ],
+        "extraPaths": [],
+        "provider": "gemini",
+        "fallback": "none",
+        "model": "gemini-embedding-2-preview",
+        "outputDimensionality": 768,
+        "sync": {
+          "watch": true,
+          "sessions": {
+            "deltaBytes": 50000,
+            "deltaMessages": 25
+          }
+        },
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3,
+            "candidateMultiplier": 4,
+            "mmr": {
+              "enabled": true,
+              "lambda": 0.7
+            },
+            "temporalDecay": {
+              "enabled": true,
+              "halfLifeDays": 30
+            }
+          }
+        },
+        "cache": {
+          "enabled": true,
+          "maxEntries": 50000
+        }
+      },
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "1h"
+      },
+      "compaction": {
+        "mode": "safeguard",
+        "postIndexSync": "async"
+      },
+      "heartbeat": {
+        "every": "1h"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8,
+        "model": "github-copilot/gpt-5.4"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "model": "anthropic/claude-opus-4.6"
+      },
+      {
+        "id": "glg",
+        "name": "glg",
+        "workspace": "/home/node/.openclaw/workspace-glg",
+        "agentDir": "/home/node/.openclaw/agents/glg/agent",
+        "model": "github-copilot/claude-sonnet-4.6"
+      },
+      {
+        "id": "gpt",
+        "name": "gpt",
+        "workspace": "/home/node/.openclaw/workspace-gpt",
+        "agentDir": "/home/node/.openclaw/agents/gpt/agent",
+        "model": "openai-codex/gpt-5.4"
+      },
+      {
+        "id": "gemini",
+        "name": "gemini",
+        "workspace": "/home/node/.openclaw/workspace-gemini",
+        "agentDir": "/home/node/.openclaw/agents/gemini/agent",
+        "model": "github-copilot/gemini-3.1-pro-preview"
+      },
+      {
+        "id": "mini",
+        "name": "mini",
+        "workspace": "/home/node/.openclaw/workspace-mini",
+        "agentDir": "/home/node/.openclaw/agents/mini/agent",
+        "model": "github-copilot/gpt-5-mini"
+      },
+      {
+        "id": "bbot",
+        "name": "bbot",
+        "workspace": "/home/node/.openclaw/workspace-bbot",
+        "agentDir": "/home/node/.openclaw/agents/bbot/agent",
+        "model": "anthropic/claude-opus-4.6"
+      }
+    ]
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "provider": "perplexity",
+        "maxResults": 5
+      }
+    },
+    "media": {
+      "image": {
+        "enabled": true,
+        "timeoutSeconds": 30
+      },
+      "audio": {
+        "enabled": true,
+        "models": [
+          {
+            "provider": "groq",
+            "model": "whisper-large-v3",
+            "language": "ko"
+          }
+        ]
+      }
+    },
+    "sessions": {
+      "visibility": "all"
+    },
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "*"
+      ]
+    },
+    "exec": {
+      "security": "full",
+      "ask": "off"
+    }
+  },
+  "bindings": [
+    {
+      "agentId": "glg",
+      "match": {
+        "channel": "telegram",
+        "accountId": "glg"
+      }
+    },
+    {
+      "agentId": "gemini",
+      "match": {
+        "channel": "telegram",
+        "accountId": "gemini"
+      }
+    },
+    {
+      "agentId": "gpt",
+      "match": {
+        "channel": "telegram",
+        "accountId": "gpt"
+      }
+    },
+    {
+      "agentId": "mini",
+      "match": {
+        "channel": "telegram",
+        "accountId": "mini"
+      }
+    },
+    {
+      "agentId": "bbot",
+      "match": {
+        "channel": "telegram",
+        "accountId": "bbot"
+      }
+    }
+  ],
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-account-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "pairing",
+      "botToken": "8503782506:AAFuD8NPLRzqYzPpxCzm-VSoCV-VkSXV_wk",
+      "groups": {
+        "*": {
+          "requireMention": true
+        }
+      },
+      "groupPolicy": "allowlist",
+      "streaming": {
+        "mode": "partial"
+      },
+      "accounts": {
+        "glg": {
+          "name": "힣(glg)",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": "8180948371:AAGruk1pZJBD_bMZREDz8ikqmI9JcHplVVM",
+          "groupPolicy": "allowlist",
+          "streaming": {
+            "mode": "partial"
+          },
+          "allowFrom": [
+            "123861330"
+          ]
+        },
+        "default": {
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": "8503782506:AAFuD8NPLRzqYzPpxCzm-VSoCV-VkSXV_wk",
+          "groupPolicy": "allowlist",
+          "streaming": {
+            "mode": "partial"
+          },
+          "allowFrom": [
+            "123861330"
+          ]
+        },
+        "gemini": {
+          "name": "Gemini",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": "8133025768:AAHt6JhX3A8njFjDNq28nU0MhmdZAQbaIdQ",
+          "groupPolicy": "allowlist",
+          "streaming": {
+            "mode": "partial"
+          },
+          "allowFrom": [
+            "123861330"
+          ]
+        },
+        "gpt": {
+          "name": "GPT",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": "8753156074:AAF9K9u_WcfaJm3siegLGa61vNMH0t2csJU",
+          "groupPolicy": "allowlist",
+          "streaming": {
+            "mode": "partial"
+          },
+          "allowFrom": [
+            "123861330"
+          ]
+        },
+        "mini": {
+          "name": "Mini",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": "8713639023:AAHajskdWoTZA0Zql2-FAi99UQqwZa8JVW4",
+          "groupPolicy": "allowlist",
+          "streaming": {
+            "mode": "partial"
+          },
+          "allowFrom": [
+            "123861330"
+          ]
+        },
+        "bbot": {
+          "name": "B",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": "8751284049:AAHwfatWv3CoEtTD-5zf-qV070kuPdJN4C8",
+          "groupPolicy": "allowlist",
+          "streaming": {
+            "mode": "partial"
+          },
+          "allowFrom": [
+            "123861330"
+          ]
+        }
+      },
+      "allowFrom": [
+        "123861330"
+      ]
+    },
+    "discord": {
+      "enabled": false,
+      "groupPolicy": "allowlist",
+      "streaming": {
+        "mode": "off"
+      }
+    },
+    "mattermost": {
+      "enabled": false,
+      "botToken": "7hoz8nmdnfgbtxbpmwhwypds3y",
+      "baseUrl": "https://chat.junghanacs.com",
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist"
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:18789",
+        "http://127.0.0.1:18789",
+        "https://openclaw.junghanacs.com"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "<REDACTED>"
+    },
+    "trustedProxies": [
+      "172.18.0.0/16"
+    ],
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "remote": {
+      "url": "ws://localhost:18789"
+    }
+  },
+  "skills": {
+    "entries": {
+      "apple-notes": {
+        "enabled": false
+      },
+      "apple-reminders": {
+        "enabled": false
+      },
+      "bear-notes": {
+        "enabled": false
+      },
+      "model-usage": {
+        "enabled": false
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true,
+        "config": {}
+      },
+      "mattermost": {
+        "enabled": false
+      },
+      "discord": {
+        "enabled": false
+      },
+      "perplexity": {
+        "enabled": true,
+        "config": {
+          "webSearch": {
+            "baseUrl": "https://openrouter.ai/api/v1",
+            "model": "perplexity/sonar"
+          }
+        }
+      },
+      "google": {
+        "enabled": true,
+        "config": {}
+      },
+      "anthropic": {
+        "enabled": true
+      },
+      "openai": {
+        "enabled": true
+      },
+      "github-copilot": {
+        "enabled": true
+      },
+      "acpx": {
+        "enabled": true,
+        "config": {
+          "permissionMode": "approve-reads",
+          "nonInteractivePermissions": "fail",
+          "timeoutSeconds": 120
+        }
+      },
+      "active-memory": {
+        "enabled": true,
+        "config": {
+          "enabled": true,
+          "agents": [
+            "glg",
+            "gemini",
+            "gpt",
+            "mini",
+            "bbot"
+          ],
+          "allowedChatTypes": [
+            "direct"
+          ],
+          "modelFallbackPolicy": "default-remote",
+          "queryMode": "recent",
+          "promptStyle": "balanced",
+          "timeoutMs": 15000,
+          "maxSummaryChars": 220,
+          "persistTranscripts": false,
+          "logging": true,
+          "model": "github-copilot/gpt-5.4-mini"
+        }
+      }
+    }
+  },
+  "acp": {
+    "enabled": true,
+    "backend": "acpx",
+    "allowedAgents": [
+      "claude"
+    ],
+    "maxConcurrentSessions": 3
+  }
+}

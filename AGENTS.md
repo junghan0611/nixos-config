@@ -181,16 +181,18 @@ Important invariant:
 - main uses `workspace/`, not `workspace-main/`
 - `workspace-bbot/` is a split-out B(비) workspace for ACP experiments
 
-Current model routing (2026-04-12):
+Current model routing (2026-04-13):
 - Anthropic flat-rate access blocked for third-party apps (OpenClaw, pi)
-- All Claude models routed through GitHub Copilot Pro+ tokens
-- glg (힣봇): `github-copilot/claude-sonnet-4.6` — family life-support, fast response
-- main: `github-copilot/claude-opus-4.6` at rest, but the operational fast-chat path for the default bot is **ACP Claude Sonnet 4.6** via `/acp spawn claude --bind here --cwd /home/node/.openclaw/workspace` + `/acp model claude-sonnet-4-6`
-- bbot (`@glg_b_bot`): `github-copilot/claude-opus-4.6` — B(비) workspace split, ACP/identity experiments
+- main/bbot: `anthropic/claude-opus-4.6` — **의도적 차단**. ACP 미사용시 실패 유도. Copilot quota 보호 목적
+- main: ACP 운영 모델은 **Claude Sonnet 4.6** (`/acp model claude-sonnet-4-6`)
+- bbot (`@glg_b_bot`): ACP 운영 모델은 **Claude Opus 4.6** (default) — B(비) workspace, ACP/identity 실험
+- glg (힣봇): `github-copilot/claude-sonnet-4.6` — 가족 라이프 에이전트, ACP 미사용
 - gpt: `openai-codex/gpt-5.4`
 - gemini: `github-copilot/gemini-3.1-pro-preview`
-- mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇. gpt-5.4-mini, gemini-3-flash도 사용 가능
-- ACP runtime: `acpx`, currently `allowedAgents=["claude"]`, `maxConcurrentSessions=3`
+- mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇
+- subagents: `github-copilot/gpt-5.4`
+- ACP runtime: `acpx`, Claude Max OAuth 인증 (`subscriptionType: max`), `maxConcurrentSessions=3`
+- Copilot quota 보호 정책: main/bbot은 ACP(Claude Max)로만 운영. Copilot은 glg/gemini/mini/subagents 전용
 
 ## OpenClaw change policy
 
