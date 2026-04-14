@@ -26,17 +26,46 @@
       "google-gemini-cli:junghanacs@gmail.com": {
         "provider": "google-gemini-cli",
         "mode": "oauth"
+      },
+      "glueclaw:default": {
+        "provider": "glueclaw",
+        "mode": "token"
       }
     }
   },
   "models": {
     "mode": "merge",
-    "providers": {}
+    "providers": {
+      "glueclaw": {
+        "baseUrl": "local://glueclaw",
+        "api": "anthropic-messages",
+        "models": [
+          {
+            "id": "glueclaw-opus",
+            "name": "GlueClaw Opus",
+            "contextWindow": 1000000,
+            "maxTokens": 32000
+          },
+          {
+            "id": "glueclaw-sonnet",
+            "name": "GlueClaw Sonnet",
+            "contextWindow": 1000000,
+            "maxTokens": 16000
+          },
+          {
+            "id": "glueclaw-haiku",
+            "name": "GlueClaw Haiku",
+            "contextWindow": 200000,
+            "maxTokens": 8000
+          }
+        ]
+      }
+    }
   },
   "agents": {
     "defaults": {
       "model": {
-        "primary": "anthropic/claude-sonnet-4-6"
+        "primary": "glueclaw/glueclaw-sonnet"
       },
       "models": {
         "anthropic/claude-sonnet-4-6": {},
@@ -70,6 +99,13 @@
         },
         "github-copilot/gemini-3-flash": {
           "alias": "copilot-gemini3flash"
+        },
+        "glueclaw/glueclaw-sonnet": {},
+        "glueclaw/glueclaw-opus": {
+          "alias": "glueopus"
+        },
+        "glueclaw/glueclaw-haiku": {
+          "alias": "gluehaiku"
         }
       },
       "workspace": "/home/node/.openclaw/workspace",
@@ -131,7 +167,7 @@
     "list": [
       {
         "id": "main",
-        "model": "anthropic/claude-opus-4.6"
+        "model": "glueclaw/glueclaw-sonnet"
       },
       {
         "id": "glg",
@@ -166,7 +202,7 @@
         "name": "bbot",
         "workspace": "/home/node/.openclaw/workspace-bbot",
         "agentDir": "/home/node/.openclaw/agents/bbot/agent",
-        "model": "anthropic/claude-opus-4.6"
+        "model": "glueclaw/glueclaw-opus"
       }
     ]
   },
@@ -273,7 +309,7 @@
     "telegram": {
       "enabled": true,
       "dmPolicy": "pairing",
-      "botToken": "8503782506:AAFuD8NPLRzqYzPpxCzm-VSoCV-VkSXV_wk",
+      "botToken": "<TELEGRAM_BOT_TOKEN>",
       "groups": {
         "*": {
           "requireMention": true
@@ -285,10 +321,10 @@
       },
       "accounts": {
         "glg": {
-          "name": "힣(glg)",
+          "name": "\ud7a3(glg)",
           "enabled": true,
           "dmPolicy": "pairing",
-          "botToken": "8180948371:AAGruk1pZJBD_bMZREDz8ikqmI9JcHplVVM",
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
           "groupPolicy": "allowlist",
           "streaming": {
             "mode": "partial"
@@ -300,7 +336,7 @@
         "default": {
           "enabled": true,
           "dmPolicy": "pairing",
-          "botToken": "8503782506:AAFuD8NPLRzqYzPpxCzm-VSoCV-VkSXV_wk",
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
           "groupPolicy": "allowlist",
           "streaming": {
             "mode": "partial"
@@ -313,7 +349,7 @@
           "name": "Gemini",
           "enabled": true,
           "dmPolicy": "pairing",
-          "botToken": "8133025768:AAHt6JhX3A8njFjDNq28nU0MhmdZAQbaIdQ",
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
           "groupPolicy": "allowlist",
           "streaming": {
             "mode": "partial"
@@ -326,7 +362,7 @@
           "name": "GPT",
           "enabled": true,
           "dmPolicy": "pairing",
-          "botToken": "8753156074:AAF9K9u_WcfaJm3siegLGa61vNMH0t2csJU",
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
           "groupPolicy": "allowlist",
           "streaming": {
             "mode": "partial"
@@ -339,7 +375,7 @@
           "name": "Mini",
           "enabled": true,
           "dmPolicy": "pairing",
-          "botToken": "8713639023:AAHajskdWoTZA0Zql2-FAi99UQqwZa8JVW4",
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
           "groupPolicy": "allowlist",
           "streaming": {
             "mode": "partial"
@@ -352,7 +388,7 @@
           "name": "B",
           "enabled": true,
           "dmPolicy": "pairing",
-          "botToken": "8751284049:AAHwfatWv3CoEtTD-5zf-qV070kuPdJN4C8",
+          "botToken": "<TELEGRAM_BOT_TOKEN>",
           "groupPolicy": "allowlist",
           "streaming": {
             "mode": "partial"
@@ -375,7 +411,7 @@
     },
     "mattermost": {
       "enabled": false,
-      "botToken": "7hoz8nmdnfgbtxbpmwhwypds3y",
+      "botToken": "<MATTERMOST_BOT_TOKEN>",
       "baseUrl": "https://chat.junghanacs.com",
       "dmPolicy": "pairing",
       "groupPolicy": "allowlist"
@@ -394,7 +430,7 @@
     },
     "auth": {
       "mode": "token",
-      "token": "<REDACTED>"
+      "token": "<OPENCLAW_GATEWAY_TOKEN>"
     },
     "trustedProxies": [
       "172.18.0.0/16"
@@ -458,7 +494,7 @@
         "enabled": true
       },
       "acpx": {
-        "enabled": true,
+        "enabled": false,
         "config": {
           "permissionMode": "approve-reads",
           "nonInteractivePermissions": "fail",
@@ -488,11 +524,27 @@
           "logging": true,
           "model": "github-copilot/gpt-5.4-mini"
         }
+      },
+      "glueclaw": {
+        "enabled": true
+      }
+    },
+    "load": {
+      "paths": [
+        "/glueclaw"
+      ]
+    },
+    "installs": {
+      "glueclaw": {
+        "source": "path",
+        "sourcePath": "/glueclaw",
+        "installPath": "/glueclaw",
+        "version": "1.3.0"
       }
     }
   },
   "acp": {
-    "enabled": true,
+    "enabled": false,
     "backend": "acpx",
     "allowedAgents": [
       "claude"

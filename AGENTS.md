@@ -179,20 +179,20 @@ Known workspace mapping:
 
 Important invariant:
 - main uses `workspace/`, not `workspace-main/`
-- `workspace-bbot/` is a split-out B(비) workspace for ACP experiments
+- `workspace-bbot/` is a split-out B(비) workspace
 
-Current model routing (2026-04-13):
+Current model routing (2026-04-14):
 - Anthropic flat-rate access blocked for third-party apps (OpenClaw, pi)
-- main/bbot: `anthropic/claude-opus-4.6` — **의도적 차단**. ACP 미사용시 실패 유도. Copilot quota 보호 목적
-- main: ACP 운영 모델은 **Claude Sonnet 4.6** (`/acp model claude-sonnet-4-6`)
-- bbot (`@glg_b_bot`): ACP 운영 모델은 **Claude Opus 4.6** (default) — B(비) workspace, ACP/identity 실험
-- glg (힣봇): `github-copilot/claude-sonnet-4.6` — 가족 라이프 에이전트, ACP 미사용
+- **main**: `glueclaw/glueclaw-sonnet` — Claude Sonnet 4.6 direct runtime via Claude CLI OAuth(Max)
+- **bbot** (`@glg_b_bot`): `glueclaw/glueclaw-opus` — Claude Opus 4.6 direct runtime, B(비) workspace 유지
+- glg (힣봇): `github-copilot/claude-sonnet-4.6` — 가족 라이프 에이전트
 - gpt: `openai-codex/gpt-5.4`
 - gemini: `github-copilot/gemini-3.1-pro-preview`
 - mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇
 - subagents: `github-copilot/gpt-5.4`
-- ACP runtime: `acpx`, Claude Max OAuth 인증 (`subscriptionType: max`), `maxConcurrentSessions=3`
-- Copilot quota 보호 정책: main/bbot은 ACP(Claude Max)로만 운영. Copilot은 glg/gemini/mini/subagents 전용
+- GlueClaw plugin SSOT: `~/repos/gh/glueclaw` (fork) → `/glueclaw` mount
+- ACPX는 비활성화했고, stale Telegram ACP thread binding도 제거했다
+- Copilot quota 보호 정책은 glg/gemini/mini/subagents 쪽에만 남고, main/bbot은 direct GlueClaw로 분리됨
 
 ## OpenClaw change policy
 
@@ -349,7 +349,7 @@ Operator entrypoint: `run.sh k)` (Oracle 전용)
 | glg | `workspace-glg/` | 전체 | 가족 라이프 에이전트 |
 | gpt | `workspace-gpt/` | 전체 | GPT 범용 |
 | gemini | `workspace-gemini/` | 전체 | Gemini 범용 |
-| bbot | `workspace-bbot/` | 전체 + Claude-side overlay | B(비) ACP 실험 분리 |
+| bbot | `workspace-bbot/` | 전체 | B(비) direct Opus 4.6 |
 | mini | `workspace-mini/` | denotecli만 | 포맷팅/교정 전담 — 최소 도구 |
 
 Note:
