@@ -47,6 +47,19 @@ A comprehensive NixOS configuration for building **identical computing environme
 - Python, Nix, C/C++, LaTeX, Shell, Elisp
 - Tools: gh, lazygit, aider-chat, direnv
 
+### Local AI (ThinkPad)
+
+**Ollama with Vulkan** on AMD Radeon 780M (integrated GPU):
+
+| Service | Model | Usage |
+|---------|-------|-------|
+| Ollama (Vulkan) | `qwen3-embedding:4b` | Local embedding for semantic memory |
+
+- NixOS service (`services.ollama`), auto-start on boot
+- Vulkan acceleration via Mesa RADV driver
+- Endpoint: `http://127.0.0.1:11434`
+- 2560-dim embeddings, 100% GPU offload (~3.7GB VRAM)
+
 ### Docker Services (Oracle VM)
 
 Self-hosted services running on Oracle Cloud ARM VM:
@@ -102,7 +115,7 @@ Custom fortune data with Kevin Kelly's life advice:
 
 | Profile | Device | CPU | Usage |
 |---------|--------|-----|-------|
-| `thinkpad` | ThinkPad P16s Gen 2 | AMD Ryzen | Work laptop |
+| `thinkpad` | ThinkPad P16s Gen 2 | AMD Ryzen 7 PRO 7840U | Work laptop (Ollama Vulkan) |
 | `laptop` | Samsung NT930SBE | Intel i7 | Personal laptop |
 | `nuc` | Intel NUC | Intel i7 4-Core | Home server |
 | `oracle` | Oracle Cloud VM | ARM (Ampere) | Remote server (Free Tier) + Docker services |
