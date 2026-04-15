@@ -261,6 +261,12 @@ Important corrections learned from real work:
 - If ACP says `Authentication required`, check that `~/.claude` is actually mounted inside the container.
 - If Claude skills suddenly disappear, check broken absolute symlinks inside `~/.claude` and ensure `/home/junghan/repos/gh` is mounted for compatibility.
 - If ACP says `max concurrent sessions reached`, either close stale sessions or raise `acp.maxConcurrentSessions` in `openclaw.json`.
+- **Do not trust `/acp list` inside an already-bound Telegram thread.** Once bound, that text may be forwarded into the Claude ACP session as a normal user message.
+- For authoritative inspection, use host-side checks:
+  - `cd ~/openclaw && docker exec openclaw-gateway sh -lc 'node openclaw.mjs sessions --all-agents'`
+  - `cd ~/openclaw && docker exec openclaw-gateway sh -lc 'sed -n "1,200p" /home/node/.openclaw/telegram/thread-bindings-default.json'`
+  - `cd ~/openclaw && docker exec openclaw-gateway sh -lc 'sed -n "1,200p" /home/node/.openclaw/telegram/thread-bindings-bbot.json'`
+  - `cd ~/openclaw && docker exec openclaw-gateway sh -lc 'for f in /home/node/.openclaw/workspace/state/sessions/agent%3Aclaude%3Aacp%3A*.json; do echo "--- $f"; sed -n "1,80p" "$f"; done'`
 
 ## Approval / exec policy
 
