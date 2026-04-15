@@ -180,6 +180,16 @@
   # Fingerprint reader (optional - enable if hardware is present)
   # services.fprintd.enable = true;
 
+  # Ollama with Vulkan for AMD 780M (qwen3-embedding:4b serving)
+  services.ollama = {
+    enable = true;
+    acceleration = "vulkan";
+    host = "127.0.0.1";
+    environmentVariables = {
+      OLLAMA_KEEP_ALIVE = "10m";
+    };
+  };
+
   # Disable ZRAM swap (using physical swap partition instead)
   zramSwap.enable = false;
 
