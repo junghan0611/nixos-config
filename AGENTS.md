@@ -216,18 +216,18 @@ Important invariant:
 - main uses `workspace/`, not `workspace-main/`
 - `workspace-bbot/` is a split-out B(비) workspace
 
-Current model routing (2026-04-14):
+Current model routing (2026-04-15):
 - Anthropic flat-rate access blocked for third-party apps (OpenClaw, pi)
-- **main**: `glueclaw/glueclaw-sonnet` — Claude Sonnet 4.6 direct runtime via Claude CLI OAuth(Max)
-- **bbot** (`@glg_b_bot`): `glueclaw/glueclaw-opus` — Claude Opus 4.6 direct runtime, B(비) workspace 유지
+- **default/main/bbot/glg fallback**: `github-copilot/claude-sonnet-4.6`
+- **main**: at-rest/fallback is Copilot Sonnet 4.6, but preferred live mode is **ACPX + `claude-opus-4-6`** bound to `workspace/`
+- **bbot** (`@glg_b_bot`): at-rest/fallback is Copilot Sonnet 4.6, but preferred live mode is **ACPX + `claude-opus-4-6`** bound to `workspace-bbot/`
 - glg (힣봇): `github-copilot/claude-sonnet-4.6` — 가족 라이프 에이전트
 - gpt: `openai-codex/gpt-5.4`
 - gemini: `github-copilot/gemini-3.1-pro-preview`
 - mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇
 - subagents: `github-copilot/gpt-5.4`
-- GlueClaw plugin SSOT: `~/repos/gh/glueclaw` (fork) → `/glueclaw` mount
-- ACPX는 비활성화했고, stale Telegram ACP thread binding도 제거했다
-- Copilot quota 보호 정책은 glg/gemini/mini/subagents 쪽에만 남고, main/bbot은 direct GlueClaw로 분리됨
+- ACPX is enabled again; bind only the conversations that need Opus
+- This keeps normal fallback on Sonnet to reduce cost/account risk while preserving Opus for deep-work threads
 
 ## OpenClaw change policy
 
@@ -384,7 +384,7 @@ Operator entrypoint: `run.sh k)` (Oracle 전용)
 | glg | `workspace-glg/` | 전체 | 가족 라이프 에이전트 |
 | gpt | `workspace-gpt/` | 전체 | GPT 범용 |
 | gemini | `workspace-gemini/` | 전체 | Gemini 범용 |
-| bbot | `workspace-bbot/` | 전체 | B(비) direct Opus 4.6 |
+| bbot | `workspace-bbot/` | 전체 | B(비) ACP Opus workspace (fallback model is Sonnet) |
 | mini | `workspace-mini/` | denotecli만 | 포맷팅/교정 전담 — 최소 도구 |
 
 Note:
