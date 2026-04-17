@@ -179,9 +179,7 @@
       sarasa-gothic
       noto-fonts-cjk-sans    # Noto Sans CJK
       noto-fonts-cjk-serif   # Noto Serif CJK (인쇄/PDF용)
-      noto-fonts-color-emoji       # Emoji support (color)
-      noto-fonts-monochrome-emoji  # Emoji support (monochrome)
-      noto-fonts-emoji-blob-bin    # Emoji with extended Blob support
+      noto-fonts-monochrome-emoji  # Emoji support (monochrome) — system-wide mono policy
       d2coding               # D2Coding (Korean coding font)
 
       # English coding fonts
@@ -194,7 +192,7 @@
         serif = [ "Liberation Serif" "Noto Serif CJK KR" ];
         sansSerif = [ "Pretendard" "Liberation Sans" "Noto Sans CJK KR" ];
         monospace = [ "D2Coding" "JetBrainsMono Nerd Font" "Fira Code" "Liberation Mono" ];
-        emoji = [ "Noto Color Emoji" ];
+        emoji = [ "Noto Emoji" "Symbola" ];
       };
       hinting = {
         enable = true;
