@@ -40,7 +40,7 @@ Valid profiles:
 | `oracle` | remote cloud VM | OpenClaw runtime lives here; safety-critical |
 | `nuc` | home server | real machine, not disposable |
 | `laptop` | personal GUI machine | home-manager GUI/user environment matters |
-| `thinkpad` | work GUI machine + local AI | Ollama Vulkan (AMD 780M), home-manager GUI/user environment |
+| `thinkpad` | work GUI machine | home-manager GUI/user environment matters |
 
 GUI-oriented user configuration is mainly relevant on:
 - `laptop`
@@ -53,40 +53,23 @@ and home-manager behavior.
 `oracle` is different: it is primarily a minimal cloud runtime focused on
 keeping OpenClaw and related services alive.
 
-`thinkpad` also runs **Ollama with Vulkan** for local embedding inference.
+`thinkpad` has working **Vulkan** support on AMD Radeon 780M, but local Ollama
+is **not enabled as a persistent default service**.
 
-## Ollama (ThinkPad)
+## Local AI policy (ThinkPad)
 
-ThinkPad runs `ollama-vulkan` as a NixOS service for local embedding.
+Current preference on ThinkPad:
+- use **OpenRouter** by default
+- do not keep Ollama serving all the time unless explicitly needed
+- if local embedding is needed temporarily, enable it intentionally and disable
+  it again after use
 
-| Item | Value |
-|---|---|
-| Package | `ollama-vulkan` (v0.12.11+) |
-| GPU | AMD Radeon 780M (RADV PHOENIX), Vulkan 1.4 |
-| Model | `qwen3-embedding:4b` (Q4, 2.5GB, 2560-dim) |
-| Endpoint | `http://127.0.0.1:11434` |
-| GPU offload | 100% (~3.7GB loaded) |
-| Auto-start | yes (NixOS service, enabled) |
-
-### Usage
-
-```bash
-# Check status
-systemctl status ollama
-ollama ps
-
-# Embedding API
-curl http://127.0.0.1:11434/api/embed -d '{"model":"qwen3-embedding:4b","input":"test"}'
-
-# Pull/update model
-ollama pull qwen3-embedding:4b
-```
-
-### Notes
-- Vulkan driver provided by Mesa RADV (already in `hardware.graphics`)
-- `OLLAMA_KEEP_ALIVE=10m` — model unloads after 10min idle
-- Model stored in `/var/lib/ollama/models/` (NixOS default)
-- gpu2i has same model but Q5_K_M quantization (different blob hash), not interchangeable
+Notes:
+- Vulkan driver is available via Mesa RADV in `hardware.graphics`
+- previous validation confirmed `ollama-vulkan` + `qwen3-embedding:4b` works on
+  AMD Radeon 780M
+- gpu2i may have similarly named embedding models, but quantization/blob hashes
+  can differ from Ollama registry models
 
 ## Directory model
 
