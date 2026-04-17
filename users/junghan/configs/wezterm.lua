@@ -13,9 +13,12 @@ config.use_fancy_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = false
 
 -- Font
+-- assume_emoji_presentation=true tells WezTerm to resolve emoji glyphs here
+-- so the built-in "Noto Color Emoji" fallback is not consulted.
 config.font = wezterm.font_with_fallback({
     "GLG Nerd Font Mono",
-    "Noto Emoji",          -- monochrome emoji (no color)
+    { family = "Noto Emoji", assume_emoji_presentation = true },
+    "Symbola",
 })
 config.font_size = 15.1
 

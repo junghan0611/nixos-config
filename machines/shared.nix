@@ -165,12 +165,17 @@
   # Font configuration with Korean support
   fonts = {
     fontDir.enable = true;
-    enableDefaultPackages = true;
+    # Disable defaults to avoid noto-fonts-color-emoji being pulled in.
+    # Base fonts below are re-added explicitly.
+    enableDefaultPackages = false;
 
     packages = with pkgs; [
-      # Basic fonts
+      # Basic fonts (explicit — replaces enableDefaultPackages set minus color emoji)
       liberation_ttf
       dejavu_fonts
+      freefont_ttf
+      gyre-fonts           # TrueType substitutes for standard PostScript fonts
+      unifont              # Last-resort fallback for missing glyphs
       noto-fonts           # Noto Sans/Serif + Symbols + Symbols2 + Math
       symbola              # Unicode symbol coverage (math, emoji fallback)
 
