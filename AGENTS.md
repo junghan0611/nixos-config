@@ -252,6 +252,35 @@ Important corrections learned from real work:
   - `cd ~/openclaw && docker exec openclaw-gateway sh -lc 'sed -n "1,200p" /home/node/.openclaw/telegram/thread-bindings-bbot.json'`
   - `cd ~/openclaw && docker exec openclaw-gateway sh -lc 'for f in /home/node/.openclaw/workspace/state/sessions/agent%3Aclaude%3Aacp%3A*.json; do echo "--- $f"; sed -n "1,80p" "$f"; done'`
 
+### ACPX model override — 당분간 반복 입력 필요 (삽질 이슈)
+
+OpenClaw 2026.4.15 + acpx 0.5.3 기준으로 ACPX 세션 model을 config 파일로 **영구화할 수 없다**. 스키마 직접 확인 결과:
+
+- `AcpBindingSchema.acp` strict 필드: `mode, label, cwd, backend` — **model 없음**
+- `AgentRuntimeAcpSchema` strict 필드: `agent, backend, mode, cwd` — **model 없음**
+
+즉 `openclaw.json`의 `bindings[].acp.model`이나 `agents.list[].runtime.acp.model`은 config validation에서 거부됨.
+
+**유일한 설정 경로 — 대화 안 슬래시 커맨드:**
+```
+/acp spawn claude --bind here
+/acp model anthropic/claude-opus-4-7
+```
+
+호스트 바이패스 경로 없음:
+- `openclaw acp`는 외부 ACP 클라이언트 bridge일 뿐 (spawn 아님)
+- `message send`는 송신 전용 (사용자 입력 시뮬레이션 불가)
+- thread-bindings 파일 수동 편집으로 spawn 대체 불가
+
+**TTL 리사이클 부담**: `acp.runtime.ttlMinutes: 120` — 2시간 idle 시 세션 리사이클, model override 증발 → 재입력.
+
+**대응 전략 (현재):**
+- main, bbot 각각 활성 사용 중인 스레드에서 **하루 수 회 수동 재세팅** 감수
+- 혹은 ACPX 제거하고 fallback 모델(gpt-5.4)만 사용 — 단순하지만 opus 4.7 포기
+- 장기: OpenClaw 2026.4.19 정식 릴리스의 acpx 버전 bump 대기 (기본값이 opus 4.7로 바뀌면 override 불필요)
+
+**감지 방법**: 텔레그램 스레드에서 응답이 이상해지면 `/acp status`로 현재 model 확인. sonnet-4.6으로 돌아가 있으면 리사이클된 것.
+
 ## Approval / exec policy
 
 If OpenClaw introduces approval prompts that harm normal operation, disabling
