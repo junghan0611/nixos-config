@@ -199,18 +199,19 @@ Important invariant:
 - main uses `workspace/`, not `workspace-main/`
 - `workspace-bbot/` is a split-out B(비) workspace
 
-Current model routing (2026-04-15):
+Current model routing (2026-04-19):
 - Anthropic flat-rate access blocked for third-party apps (OpenClaw, pi)
-- **default/main/bbot/glg fallback**: `github-copilot/claude-sonnet-4.6`
-- **main**: at-rest/fallback is Copilot Sonnet 4.6, but preferred live mode is **ACPX + `claude-opus-4-6`** bound to `workspace/`
-- **bbot** (`@glg_b_bot`): at-rest/fallback is Copilot Sonnet 4.6, but preferred live mode is **ACPX + `claude-opus-4-6`** bound to `workspace-bbot/`
-- glg (힣봇): `github-copilot/claude-sonnet-4.6` — 가족 라이프 에이전트
+- GitHub Copilot 계정은 전면 제거 — openai-codex(GPT Pro)로 일원화
+- **default/main/bbot/glg fallback**: `openai-codex/gpt-5.4`
+- **main**: at-rest/fallback is `openai-codex/gpt-5.4`, preferred live mode is **ACPX + `claude-opus-4-6`** bound to `workspace/`
+- **bbot** (`@glg_b_bot`): at-rest/fallback is `openai-codex/gpt-5.4`, preferred live mode is **ACPX + `claude-opus-4-6`** bound to `workspace-bbot/`
+- glg (힣봇): `openai-codex/gpt-5.4` — 가족 라이프 에이전트
 - gpt: `openai-codex/gpt-5.4`
-- gemini: `github-copilot/gemini-3.1-pro-preview`
-- mini (힣봇미니, @glg_mini_bot): `github-copilot/gpt-5-mini` — 문서 포맷팅/교정 전담, 프로바이더 비종속 경량 봇
-- subagents: `github-copilot/gpt-5.4`
-- ACPX is enabled again; bind only the conversations that need Opus
-- This keeps normal fallback on Sonnet to reduce cost/account risk while preserving Opus for deep-work threads
+- gemini: `github-copilot/gemini-3.1-pro-preview` — Copilot 유일한 예외, gemini-cli 크레딧 재연동 전까지 유지
+- mini (힣봇미니, @glg_mini_bot): `openai-codex/gpt-5.4-mini` — 문서 포맷팅/교정 전담
+- subagents: `openai-codex/gpt-5.4`
+- active-memory plugin: `openai-codex/gpt-5.4-mini`
+- ACPX bind 필요 시 `/acp spawn --bind here` — 모델 수동 지정 가능(`acpx claude set -s <sess> model claude-opus-4-7` 형태). 4.19 정식 릴리스에서 acpx 기본이 opus 4.7로 bump 예정
 
 ## OpenClaw change policy
 
