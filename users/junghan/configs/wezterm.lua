@@ -13,16 +13,34 @@ config.use_fancy_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = false
 
 -- Font
--- assume_emoji_presentation=true tells WezTerm to resolve emoji glyphs here
--- so the built-in "Noto Color Emoji" fallback is not consulted.
--- scale=0.9 keeps emoji/Symbola glyphs from overgrowing the cell and bleeding
--- into neighbor columns (mirrors Emacs face-font-rescale-alist intent).
+-- Fallback 순서: GLG(기본) → Noto 심볼 시리즈(좁은 범위부터) → Noto Emoji(최종).
+-- assume_emoji_presentation=true 가 이모지 코드포인트를 Noto Emoji 에서 끝내 주므로
+-- 번들된 Noto Color Emoji 까지 내려가지 않는다.
+-- scale=0.9 는 이모지 글리프가 셀을 넘어 인접 컬럼을 먹는 것을 막는 용도.
+-- Symbola 제거 — Noto Sans Symbols 1/2 + Math 가 커버리지 대체, 유지보수도 살아있음.
 config.font = wezterm.font_with_fallback({
     "GLG Nerd Font Mono",
+    "Noto Sans Symbols",
+    "Noto Sans Symbols 2",
+    "Noto Sans Math",
+    "Noto Music",
+    "Noto Znamenny Musical Notation",
     { family = "Noto Emoji", assume_emoji_presentation = true, scale = 0.9 },
-    { family = "Symbola", scale = 0.9 },
 })
 config.font_size = 15.1
+
+-- 유니코드 셀 폭 합의 —
+-- cell_widths: per-codepoint 명시 테이블. UAX #11 의 A/W/N 분류가 Emacs 와
+-- 맞지 않는 대역(☀☁☂ 같은 Neutral 포함)을 강제로 2셀로 고정한다.
+-- 같은 범위가 korean-input-config.el 의 char-width-table 에도 설정돼 있다.
+-- ref: https://github.com/wezterm/wezterm/issues/6289
+--
+-- unicode_version 은 기본값(9) 유지. v14 는 VS-16 등 presentation selector 를
+-- "존중" 해 폭을 추가로 승격시키는데, cell_widths 가 이미 명시했으면 오히려
+-- 경쟁(base=2 cell_widths + VS-16 승격)으로 드리프트 유발.
+-- 어차피 Noto Emoji (mono) 로 고정돼 있어 VS-16 의 컬러 이모지 요청 효과 불필요.
+config.unicode_version = 16
+config.cell_widths = require 'cell-widths'
 
 -- Prevent wide glyphs (emoji/CJK/box-drawing) from overflowing their cell
 -- and visually eating adjacent columns. Default "WhenFollowedBySpace" allows

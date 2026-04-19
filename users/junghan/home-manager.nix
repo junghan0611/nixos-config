@@ -221,6 +221,11 @@ in {
     ".config/wezterm/wezterm.lua".source = config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/wezterm.lua";
 
+    # wezterm cell_widths: per-codepoint 셀 폭 테이블. wezterm.lua 가 require 로 로드.
+    # doomemacs-config 의 korean-input-config.el char-width-table 과 동기화 필요.
+    ".config/wezterm/cell-widths.lua".source = config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/cell-widths.lua";
+
     # i3-fcitx5-group: 포커스 창에 따라 fcitx5 그룹 자동 전환
     ".local/bin/i3-fcitx5-group" = {
       source = ./configs/i3-fcitx5-group.sh;
