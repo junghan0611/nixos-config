@@ -15,12 +15,19 @@ config.hide_tab_bar_if_only_one_tab = false
 -- Font
 -- assume_emoji_presentation=true tells WezTerm to resolve emoji glyphs here
 -- so the built-in "Noto Color Emoji" fallback is not consulted.
+-- scale=0.9 keeps emoji/Symbola glyphs from overgrowing the cell and bleeding
+-- into neighbor columns (mirrors Emacs face-font-rescale-alist intent).
 config.font = wezterm.font_with_fallback({
     "GLG Nerd Font Mono",
-    { family = "Noto Emoji", assume_emoji_presentation = true },
-    "Symbola",
+    { family = "Noto Emoji", assume_emoji_presentation = true, scale = 0.9 },
+    { family = "Symbola", scale = 0.9 },
 })
 config.font_size = 15.1
+
+-- Prevent wide glyphs (emoji/CJK/box-drawing) from overflowing their cell
+-- and visually eating adjacent columns. Default "WhenFollowedBySpace" allows
+-- overflow when the next cell is blank, which is exactly the "잡아먹는" case.
+config.allow_square_glyphs_to_overflow_width = "Never"
 
 -- Window size
 config.initial_cols = 120
