@@ -25,9 +25,9 @@ in {
   # Pass currentSystemName to submodules (emacs.nix 등에서 headless 분기에 사용)
   _module.args.currentSystemName = currentSystemName;
 
-  # Import modular configuration
+  # Import modular configuration (currentSystemName 주입 — oracle headless 분기)
   imports = [
-    ./modules
+    (import ./modules { inherit currentSystemName; })
   ];
 
   # Note: nixpkgs.config is not needed here because we use home-manager.useGlobalPkgs = true
@@ -139,32 +139,33 @@ in {
     yt-dlp       # YouTube downloader (ElleNajit)
     ffmpeg       # Video processing (ElleNajit)
   ] ++ (lib.optionals isLinux [
-    firefox
-    # Linux-specific packages
+    # Linux-common CLI (headless 포함)
     xclip
     wl-clipboard
-
-    telegram-bot-api  # Telegram Bot API server (OpenClaw 등)
-    tdlib             # TDLib (telega.el 의존성)
-
-    # System utilities (ElleNajit)
-    powertop        # Power management
-    usbutils        # USB tools
-    minicom         # Serial port terminal
-    gdmap           # Disk usage visualizer
     nmap            # Network scanner
     libpcap         # nmap dependency (packet capture)
     iproute2        # ip command
     nettools        # ifconfig, arp, etc.
     iftop           # Network monitoring
+  ]) ++ (lib.optionals (isLinux && !isOracle) [
+    # Desktop GUI / 주변장치 / 무거운 런타임 — Oracle headless 제외
+    firefox
+    microsoft-edge
+    claude-desktop  # Claude Desktop with MCP support
+    # telegram-desktop  # Telegram 메신저 (한글 입력 불가)
+
+    telegram-bot-api  # Telegram Bot API server (OpenClaw는 Docker 안에서 실행)
+    tdlib             # TDLib (telega.el 의존성, GUI Emacs에서만 필요)
+
+    # System utilities (ElleNajit) — 데스크톱/주변장치
+    powertop        # Power management
+    usbutils        # USB tools
+    minicom         # Serial port terminal
+    gdmap           # Disk usage visualizer (GUI)
 
     # Security (ElleNajit)
     keybase         # Encrypted communication
     yubikey-manager # YubiKey support
-  ]) ++ (lib.optionals (isLinux && !isOracle) [
-    microsoft-edge
-    claude-desktop  # Claude Desktop with MCP support
-    # telegram-desktop  # Telegram 메신저 (한글 입력 불가)
 
     # Terminal emulators (한글 입력 지원)
     wezterm        # Rust-based, excellent Korean input support
@@ -304,16 +305,18 @@ in {
     '';
   };
 
-  # X resources configuration
-  xresources.extraConfig = builtins.readFile ./configs/Xresources;
+  # X resources configuration (Oracle headless 제외)
+  xresources = lib.mkIf (!isOracle) {
+    extraConfig = builtins.readFile ./configs/Xresources;
+  };
 
   #---------------------------------------------------------------------
   # X11 and Desktop configuration
   # (Shell configuration moved to modules/shell.nix)
   #---------------------------------------------------------------------
 
-  # Cursor theme (96 DPI에 적합한 크기)
-  home.pointerCursor = {
+  # Cursor theme (96 DPI에 적합한 크기) — Oracle headless 제외
+  home.pointerCursor = lib.mkIf (!isOracle) {
     name = "Vanilla-DMZ";
     package = pkgs.vanilla-dmz;
     size = 32;

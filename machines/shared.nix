@@ -1,8 +1,11 @@
 { config, pkgs, lib, currentSystem, currentSystemName, currentSystemUser, ... }:
 
+let
+  isOracle = currentSystemName == "oracle";
+in
 {
-  imports = [
-    # Default window manager
+  imports = lib.optionals (!isOracle) [
+    # Default window manager (Oracle headless 제외)
     ../modules/wm/i3.nix
 
     # Alternative desktop environments (specialisations)
@@ -232,7 +235,7 @@
     tmux
     zellij
     neovim
-    tree-sitter
+    tree-sitter  # Emacs tree-sitter-grammars 빌드/런타임 의존
     fzf
     delta
     git-lfs
@@ -265,7 +268,6 @@
     ctags # code tag stuff
     git-absorb # automatic git commit --fixup
     git-crypt # encrypt git stuff
-    android-tools # adb and friends
     entr # continuously run stuff
     emacs-lsp-booster # lsp json translation proxy
     jujutsu # better git wrapper
@@ -287,9 +289,7 @@
     lnav
     lazygit
     axel
-    mermaid-cli
     cloc
-    jira-cli-go
 
     # Networking tools
     dnsutils
@@ -299,10 +299,6 @@
     syncthing
     stc-cli
     unixtools.netstat
-    awscli2
-
-    remmina # GUI RDP/VNC/SSH client
-    freerdp # Command-line RDP client
 
     # System monitoring
     btop
@@ -314,10 +310,6 @@
     libvterm
     libtool
     cmake
-    quarto
-
-    # Cloud and DevOps
-    infisical
 
     # Locale and encoding tools
     glibc
@@ -332,6 +324,16 @@
     (writeShellScriptBin "xrandr-auto" ''
       xrandr --output Virtual-1 --auto
     '')
+  ] ++ lib.optionals (!isOracle) [
+    # Oracle(헤드리스, 저장공간 민감)에서는 제외
+    quarto         # ~2.6 GB (문서 빌드)
+    android-tools  # adb/fastboot (Oracle 불필요)
+    mermaid-cli    # nodejs_22 transitive (다이어그램 렌더)
+    jira-cli-go    # CLI (Oracle 호스트에서 쓰지 않음)
+    remmina        # GUI RDP/VNC/SSH client
+    freerdp        # Command-line RDP client
+    infisical      # 시크릿 관리 CLI (필요 시만)
+    awscli2        # AWS CLI (Oracle 호스트에서 쓰지 않음)
   ];
 
   # Default desktop environment: i3

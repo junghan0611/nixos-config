@@ -20,6 +20,14 @@ let
 in systemFunc rec {
   inherit system;
 
+  # specialArgs: imports 단계에서 사용 가능 (_module.args 는 config 단계 이후)
+  specialArgs = {
+    currentSystem = system;
+    currentSystemName = name;
+    currentSystemUser = user;
+    inherit inputs;
+  };
+
   modules = [
     # Apply our overlays. Overlays are keyed by system type so we have
     # to go through and apply our system type. We do this first so

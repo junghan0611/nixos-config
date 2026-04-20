@@ -1,21 +1,14 @@
 # Home Manager modules
 # This file aggregates all user-specific home-manager modules
+{ currentSystemName ? "nuc" }:
+{ lib, ... }:
+let
+  isOracle = currentSystemName == "oracle";
+in
 {
   imports = [
     # Phase 2: Shell configuration (git, bash, tmux, etc)
     ./shell.nix
-
-    # Phase 3: i3 window manager configuration
-    ./i3.nix
-
-    # Autorandr for automatic display management
-    ./autorandr.nix
-
-    # Phase 4: Dunst notification daemon
-    ./dunst.nix
-
-    # Picom compositor (Regolith config)
-    ./picom.nix
 
     # Phase 5: Development environments
     ./development
@@ -23,13 +16,17 @@
     # Phase 6: Emacs configuration
     ./emacs.nix
 
-    # GTK dark theme (desktop only)
-    ./gtk.nix
-
     # Email (mu4e + mbsync)
     ./email.nix
 
     # Fonts
     ./fonts.nix
+  ] ++ lib.optionals (!isOracle) [
+    # Desktop-only 모듈 — Oracle headless 제외
+    ./i3.nix         # i3 window manager config
+    ./autorandr.nix  # display auto-layout
+    ./dunst.nix      # notification daemon
+    ./picom.nix      # compositor
+    ./gtk.nix        # GTK dark theme
   ];
 }

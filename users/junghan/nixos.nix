@@ -16,8 +16,9 @@ let
     };
 in
 {
-  # Import xrdp module (oracle only)
-  imports = [ ./xrdp.nix ];
+  # XRDP 제거 — Oracle headless 전환 (i3/lightdm 체인 제거됨)
+  # imports = [ ./xrdp.nix ];
+  imports = [];
   # Define user account
   users.users.${vars.username} = {
     isNormalUser = true;
