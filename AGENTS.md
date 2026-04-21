@@ -464,6 +464,38 @@ Note:
 - SKILL.md 내용만 변경 시 재시작 불필요 (동적 로딩)
 - Go 바이너리는 pi-skills에서 arm64 빌드 후 배포 (git에 넣지 않음)
 
+## Memory / embedding layers (분리된 체계)
+
+Oracle 호스트에는 임베딩 기반 회상이 **두 개의 분리된 레이어**로 존재한다.
+차원/프로바이더가 달라 서로 섞이지 않으며, 자동 동기화되지 않는다.
+
+| 레이어 | 프로바이더 | 모델 | 차원 | 저장소 | 봇 접근 |
+|--------|-----------|------|------|--------|---------|
+| **OpenClaw 세션 메모리** | Gemini API | `gemini-embedding-2-preview` | 768 | `~/openclaw/config/workspace*/memory/` + session transcripts | 네이티브 `memorySearch` |
+| **andenken (org 지식)** | OpenRouter (쿼리) / 로컬 vLLM (인덱싱) | `qwen/qwen3-embedding-4b` | 2560 | LanceDB (인덱싱 호스트) | **skill 배포 필요 — 현재 미배포** |
+
+### 현재 상태 (2026-04-21 확인)
+
+- `openclaw.json` `agents.defaults.memorySearch`는 **자기 세션 + memory/*.md만** 임베딩. `extraPaths: []`, `sources: ["memory", "sessions"]`.
+- andenken은 **별도 레이어** — OpenClaw는 직접 참조하지 않는다.
+- `~/org:/home/node/org:ro` 볼륨 마운트는 **파일 접근용**(denotecli/bibcli/botlog)이지 임베딩 경로가 아니다. 제거 금지.
+
+### 봇이 org를 semantic으로 검색하려면 (미래 작업)
+
+native `memorySearch`는 **단일 프로바이더** 구조라 andenken 인덱스와 섞을 수 없다 (768d vs 2560d 차원 mismatch). 유일한 경로는 **skill 배포**:
+
+1. `~/repos/gh/agent-config/skills/semantic-memory`가 andenken CLI 래퍼로 존재 (cf. `c86fad1 refactor: semantic-memory → andenken 분리 완료`)
+2. 배포 전제:
+   - `run.sh k)`에 `semantic-memory` 추가
+   - andenken LanceDB가 Oracle에서 접근 가능 (Syncthing 동기화 또는 원격 API — **현재 미확인**)
+   - `OPENROUTER_API_KEY`를 openclaw-gateway 컨테이너에 노출
+
+### 당장 봇이 org에 닿는 경로
+
+- `denotecli` — exact/tag/title/full-text search
+- `bibcli` — bibliography entries
+- semantic search는 **아직 없음**
+
 ## Commit policy
 
 When work spans both runtime and public backup layers, commit both sides as

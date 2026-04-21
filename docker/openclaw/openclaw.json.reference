@@ -504,25 +504,21 @@
       "active-memory": {
         "enabled": true,
         "config": {
-          "enabled": true,
+          "enabled": false,
           "agents": [
-            "glg",
-            "gemini",
-            "gpt",
-            "mini",
-            "bbot"
+            "glg"
           ],
           "allowedChatTypes": [
             "direct"
           ],
-          "modelFallbackPolicy": "default-remote",
-          "queryMode": "recent",
+          "queryMode": "message",
           "promptStyle": "balanced",
-          "timeoutMs": 15000,
-          "maxSummaryChars": 220,
+          "thinking": "low",
+          "timeoutMs": 8000,
+          "maxSummaryChars": 180,
           "persistTranscripts": false,
           "logging": true,
-          "model": "github-copilot/gpt-5.4-mini"
+          "model": "groq/openai/gpt-oss-20b"
         }
       },
       "glueclaw": {
