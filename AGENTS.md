@@ -210,8 +210,89 @@ Current model routing (2026-04-19):
 - gemini: `github-copilot/gemini-3.1-pro-preview` — Copilot 유일한 예외, gemini-cli 크레딧 재연동 전까지 유지
 - mini (힣봇미니, @glg_mini_bot): `openai-codex/gpt-5.4-mini` — 문서 포맷팅/교정 전담
 - subagents: `openai-codex/gpt-5.4`
-- active-memory plugin: `openai-codex/gpt-5.4-mini`
+- active-memory plugin: `groq/openai/gpt-oss-120b` (primary), `google/gemini-3-flash` (fallback). 상세는 아래 "Active memory operational config" 참조
 - ACPX bind 필요 시 `/acp spawn --bind here` — 모델 수동 지정 가능(`acpx claude set -s <sess> model claude-opus-4-7` 형태). 4.19 정식 릴리스에서 acpx 기본이 opus 4.7로 bump 예정
+
+### Active memory operational config
+
+v2026.4.21 기준 운영값 (`plugins.entries.active-memory.config`, `~/openclaw/config/openclaw.json`, gitignore):
+
+| key | 값 | 비고 |
+|-----|----|------|
+| `enabled` | `true` | |
+| `agents` | `["glg", "gpt"]` | glg는 가족용, gpt는 본인용 |
+| `allowedChatTypes` | `["direct"]` | DM만 |
+| `model` | `groq/openai/gpt-oss-120b` | primary. 20b와 가격 차이 미미, 품질 ↑ |
+| `modelFallback` | `google/gemini-3-flash` | groq 장애 시. OpenClaw alias가 `gemini-3-flash-preview`로 자동 변환 (`extensions/google/model-id.ts`) |
+| `queryMode` | `"recent"` | upstream 기본. 최근 2 user + 1 assistant 턴 컨텍스트 사용 |
+| `thinking` | `"off"` | OpenClaw가 모델별 재해석 — Gemini Flash에선 `minimal` 매핑, Pro에선 strip |
+| `promptStyle` | `"balanced"` | |
+| `timeoutMs` | `15000` | upstream `DEFAULT_TIMEOUT_MS=15_000`과 동일. 상한 120000 |
+| `maxSummaryChars` | `220` | upstream 기본 |
+| `persistTranscripts` | `false` | |
+| `logging` | `true` | 튜닝 단계라 ON |
+
+Reference 문서: `~/repos/3rd/openclaw/docs/concepts/active-memory.md` ("Paste This Into Your Agent" 섹션).
+
+삽질 이슈 (2026-04-22):
+- `openai-codex/gpt-5.4-mini`로 시도 → **31.5s timeout** (Codex CLI subprocess cold-start 병목). `timeoutMs=8000` plugin cutoff를 embedded runner가 subprocess 생성 구간까지 전파 못 함. → `groq/openai/gpt-oss-120b`로 복귀. Codex subprocess 기반 모델은 active-memory 같은 blocking hot path에 부적합.
+- 과거 `timeoutMs=8000` 유지 시 groq에서도 9.7s 경계 timeout 발생 → 15000으로 상향. groq 평균 레이턴시 고려한 합리적 상한.
+- upstream `3f90d9266` graceful degrade 덕에 timeout이 나도 reply는 유지. active-memory는 보조 레이어.
+- openrouter 대안은 회사 계정 크레딧 변동 리스크로 제외. groq가 외부 API지만 cold-start 없어 운영 적합.
+
+## Environment / secret SSOT
+
+호스트 단단함이 openclaw 도커 관리의 전제. 특히 API 키는 예산 사고(과거 Gemini 임베딩 10만원 폭탄)를 호스트 레벨에서 차단해야 한다.
+
+### 키 경로 계층
+
+```
+~/.env.local              ← 호스트 SSOT (export 형식, shell용)
+    ↓ (값만 동기)
+~/openclaw/.env           ← Docker env_file (docker-compose.yml의 env_file:)
+    ↓ (컨테이너 기동 시 로드)
+openclaw-gateway 환경변수
+```
+
+`~/.env.local`이 마스터. 예산 통제되는 키만 여기에 둔다. 폭탄 맞은 키는 즉시 Google Console에서 revoke하고 `.env.local`에서 제거 → `~/openclaw/.env`에도 동기.
+
+### docker compose env 해석 규칙
+
+`docker-compose.yml`에 `GEMINI_API_KEY=${GEMINI_API_KEY}` 형식이 있으면:
+1. **shell env 우선** — `docker compose` 실행 당시 shell에 값 있으면 그것 사용
+2. shell에 없으면 `env_file:`의 `.env` 파일에서 찾음
+3. 둘 다 없으면 빈 값
+
+즉 **`.env.local`을 source하지 않은 shell에서 `docker compose up`을 돌리면 `openclaw/.env` 값이 주입됨**. shell 상태에 의존하는 것은 깨지기 쉬운 구조라 **`openclaw/.env`가 항상 `.env.local`과 같은 값을 들고 있어야** restart 시 일관성 보장.
+
+### 반영 규칙
+
+- 단순 `docker compose restart` — **env 변경 반영 안 됨** (기존 컨테이너 env 유지)
+- `docker compose up -d --force-recreate` — env 새로 읽어서 재생성 → **env 변경 시 필수**
+
+### 폭탄 방지
+
+- 새 Gemini 키 발급 시 Google Cloud Console에서 **빌링 한도 설정** (예: 월 $10) 필수
+- `.env.local`에는 **예산 통제된 키만** 둔다
+- 과거 키가 `openclaw/.env`에 잔존한 채 새 키를 `.env.local`에만 넣으면, shell이 새 키를 가진 상태에서만 컨테이너가 새 키를 쓰고 그 외엔 폭탄 키로 롤백 → sync는 양쪽 파일 모두 갱신
+
+### 현재 사용 중인 비밀
+
+| 변수 | 용도 | 소스 |
+|------|------|------|
+| `GEMINI_API_KEY` | active-memory fallback, memorySearch embedding (모든 봇), dreaming | `~/.env.local` SSOT |
+| `GROQ_API_KEY` | active-memory primary | `~/.env.local` SSOT |
+| `TELEGRAM_BOT_TOKEN_*` | 각 봇 텔레그램 연결 | `~/openclaw/.env` (gitignore) |
+| `OPENAI_CODEX_*` | Codex OAuth | `~/openclaw/.env` (gitignore) |
+
+### nixos-config가 openclaw 운영 담당인 이유
+
+OpenClaw upstream은 피터(steipete) 1인 유지로 우리 문서가 그쪽에 살아남지 못한다. 반면 nixos-config는 Oracle 머신 전체를 담당 — 디스크, 보안, 서비스 건강, 예산 사고 방지까지. 그래서 **호스트-컨테이너 경계 원칙**은 여기서 기술되어야 한다:
+
+- 호스트가 견고 → 도커는 교체 가능한 runtime으로 간주
+- 예산 폭탄 같은 사고는 호스트 레벨(API 키 라이프사이클)에서 차단
+- 컨테이너 내부 상태는 언제든 `force-recreate`로 날릴 수 있도록 SSOT 경로 명확
+- 실제 운영 실패(오늘의 31.5s timeout, 폭탄 키, GlueClaw auto-inject 등)는 이 문서에 삽질 기록으로 쌓아 다음 세션이 반복하지 않도록
 
 ## OpenClaw change policy
 
