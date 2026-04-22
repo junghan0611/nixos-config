@@ -27,6 +27,17 @@ return {
   -- VS-16 (FE0F) 이모지 presentation 시 기저 글리프에 합쳐져야 함.
   {first = 0xFE00, last = 0xFE0F, width = 0},
 
+  -- Dashes (U+2010-2015) — 하이픈·en-dash·em-dash·horizontal bar.
+  -- UAX #11 상 Ambiguous(A)라 wezterm이 2셀로 올려버린다. Emacs char-width-table
+  -- 은 기본 1로 두므로 cell 폭이 어긋나 "— 뒤에 공백 하나 더" 드리프트 발생.
+  -- 1셀로 고정해 정합.
+  {first = 0x2010, last = 0x2015, width = 1},
+
+  -- Box Drawing (U+2500-257F) — ─ │ ┌ ┐ ┘ ┤ ┬ 등.
+  -- 전 범위 Ambiguous. 모드라인/프롬프트/테이블 경계선에서 정렬 치명적.
+  -- TTY 모드라인·tty-config.el vertical-border(U+2502) 와 정합을 맞추려면 1셀.
+  {first = 0x2500, last = 0x257F, width = 1},
+
   -- Miscellaneous Technical (U+2300-23FF) — ⌚⌛⏰⏳⏱
   {first = 0x2300, last = 0x23FF, width = 2},
 
