@@ -134,7 +134,7 @@
       users = [ "junghan" ];
       commands = [
         {
-          command = "${pkgs.systemd}/bin/systemctl";
+          command = "/run/current-system/sw/bin/systemctl";
           options = [ "NOPASSWD" ];
         }
         {
