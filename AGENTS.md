@@ -377,6 +377,8 @@ TTL recycles every 2h idle (`acp.runtime.ttlMinutes: 120`) and the model overrid
 
 2026-04-19 observation: `/acp model anthropic/claude-opus-4-7` CLI says "session ids resolved" but the actual served model is `claude-opus-4-6` — Anthropic flat-rate OAuth silently downgrades. Use `anthropic/claude-opus-4-6` explicitly; 4.7 needs separate billing.
 
+2026-04-24 re-check on v2026.4.22: catalog now normalizes `anthropic/claude-opus-4-7` to 1M context (display-only fix), but routing is still OAuth-tier gated. **Policy: Claude access is company flat-rate OAuth only** — no direct Anthropic API billing. Stale `sk-ant-*` profile removed from `auth-profiles.json` (`openclaw capability model auth logout --provider anthropic`). 4.7 live routing is therefore out of our fixable scope; stay on 4.6 until tier changes.
+
 Inspect truth from the host — never from inside an already-bound thread (text there may be forwarded to the Claude session as a user turn):
 
 ```bash
