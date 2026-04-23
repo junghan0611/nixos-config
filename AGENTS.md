@@ -127,7 +127,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 - **gemini**: `github-copilot/gemini-3.1-pro-preview` — sole Copilot exception, until gemini-cli credit path returns.
 - **mini** (`@glg_mini_bot`): `openai-codex/gpt-5.4-mini` — format / proofread only.
 - **subagents**: `openai-codex/gpt-5.4`.
-- **active-memory plugin**: `groq/openai/gpt-oss-120b` primary, `google/gemini-3-flash` fallback. See below.
+- **active-memory plugin**: `groq/openai/gpt-oss-120b` primary (paid tier), `google/gemini-3-flash` fallback. See below.
 
 Check live values when identity matters:
 
@@ -151,8 +151,8 @@ ACPX bind (when needed): `/acp spawn claude --bind here` then `/acp model anthro
 | `enabled` | `true` | |
 | `agents` | `["glg", "gpt"]` | glg for family, gpt for self |
 | `allowedChatTypes` | `["direct"]` | DM only |
-| `model` | `groq/openai/gpt-oss-120b` | primary; price delta vs 20b is negligible, recall is better |
-| `modelFallback` | `google/gemini-3-flash` | OpenClaw alias resolves to `gemini-3-flash-preview` (`extensions/google/model-id.ts`) |
+| `model` | `groq/openai/gpt-oss-120b` | Groq **paid tier (2026-04-23 전환)**. 응답 ~11s, summary ~120자. free tier는 TPM=8K에 막혀 사용 불가 — Gotchas 참고 |
+| `modelFallback` | `google/gemini-3-flash` | resolves to `gemini-3-flash-preview`. **주의**: `rate_limit` 케이스에서는 자동 승계되지 않음 (`decision=surface_error` 관측). 실질 활용은 `timeout`/장애 등 다른 실패 시에만 |
 | `queryMode` | `"recent"` | upstream default; 2 user + 1 assistant turns as context |
 | `thinking` | `"off"` | OpenClaw remaps per model — Gemini Flash → `minimal`, Pro → strip |
 | `promptStyle` | `"balanced"` | |
@@ -355,10 +355,12 @@ Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/
 
 ### active-memory — model choice matters
 
-- `openai-codex/gpt-5.4-mini` hits a 31.5s Codex CLI subprocess cold-start. Plugin `timeoutMs` is not honored across the subprocess boundary. Do not use Codex models in blocking hot-path plugins. Use `groq/gpt-oss-120b` instead.
+- `openai-codex/gpt-5.4-mini` hits a 31.5s Codex CLI subprocess cold-start. Plugin `timeoutMs` is not honored across the subprocess boundary. Do not use Codex models in blocking hot-path plugins.
 - `timeoutMs=8000` is too tight for groq — saw 9.7s boundary timeouts. Use 15000 (upstream default).
 - Upstream `3f90d9266` (v2026.4.21) graceful degrade keeps replies alive on timeout; active-memory is an assist layer, not a critical path.
-- OpenRouter fallback is risky when the account credit runs out (especially shared / company accounts). groq + gemini-flash is the stable pair.
+- **Groq free tier TPM=8K로 `gpt-oss-120b` 실사용 불가** (2026-04-23 관측). active-memory 프롬프트는 queryChars 1K라도 전체 input이 ~35K tok이라 매 호출 `413 Request too large`. 해결책: Groq Console에서 **paid tier 전환** ($10 선불, pay-per-use). 전환 후 호출당 ~7원, 응답 ~11s.
+- **`modelFallback`은 `rate_limit` 케이스에서 자동 승계되지 않음** — 관측상 `decision=surface_error reason=rate_limit profile=-`로 끝나고 fallback 모델로 재시도하지 않음. 에러 메시지 본문이 그대로 summary로 노출되어 `summaryChars=50` 같은 작은 값으로 찍힘. `timeout`이나 일반 장애에서만 fallback이 탄다.
+- **Gemini 3 Flash Lite는 Flash보다 느릴 수 있다** (2026-04-23 관측: Flash 13.4s vs Flash Lite 17.9s→timeout). 이름과 달리 active-memory의 input-heavy 워크로드(input:output ≈ 500:1)에서는 Lite의 TTFT가 더 길었음. Groq LPU의 decode 강점도 이 워크로드에서는 prefill이 지배적이라 제한적.
 
 ### ACPX — model override does not persist
 
