@@ -131,9 +131,9 @@ in
     };
   };
 
-  # Console configuration for Korean support
+  # Console configuration for Korean support (Oracle headless 제외)
   # Use kmscon for proper Unicode/Korean support in TTY
-  services.kmscon = {
+  services.kmscon = lib.mkIf (!isOracle) {
     enable = true;
     hwRender = true;
     fonts = [
@@ -148,8 +148,8 @@ in
     '';
   };
 
-  # Fallback console settings (used when kmscon is not available)
-  console = {
+  # Fallback console settings (used when kmscon is not available) — Oracle headless 제외
+  console = lib.mkIf (!isOracle) {
     font = "Lat2-Terminus16";
     keyMap = "us";
     useXkbConfig = false;

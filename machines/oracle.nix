@@ -157,6 +157,9 @@
     }
   ];
 
+  # Headless VM에 vconsole 불필요 — 물리 콘솔 없어 setfont 실패
+  systemd.services.systemd-vconsole-setup.enable = false;
+
   # Oracle Cloud specific notes
   system.nixos.tags = [ "oracle-cloud" "arm64" ];
 }
