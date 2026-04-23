@@ -405,6 +405,20 @@ Asking an ACPX Claude session "what runtime are you on" returns whatever `worksp
 
 Do not trust bot self-introspection. Verify from the host with `/acp status` outside the thread, or `docker exec ... sessions --all-agents`. Long-term: remove "default runtime" prose from workspace docs, or inject a systemPromptOverride like "you cannot know your own runtime; tell the user to check `/acp status`".
 
+### ACPX — direct vs ACP-bound session confusion in host inspection
+
+`openclaw sessions --all-agents` interleaves two kinds of rows:
+
+- `agent:<id>:telegram:*` — **direct session** for the Telegram DM. Its `Model` column shows the agent's at-rest/fallback model (or a stale state from before the thread was ever `/acp spawn`-ed).
+- `agent:claude:acp:*` — **ACP-bound session** actually serving the live bound conversation. This row's `Model` reflects the active `/acp model` override.
+
+The live serving model is the ACP row, not the direct row. 2026-04-24 misread: interpreted a stale `claude-sonnet-4.6` on a `bbot direct` row as the live bbot state, and reported bbot as "fallback-mode" in a commit message. bbot was in fact on `claude-opus-4-6` via ACPX the whole time, confirmed by the bot's own self-reference ("acpx 임시 거처") in the user's Telegram reply.
+
+Verification path (least effort first):
+
+1. Ask the bot itself in-thread — it knows its runtime label now that the MEMORY.md GlueClaw prose is gone.
+2. Read `/home/node/.openclaw/telegram/thread-bindings-<account>.json` → `targetSessionKey`. If it starts with `agent:claude:acp:`, the live path is ACPX and the serving model lives in that ACP session, not in any `direct` row.
+
 ### GlueClaw — runtime auto-injected providers from repo presence
 
 OpenClaw plugin discovery walks mounted volumes. Any `openclaw.plugin.json` in a mounted path is a candidate provider. `~/repos/gh/glueclaw/openclaw.plugin.json` was re-injecting `glueclaw` / `sc` providers into every agent's `models.json` on container start, even though `641d497` had removed them at config level. Deleting the local repo broke the injection path. The GitHub fork (`junghan0611/glueclaw`) is preserved as history. See `openclaw-config@8243b3b`.
