@@ -138,6 +138,9 @@ in {
     python312Packages.edge-tts  # Text-to-Speech (Microsoft Edge TTS)
     yt-dlp       # YouTube downloader (ElleNajit)
     ffmpeg       # Video processing (ElleNajit)
+    asciinema     # Terminal session recorder
+    asciinema-agg # asciicast → animated GIF (agg)
+    gifski        # High-quality GIF encoder
   ] ++ (lib.optionals isLinux [
     # Linux-common CLI (headless 포함)
     xclip
