@@ -117,7 +117,7 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (as of 2026-04-22)
+### Model routing (as of 2026-04-25)
 
 - Anthropic flat-rate blocked for third-party apps. GitHub Copilot removed except for `gemini`. Primary path is `openai-codex/gpt-5.4` (Codex OAuth via the $100 plan).
 - **main**: at-rest `openai-codex/gpt-5.4`; preferred live = ACPX + `claude-opus-4-6` bound to `workspace/`.
@@ -128,6 +128,8 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 - **mini** (`@glg_mini_bot`): `openai-codex/gpt-5.4-mini` — format / proofread only.
 - **subagents**: `openai-codex/gpt-5.4`.
 - **active-memory plugin**: `groq/openai/gpt-oss-120b` primary (paid tier), `google/gemini-3-flash` fallback. See below.
+- **Auxiliary `openai-codex/gpt-5.5`** (since 2026-04-25, OpenClaw 2026.4.23): auto-registered via Pi 0.70.0 catalog metadata. Not a default; use `/model openai-codex/gpt-5.5` in-thread for a single-session switch. Base models unchanged.
+- **Image generation default**: `openai/gpt-image-2` via Codex OAuth (since 2026-04-25). Google Imagen (~50 KRW/image) remains available through provider catalog for agent-directed calls. Two paths coexist; agents pick per request.
 
 Check live values when identity matters:
 
@@ -176,6 +178,21 @@ Oracle has two disjoint recall layers. Different dimensions, no auto-sync.
 - `~/org:/home/node/org:ro` is for file access (denotecli / bibcli / botlog), not embedding. Do not remove.
 - Native `memorySearch` is single-provider; it cannot blend the 2560d andenken index (dim mismatch). To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle and `OPENROUTER_API_KEY` exposed in the container.
 - Today bots reach org via `denotecli` / `bibcli`. No semantic path yet.
+
+### Mount permission model (since 2026-04-25)
+
+The `ro`/`rw` boundary was widened to reduce host-hop friction for agent edits. Rollback safety relies on git, not on filesystem enforcement.
+
+| Area | Mode | Rollback surface |
+|---|---|---|
+| `~/repos/gh` | **rw** | git (each repo). `git status` surfaces unintended writes immediately. |
+| `~/repos/3rd` | rw | git + "third-party, disposable" nature |
+| `~/repos/work` | ro | intentional — company code never modified through bot hand |
+| `~/org` (root) | ro | protects `diary.org`, `archives/`, `authinfo.gpg`, etc. |
+| `~/org/botlog`, `~/org/llmlog` | rw | bot activity output — always rw |
+| `~/org/meta`, `~/org/bib`, `~/org/notes` | **rw** | new; git-managed (`~/org` is a Denote git repo). |
+
+**Post-deploy habit**: after a rw-expanding change, monitor each affected repo's `git status` for the first hour. Unintended writes in `~/org/diary.org` or other `:ro` regions should be impossible — if you see one, the mount config regressed.
 
 ---
 
@@ -352,6 +369,32 @@ Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/
 ---
 
 ## 7. Gotchas
+
+### rw mount expansion — git is the rollback surface (2026-04-25)
+
+Since the 4.23 upgrade, `~/repos/gh:rw` and `~/org/{meta,bib,notes}:rw` are open. There is no filesystem enforcement against unintended writes — rollback relies on `git status` / `git diff` / `git restore`.
+
+- Monitor the first hour after any rw-expanding mount change.
+- An unintended write into `~/org/diary.org` (or anything else under `~/org:ro`) means the mount config regressed.
+- `~/repos/work` remains ro deliberately — never widen this without consulting the company code-safety policy.
+- `nixos-config` is a symlink inside `~/repos/gh/` (→ `~/nixos-config`). Container cannot follow it. Agent edits to nixos-config must route through the host, not the bot runtime.
+
+### Codex catalog — models.json drift on upgrade is expected (2026-04-25)
+
+OpenClaw 2026.4.23 synthesizes the `openai-codex/gpt-5.5` OAuth row automatically. After the upgrade, `git diff config/agents/*/agent/models.json` shows `gpt-5.4 → gpt-5.5` in the Codex provider block. This is catalog-layer drift; the **serving model** is still `openai-codex/gpt-5.4` because `agents.list[].model` pins it explicitly. Verify with:
+
+```bash
+python3 - <<'PY'
+import json, pathlib
+c = json.loads(pathlib.Path('/home/junghan/openclaw/config/openclaw.json').read_text())
+for a in c['agents']['list']:
+    print(a['id'], a.get('model'))
+PY
+```
+
+### Dreaming — decoupled from heartbeat (since 2026.4.23)
+
+Upstream #70737 moves dreaming into an isolated lightweight agent turn. It now runs even when `heartbeat` is off for the default agent and is no longer skipped by `heartbeat.activeHours`. `openclaw doctor --fix` migrates stale main-session dreaming jobs in persisted cron configs to the new shape. Our deployment had no stale entries at 4.22 → 4.23 upgrade.
 
 ### active-memory — model choice matters
 
