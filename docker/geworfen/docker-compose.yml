@@ -1,13 +1,19 @@
 # geworfen — existence data WebTUI viewer
-# GraalVM native binary + Emacs agent-server bridge
+# GraalVM native binary + Emacs agent daemon bridge
 #
 # 의존성:
 #   1. geworfen 바이너리:  ~/repos/gh/geworfen/target/geworfen-aarch64
-#   2. Emacs agent-server: /run/user/1000/emacs/agent-server 소켓
+#   2. Emacs agent daemon: /run/user/1000/emacs/server 소켓 (호스트 측)
 #   3. Caddy proxy 네트워크
+#   4. autoheal 컨테이너 (docker/autoheal/) — unhealthy 시 자동 재시작
 #
 # 실행: docker compose up -d
 # 로그: docker compose logs -f
+#
+# 사고 회복 메모:
+#   호스트 emacs daemon 재시작 시 tmpfs `/run/user/1000/emacs/`가 새 inode로
+#   재생성되면서 컨테이너 안의 마운트가 stale 상태가 된다. healthcheck가
+#   ping 실패 → autoheal이 컨테이너 재시작 → 마운트 재바인딩으로 회복.
 
 services:
   geworfen:
@@ -26,8 +32,20 @@ services:
       - TZ=Asia/Seoul
       # emacsclient PATH — Nix store 바이너리 직접 참조
       - PATH=/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2/bin:/usr/bin:/bin
-      # emacsclient -s agent-server 소켓 탐색 경로
+      # emacsclient -s server 소켓 탐색 경로
       - XDG_RUNTIME_DIR=/run/user/1000
+
+    # autoheal 대상 라벨 (별도 autoheal 컨테이너가 감시)
+    labels:
+      - "autoheal=true"
+
+    # emacs 소켓 ping — 실패 시 unhealthy로 마킹되어 autoheal이 재시작
+    healthcheck:
+      test: ["CMD-SHELL", "emacsclient -s server --eval '(+ 1 1)' >/dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
     ports:
       - "127.0.0.1:3333:3333"
@@ -47,12 +65,12 @@ services:
       # geworfen native-image가 링크된 glibc
       - /nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:/nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:ro
 
-      # --- Emacs agent-server 연결 ---
+      # --- Emacs agent daemon 연결 ---
       # emacsclient 바이너리
       - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
       # emacsclient가 링크된 glibc
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
-      # Emacs 소켓 (agent-server)
+      # Emacs 소켓 (호스트의 --daemon=server)
       - /run/user/1000/emacs:/run/user/1000/emacs:ro
 
     networks:

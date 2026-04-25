@@ -1,0 +1,33 @@
+# autoheal — Docker compose의 healthcheck 한계를 메우는 watchdog
+#
+# 배경:
+#   docker compose의 `restart: unless-stopped`는 컨테이너가 종료될 때만 재시작.
+#   healthcheck가 unhealthy로 마킹해도 자동 재시작은 일어나지 않는다.
+#   autoheal은 docker socket을 통해 unhealthy 라벨이 붙은 컨테이너를 재시작.
+#
+# 대상:
+#   `labels: ["autoheal=true"]` 가 붙은 컨테이너만 감시 (AUTOHEAL_CONTAINER_LABEL).
+#
+# 보안:
+#   docker.sock 마운트는 사실상 호스트 root 권한. 공식 이미지 willfarrell/autoheal
+#   사용으로 한정. PUID/PGID는 docker 그룹 GID 매칭이 필요할 수 있음.
+
+services:
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: always
+
+    environment:
+      # autoheal=true 라벨이 있는 컨테이너만 감시
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      # 5초 간격으로 health 상태 폴링 (기본값)
+      - AUTOHEAL_INTERVAL=10
+      # 재시작 시 컨테이너 안정화까지 대기할 시간
+      - AUTOHEAL_START_PERIOD=0
+      # 컨테이너 재시작 시 SIGTERM → SIGKILL 사이 grace
+      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=10
+      - TZ=Asia/Seoul
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
