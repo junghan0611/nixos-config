@@ -249,6 +249,34 @@ Implication: if `docker compose up` runs from a shell that never sourced `.env.l
 
 ## 5. Operational workflow
 
+### Warn = Error — every gateway warning must be investigated
+
+Treat **every** OpenClaw gateway WARN as an Error until proven harmless. Silent retry loops have no log signature and look identical to "idle" CPU activity from the outside. The cost of investigating a warn is minutes; the cost of letting one ride through an upgrade can be hours of family-bot downtime.
+
+Concrete cases observed in this deployment:
+
+- `Failed to restore task registry` (`code:"ERR_SQLITE_ERROR" errcode:779 errstr:"database disk image is malformed"`) — appeared on every gateway start from 4.21 onward, was treated as "tolerable startup noise" for 11 days. 4.24 then routed restart-continuation through the same task registry; the malformed `runs.sqlite` flipped from background warning into a 100% CPU silent retry loop that froze inbound message processing. Fix: stop gateway, move `~/openclaw/config/tasks/runs.sqlite` to a backup folder, start gateway — new DB is auto-created (in-flight task state only, no user data).
+- `bonjour: watchdog detected non-announced service` — repeating warn from 4.23 onward, ignored as "ARM cloud LAN noise". 4.24 promoted bonjour to a default-on plugin, the same probe failure became `Unhandled promise rejection: CIAO PROBING CANCELLED` and took the gateway into a ~30s restart loop. Fix: `plugins.entries.bonjour: { enabled: false }`.
+- Any `database disk image is malformed` on **any** SQLite under `~/openclaw/config/`: do not assume a single corruption. Run integrity check across the set:
+
+  ```bash
+  for f in ~/openclaw/config/tasks/runs.sqlite \
+           ~/openclaw/config/memory/*.sqlite \
+           ~/openclaw/config/flows/registry.sqlite; do
+    [ -f "$f" ] && echo "$(basename $f): $(sqlite3 "$f" 'PRAGMA integrity_check;' 2>&1 | head -1)"
+  done
+  ```
+
+  `runs.sqlite` and `flows/registry.sqlite` are ephemeral — safe to delete. Per-bot `memory/*.sqlite` carry workspace recall and should be repaired (`.dump` + reload) rather than deleted if possible.
+
+Operational rule:
+
+1. On any gateway WARN, before declaring the gateway "ready", re-read the WARN line aloud in the upgrade log.
+2. Decide explicitly: harmless / suspect / critical. No "we'll see" answers.
+3. If suspect or critical, file a TODO in `~/sync/org/llmlog/` with the exact warn text and a hypothesis — do not just close the terminal.
+
+The 4.24 cycle paid in user-visible bot downtime for two warns ignored over the prior cycles. The cost of this rule is one extra minute per upgrade.
+
 ### Change policy for OpenClaw behavior
 
 Prioritize continuity over elegance.
