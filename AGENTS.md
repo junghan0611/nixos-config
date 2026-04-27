@@ -117,7 +117,7 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (as of 2026-04-25)
+### Model routing (as of 2026-04-27)
 
 - Anthropic flat-rate blocked for third-party apps. GitHub Copilot removed except for `gemini`. Primary path is `openai-codex/gpt-5.4` (Codex OAuth via the $100 plan).
 - **main**: at-rest `openai-codex/gpt-5.4`; preferred live = ACPX + `claude-opus-4-6` bound to `workspace/`.
@@ -129,6 +129,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 - **subagents**: `openai-codex/gpt-5.4`.
 - **active-memory plugin**: `groq/openai/gpt-oss-120b` primary (paid tier), `google/gemini-3-flash` fallback. See below.
 - **Auxiliary `openai-codex/gpt-5.5`** (since 2026-04-25, OpenClaw 2026.4.23): auto-registered via Pi 0.70.0 catalog metadata. Not a default; use `/model openai-codex/gpt-5.5` in-thread for a single-session switch. Base models unchanged.
+- **Auxiliary `deepseek/deepseek-v4-pro` / `deepseek-v4-flash`** (since 2026-04-27, OpenClaw 2026.4.24): registered in `agents.defaults.models`. Authenticated via `DEEPSEEK_API_KEY` env (company key, generous quota). Use `/model deepseek/deepseek-v4-pro` inside `main` (`@junghan_openclaw_bot`) to switch. Base remains `openai-codex/gpt-5.4`.
 - **Image generation default**: `openai/gpt-image-2` via Codex OAuth (since 2026-04-25). Google Imagen (~50 KRW/image) remains available through provider catalog for agent-directed calls. Two paths coexist; agents pick per request.
 
 Check live values when identity matters:
@@ -369,6 +370,23 @@ Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/
 ---
 
 ## 7. Gotchas
+
+### bonjour plugin — disable on Oracle Cloud + Docker (since 2026-04-24)
+
+OpenClaw 2026.4.24 split bonjour LAN discovery into a default-on plugin (`@homebridge/ciao`). On Oracle Cloud + Docker with IPv6 disabled (our setup), the mDNS probe fails and emits `Unhandled promise rejection: CIAO PROBING CANCELLED` every ~30s, taking gateway down with it (restart loop). LAN discovery has no value to us — we reach gateway via SSH tunnel, not Bonjour.
+
+Fix: set `plugins.entries.bonjour: { enabled: false }` in `openclaw.json`. Plugin count drops from 9 back to 8 (matching 4.23 behavior). No functional loss.
+
+### Adding non-default models (since 2026-04-27)
+
+OpenClaw 2026.4.24 narrowed default `openclaw models list` to *configured* rows only, and 4.24's `/models add` slash command is deprecated. To make a new model usable from `/model <id>` slash command:
+
+1. Sync the provider API key from `~/.env.local` to `~/openclaw/.env` (preserves the SSOT pairing rule).
+2. Add `provider/model-id: {}` under `agents.defaults.models` in `openclaw.json`.
+3. `docker compose restart openclaw-gateway`.
+4. Verify with `node openclaw.mjs models` (note: no subcommand) — look for the model in the `Configured models` line.
+
+`models list --all` exists but is slow (>60s timeout in our container) — don't rely on it for verification.
 
 ### rw mount expansion — git is the rollback surface (2026-04-25)
 
