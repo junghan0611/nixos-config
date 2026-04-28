@@ -117,7 +117,7 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (as of 2026-04-27)
+### Model routing (as of 2026-04-28, OpenClaw 2026.4.26)
 
 - Anthropic flat-rate blocked for third-party apps. GitHub Copilot removed except for `gemini`. Primary path is `openai-codex/gpt-5.4` (Codex OAuth via the $100 plan).
 - **main**: at-rest `openai-codex/gpt-5.4`; preferred live = ACPX + `claude-opus-4-6` bound to `workspace/`.
