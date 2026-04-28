@@ -1,5 +1,5 @@
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.4.24
-FROM ghcr.io/openclaw/openclaw:2026.4.26
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.4.26
+FROM ghcr.io/openclaw/openclaw:2026.4.23
 
 USER root
 

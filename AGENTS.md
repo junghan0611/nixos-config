@@ -117,7 +117,7 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (as of 2026-04-28, OpenClaw 2026.4.26)
+### Model routing (as of 2026-04-28, OpenClaw 2026.4.23 — rolled back from 4.26 due to latency regression)
 
 - Anthropic flat-rate blocked for third-party apps. GitHub Copilot removed except for `gemini`. Primary path is `openai-codex/gpt-5.4` (Codex OAuth via the $100 plan).
 - **main**: at-rest `openai-codex/gpt-5.4`; preferred live = ACPX + `claude-opus-4-6` bound to `workspace/`.
@@ -398,6 +398,32 @@ Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/
 ---
 
 ## 7. Gotchas
+
+### 4.24 → 4.26 latency regression — wait-and-watch policy (2026-04-28)
+
+A two-version jump from 4.24 to 4.26 produced a service-quality incident on the family-traffic gateway. Symptoms operators care about:
+
+- Operator and family reported "responses that used to come instantly now take all day."
+- `[diagnostic] stuck session: state=processing age=164s queueDepth=1` — multiple agents (`gpt`, `glg`) on Telegram direct chats stayed pinned in *processing* for 2~3 minutes per turn.
+- Gateway PID showed **102% CPU** on a single node thread with no child spawns — main loop hot-spinning while inbound queue stalled.
+- 4.26 boot itself stretched to ~88 s (vs ~11 s on 4.23) due to OpenRouter + LiteLLM pricing fetches both hitting their 60 s timeout.
+- The same stuck-session signature appeared on a fresh 4.26 boot **before** any TTS config was added, so this was *not* operator config error.
+
+Most likely root cause (post-incident, not yet upstream-confirmed):
+
+- 4.25's cold-persisted plugin registry collides with `doctor --fix` in our deployment. The registry rebuild dropped the active plugin set from 7 (acpx, browser, device-pair, memory-core, phone-control, talk-voice, telegram) to 3 (acpx, memory-core, telegram). The remaining plugins moved to *lazy on-demand stage*, which is fine for cold paths but ruinous on warm family chat — the first inbound message after that point triggers `npm install` of `node-edge-tts`, `pdfjs-dist`, `@mozilla/readability`, `linkedom` mid-hot-path, and that is what `[diagnostic] stuck session` reflects.
+- 4.24 already showed perceptible latency drift that we under-weighted at the time (the 11-day silent `runs.sqlite` malformed retry was the *visible* symptom; latency drift was the unrecorded one).
+
+Resolution executed: emergency rollback to **4.23** (latest known-good for *both* response latency and `gpt-image-2` Codex-OAuth image generation, which the operator's father uses; 4.22 would lose image generation since it requires a separate `OPENAI_API_KEY`). Verified post-rollback: ready in 11.3 s, 6 plugins loaded including `talk-voice`, CPU 0.07 % idle, all 6 Telegram providers up, no stuck-session diagnostics. Full operational record in `~/openclaw/README.md` Change history (entry dated 2026-04-28 / version 4.23).
+
+**Standing policy from this incident (operator-stamped, do not relax silently):**
+
+- *No more two-version jumps on the family-traffic gateway.* `4.24 → 4.26` was the violation. Every minor bump goes one step at a time.
+- *Wait-and-watch on 4.24 / 4.25 / 4.26.* Re-evaluate only when **4.27+ ships with the lazy-staging pre-warmer fix** or after community confirmation of stable family deployments. "Latest is best" no longer applies to this gateway.
+- *Stage on a non-family agent first* (e.g. `bbot` or `gpt`) for ≥24 h before promoting to `glg` / `default`. Watch `[diagnostic] stuck session` lines as the canary; even one is grounds to pause.
+- *Family responsiveness is the SLO.* If the operator notices latency, that is a P0 — investigate before the next upgrade ships, not after.
+
+Counter-temptation note: 4.26 carries genuinely useful fixes (ACP idle-wakes #72080, Codex token cache #69298, WAL checkpoint #72774, Anthropic prefill stripping #72739/#72556). The policy above is *not* a verdict that those fixes are wrong; it's a verdict that the cold-registry + lazy-staging delivery in 4.25/4.26 is incompatible with our deployment shape today. Do not lose sight of those fixes — re-test them when 4.27+ lands.
 
 ### bonjour plugin — disable on Oracle Cloud + Docker (since 2026-04-24)
 
