@@ -33,6 +33,7 @@ in
       "video"
       "input"
       "tty"
+      "dialout"
       "lxd"
       "libvirtd"
       "users"
