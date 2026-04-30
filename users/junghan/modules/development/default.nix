@@ -19,6 +19,7 @@
 
     # Version control
     gh              # GitHub CLI
+    trufflehog      # Secret scanning in git repos
 
     # Build tools
     libnotify
