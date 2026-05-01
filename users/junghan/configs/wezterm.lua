@@ -53,6 +53,17 @@ config.initial_rows = 35
 
 -- Color scheme
 config.color_scheme = 'Modus Vivendi Tinted (Gogh)'
+
+-- Cursor color (match kitty: cursor #ff4769, pink — visible on both day/night themes)
+-- color_scheme이 깔린 뒤 cursor 관련 키만 덮어쓴다.
+config.colors = {
+    cursor_bg = '#ff4769',
+    cursor_border = '#ff4769',
+    -- kitty의 'cursor_text_color background'에 대응:
+    -- Modus Vivendi Tinted 배경색을 박아서 커서 위 글자가 배경으로 사라지게.
+    cursor_fg = '#0d0e1c',
+}
+
 config.window_close_confirmation = "AlwaysPrompt"
 config.audible_bell = "Disabled"
 
@@ -84,6 +95,17 @@ config.keys = {
     {key = "F10", mods = "", action = wezterm.action{SendString="\x1b\x1f\x26\x60\x1f"}},
     {key = "F11", mods = "", action = wezterm.action{SendString="\x1b\x1f\x27\x40\x1f"}},
     {key = "F12", mods = "", action = wezterm.action{SendString="\x1b\x1f\x28\x20\x1f"}},
+
+    -- Tab switching (ghostty와 동일: Alt+1..9 로 N번째 탭 이동, Alt+0 = 마지막 탭)
+    {key = "1", mods = "ALT", action = wezterm.action.ActivateTab(0)},
+    {key = "2", mods = "ALT", action = wezterm.action.ActivateTab(1)},
+    {key = "3", mods = "ALT", action = wezterm.action.ActivateTab(2)},
+    {key = "4", mods = "ALT", action = wezterm.action.ActivateTab(3)},
+    {key = "5", mods = "ALT", action = wezterm.action.ActivateTab(4)},
+    {key = "6", mods = "ALT", action = wezterm.action.ActivateTab(5)},
+    {key = "7", mods = "ALT", action = wezterm.action.ActivateTab(6)},
+    {key = "8", mods = "ALT", action = wezterm.action.ActivateTab(7)},
+    {key = "9", mods = "ALT", action = wezterm.action.ActivateTab(-1)}, -- 마지막 탭
 }
 
 return config

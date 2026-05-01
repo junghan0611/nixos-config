@@ -1,13 +1,14 @@
 # Ghostty configuration for Linux/NixOS
 # font-family = D2CodingLigature Nerd Font
-font-family = Monoplex Nerd
-font-size = 14.0
+# Monoplex Nerd
+font-family = GLG Nerd Font Mono
+font-size = 15.1
 
 term = xterm-ghostty
 
-# Scrollback buffer limit (1MB instead of default 10MB)
+# Scrollback buffer limit (3MB instead of default 10MB)
 # Reduces memory usage and improves performance with long Claude Code sessions
-scrollback-limit = 1000000
+scrollback-limit = 3000000
 
 # Window decoration: server = WM manages borders (i3 child-border works)
 window-decoration = server
@@ -39,6 +40,12 @@ copy-on-select = clipboard
 
 # Theme
 theme = Dracula
+
+# Cursor color (match kitty/wezterm: #ff4769 핑크 — 테마 상관없이 잘보임)
+# kitty의 'cursor_text_color background' 효과:
+# 커서 위 글자색을 어두운 배경값으로 박아서 "사라지게" 만든다.
+cursor-color = #ff4769
+cursor-text = #0d0e1c
 
 keybind = alt+u=scroll_page_fractional:-0.5
 keybind = alt+v=scroll_page_fractional:0.5
