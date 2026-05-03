@@ -33,6 +33,9 @@ services:
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1  # 서브에이전트 ws:// Docker bridge 허용
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # doctor --deep 권장 (Oracle ARM small host) — 5.2 부팅/CLI 가속, side-effect 없음
+      - NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
+      - OPENCLAW_NO_RESPAWN=1
 
     # gateway는 컨테이너 내에서 lan 바인딩 필요
     command: ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789"]
