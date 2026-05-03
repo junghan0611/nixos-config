@@ -1,5 +1,6 @@
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.4.26
-FROM ghcr.io/openclaw/openclaw:2026.4.23
+# 4.29 lazy-staging 재현 → 5.2 직행 (scope broad runtime preloads fix)
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.4.23
+FROM ghcr.io/openclaw/openclaw:2026.5.2
 
 USER root
 

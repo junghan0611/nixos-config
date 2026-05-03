@@ -117,17 +117,18 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (as of 2026-04-28, OpenClaw 2026.4.23 — rolled back from 4.26 due to latency regression)
+### Model routing (as of 2026-05-03, OpenClaw 2026.5.2 — upgraded from 4.23 after 4.29 lazy-staging reproduction; ACPX disabled)
 
 - Anthropic flat-rate blocked for third-party apps. GitHub Copilot removed except for `gemini`. Primary path is `openai-codex/gpt-5.4` (Codex OAuth via the $100 plan).
-- **main**: at-rest `openai-codex/gpt-5.4`; preferred live = ACPX + `claude-opus-4-6` bound to `workspace/`.
-- **bbot** (`@glg_b_bot`): at-rest `openai-codex/gpt-5.4`; preferred live = ACPX + `claude-opus-4-6` bound to `workspace-bbot/`.
+- **ACPX disabled** as of 2026-05-03: `plugins.entries.acpx.enabled=false` + `acp.enabled=false`. 5.2 externalized ACPX behind `@openclaw/acpx` beta package; we do not install it. The "preferred live = ACPX + claude-opus-4-6" path is retired until needed again. All bots run on at-rest model only.
+- **main**: `openai-codex/gpt-5.4` (workspace `workspace/`).
+- **bbot** (`@glg_b_bot`): `openai-codex/gpt-5.4` (workspace `workspace-bbot/`).
 - **glg** (가족 라이프): `openai-codex/gpt-5.4`.
 - **gpt**: `openai-codex/gpt-5.4`.
 - **gemini**: `github-copilot/gemini-3.1-pro-preview` — sole Copilot exception, until gemini-cli credit path returns.
 - **mini** (`@glg_mini_bot`): `openai-codex/gpt-5.4-mini` — format / proofread only.
 - **subagents**: `openai-codex/gpt-5.4`.
-- **active-memory plugin**: `groq/openai/gpt-oss-120b` primary (paid tier), `google/gemini-3-flash` fallback. See below.
+- **active-memory plugin**: disabled. Original config preserved (`groq/openai/gpt-oss-120b` primary, `google/gemini-3-flash` fallback) but `enabled: false` while we verify 5.2 stability.
 - **Auxiliary `openai-codex/gpt-5.5`** (since 2026-04-25, OpenClaw 2026.4.23): auto-registered via Pi 0.70.0 catalog metadata. Not a default; use `/model openai-codex/gpt-5.5` in-thread for a single-session switch. Base models unchanged.
 - **Auxiliary `deepseek/deepseek-v4-pro` / `deepseek-v4-flash`** (since 2026-04-27, OpenClaw 2026.4.24): registered in `agents.defaults.models`. Authenticated via `DEEPSEEK_API_KEY` env (company key, generous quota). Use `/model deepseek/deepseek-v4-pro` inside `main` (`@junghan_openclaw_bot`) to switch. Base remains `openai-codex/gpt-5.4`.
 - **Image generation default**: `openai/gpt-image-2` via Codex OAuth (since 2026-04-25). Google Imagen (~50 KRW/image) remains available through provider catalog for agent-directed calls. Two paths coexist; agents pick per request.
@@ -143,7 +144,7 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-ACPX bind (when needed): `/acp spawn claude --bind here` then `/acp model anthropic/claude-opus-4-6`. The model override does not persist — see Gotchas.
+ACPX bind (currently disabled — re-enable steps if revived): set `plugins.entries.acpx.enabled=true` + `acp.enabled=true`, restart gateway, then `/acp spawn claude --bind here` and `/acp model anthropic/claude-opus-4-6`. 5.2 requires `npm i @openclaw/acpx` because it externalized the package; verify via `node openclaw.mjs plugins list`. The model override does not persist — see Gotchas.
 
 ### Active memory operational config (v2026.4.21)
 
@@ -399,7 +400,25 @@ Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/
 
 ## 7. Gotchas
 
-### 4.24 → 4.26 latency regression — wait-and-watch policy (2026-04-28)
+### 4.24 → 4.26 / 4.29 lazy-staging incident — resolved on 5.2 (2026-05-03)
+
+**RESOLVED on 5.2.** 4.23 → 4.29 attempt on 2026-05-03 reproduced the same lazy-staging hot-path incident — first inbound message triggered `[plugins] alibaba/runway/tts-local-cli staging bundled runtime deps` mid-hot-path with `eventLoopDelayMaxMs=17213.4` and `[telegram] sendChatAction failed`. Same incident class as 4.26. 4.29 brought the diagnostic timeline + slow-host-startup fixes but no structural fix for "scope of plugin runtime preloads". Jumped directly to **5.2** which carries the structural fix:
+
+- `Plugins/runtime: scope broad runtime preloads to the effective plugin ids derived from config, startup planning, configured channels, slots, and auto-enable rules instead of importing every discoverable plugin`
+- `Tools/plugins: cache plugin tool descriptors captured from api.registerTool(...) so repeated prompt-time planning can skip plugin runtime loading while execution still loads the live plugin tool` (#76079)
+
+5.2 verified: ready 7.3s first boot / 5.3s warm boot, CPU 0.23% idle, MEM 246 MiB, **zero `staging bundled runtime deps` lines on hot path**. Family-bot smoke test passed (10:55 KST, glg_gpt_bot replied intact). Single 24s liveness spike on first cold-message only (Codex OAuth + 49k context hydration), idle thereafter. Full operational record in `~/openclaw/README.md` Change history (entry dated 2026-05-03 / version 5.2).
+
+**Operational lessons retained from the incident** (these still apply for any future jump where structural fix is unproven):
+
+- *No more two-version jumps on family-traffic gateway* unless the target version has a verified structural fix and we have a no-traffic window. The 5.2 jump was a 6-version skip but justified by the explicit `scope broad runtime preloads` fix and zero family traffic during deploy.
+- *Stage on a non-family agent first* when uncertain. For 5.2 we used the entire deploy as a no-traffic-window test instead.
+- *Family responsiveness is the SLO.* If the operator notices latency, that is a P0 — investigate before the next upgrade ships, not after.
+- *Trust the structural-fix release tag* but bench-test on a no-traffic window first. "Latest is best" was wrong for 4.24/4.25/4.26/4.29 (no fix), correct for 5.2 (fix shipped).
+
+Historical record (kept for context — do not relax the policy without re-reading):
+
+### 4.24 → 4.26 latency regression — wait-and-watch policy (2026-04-28, superseded by 5.2 fix above)
 
 A two-version jump from 4.24 to 4.26 produced a service-quality incident on the family-traffic gateway. Symptoms operators care about:
 
