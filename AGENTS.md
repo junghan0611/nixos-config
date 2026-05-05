@@ -55,14 +55,17 @@ Oracle is a lean cloud runtime dedicated to keeping OpenClaw alive. Treat Oracle
 
 ## 2. Ownership model
 
-### Two repos
+### Repos in the orbit
 
 | Repo | Path | Role |
 |---|---|---|
 | Private runtime SSOT | `~/openclaw/` | live `openclaw.json`, auth state, workspaces, runtime Docker files |
-| Public operator / backup | `~/repos/gh/nixos-config/` | Dockerfile / compose backups, host NixOS context, this brief |
+| Public operator / backup (this) | `~/repos/gh/nixos-config/` | Dockerfile / compose backups, host NixOS context, this brief — **mother repo** |
+| Public companion | `~/repos/gh/openglg-config/` | portable service stack (Caddy/Authelia/Postgres/...) + portable home-manager (`home/`) that lands on any Debian/Ubuntu host without NixOS |
 
 Live truth lives in `~/openclaw/`. Public backup / reference lives here. Never leak secrets or auth state into this repo. Do not assume the public copy is live, and do not assume the live copy is publishable.
+
+**Companion boundary (openglg-config)**: anything that must run on a non-NixOS host (cloud VPS, AVF VM, foreign machine) belongs in `openglg-config`. Anything tied to the NixOS host itself (kernel, system services, system home-manager, hardware) belongs here. Do not duplicate state across the two — pick one home for each setting.
 
 ### What lives where
 

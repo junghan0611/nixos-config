@@ -246,6 +246,7 @@ nixos-config provides:
 ### Related
 
 - [dotdoom-starter](https://github.com/junghan0611/dotdoom-starter) - My Doom Emacs config
+- [openglg-config](https://github.com/junghan0611/openglg-config) - **Companion repo.** Portable service stack (Docker Compose: Caddy/Authelia/Postgres/Metabase/...) plus a portable home-manager (`home/`) that lands on any Debian/Ubuntu host. Use this `nixos-config` when you own the host; use `openglg-config` when you only get the user shell on top of it (rented VPS, AVF VM, foreign machine).
 
 ---
 
