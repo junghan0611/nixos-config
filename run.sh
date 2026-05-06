@@ -485,11 +485,32 @@ main() {
                     break
                 fi
 
-                # 스킬 분류
-                #   npm: node_modules 포함 복사
-                #   cli: node_modules 제외 복사 (Go 바이너리 등)
-                SKILL_NPM=(brave-search youtube-transcript medium-extractor transcribe summarize)
-                SKILL_CLI=(denotecli ghcli bibcli gogcli gitcli lifetract dictcli)
+                # 스킬 분류 — pi-skills SSOT 자동 스캔
+                #   npm: node_modules 있음 → 통째로 복사
+                #   cli: node_modules 없음 → --exclude=node_modules 복사
+                # 보안/대상 사용자상 봇에 배포하지 않을 스킬
+                #   telegram/slack-latest/jiracli: 사용자 계정 권한 위임 위험
+                #   memory-sync: oracle에서 임베딩 비용
+                #   punchout: 사용자 본인 일일 마무리 도구
+                #   browser-tools: 봇 컨테이너에 무거운 puppeteer 불필요
+                #   entwurf-peek: pi-shell-acp 분신 호출자 전용
+                SKILL_EXCLUDE=(telegram slack-latest jiracli memory-sync punchout browser-tools entwurf-peek)
+                SKILL_NPM=()
+                SKILL_CLI=()
+                for d in "$PI_SKILLS_DIR"/*/; do
+                    [[ -d "$d" ]] || continue
+                    name=$(basename "$d")
+                    skip=0
+                    for ex in "${SKILL_EXCLUDE[@]}"; do
+                        [[ "$name" == "$ex" ]] && { skip=1; break; }
+                    done
+                    [[ $skip -eq 1 ]] && continue
+                    if [[ -d "$d/node_modules" ]]; then
+                        SKILL_NPM+=("$name")
+                    else
+                        SKILL_CLI+=("$name")
+                    fi
+                done
 
                 # 에이전트별 스킬 배포 정책
                 #   full: 전체 스킬 (main, glg, gpt, gemini, bbot)
@@ -502,8 +523,9 @@ main() {
 
                 info "=== OpenClaw 스킬 배포 (pi-skills → workspace) ==="
                 echo ""
-                echo "  npm 스킬: ${SKILL_NPM[*]}"
-                echo "  CLI 스킬: ${SKILL_CLI[*]}"
+                echo "  npm 스킬 (${#SKILL_NPM[@]}): ${SKILL_NPM[*]}"
+                echo "  CLI 스킬 (${#SKILL_CLI[@]}): ${SKILL_CLI[*]}"
+                echo "  제외 (${#SKILL_EXCLUDE[@]}): ${SKILL_EXCLUDE[*]}"
                 echo ""
                 echo "  전체 배포: ${AGENTS_FULL[*]}"
                 echo "  최소 배포: ${AGENTS_MINI[*]} (${MINI_SKILLS[*]})"
