@@ -180,6 +180,19 @@
   # Fingerprint reader (optional - enable if hardware is present)
   # services.fprintd.enable = true;
 
+  # Ollama with Vulkan for AMD 780M (qwen3-embedding:4b serving)
+  # 2026-04-15 added → 2026-04-17 reverted (always-on policy)
+  # 2026-05-07 revived: andenken/semantic-memory 세션 임베딩 빈도 ↑, OpenRouter 보조용
+  # OLLAMA_KEEP_ALIVE=10m → idle 10분 후 VRAM 언로드 (배터리 보호)
+  services.ollama = {
+    enable = true;
+    acceleration = "vulkan";
+    host = "127.0.0.1";
+    environmentVariables = {
+      OLLAMA_KEEP_ALIVE = "10m";
+    };
+  };
+
   # Disable ZRAM swap (using physical swap partition instead)
   zramSwap.enable = false;
 

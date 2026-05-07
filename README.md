@@ -49,12 +49,22 @@ A comprehensive NixOS configuration for building **identical computing environme
 
 ### Local AI (ThinkPad)
 
-ThinkPad has working **Vulkan** support on AMD Radeon 780M (Mesa RADV), but **Ollama is not enabled as a persistent NixOS service by default**.
+**Ollama with Vulkan** on AMD Radeon 780M (Mesa RADV), enabled as a persistent NixOS service.
 
-Current preference:
-- use **OpenRouter** by default
-- only enable local Ollama temporarily when explicitly needed
-- avoid always-on local model serving on ThinkPad
+| Item | Value |
+|------|-------|
+| Package | `ollama-vulkan` (auto-selected by `acceleration = "vulkan"`) |
+| GPU | AMD Radeon 780M (RADV PHOENIX) |
+| Recommended model | `qwen3-embedding:4b` (Q4, 2.5GB, 2560-dim) |
+| Endpoint | `http://127.0.0.1:11434` |
+| Keep-alive | `OLLAMA_KEEP_ALIVE=10m` — idle 10분 후 VRAM 언로드 |
+
+History: 2026-04-15 추가 → 04-17 revert (always-on 정책) → **05-07 재도입** (andenken/semantic-memory 세션 임베딩 빈도 ↑, OpenRouter 보조).
+
+Pull the embedding model after rebuild:
+```bash
+ollama pull qwen3-embedding:4b
+```
 
 ### Docker Services (Oracle VM)
 

@@ -43,9 +43,11 @@ Do this even if the session hook already reported the values. Wrong host assumpt
 
 ### ThinkPad local AI policy
 
-- Default to OpenRouter. Do not keep Ollama serving unless explicitly needed.
-- Vulkan via Mesa RADV works (AMD Radeon 780M; validated `ollama-vulkan` + `qwen3-embedding:4b`).
-- Enable local embedding intentionally; disable after use.
+- **Ollama Vulkan 상시 서비스 활성** (2026-05-07 재도입). 세션 임베딩 빈도가 높아 OpenRouter 단독 의존이 비효율적.
+- Vulkan via Mesa RADV (AMD Radeon 780M); package auto-selected by `services.ollama.acceleration = "vulkan"`.
+- Recommended model: `qwen3-embedding:4b` (2560-dim, andenken과 동일 차원).
+- `OLLAMA_KEEP_ALIVE=10m` — idle 시 VRAM 자동 해제. 데몬은 살아 있되 GPU는 거의 0.
+- History: 04-15 추가 → 04-17 revert (always-on 정책) → 05-07 재도입 (세션 임베딩 워크로드 증가).
 
 ### Oracle is different
 
