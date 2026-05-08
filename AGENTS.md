@@ -160,11 +160,26 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — disabled since 2026-05-03
+### Active memory — gpt only since 2026-05-08 17:58 UTC
 
-`plugins.entries.active-memory.enabled: false` (5.2 안정성 검증 동안). 기존 config(Groq paid tier `gpt-oss-120b` primary, `google/gemini-3-flash` fallback, `timeoutMs: 15000`, `agents: ["glg", "gpt"]`) 그대로 보존.
+5.7+8B baseline 이후 단계적 활성. `plugins.entries.active-memory.enabled: true`.
 
-재활성 시 참고: [docs/openclaw-gotchas.md "비활성 — active-memory"](docs/openclaw-gotchas.md). 모델 선택·timeout·rate_limit fallback 함정 정리됨. Upstream baseline은 `~/repos/3rd/openclaw/docs/concepts/active-memory.md`.
+운영 config:
+- `agents: ["gpt"]` — 가족 봇 glg 의도적 제외 (응답성 우선, active-memory가 main 응답에 5–10s 추가)
+- `model: "openai-codex/gpt-5.4-mini"` — main lane (gpt-5.4) 보호. recall lane을 mini로 분리해 OAuth quota 경합 회피
+- `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
+- `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호 (5.2부터 explicit 옵션, 우리는 5.7이라 명시 필요)
+- `maxSummaryChars: 220` — docs default. 한국어→영어 요약 가능 (관측: 164자 영어 summary)
+- `thinking: "off"`, `persistTranscripts: false`, `logging: true` — 유지
+
+첫 호출 측정 (2026-05-08 17:58~18:01 UTC, gpt 봇 텔레그램 직접 채팅):
+- cold first-call: elapsed 7993ms / status=empty / summaryChars=0
+- warm second-call: elapsed 7339ms / status=ok / summaryChars=164
+- codex OAuth path가 모델 크기와 무관하게 5–10s latency 본질. 해석: "main 응답이 5–10s 늦어진다"가 아니라 "active-memory recall sub-agent 자체가 그 시간 소요". gpt 봇만 영향 (가족 봇 glg는 미적용).
+
+24h 관찰 후 단계 확장 검토 — NEXT.md §2.
+
+비활성 절차 / 함정은 [docs/openclaw-gotchas.md "비활성 — active-memory"](docs/openclaw-gotchas.md) 그대로 유지 (Groq paid tier / 5.2+ explicit grace 같은 과거 결정 근거).
 
 ### Memory / embedding layers (since 2026-05-08 baseline stamp)
 

@@ -28,34 +28,33 @@
 - [ ] **`--force` 직후 dirty=true 현상 — 8B 사이클에도 재현되는지**
   - 5.7+4B 사이클에서 6 agents 모두 `dirty=true` → incremental 1회로 해소됐던 패턴. 8B에서도 동일하면 upstream issue로 보고.
 
-## 2. active-memory 재활성화 검토
+## 2. active-memory 24h 관찰 (gpt only)
 
-5.2 안정성 검증 동안 비활성. 5.7 운영 안정 확인됨 (ready 5.7s, 가족 봇 응답 정상). 재활성 가능 시점.
+(2026-05-08 17:58 UTC 활성) 단계적 활성. `agents: ["gpt"]` only, model `openai-codex/gpt-5.4-mini`, queryMode `message`, promptStyle `strict`, timeoutMs 5000 + setupGraceTimeoutMs 30000, maxSummaryChars 220. 보존 baseline (Groq pin) 폐기 — codex OAuth single-quota 일원화로 단순화.
 
-근거 위치:
-- 비활성 이력: `docs/openclaw-gotchas.md` "비활성 — active-memory" (line 79~)
-- 5.7 변경: "Active Memory: require admin scope for global memory toggles" (보안 강화)
-- 기존 baseline config (보존됨): Groq paid tier `gpt-oss-120b` primary + `google/gemini-3-flash` fallback, `timeoutMs: 15000`, `agents: ["glg", "gpt"]`
+첫 호출 측정:
+- cold first-call: elapsed 7993ms / status=empty
+- warm second-call: elapsed 7339ms / status=ok / summaryChars=164 (한국어→영어 요약 작동)
+- 해석: codex OAuth path는 모델 크기와 무관하게 5–10s latency 본질. 매번 7s대 → cold/warm 구분 미미.
 
-검증 항목:
+관찰 항목:
 
-- [ ] **재활성 전 docs 재숙독** — `docs/openclaw-gotchas.md` 비활성 섹션 함정 정리 (Groq free tier TPM=8K로 `gpt-oss-120b` 불가, Gemini 3 Flash Lite는 prefill-bound 워크로드에서 Flash보다 느림 등)
-- [ ] **5.7 active-memory 동작 변화 확인**
-  - admin scope 요구 (5.7) → 우리 config가 admin scope 충족하는지
-  - 5.5/5.6/5.7 다른 active-memory 관련 변경 없는지 release note 재확인
-- [ ] **기존 baseline 그대로 활성**
-  - `plugins.entries.active-memory.enabled: true`
-  - 모델/timeout/agents 그대로
-  - force-recreate (env 변경 시) or restart (config만 변경 시)
-- [ ] **활성 직후 24h 관찰**
-  - 가족 봇 (glg) 응답 latency 5.2 baseline 대비 증가 여부
-  - active-memory 호출당 비용 (Groq paid tier) 추적
-  - timeout / fallback 발생률
-  - 회상 품질 향상 신호 (예: 이전 대화 더 자연스럽게 이어가는지)
-- [ ] **trade-off 평가 후 결정**
-  - 응답 시간 비용 < 회상 품질 이득 → 유지
-  - 응답 시간 비용 > 회상 품질 이득 → 다시 비활성, gotchas.md에 새 사유 기록
-  - 결정 사유 `~/openclaw/README.md` change history에 stamp
+- [ ] **24h gpt 봇 응답 패턴 추적**
+  - status 분포 (`ok` vs `empty` vs `timeout`) — `logging: true` 로그에서 집계
+  - elapsed 분포 — warm 호출이 정말 7s대인지, 더 짧아지는지, 아니면 가끔 spike
+  - 회상이 들어간 turn (status=ok)에서 main 답변 품질 향상 정성 평가
+- [ ] **timeout 빈도가 높으면 처치**
+  - 5000ms 자주 초과 → setupGraceTimeoutMs는 cold만 적용인지 매 호출 적용인지 docs 재확인
+  - 빈도 높으면 timeoutMs 7000 또는 8000으로 완화
+- [ ] **회상 품질 정성 평가**
+  - "이전 얘기 이어서" 같은 turn에서 자연스러운 컨텍스트 주입되는지
+  - false-positive (관련 없는 회상) 발생 여부 — promptStyle:strict 효과 확인
+- [ ] **단계 확장 결정 (24h 후)**
+  - 안정성 OK → `agents: ["gpt", "glg"]`로 가족 봇 추가. 단 가족 응답성 trade-off 신중. mini agent는 자체가 빠른 모델이라 active-memory 추가 의미 적음 (skip 권장).
+  - 안정성 NG → 비활성 후 docs/openclaw-gotchas.md에 새 사유 stamp. 또는 model을 다른 빠른 endpoint (예: `google/gemini-3-flash`)로 변경 후 재시도
+- [ ] **24h 결과 stamp**
+  - `~/openclaw/README.md` change history에 결과 entry 추가
+  - AGENTS.md §3 active memory 섹션 운영 데이터 갱신
 
 ## 3. (참고) gemini agent 정리
 
