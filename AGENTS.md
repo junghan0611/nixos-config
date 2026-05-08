@@ -168,20 +168,21 @@ PY
 
 ### Memory / embedding layers (since 2026-05-08 baseline stamp)
 
-Oracle has two disjoint recall layers. Same embedding family now (Qwen3-4B 2560d), different storage and corpus.
+Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding) but model size differs since 2026-05-08 16:00 — OpenClaw moved to 8B native 4096d, andenken still on 4B 2560d (separate migration cycle).
 
 | Layer | Provider | Model | Dim | Storage | Bot access |
 |---|---|---|---|---|---|
-| OpenClaw session+memory | OpenRouter | `qwen/qwen3-embedding-4b` | **2560** | `~/openclaw/config/memory/{agentId}.sqlite` (sqlite-vec + FTS5 trigram) | native `memorySearch` |
+| OpenClaw session+memory | OpenRouter | `qwen/qwen3-embedding-8b` | **4096** | `~/openclaw/config/memory/{agentId}.sqlite` (sqlite-vec + FTS5 trigram) | native `memorySearch` |
 | andenken (org KB + sessions) | OpenRouter (query) / local vLLM (index) | `qwen/qwen3-embedding-4b` | 2560 | LanceDB (indexing host) | **skill needed — not deployed** |
 
 - `agents.defaults.memorySearch.experimental.sessionMemory: true` since 2026-05-08 — sessions transcript indexing finally activated. Before that the `sources: ["sessions"]` line was being silently dropped by `normalizeSources()` because the experimental gate was closed. Verify with `openclaw memory status --agent <id>` showing `Sources: memory, sessions` and a non-zero `sessions ·` row under `By source:`.
 - **5.2 baseline (2026-05-08 06:14 UTC)**: 6 agents force-reindexed → total 2540 chunks (1234 memory + 1306 sessions). main 73 / glg 1599 / gpt 436 / gemini 266 / mini 73 / bbot 93. tool-call heavy bots had aggressive sanitization on indexable content.
 - **5.7 baseline (2026-05-08 10:30 UTC)**: same 6 agents force-reindexed → total **4981 chunks (1234 memory + 3747 sessions, +187% sessions)**. main 303 / glg 1831 / gpt 1923 / gemini 670 / mini 127 / bbot 127. memory chunks unchanged → chunking algorithm constant. sessions chunks grew because 5.7 transcript-hygiene preserves delivered assistant replies on disk and applies provider-specific sanitization only to outbound payloads, so indexing now sees full transcript instead of pre-stripped content. Tool-call heavy bots (main 8.4×, gpt 4.4×, gemini 2.5×) gained the most; family-dialog glg gained little (1.13×) because its turns survived 5.2 sanitization already.
 - 5.7 신규 분리 리포트: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider가 별도로 진단됨. `vec0.so` 경로 확인 가능.
+- **8B baseline (2026-05-08 16:43 UTC)**: 4B → 8B 전환. OpenRouter 가격 4B $0.02/M → 8B **$0.01/M (절반)**. native dim 2560 → **4096** (matryoshka truncate 안 함, 모델 풀 활용). 절차: `agents.defaults.memorySearch.model: "qwen/qwen3-embedding-8b"` + `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` 삭제 + gateway restart → schema 자동 4096d 재생성. **Reindex 필수** (4B와 8B 임베딩 공간은 직교: 같은 텍스트 cos(4B,8B)≈0). 6 agents force reindex 결과: total **4982 chunks (1234 memory + 3748 sessions)** — 5.7+4B의 4981과 거의 동일 (chunking 알고리즘은 모델 독립). 분포도 그대로 (main 303 / glg 1832 / gpt 1923 / gemini 670 / mini 127 / bbot 127). reindex 소요 1290s (~21분, glg 362s + gpt 616s). storage 621M → **975M (1.57×)**. OpenRouter privacy 설정에서 8B endpoint 허용 필요 (default 차단되며 "No endpoints available matching your guardrail restrictions" 에러).
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
 - `~/org:/home/node/org:ro` is for file access (denotecli / bibcli / botlog), not embedding. Do not remove.
-- andenken layer is still separate by *storage* (LanceDB vs sqlite) and *corpus* (org KB vs OpenClaw sessions/memory). To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle. Now that both layers run at 2560d, dim mismatch is no longer the blocker — only deployment is.
+- andenken layer is still separate by *storage* (LanceDB vs sqlite), *corpus* (org KB vs OpenClaw sessions/memory), and **since 2026-05-08 16:00 also by *model*** (4B vs 8B) until andenken follows. To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle — but cross-store retrieval will be slightly miscalibrated until both layers share a model again.
 - This baseline is the comparison point for andenken bake-off (first-result precision, freshness, CJK short query, operator trust). OpenClaw is SSOT; andenken follows.
 
 ### Mount permission model (since 2026-04-25)

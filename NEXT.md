@@ -6,28 +6,27 @@
 
 ---
 
-## 1. 현재 임베딩 로직 검증 (5.7 baseline 직후)
+## 1. 8B 4096d 검색 품질 검증 (8B baseline 직후)
 
-5.2 → 5.7 (2026-05-08) 직후 sessions chunks **+187%** (1306 → 3747). memory chunks 1234 동일. 메커니즘은 5.7 transcript-hygiene 디스크 보존 강화로 sanitization이 outbound payload에만 적용. AGENTS.md §3 Memory layers 참조. 같은 비용에 검색 풀 1.9배라는 운영 효과는 정량 확인됐지만 **검색 품질**과 **andenken 비교**는 아직.
+5.7+4B → 5.7+8B 전환 (2026-05-08 16:00). model `qwen/qwen3-embedding-8b`, dim 2560 → **4096 native**. OpenRouter 가격 절반 ($0.02/M → $0.01/M). 4B와 8B 임베딩 공간은 직교 (cos≈0)라 reindex 필수했음.
 
 검증 항목:
 
-- [ ] **5.7로 새로 회상되는 turn 사례 수집**
-  - 5.2 baseline에서는 sanitization으로 빠졌을 만한 turns (특히 main/gpt의 tool-call 응답)을 5.7에서 query로 직접 hit하는지
-  - 후보 query: `docker compose`, `memory status`, `flake.lock`, `force-recreate` 등 도구 호출 위주
-  - 결과: 어떤 sessions chunks가 hit되는지 path + score 기록
-- [ ] **5.7 false-positive 추적**
-  - 새로 추가된 chunks가 의미상 노이즈로 작동하지 않는지 (top hit이 무관한 sessions chunk로 밀리는 경우)
-  - 가족 봇 (glg) 회상 품질 dip 여부 — 가족 직접 대화는 1.13× 증가만 있었으므로 이론상 영향 적지만 score 분포는 변함
-- [ ] **andenken bake-off 재실시** (AGENTS.md §3 Memory layers 마지막 단락)
-  - 같은 query를 OpenClaw 5.7 (sqlite-vec 2560d) ↔ andenken (LanceDB 2560d) 양쪽에 던짐
-  - 평가축: first-result precision, freshness (최근 sessions 회상력), CJK short query, operator trust
-  - storage/corpus 분리 그대로: OpenClaw은 sessions+memory, andenken은 org KB+pi sessions. 서로 다른 corpus라 단순 score 비교가 아니라 *목적별 도달 시간* 측정
+- [ ] **5.7+4B baseline ↔ 5.7+8B baseline 동일 query 비교**
+  - 5.7+4B에서 측정했던 reference scores: 안녕 0.759, 세션을 0.627 (vec=0.529 text=0.858), 임베딩 0.680
+  - 8B에서 동일 query 재실행 → score 분포 비교. 8B가 의미 매칭 더 강하게 잡는지 vs textScore 비중이 너무 커지는지
+- [ ] **4096d 차원이 검색 결과 ranking에 미친 영향**
+  - 5.7+4B에서 top-3였지만 5.7+8B에서 떨어진 chunks (또는 그 반대) 사례 수집
+  - storage 부담: 4B 621M → 8B 약 1GB 예상. 실측
+- [ ] **가족 봇 (glg) 실응답 품질**
+  - 4096d로 회상이 더 자연스러운지, 또는 차이 없는지
+  - 응답 latency 4B 대비 변화 (8B는 모델이 크지만 OpenRouter API 호출이라 우리 쪽 영향은 RTT만)
+- [ ] **andenken bake-off 재실시 (model parity 도달 후)**
+  - andenken도 8B 4096d로 따라오면 cross-store 검색 일관성 확보
+  - 평가축: first-result precision, freshness, CJK short query, operator trust
   - 결과 기록: `~/org/llmlog/` 새 노트 (denote 형식)
-- [ ] **5.2 vs 5.7 동일 chunking 가설 확인**
-  - memory chunks 1234 정확히 일치는 우연일 수 없지만, 별도 확인 가치 있음. `memory/` 입력 파일 1개 골라서 chunks 분포 spot-check (file당 chunks)
-- [ ] **`--force` 직후 dirty=true 현상 원인**
-  - 5.7에서 force reindex 후 모든 agent에 `dirty: true`. incremental 한 번 돌리면 false. metadata sync 시차로 추정했지만 정확한 원인 모름. 다음 주기 force 시 동일 재현되는지 확인 → 재현되면 upstream issue로 보고
+- [ ] **`--force` 직후 dirty=true 현상 — 8B 사이클에도 재현되는지**
+  - 5.7+4B 사이클에서 6 agents 모두 `dirty=true` → incremental 1회로 해소됐던 패턴. 8B에서도 동일하면 upstream issue로 보고.
 
 ## 2. active-memory 재활성화 검토
 
