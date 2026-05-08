@@ -1,6 +1,8 @@
-# 4.29 lazy-staging 재현 → 5.2 직행 (scope broad runtime preloads fix)
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.4.23
-FROM ghcr.io/openclaw/openclaw:2026.5.2
+# 5.2 → 5.7 직행 (5.5 Codex OAuth rewrite 버그 회피, 5.6 hotfix 통합).
+# 변경 핵심(기억층): transcript-hygiene 디스크 보존 강화, context engine cache invalidate,
+# daily session rollover transcript persist, memory status --deep 분리 리포트.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.2
+FROM ghcr.io/openclaw/openclaw:2026.5.7
 
 USER root
 

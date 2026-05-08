@@ -122,7 +122,7 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (OpenClaw 2026.5.2 baseline, 2026-05-08 갱신)
+### Model routing (OpenClaw 2026.5.7 baseline, 2026-05-08 두 번째 갱신)
 
 LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)는 **삭제 예정**.
 
@@ -144,6 +144,8 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`).
 
 ACPX disabled (`plugins.entries.acpx.enabled=false` + `acp.enabled=false`, 5.2가 `@openclaw/acpx` beta로 externalize). 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
+
+5.7 업그레이드 (2026-05-08 두 번째): Codex OAuth 라우트 보존 (5.5 doctor rewrite 버그는 5.6에서 revert). `agent model: openai-codex/gpt-5.4` 그대로. ready 5.7s, 6 텔레그램 봇 정상 기동.
 
 라이브 값 확인:
 
@@ -172,7 +174,9 @@ Oracle has two disjoint recall layers. Same embedding family now (Qwen3-4B 2560d
 | andenken (org KB + sessions) | OpenRouter (query) / local vLLM (index) | `qwen/qwen3-embedding-4b` | 2560 | LanceDB (indexing host) | **skill needed — not deployed** |
 
 - `agents.defaults.memorySearch.experimental.sessionMemory: true` since 2026-05-08 — sessions transcript indexing finally activated. Before that the `sources: ["sessions"]` line was being silently dropped by `normalizeSources()` because the experimental gate was closed. Verify with `openclaw memory status --agent <id>` showing `Sources: memory, sessions` and a non-zero `sessions ·` row under `By source:`.
-- 6 agents reindexed at baseline stamp: total 2540 chunks (1234 memory + 1306 sessions). glg dominates with 1599 chunks (family direct dialog survives sanitization); main/gpt/gemini/mini/bbot range 73–436 chunks (heavier sanitization on tool-call transcripts is intentional — see `~/org/llmlog/20260507T193005`).
+- **5.2 baseline (2026-05-08 06:14 UTC)**: 6 agents force-reindexed → total 2540 chunks (1234 memory + 1306 sessions). main 73 / glg 1599 / gpt 436 / gemini 266 / mini 73 / bbot 93. tool-call heavy bots had aggressive sanitization on indexable content.
+- **5.7 baseline (2026-05-08 10:30 UTC)**: same 6 agents force-reindexed → total **4981 chunks (1234 memory + 3747 sessions, +187% sessions)**. main 303 / glg 1831 / gpt 1923 / gemini 670 / mini 127 / bbot 127. memory chunks unchanged → chunking algorithm constant. sessions chunks grew because 5.7 transcript-hygiene preserves delivered assistant replies on disk and applies provider-specific sanitization only to outbound payloads, so indexing now sees full transcript instead of pre-stripped content. Tool-call heavy bots (main 8.4×, gpt 4.4×, gemini 2.5×) gained the most; family-dialog glg gained little (1.13×) because its turns survived 5.2 sanitization already.
+- 5.7 신규 분리 리포트: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider가 별도로 진단됨. `vec0.so` 경로 확인 가능.
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
 - `~/org:/home/node/org:ro` is for file access (denotecli / bibcli / botlog), not embedding. Do not remove.
 - andenken layer is still separate by *storage* (LanceDB vs sqlite) and *corpus* (org KB vs OpenClaw sessions/memory). To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle. Now that both layers run at 2560d, dim mismatch is no longer the blocker — only deployment is.
