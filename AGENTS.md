@@ -1,5 +1,7 @@
 # nixos-config AGENTS.md
 
+> **Next steps live in [NEXT.md](NEXT.md).** 끝나지 않은 일과 후속 검증 항목은 항상 그쪽에 둔다 — 이 문서는 *현재 운영 상태*, NEXT.md는 *앞으로 할 일*. 새 작업 마무리 시 끝나지 않은 후속이 있으면 NEXT.md에 추가하고 끝난 항목은 지운다.
+
 Operator brief for a multi-device NixOS repository across `oracle`, `nuc`, `laptop`, `thinkpad`.
 
 ## How to read this
