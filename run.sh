@@ -512,12 +512,8 @@ main() {
                     fi
                 done
 
-                # 에이전트별 스킬 배포 정책
-                #   full: 전체 스킬 (main, glg, gpt, gemini, bbot)
-                #   mini: denotecli만
-                AGENTS_FULL=(workspace workspace-glg workspace-gpt workspace-gemini workspace-bbot)
-                AGENTS_MINI=(workspace-mini)
-                MINI_SKILLS=(denotecli)
+                # 에이전트별 스킬 배포 정책 — 모든 봇 동일 스킬 (봇 직관 우선)
+                AGENTS_FULL=(workspace workspace-glg workspace-gpt workspace-gemini workspace-mini workspace-bbot)
                 # Claude ACP 스킬 오버레이 (bbot ACP 세션이 ~/.claude/skills로 봄)
                 CLAUDE_SKILLS="$OPENCLAW_DIR/config/claude-skills"
 
@@ -528,7 +524,6 @@ main() {
                 echo "  제외 (${#SKILL_EXCLUDE[@]}): ${SKILL_EXCLUDE[*]}"
                 echo ""
                 echo "  전체 배포: ${AGENTS_FULL[*]}"
-                echo "  최소 배포: ${AGENTS_MINI[*]} (${MINI_SKILLS[*]})"
                 echo ""
                 warn "스킬을 설치/업데이트합니다. 계속하시겠습니까? (y/N)"
                 read -p "> " confirm
@@ -554,9 +549,9 @@ main() {
                         fi
                     done
 
-                    # 2. full 에이전트들에 main → rsync
+                    # 2. full 에이전트들에 main → rsync (mini 포함, 모든 봇 동일)
                     echo ""
-                    info "2/3 전체 스킬 동기화 → glg, gpt, gemini..."
+                    info "2/3 전체 스킬 동기화 → glg, gpt, gemini, mini, bbot..."
                     for ws in "${AGENTS_FULL[@]}"; do
                         [[ "$ws" == "workspace" ]] && continue  # main은 이미 설치됨
                         WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
@@ -565,33 +560,9 @@ main() {
                         success "$ws"
                     done
 
-                    # 3. mini에 최소 스킬만 배포
+                    # 3. claude-skills 동기화 (ACP 세션이 ~/.claude/skills로 봄)
                     echo ""
-                    info "3/3 최소 스킬 배포 → mini..."
-                    for ws in "${AGENTS_MINI[@]}"; do
-                        WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
-                        mkdir -p "$WS_SKILLS"
-                        # mini는 지정 스킬만 개별 복사, 나머지 삭제
-                        # 먼저 기존 스킬 정리
-                        for existing in "$WS_SKILLS"/*/; do
-                            skill_name=$(basename "$existing")
-                            if [[ ! " ${MINI_SKILLS[*]} " =~ " ${skill_name} " ]]; then
-                                rm -rf "$existing"
-                            fi
-                        done
-                        for skill in "${MINI_SKILLS[@]}"; do
-                            if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
-                                rsync -a --delete --exclude='node_modules' "$PI_SKILLS_DIR/$skill/" "$WS_SKILLS/$skill/"
-                                success "$ws/$skill"
-                            else
-                                warn "$skill: 소스 없음"
-                            fi
-                        done
-                    done
-
-                    # 4. claude-skills 동기화 (ACP 세션이 ~/.claude/skills로 봄)
-                    echo ""
-                    info "4/4 Claude ACP 스킬 동기화 → claude-skills..."
+                    info "3/3 Claude ACP 스킬 동기화 → claude-skills..."
                     if [[ -d "$CLAUDE_SKILLS" ]]; then
                         rsync -a --delete "$WORKSPACE_SKILLS/" "$CLAUDE_SKILLS/"
                         success "claude-skills"
@@ -600,11 +571,12 @@ main() {
                     fi
 
                     echo ""
-                    info "main workspace 스킬 목록:"
-                    ls "$WORKSPACE_SKILLS/"
-                    echo ""
-                    info "mini workspace 스킬 목록:"
-                    ls "$OPENCLAW_DIR/config/workspace-mini/skills/" 2>/dev/null || echo "  (없음)"
+                    info "각 workspace 스킬 카운트:"
+                    for ws in "${AGENTS_FULL[@]}"; do
+                        WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
+                        count=$(ls -d "$WS_SKILLS"/*/ 2>/dev/null | wc -l)
+                        echo "  $ws: $count"
+                    done
                     echo ""
                     info "claude-skills 스킬 목록:"
                     ls "$CLAUDE_SKILLS/" 2>/dev/null || echo "  (없음)"

@@ -134,7 +134,7 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 | glg (가족) | `openai-codex/gpt-5.4` | `workspace-glg/` | `@glg_junghanacs_bot` |
 | gpt | `openai-codex/gpt-5.4` | `workspace-gpt/` | 개인 |
 | bbot | `openai-codex/gpt-5.4` | `workspace-bbot/` | `@glg_b_bot` |
-| mini | `openai-codex/gpt-5.4-mini` | `workspace-mini/` | format / proofread only |
+| mini | `openai-codex/gpt-5.4` | `workspace-mini/` | 가벼운 turn 처리, 풀 스킬셋 (2026-05-09부터 5.4-mini → 5.4 + 모든 봇 동일 스킬 정책) |
 | gemini | `github-copilot/gemini-3.1-pro-preview` | `workspace-gemini/` | **Copilot 의존, 삭제 예정** — gpt-5.4로 통합하거나 제거 |
 | subagents | `openai-codex/gpt-5.4` | — | |
 
@@ -391,19 +391,20 @@ Operator entrypoint: `run.sh k)` (Oracle only).
 
 ### Per-agent policy
 
-| Agent | Workspace | Skill scope | Reason |
-|---|---|---|---|
-| main | `workspace/` | all | generalist deep work |
-| glg | `workspace-glg/` | all | family life agent |
-| gpt | `workspace-gpt/` | all | GPT generalist |
-| gemini | `workspace-gemini/` | all | Gemini generalist |
-| bbot | `workspace-bbot/` | all | ACP Opus workspace (Sonnet fallback) |
-| mini | `workspace-mini/` | denotecli only | format / proofread — minimal |
+모든 봇 동일 스킬 (2026-05-09부터). 봇 직관 우선 — agenda/commit/botlog 같은 turn-routine 스크립트는 모든 봇이 자기 `workspace/skills/`에서 찾을 수 있어야 한다. mini 최소 정책(`MINI_SKILLS=(denotecli)`)은 issue #6에서 보고된 mini 봇 stamp 실패 사례로 폐기.
+
+| Agent | Workspace | Skill scope |
+|---|---|---|
+| main | `workspace/` | all |
+| glg | `workspace-glg/` | all |
+| gpt | `workspace-gpt/` | all |
+| gemini | `workspace-gemini/` | all |
+| mini | `workspace-mini/` | all |
+| bbot | `workspace-bbot/` | all |
 
 ### Deployment rules
 
-- `run.sh k)` installs to `main` first, then rsyncs to glg / gpt / gemini / bbot, then syncs to `claude-skills/`.
-- mini is separate — only listed skills copied, rest removed.
+- `run.sh k)` installs to `main` first, then rsyncs to glg / gpt / gemini / mini / bbot, then syncs to `claude-skills/`.
 - Adding or removing skill directories requires a gateway restart.
 - SKILL.md content-only changes load dynamically (no restart).
 - Go binaries are built for arm64 in pi-skills and deployed outside git.
