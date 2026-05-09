@@ -160,26 +160,26 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — gpt only since 2026-05-08 17:58 UTC
+### Active memory — main/glg/gpt/mini since 2026-05-09 12:59 KST
 
-5.7+8B baseline 이후 단계적 활성. `plugins.entries.active-memory.enabled: true`.
+5.7+8B baseline에서 gpt 단독으로 24h 관찰 (2026-05-08 17:58 KST 시작) 후 단계 확장. 사용자는 단일 동시대화, 가족 봇은 저빈도 — 응답성 trade-off 수용 가능 판단. gemini(삭제 예정)와 bbot(ACP path, 미검증) 제외.
 
 운영 config:
-- `agents: ["gpt"]` — 가족 봇 glg 의도적 제외 (응답성 우선, active-memory가 main 응답에 5–10s 추가)
-- `model: "openai-codex/gpt-5.4-mini"` — main lane (gpt-5.4) 보호. recall lane을 mini로 분리해 OAuth quota 경합 회피
+- `agents: ["main", "glg", "gpt", "mini"]` — 4개 활성. gemini/bbot 제외
+- `model: "openai-codex/gpt-5.4-mini"` — recall lane을 mini로 분리. main lane(gpt-5.4)과 OAuth quota 경합 회피
 - `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
-- `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호 (5.2부터 explicit 옵션, 우리는 5.7이라 명시 필요)
-- `maxSummaryChars: 220` — docs default. 한국어→영어 요약 가능 (관측: 164자 영어 summary)
+- `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호
+- `maxSummaryChars: 220` — docs default. 한국어→영어 요약 가능
 - `thinking: "off"`, `persistTranscripts: false`, `logging: true` — 유지
 
-첫 호출 측정 (2026-05-08 17:58~18:01 UTC, gpt 봇 텔레그램 직접 채팅):
-- cold first-call: elapsed 7993ms / status=empty / summaryChars=0
-- warm second-call: elapsed 7339ms / status=ok / summaryChars=164
-- codex OAuth path가 모델 크기와 무관하게 5–10s latency 본질. 해석: "main 응답이 5–10s 늦어진다"가 아니라 "active-memory recall sub-agent 자체가 그 시간 소요". gpt 봇만 영향 (가족 봇 glg는 미적용).
+24h 관찰 결과 (2026-05-08 08:58 ~ 2026-05-09 03:45 UTC, gpt 봇 14 invocation):
+- status: ok 4회 (28.6%) / empty 10회 (71.4%) / timeout 0회
+- elapsedMs: min 5388 / max 13256 / 평균 ~8.3s. 13.2s spike 1건은 동시 발생한 `event_loop_delay 1678ms` liveness warning과 상관 (Oracle ARM 일시 부하)
+- summaryChars (ok 호출): 164 / 178 / 203 / 216 — 모두 220 한도 내, 한국어→영어 요약 정상
+- 해석: codex OAuth path는 모델 크기와 무관하게 5–10s latency 본질. timeout 0건 — `setupGraceTimeoutMs=30000`이 매번 5s timeoutMs 덮음. strict promptStyle이 false-positive 차단 작동
+- 적용은 hot reload (`config hot reload applied (plugins.entries.active-memory.config.agents)`) — gateway restart 불필요했지만 안전 차원에서 추가 restart 수행
 
-24h 관찰 후 단계 확장 검토 — NEXT.md §2.
-
-비활성 절차 / 함정은 [docs/openclaw-gotchas.md "비활성 — active-memory"](docs/openclaw-gotchas.md) 그대로 유지 (Groq paid tier / 5.2+ explicit grace 같은 과거 결정 근거).
+비활성 절차 / 함정은 [docs/openclaw-gotchas.md "비활성 — active-memory"](docs/openclaw-gotchas.md) 그대로 유지.
 
 ### Memory / embedding layers (since 2026-05-08 baseline stamp)
 

@@ -28,33 +28,28 @@
 - [ ] **`--force` 직후 dirty=true 현상 — 8B 사이클에도 재현되는지**
   - 5.7+4B 사이클에서 6 agents 모두 `dirty=true` → incremental 1회로 해소됐던 패턴. 8B에서도 동일하면 upstream issue로 보고.
 
-## 2. active-memory 24h 관찰 (gpt only)
+## 2. active-memory 확장 후속 (main/glg/gpt/mini)
 
-(2026-05-08 17:58 UTC 활성) 단계적 활성. `agents: ["gpt"]` only, model `openai-codex/gpt-5.4-mini`, queryMode `message`, promptStyle `strict`, timeoutMs 5000 + setupGraceTimeoutMs 30000, maxSummaryChars 220. 보존 baseline (Groq pin) 폐기 — codex OAuth single-quota 일원화로 단순화.
+(2026-05-09 12:59 KST 확장) gpt 단독 24h 관찰 OK → main/glg/mini 추가. gemini(삭제 예정)/bbot(ACP path) 제외. 24h 결과는 AGENTS.md §3 active memory 섹션에 stamp 완료.
 
-첫 호출 측정:
-- cold first-call: elapsed 7993ms / status=empty
-- warm second-call: elapsed 7339ms / status=ok / summaryChars=164 (한국어→영어 요약 작동)
-- 해석: codex OAuth path는 모델 크기와 무관하게 5–10s latency 본질. 매번 7s대 → cold/warm 구분 미미.
+24h 관찰 결과 (2026-05-08 08:58 ~ 2026-05-09 03:45 UTC, gpt 14 invocation):
+- status: ok 4 / empty 10 / timeout 0
+- elapsedMs: min 5388 / max 13256 / 평균 ~8.3s
+- summaryChars (ok): 164 / 178 / 203 / 216 — 모두 220 한도 내
+- 13.2s spike 1건은 동시 발생 `event_loop_delay 1678ms` liveness warning과 상관
 
-관찰 항목:
+확장 후 후속 관찰:
 
-- [ ] **24h gpt 봇 응답 패턴 추적**
-  - status 분포 (`ok` vs `empty` vs `timeout`) — `logging: true` 로그에서 집계
-  - elapsed 분포 — warm 호출이 정말 7s대인지, 더 짧아지는지, 아니면 가끔 spike
-  - 회상이 들어간 turn (status=ok)에서 main 답변 품질 향상 정성 평가
-- [ ] **timeout 빈도가 높으면 처치**
-  - 5000ms 자주 초과 → setupGraceTimeoutMs는 cold만 적용인지 매 호출 적용인지 docs 재확인
-  - 빈도 높으면 timeoutMs 7000 또는 8000으로 완화
-- [ ] **회상 품질 정성 평가**
-  - "이전 얘기 이어서" 같은 turn에서 자연스러운 컨텍스트 주입되는지
-  - false-positive (관련 없는 회상) 발생 여부 — promptStyle:strict 효과 확인
-- [ ] **단계 확장 결정 (24h 후)**
-  - 안정성 OK → `agents: ["gpt", "glg"]`로 가족 봇 추가. 단 가족 응답성 trade-off 신중. mini agent는 자체가 빠른 모델이라 active-memory 추가 의미 적음 (skip 권장).
-  - 안정성 NG → 비활성 후 docs/openclaw-gotchas.md에 새 사유 stamp. 또는 model을 다른 빠른 endpoint (예: `google/gemini-3-flash`)로 변경 후 재시도
-- [ ] **24h 결과 stamp**
-  - `~/openclaw/README.md` change history에 결과 entry 추가
-  - AGENTS.md §3 active memory 섹션 운영 데이터 갱신
+- [ ] **glg(가족 봇) 응답 latency 체감 변화**
+  - 가족 사용 turn 후 가족 피드백 수집. "느려졌다" 류 호소 발생하면 glg만 다시 제외
+  - active-memory recall sub-agent 자체가 5–10s 본질이라 main 응답 자체에 추가되는 latency가 아님 — 메인 응답 시작 직전 한 번 도는 구조
+- [ ] **main agent 회상 품질 정성 평가**
+  - main은 가장 generalist deep work라 회상이 가장 유의미할 가능성. status=ok 비율 추적
+- [ ] **mini agent에서 의미 있는지 재검증**
+  - mini는 format/proofread 전용이라 "이전 대화 이어서" 패턴이 거의 없음. status=empty가 압도적이면 mini만 제외 검토
+- [ ] **확장 후 14일 baseline**
+  - 4개 봇 합산 invocation/day, status 분포, elapsed 분포 집계
+  - timeout 빈도 0% 유지되는지 — 다중 봇 동시 호출 시 OAuth quota 경합 검증
 
 ## 3. (참고) gemini agent 정리
 
