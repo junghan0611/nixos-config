@@ -134,7 +134,7 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 | glg (가족) | `openai-codex/gpt-5.4` | `workspace-glg/` | `@glg_junghanacs_bot` |
 | gpt | `openai-codex/gpt-5.5` | `workspace-gpt/` | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~). 운영 컨텍스트 200k로 5.4와 동등, 신형 레시피 평가용 |
 | bbot | `openai-codex/gpt-5.4` | `workspace-bbot/` | `@glg_b_bot` |
-| mini | `openai-codex/gpt-5.4` | `workspace-mini/` | 가벼운 turn 처리, 풀 스킬셋 (2026-05-09부터 5.4-mini → 5.4 + 모든 봇 동일 스킬 정책) |
+| mini | `openai-codex/gpt-5.4-mini` | `workspace-mini/` | 가벼운 turn 처리, 풀 스킬셋. Codex Plus 0.29x 비용 lane (5.4의 ~3.5분의 1) |
 | gemini | `github-copilot/gemini-3.1-pro-preview` | `workspace-gemini/` | **Copilot 의존, 삭제 예정** — gpt-5.4로 통합하거나 제거 |
 | subagents | `openai-codex/gpt-5.4` | — | |
 
@@ -144,6 +144,8 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 - `deepseek/deepseek-v4-pro` / `deepseek-v4-flash` (`DEEPSEEK_API_KEY` 회사 quota, 2026-04-27~)
 
 > 운영 컨텍스트 메모: catalog 표기가 `266k/1025k` 같은 "이론치/확장치"로 보여도 라이브 `/status`는 보통 200k로 잡힌다. 5.4 vs 5.5 컨텍스트 트레이드오프는 사실상 없음.
+
+> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. 우리 배치 원칙: 가벼운 turn은 5.4-mini, 가족/일반은 5.4, 신형 트라이얼은 5.5(gpt 봇 단독). active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호.
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`).
 
@@ -162,12 +164,12 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — main/glg/gpt/mini since 2026-05-09 12:59 KST
+### Active memory — main/glg/gpt since 2026-05-09 (mini 제외 15:55 KST)
 
-5.7+8B baseline에서 gpt 단독으로 24h 관찰 (2026-05-08 17:58 KST 시작) 후 단계 확장. 사용자는 단일 동시대화, 가족 봇은 저빈도 — 응답성 trade-off 수용 가능 판단. gemini(삭제 예정)와 bbot(ACP path, 미검증) 제외.
+5.7+8B baseline에서 gpt 단독으로 24h 관찰 (2026-05-08 17:58 KST 시작) → 12:59 KST main/glg/mini 추가 → 15:55 KST mini 제외. mini는 5.4-mini로 되돌리고 active-memory도 빠짐. 이유: mini는 가벼운/빠른 turn 용도라 5–10s recall latency도 비용 0.29x→1.0x→2.0x 같은 인플레이션도 안 어울림. gemini(삭제 예정)/bbot(ACP path)도 제외.
 
 운영 config:
-- `agents: ["main", "glg", "gpt", "mini"]` — 4개 활성. gemini/bbot 제외
+- `agents: ["main", "glg", "gpt"]` — 3개 활성
 - `model: "openai-codex/gpt-5.4-mini"` — recall lane을 mini로 분리. main lane(gpt-5.4)과 OAuth quota 경합 회피
 - `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
 - `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호
