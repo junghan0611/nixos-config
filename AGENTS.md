@@ -132,7 +132,7 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 |---|---|---|---|
 | main | `openai-codex/gpt-5.4` | `workspace/` | 일반 |
 | glg (가족) | `openai-codex/gpt-5.4` | `workspace-glg/` | `@glg_junghanacs_bot` |
-| gpt | `openai-codex/gpt-5.4` | `workspace-gpt/` | 개인 |
+| gpt | `openai-codex/gpt-5.5` | `workspace-gpt/` | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~). 운영 컨텍스트 200k로 5.4와 동등, 신형 레시피 평가용 |
 | bbot | `openai-codex/gpt-5.4` | `workspace-bbot/` | `@glg_b_bot` |
 | mini | `openai-codex/gpt-5.4` | `workspace-mini/` | 가벼운 turn 처리, 풀 스킬셋 (2026-05-09부터 5.4-mini → 5.4 + 모든 봇 동일 스킬 정책) |
 | gemini | `github-copilot/gemini-3.1-pro-preview` | `workspace-gemini/` | **Copilot 의존, 삭제 예정** — gpt-5.4로 통합하거나 제거 |
@@ -140,8 +140,10 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
-- `openai-codex/gpt-5.5` (Pi 0.70.0 catalog 자동 등록, 2026-04-25~)
+- `openai-codex/gpt-5.5-pro` (977k 컨텍스트, pro tier — quota/속도 미검증)
 - `deepseek/deepseek-v4-pro` / `deepseek-v4-flash` (`DEEPSEEK_API_KEY` 회사 quota, 2026-04-27~)
+
+> 운영 컨텍스트 메모: catalog 표기가 `266k/1025k` 같은 "이론치/확장치"로 보여도 라이브 `/status`는 보통 200k로 잡힌다. 5.4 vs 5.5 컨텍스트 트레이드오프는 사실상 없음.
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`).
 
