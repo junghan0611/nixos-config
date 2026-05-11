@@ -193,6 +193,14 @@
     };
   };
 
+  # qmd (node-llama-cpp prebuilt) — Vulkan backend for AMD 780M iGPU.
+  # ldd로 확인: prebuilt가 dlopen하는 libstdc++.so.6 / libvulkan.so.1이 nix-ld
+  # 기본 셋에 없음. shared.nix의 [libcap]과 module-merge 되어 합쳐진다.
+  programs.nix-ld.libraries = with pkgs; [
+    stdenv.cc.cc.lib
+    vulkan-loader
+  ];
+
   # Disable ZRAM swap (using physical swap partition instead)
   zramSwap.enable = false;
 
