@@ -130,7 +130,7 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 
 | Agent | Model | Workspace | 비고 |
 |---|---|---|---|
-| main | `openai-codex/gpt-5.4` | `workspace/` | 일반 |
+| main | `openai-codex/gpt-5.5` | `workspace/` | 일반 (default 봇, 2026-05-10부터 5.4 → 5.5. `agents.defaults.model.primary`도 동시 변경) |
 | glg (가족) | `openai-codex/gpt-5.4` | `workspace-glg/` | `@glg_junghanacs_bot` |
 | gpt | `openai-codex/gpt-5.5` | `workspace-gpt/` | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~). 운영 컨텍스트 200k로 5.4와 동등, 신형 레시피 평가용 |
 | bbot | `openai-codex/gpt-5.4` | `workspace-bbot/` | `@glg_b_bot` |
