@@ -124,9 +124,11 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (OpenClaw 2026.5.7 baseline, 2026-05-08 두 번째 갱신)
+### Model routing (OpenClaw 2026.5.12 baseline, 2026-05-15 갱신)
 
 LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)는 **삭제 예정**.
+
+**Fallback chain (5.12 신규)**: `agents.defaults.model.fallbacks: ["openai-codex/gpt-5.4"]`. primary 실패 시 자동 fallback. 5.5(main/gpt) 봇이 제공자 장애·rate-limit 등으로 실패하면 5.4로 자동 전환. 5.4 봇(glg/bbot)은 fallback도 5.4라 실효 없지만 글로벌 일관성 유지. mini는 primary 5.4-mini라 fallback이 5.4로 떨어지면 quota inflation (0.29x→1.0x) 위험 — 단 같은 OAuth 계정 quota 소진 시엔 5.4도 같이 막혀 실효 미미. mini만 별도 fallback override가 필요해지면 `agents.list[].model.fallbacks`로 per-agent 지정 가능.
 
 | Agent | Model | Workspace | 비고 |
 |---|---|---|---|
@@ -152,6 +154,8 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 ACPX disabled (`plugins.entries.acpx.enabled=false` + `acp.enabled=false`, 5.2가 `@openclaw/acpx` beta로 externalize). 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
 
 5.7 업그레이드 (2026-05-08 두 번째): Codex OAuth 라우트 보존 (5.5 doctor rewrite 버그는 5.6에서 revert). `agent model: openai-codex/gpt-5.4` 그대로. ready 5.7s, 6 텔레그램 봇 정상 기동.
+
+5.12 업그레이드 (2026-05-15): fallback chain 신규 적용. ready 6.7s, 9 plugins (5.7과 동일), 6봇 polling 정상 기동. Telegram isolated polling 6 spool dir로 분리 (`/home/node/.openclaw/telegram/ingress-spool-{default,glg,gpt,gemini,mini,bbot}`) — 5.12 신규 "isolated polling, durable local spooling" 기능. memory streaming RSS 252→27 MiB, peak 부하 감소. pnpm 11 / WhatsApp·Slack·Bedrock·Vertex 외부화 / Gemini 3 Pro Preview ID 정규화 변경은 우리 deployment 무관 (안 씀 / 다른 경로).
 
 라이브 값 확인:
 

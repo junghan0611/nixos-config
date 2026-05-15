@@ -1,8 +1,8 @@
-# 5.2 → 5.7 직행 (5.5 Codex OAuth rewrite 버그 회피, 5.6 hotfix 통합).
-# 변경 핵심(기억층): transcript-hygiene 디스크 보존 강화, context engine cache invalidate,
-# daily session rollover transcript persist, memory status --deep 분리 리포트.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.2
-FROM ghcr.io/openclaw/openclaw:2026.5.7
+# 5.7 → 5.12: agents.defaults.model.fallbacks (배열) 신규 + memory streaming RSS 252→27 MiB
+# + Telegram HTML 보존/group policy/media handling 개선 + per-sender tool policies.
+# pnpm 11 / WhatsApp·Slack·Bedrock·Vertex 외부화는 우리 경로 무관 (안 씀).
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.7
+FROM ghcr.io/openclaw/openclaw:2026.5.12
 
 USER root
 
