@@ -59,28 +59,64 @@
 - [ ] 텔레그램 봇 `@glg_gemini_bot` 회수 절차 (BotFather)
 - [ ] workspace-gemini 인덱스 데이터 archival
 
-## 4. pi-shell-acp OpenClaw plugin — Phase 1.8 β keystone 통과 후 잔여
+## 4. pi-shell-acp OpenClaw plugin — Phase 1.8 β infra GREEN, 봇 endpoint 미해결
 
-**2026-05-15 14:00 KST — Phase 1.8 β host passthrough Oracle 첫 통과.** Plugin `pi-shell-acp@0.6.0-prerelease.0` loaded, `text-inference: pi-shell-acp` capability 등록, `pi -p ... --provider pi-shell-acp --model claude-sonnet-4-6 --no-tools --no-session` direct turn GREEN (Claude Code cache write 10503). 영속 운영 baseline은 AGENTS.md / openclaw-gotchas.md / `~/openclaw/README.md` change history에 별도 stamp 예정.
+**2026-05-15 — Phase 1.8 β host passthrough Oracle 인프라까지 첫 통과, 봇 endpoint integration은 stub 한계로 미해결. bbot/gemini는 옛 model로 임시 원복, β infra(mount/Dockerfile/plugin install/picker) 유지.**
 
-통과한 사전조건 (요약, 영속 기록 옮긴 후 이 블록 자체는 지울 것):
-- Host pi-shell-acp `8476104` (`main` 추적, `~/.pi/agent/git/github.com/junghan0611/pi-shell-acp`).
-- UID 매핑: host `junghan` UID 1000 / container `node` UID 1000 — bind-mount rw 무사 작동 확인. GID 100↔1000 불일치는 owner-bit write로 무관.
+### 통과한 항목
+
+- Host pi-shell-acp `8476104→98c8741→7071f4d` (main 추적, `~/.pi/agent/git/github.com/junghan0611/pi-shell-acp`).
+- UID 매핑: host `junghan` UID 1000 / container `node` UID 1000 — bind-mount rw 무사. GID 100↔1000 불일치는 owner-bit write로 무관.
 - Dockerfile 3-layer (`@earendil-works/pi-coding-agent` + `@zed-industries/codex-acp` + `@google/gemini-cli`) `npm install -g` 27s.
-- Compose: `~/.pi/agent` rw bind-mount + `/home/junghan/.pi/agent` compatibility mount (host absolute path 호환) + `~/.codex` rw + `~/.gemini` rw.
-- Plugin install: `openclaw plugins install <plugin-dir> --link --dangerously-force-unsafe-install` → `plugins.allow` / `plugins.entries.pi-shell-acp.enabled=true` 자동 박힘.
-- 11 plugins ready 9.0s.
+- Compose: `~/.pi/agent` rw + `/home/junghan/.pi/agent` compatibility mount (host absolute path 호환) + `~/.codex` rw + `~/.gemini` rw.
+- Plugin install: `openclaw plugins install <plugin-dir> --link --dangerously-force-unsafe-install` → `plugins.allow` / `plugins.entries.pi-shell-acp.enabled=true` 자동 박힘. `plugins inspect` Status: loaded, capability `text-inference: pi-shell-acp`.
+- 11 plugins ready 9.0s. Direct turn `pi -p ... --provider pi-shell-acp --model claude-sonnet-4-6` GREEN (cache write 10503 → 19,247).
 
-남은 검증 / 후속:
-- [ ] **실 봇 turn 검증**: 별도 테스트 agent 추가 또는 `/model pi-shell-acp/claude-sonnet-4-6` in-thread 전환. 가족 봇 config는 건드리지 말 것. 텔레그램에서 GLG 직접.
-- [ ] **나머지 picker 5종**: `claude-opus-4-7`, `gpt-5.4`, `gpt-5.5`, `gemini-3.1-pro-preview` 각 1턴씩. Codex/Gemini는 host auth refresh 한 번 더 확인 후.
-- [ ] **풀세트 6축 검증**: skill manifest (3a) + skill invocation (3b) + 세션 자기인식 + workspace 인식 — 어제 thinkpad lab 6축 통과선 Oracle 환경 재현 여부. β라 통과선 풀세트가 정상 기대치.
-- [ ] **`models list` CLI surface 부재 문서화**: dynamic resolution path 의도된 동작. operator가 헷갈리지 않게 plugin AGENTS.md 또는 README에 한 줄 추가. (Cross-repo follow-up)
-- [ ] **α 별도 advanced smoke (공개 기본값)**: trusted host 가정 없이 in-container login + named volume(4a) 경로가 일반 사용자에게 정직한 default UX인지 별도 사이클에서 확인. 통과선은 1/1b/2/세션 자기인식만.
-- [ ] **백업 정책 — `~/openclaw/config/plugins/installs.json`**: plugin install이 이 파일도 변경함. private repo `~/openclaw`에는 commit, public `nixos-config/docker/openclaw/`에는 옮기지 않음 (기존 openclaw.json과 동일 정책).
+### 미해결 — 봇 endpoint integration (stub PoC 한계)
 
-Cross-repo follow-up:
+bbot/gemini를 `pi-shell-acp/claude-opus-4-7` / `pi-shell-acp/gemini-3.1-pro-preview`로 박았을 때 텔레그램 inbound가 stuck. 패치 두 사이클 시도:
+
+1. **98c8741 — delivery contract bridge**: OpenClaw가 inbound prompt에 "Delivery: to send a message, use the `message` tool" inject. child pi는 `--no-tools`로 spawn돼 message tool 모름 → 응답을 buffer 후 close에서 synthetic toolCall로 변환. unit test 통과. Oracle 적용은 close 도달 전 child가 die해서 검증 못 함.
+2. **7071f4d — exit→close fallback**: child가 exit해도 stdio close 안 와서 stream pending인 케이스. 500ms 후 강제 finalize. Oracle 적용 결과 `child exit` log 자체가 안 찍힘 — Node `child.on("exit")` listener까지 이벤트가 도달 안 함.
+
+발견된 깊은 원인 후보 (다음 사이클 입력):
+- **OpenClaw가 plugin createStreamFn 호출 시 `options.signal`에 이미 abort된 AbortSignal 전달 가능성** — plugin의 `signal.addEventListener("abort", () => child.kill("SIGTERM"))` 즉시 fire → spawn 직후 SIGTERM. 첫 patch에 박았던 `signalAborted` debug log가 lab push에 누락되어 미확인. 다음 사이클에서 가장 먼저 박을 것.
+- **plugin config `spawnTimeoutSeconds` 600 → plugin은 60000ms 사용**: openclaw.json `plugins.entries.pi-shell-acp.config.spawnTimeoutSeconds=600` 박았으나 plugin이 `factoryCtx.pluginConfig || factoryCtx.config || factoryCtx.settings`에서 못 받음. OpenClaw가 plugin config를 어디 key로 전달하는지 확인 필요.
+- **`processing,q=1` 같은 entity 동시 active+queued**: OpenClaw turn loop이 응답 없으면 무한 retry 패턴. turn-level abort timeout 정책이 plugin spawnTimeout보다 짧을 가능성.
+- Liveness warning `event_loop_delay 79926ms` `eventLoopUtilization=0.975` — 봇 turn 처리 중 event loop 80초 막힘.
+
+### 직접 호출 vs 봇 호출 차이 (재진단 입력)
+
+- 직접 `docker exec ... pi -p ... --provider pi-shell-acp --model claude-opus-4-7`: GREEN 5–10s, cache hit/write 정상.
+- 봇 path: child spawn 후 1초 내 zombie, exit/close 이벤트 plugin listener까지 안 도달.
+- 동일 env (`PI_OFFLINE=1` + `NODE_COMPILE_CACHE` + `OPENCLAW_NO_RESPAWN=1` + `OPENCLAW_PACKAGED_COMPILE_CACHE_RESPAWNED=1`) + 동일 cwd (`/home/node/.openclaw/workspace-bbot`) + 동일 plugin require path → 직접 호출은 여전히 GREEN. 차이는 OpenClaw가 plugin streamFn 호출 시 박는 `options` 객체(특히 `signal`).
+
+### 발견한 plugin config 전달 갭
+
+`openclaw.json` 의 `plugins.entries.pi-shell-acp.config.spawnTimeoutSeconds=600` 박았는데 plugin DIAG가 `timeoutMs=60000` (default 60s) 출력. OpenClaw가 plugin config를 어느 path/shape로 전달하는지 lab에서 검증 필요.
+
+### 현재 Oracle 상태 (원복 후)
+
+- bbot: `openai/gpt-5.4` (codex agentRuntime, 원래 상태)
+- gemini: `github-copilot/gemini-3.1-pro-preview` (Copilot 잔재, 원래 상태)
+- main: `openai/gpt-5.5` (picker 5개 제거)
+- glg/gpt/mini: 변경 없음
+- Plugin pi-shell-acp 자체는 `plugins.allow` + `entries.enabled=true` 유지 → 다음 사이클에 lab에서 통합 patch 가져오면 바로 재활성 가능.
+- spawnTimeoutSeconds=600 config는 유지 (다음 사이클에서 config 전달 갭 검증용).
+- Dockerfile 3-layer / compose 4-mount는 유지 — β infra는 그대로 살림.
+
+### 다음 사이클 입력 (lab 통합 patch 준비)
+
+- [ ] **봇 spawn signal 추적 debug 추가** (가장 우선): pre-spawn에 `signalAborted` 출력, signal abort listener fire 시점 console.log, `setInterval(() => { try { process.kill(child.pid, 0) } catch { finalizeChild('orphan',...) } }, 1000)` 폴링 fallback. 첫 turn에서 진짜 SIGTERM 출처 잡기.
+- [ ] **plugin config 전달 갭 진단**: OpenClaw 5.12에서 `plugins.entries.<id>.config`가 plugin factoryCtx에 어떤 path로 전달되는지 확인. 600 박힌 게 plugin에 안 흘러 들어가는 이유.
+- [ ] **Phase 1.4 ts refactor 우선순위 재검토**: stub PoC 한계가 race condition에 직격. ACP transport 직접 처리로 child pi spawn 자체 제거하면 race 사라짐. 단 그 작업 자체 규모 큼.
+- [ ] **lab에서 통합 patch 검증 흐름**: lab gateway (Docker 안 OpenClaw 5.12 with 우리 patch)에서 봇 turn까지 재현해서 GREEN 확인 후 push. Oracle 단방향 적용만 반복하지 말 것.
+- [ ] **풀세트 6축 검증 재시도** (lab 통합 patch 적용 후): skill manifest (3a) + skill invocation (3b) + 세션 자기인식 + workspace 인식. β라 풀세트가 통과선.
+
+### Cross-repo follow-up
+
 - [ ] `pi-shell-acp` Phase 2 후보: Codex도 Claude처럼 `require.resolve("@zed-industries/codex-acp/package.json")` fallback 추가. 현재 Codex는 PATH-only라 Docker 실수 포인트가 크다.
 - [ ] `pi-shell-acp` 문서에 Docker auth boundary 섹션 추가 여부 확인: "backend CLI auth는 backend가 소유, pi-shell-acp는 token을 읽거나 변환하지 않음."
 - [ ] `agent-config` 임시 정책 추적: 0.6.0 prerelease / Oracle 검증 동안 server-mode가 `pi-shell-acp` main을 추적(`agent-config` 5f17d70). Phase 3 release 후에는 다시 ref pinning으로 복귀할지 결정.
 - [ ] `plugins/openclaw/README.md` Install layers 항목 보강: settings.json의 host absolute path 호환성 — Docker 환경에서 compose에 `/home/junghan/.pi/agent` 또는 동등 path 두 번째 mount 필요할 수 있다는 함정 한 줄. β 운영 시 첫 smoke에서 발견.
+- [ ] α 별도 advanced smoke (공개 기본값): 통과선은 1/1b/2/세션 자기인식만. 별도 사이클.
