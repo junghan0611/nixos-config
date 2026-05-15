@@ -42,6 +42,12 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
+      # 5.12 신규: OAuth profile secret key persistence (XDG 표준 경로)
+      # OpenClaw 코드는 두 candidate를 순회: ① $HOME/.config/openclaw/auth-profile-secret-key (XDG, first priority)
+      # ② $HOME/.openclaw-auth-profile-secrets/auth-profile-secret-key (fallback)
+      # 그리고 stateDir(=/home/node/.openclaw) 외부에만 저장 — secret이 state backup/sync에 같이 끌려가지 않게.
+      # 컨테이너 ephemeral에 두면 매 recreate마다 새 key 생성 → 기존 OAuth profile decrypt 실패 → harness 미등록.
+      - ./auth-profile-secrets:/home/node/.config/openclaw
       # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스
       # repos/gh는 rw로 개방 — git 관리 하에 에이전트 직접 편집 허용 (2026-04-25)
@@ -108,6 +114,8 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
+      # 5.12 신규: OAuth profile secret key persistence (XDG, gateway와 공유)
+      - ./auth-profile-secrets:/home/node/.config/openclaw
       # 지식베이스/코드베이스
       # repos/gh는 rw로 개방 — git 관리 하에 에이전트 직접 편집 허용 (2026-04-25)
       - ~/repos/gh:/home/node/repos/gh:rw
