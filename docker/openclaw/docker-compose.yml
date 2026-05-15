@@ -76,8 +76,16 @@ services:
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
       - ~/cookies.txt:/home/node/cookies.txt:ro
-      # LanceDB 벡터 DB (knowledge-search 스킬용)
-      - ~/.pi/agent/memory:/home/node/.pi/agent/memory:ro
+      # pi-shell-acp host overlay passthrough (Phase 1.8 β, trusted single-user)
+      # ~/.pi/agent 전체 rw — child pi가 sessions/cache/resolver state write 필요.
+      # 이전 memory:ro 항목 흡수 (knowledge-search 스킬도 같은 path).
+      - ~/.pi/agent:/home/node/.pi/agent:rw
+      # host absolute path 호환성: settings.json의 skillPlugins / mcpServers.command가
+      # /home/junghan/.pi/... 로 박혀 있어서 동일 dir을 두 path로 노출 (~/repos/gh 패턴).
+      - ~/.pi/agent:/home/junghan/.pi/agent:rw
+      # backend CLI auth — host passthrough (β). plugin은 token 만지지 않음 (invariant).
+      - ~/.codex:/home/node/.codex:rw
+      - ~/.gemini:/home/node/.gemini:rw
       - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
@@ -143,8 +151,16 @@ services:
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
       - ~/cookies.txt:/home/node/cookies.txt:ro
-      # LanceDB 벡터 DB (knowledge-search 스킬용)
-      - ~/.pi/agent/memory:/home/node/.pi/agent/memory:ro
+      # pi-shell-acp host overlay passthrough (Phase 1.8 β, trusted single-user)
+      # ~/.pi/agent 전체 rw — child pi가 sessions/cache/resolver state write 필요.
+      # 이전 memory:ro 항목 흡수 (knowledge-search 스킬도 같은 path).
+      - ~/.pi/agent:/home/node/.pi/agent:rw
+      # host absolute path 호환성: settings.json의 skillPlugins / mcpServers.command가
+      # /home/junghan/.pi/... 로 박혀 있어서 동일 dir을 두 path로 노출 (~/repos/gh 패턴).
+      - ~/.pi/agent:/home/junghan/.pi/agent:rw
+      # backend CLI auth — host passthrough (β). plugin은 token 만지지 않음 (invariant).
+      - ~/.codex:/home/node/.codex:rw
+      - ~/.gemini:/home/node/.gemini:rw
       - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro

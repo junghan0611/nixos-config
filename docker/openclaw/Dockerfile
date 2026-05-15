@@ -39,4 +39,13 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 # 현재 미사용 (plugins.entries.matrix.enabled=false)
 # 추후 필요 시 새 SDK 방식으로 재설치
 
+# pi-shell-acp 런타임 (Phase 1.8 β host passthrough 경로)
+# - pi: child process 호출 entrypoint
+# - codex-acp / gemini: backend ACP executables (Claude는 pi-shell-acp 내부 require.resolve)
+# pi-shell-acp 자체는 host ~/.pi/agent bind-mount로 노출 (compose 참조)
+RUN npm install -g \
+      @earendil-works/pi-coding-agent \
+      @zed-industries/codex-acp \
+      @google/gemini-cli
+
 USER node
