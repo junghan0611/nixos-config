@@ -154,7 +154,9 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 | **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. Phase 1.8 β gemini turn 검증 진행 중 |
 | subagents | `openai/gpt-5.4` | — | — | — | |
 
-> **Streaming policy (2026-05-16)**: pi-shell-acp 라우트 봇은 **streaming=off 권장 기본값**. 이유: pi backend(claude-agent/gemini-cli ACP)가 final assistant message에 tool execution trace(`[tool:start] / [tool:done]`)를 inline text로 포함. partial mode는 editMessageText 사이클이 mid-stream wrong-final 회귀 시점에 본문을 짧은 metadata로 replace해 UX 회귀(2026-05-16 04:01 incident). off는 final 1회 flush라 plugin `fa3b8f7` role/abnormal guard와 잘 합치고 디버그도 쉽다. gemini는 turn 검증 중이라 partial 유지 — 검증 완료 후 off로 전환.
+> **Tool-trace inline 해소 (2026-05-16)**: `~/.pi/agent/settings.json` 의 `piShellAcpProvider.showToolNotifications: true → false` 한 줄로 정착. 이전엔 pi backend가 final assistant text 안에 `[tool:start] Skill / [tool:done] Read File — ...` 같은 trace를 inline string으로 박았는데 (plugin `fa3b8f7` block-type filter는 통과 — 단일 `text` block 내부 inline이라 strip 불가), pi-CLI의 child가 매 turn spawn 시 settings 새로 읽는 구조라 gateway restart 없이 즉시 적용됨. workspace-local 새 파일 만들 필요 없음 — 글로벌 한 줄로 충분.
+>
+> **Streaming policy (2026-05-16)**: pi-shell-acp 라우트 봇은 **streaming=off 권장 기본값**. 이유: partial mode는 editMessageText 사이클이 mid-stream wrong-final 회귀 시점에 본문을 짧은 metadata로 replace해 UX 회귀 (2026-05-16 04:01 incident). off는 final 1회 flush라 plugin `fa3b8f7` role/abnormal guard와 잘 합치고 디버그도 쉽다. gemini는 turn 검증 중이라 partial 유지 — 검증 완료 후 off로 전환.
 >
 > **Active-memory ACP path 호환성 (2026-05-16)**: bbot 추가는 fa3b8f7 (user-role echo로의 final flip 차단 가드) 적용 후 안전성 확보. recall sub-agent는 별도 `openai/gpt-5.4-mini` lane으로 OAuth quota 격리. 메인 lane(pi-shell-acp/opus-4-7)과 충돌 없음.
 
