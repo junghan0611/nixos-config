@@ -142,17 +142,21 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 
 **plugins.allow 정공법 (5.12 codex 외부화)**: 5.12에서 codex가 `@openclaw/codex` 별도 plugin으로 외부화. `plugins.allow`가 빈 상태면 "non-bundled plugins may auto-load" WARN. 정공법은 사용 plugin 전체 명시: `["telegram","perplexity","google","anthropic","openai","github-copilot","active-memory","memory-core","deepseek","codex","browser","canvas","device-pair","file-transfer","phone-control","talk-voice"]`. **함정**: `["codex"]`만 박으면 명시 안 한 bundled (active-memory, telegram, file-transfer 등) 모두 disabled되어 봇 polling/응답 깨짐.
 
-**Live model IDs** (5.12부터 `openai/*` + `agentRuntime.id="codex"`. 이전 표기 `openai-codex/*`는 5.12 doctor가 자동 rename — 호스트 OAuth profile은 그대로 유지됨):
+**Live model IDs** (5.12부터 `openai/*` + `agentRuntime.id="codex"`. 이전 표기 `openai-codex/*`는 5.12 doctor가 자동 rename — 호스트 OAuth profile은 그대로 유지됨. ACP route는 별도 — `pi-shell-acp/*`로 표기):
 
-| Agent | Model | Workspace | 비고 |
-|---|---|---|---|
-| main | `openai/gpt-5.5` | `workspace/` | 일반 (default 봇, 2026-05-10부터 5.4 → 5.5) |
-| glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | `@glg_junghanacs_bot` |
-| gpt | `openai/gpt-5.5` | `workspace-gpt/` | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~) |
-| bbot | `openai/gpt-5.4` | `workspace-bbot/` | `@glg_b_bot` |
-| mini | `openai/gpt-5.4-mini` | `workspace-mini/` | 가벼운 turn, 풀 스킬셋. Codex Plus 0.29x lane |
-| gemini | `github-copilot/gemini-3.1-pro-preview` | `workspace-gemini/` | **Copilot 의존, 삭제 예정** |
-| subagents | `openai/gpt-5.4` | — | |
+| Agent | Model | Workspace | Streaming | Active memory | 비고 |
+|---|---|---|---|---|---|
+| main | `openai/gpt-5.5` | `workspace/` | partial | ✓ | 일반 (default 봇, 2026-05-10부터 5.4 → 5.5) |
+| glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot` |
+| gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~) |
+| **bbot** | **`pi-shell-acp/claude-opus-4-7`** | `workspace-bbot/` | **off** | **✓** (2026-05-16 추가) | `@glg_b_bot`. ACP route via pi-shell-acp 0.6.0-prerelease + plugins/openclaw. Phase 1.8 β 통과 2026-05-15 |
+| mini | `openai/gpt-5.4-mini` | `workspace-mini/` | partial | — | 가벼운 turn, 풀 스킬셋. Codex Plus 0.29x lane |
+| **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. Phase 1.8 β gemini turn 검증 진행 중 |
+| subagents | `openai/gpt-5.4` | — | — | — | |
+
+> **Streaming policy (2026-05-16)**: pi-shell-acp 라우트 봇은 **streaming=off 권장 기본값**. 이유: pi backend(claude-agent/gemini-cli ACP)가 final assistant message에 tool execution trace(`[tool:start] / [tool:done]`)를 inline text로 포함. partial mode는 editMessageText 사이클이 mid-stream wrong-final 회귀 시점에 본문을 짧은 metadata로 replace해 UX 회귀(2026-05-16 04:01 incident). off는 final 1회 flush라 plugin `fa3b8f7` role/abnormal guard와 잘 합치고 디버그도 쉽다. gemini는 turn 검증 중이라 partial 유지 — 검증 완료 후 off로 전환.
+>
+> **Active-memory ACP path 호환성 (2026-05-16)**: bbot 추가는 fa3b8f7 (user-role echo로의 final flip 차단 가드) 적용 후 안전성 확보. recall sub-agent는 별도 `openai/gpt-5.4-mini` lane으로 OAuth quota 격리. 메인 lane(pi-shell-acp/opus-4-7)과 충돌 없음.
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
@@ -182,13 +186,13 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — main/glg/gpt since 2026-05-09 (mini 제외 15:55 KST)
+### Active memory — main/glg/gpt/bbot (bbot 2026-05-16 추가)
 
-5.7+8B baseline에서 gpt 단독으로 24h 관찰 (2026-05-08 17:58 KST 시작) → 12:59 KST main/glg/mini 추가 → 15:55 KST mini 제외. mini는 5.4-mini로 되돌리고 active-memory도 빠짐. 이유: mini는 가벼운/빠른 turn 용도라 5–10s recall latency도 비용 0.29x→1.0x→2.0x 같은 인플레이션도 안 어울림. gemini(삭제 예정)/bbot(ACP path)도 제외.
+5.7+8B baseline에서 gpt 단독으로 24h 관찰 (2026-05-08 17:58 KST 시작) → 2026-05-09 12:59 KST main/glg/mini 추가 → 15:55 KST mini 제외 (mini는 5.4-mini로 되돌리고 active-memory도 빠짐 — 가벼운/빠른 turn 용도라 5–10s recall latency도 비용 0.29x→1.0x→2.0x 같은 인플레이션도 안 어울림). 그 시점 gemini(삭제 예정)/bbot(ACP path 호환성 미검증) 제외. **2026-05-16 bbot 추가** — Phase 1.8 β 통과 + plugin fa3b8f7 (user-role echo final flip 차단) 적용 후 ACP path 호환성 확보. recall sub-agent는 별도 `openai/gpt-5.4-mini` lane이라 메인 lane(pi-shell-acp/opus-4-7)과 OAuth/path 격리.
 
 운영 config:
-- `agents: ["main", "glg", "gpt"]` — 3개 활성
-- `model: "openai-codex/gpt-5.4-mini"` — recall lane을 mini로 분리. main lane(gpt-5.4)과 OAuth quota 경합 회피
+- `agents: ["main", "glg", "gpt", "bbot"]` — 4개 활성
+- `model: "openai/gpt-5.4-mini"` — recall lane을 mini로 분리 (5.12 정공법: `openai-codex/*` → `openai/*` + `agentRuntime.id="codex"`). main lane과 OAuth quota 경합 회피
 - `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
 - `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호
 - `maxSummaryChars: 220` — docs default. 한국어→영어 요약 가능
