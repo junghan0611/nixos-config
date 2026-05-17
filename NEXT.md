@@ -143,15 +143,22 @@
 
 ### 구축 액션 (§6 통과 후)
 
-- [ ] `docker/homeassistant/docker-compose.yml` 초안 (remark42 패턴 복제, `proxy` external network)
-- [ ] Caddy site block 추가: `ha.junghanacs.com` → `homeassistant:8123` (자동 LE)
-- [ ] `configuration.yaml` — `http.use_x_forwarded_for: true` + `trusted_proxies: [172.16.0.0/12]` (Docker bridge 대역). 없으면 Companion App 로그인 실패.
-- [ ] `recorder.purge_keep_days: 30` + automation/script/updater exclude — 디스크 폭주 방지
-- [ ] Netlify DNS: `ha.junghanacs.com` A 레코드 → Oracle 퍼블릭 IP
-- [ ] 초기 admin 계정 2FA(TOTP) + `ip_ban` 활성화 (외부 노출 필수)
+- [x] `docker/homeassistant/docker-compose.yml` (remark42 패턴 복제, `proxy` external network, expose 8123)
+- [x] Caddy site block: `ha.junghanacs.com` → `homeassistant:8123` (LE 자동 발급 확인)
+- [x] `configuration.yaml` 사전 작성 — `use_x_forwarded_for: true` + `trusted_proxies: [172.18.0.0/16, 127.0.0.1, ::1]` (실측 docker proxy subnet) + `external_url`
+- [x] `recorder.purge_keep_days: 30` + automation/script/updater exclude
+- [x] `ip_ban_enabled: true` + `login_attempts_threshold: 5` (config에 박음)
+- [x] Netlify DNS: `ha.junghanacs.com` A 레코드 (사용자 처리)
+- [x] HA 첫 부팅 + onboarding 페이지 도달 확인 (`GET /` → 302 /onboarding)
+- [ ] **초기 admin 2FA(TOTP) 활성화** — Settings → People → Security (사용자 UI 작업, config 불가)
 - [ ] Fold4 Companion App URL 등록 → Health Connect 센서 활성화 (Sleep Duration 우선)
-- [ ] PoC: 수면 1개 메트릭 end-to-end (Fold4 → HA → lifetract.db) 검증
+- [ ] PoC: 수면 1개 메트릭 end-to-end (Fold4 → HA → lifetract API) 검증
+- [ ] HA Long-lived access token 발급 → lifetract import 스크립트 설계
 - [ ] PoC 통과 후 메트릭 확장 (Heart Rate / HRV / Steps / Weight)
+
+### Gotcha 발견 (2026-05-17)
+
+- **Caddyfile bind-mount inode 교체**: 호스트 `Edit`/`Write`가 atomic rename으로 inode 교체 → caddy 컨테이너는 옛 inode 잡고 있어서 `caddy reload`가 "config is unchanged"로 종료. 해결: `docker compose restart caddy`로 재바인딩. AGENTS.md gotcha 항목 후보.
 
 ### 메모 — Health Connect 노출 범위
 

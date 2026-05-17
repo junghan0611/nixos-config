@@ -1,0 +1,23 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    hostname: homeassistant
+    restart: unless-stopped
+
+    # Caddy 리버스 프록시가 처리 — 포트 직접 노출 없음
+    expose:
+      - "8123"
+
+    environment:
+      - TZ=Asia/Seoul
+
+    volumes:
+      - /home/junghan/docker-data/homeassistant/config:/config
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true   # Caddy가 생성한 네트워크

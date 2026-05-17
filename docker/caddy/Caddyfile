@@ -17,6 +17,11 @@ agenda.junghanacs.com {
     reverse_proxy geworfen:3333
 }
 
+# Home Assistant (IoT + Health Connect → lifetract)
+ha.junghanacs.com {
+    reverse_proxy homeassistant:8123
+}
+
 # # Mattermost 채팅 서버 (비활성)
 # chat.junghanacs.com {
 #     reverse_proxy mattermost:8065
