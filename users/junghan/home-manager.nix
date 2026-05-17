@@ -176,6 +176,8 @@ in {
     # X11 utilities (ElleNajit)
     xorg.xev        # X event viewer
     xorg.libxcvt    # cvt replacement
+    xorg.xprop      # X window property inspector (emacs-everywhere dependency)
+    xorg.xwininfo   # X window info (emacs-everywhere dependency)
     xdotool         # X automation (for edit-input)
 
     # Display management (ElleNajit)

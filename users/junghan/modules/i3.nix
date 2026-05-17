@@ -493,9 +493,9 @@ in {
           # Additional terminal (WezTerm)
           "${mod}+${alt}+Return" = "exec ${pkgs.wezterm}/bin/wezterm";
 
-          # Whisper voice input (toggle: silence detection)
-          # DISABLED: Mod+e conflicts with Emacs/pi window switching
-          # "${mod}+e" = "exec --no-startup-id ${whisperScript}";
+          # Emacs Everywhere: system-wide quick edit popup
+          # 한/영 전환, 임시 변환, 외부 앱 입력창 다듬기에 사용.
+          "${mod}+e" = ''exec --no-startup-id ${config.programs.emacs.finalPackage}/bin/emacsclient -s user --eval "(emacs-everywhere)"'';
 
           # Whisper PTT 워키토키 (F1 누르면 녹음, 떼면 전송)
           # DISABLED: F1 conflicts with Emacs/pi window switching
