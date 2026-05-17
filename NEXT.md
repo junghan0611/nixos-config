@@ -141,24 +141,42 @@
 - lifetract import 1차: REST polling, 1일 1회 cron (recorder DB direct / MQTT는 PoC 이후)
 - 도커 패턴: `docker/homeassistant/docker-compose.yml` 신규, `proxy` external network 가입, `~/docker-data/homeassistant/config` 볼륨 — remark42 단일 컨테이너 패턴 복제
 
-### 구축 액션 (§6 통과 후)
+### 구축 액션 — 완료 (2026-05-17)
 
 - [x] `docker/homeassistant/docker-compose.yml` (remark42 패턴 복제, `proxy` external network, expose 8123)
-- [x] Caddy site block: `ha.junghanacs.com` → `homeassistant:8123` (LE 자동 발급 확인)
+- [x] Caddy site block: `ha.junghanacs.com` → `homeassistant:8123` (LE 자동 발급)
 - [x] `configuration.yaml` 사전 작성 — `use_x_forwarded_for: true` + `trusted_proxies: [172.18.0.0/16, 127.0.0.1, ::1]` (실측 docker proxy subnet) + `external_url`
 - [x] `recorder.purge_keep_days: 30` + automation/script/updater exclude
-- [x] `ip_ban_enabled: true` + `login_attempts_threshold: 5` (config에 박음)
-- [x] Netlify DNS: `ha.junghanacs.com` A 레코드 (사용자 처리)
-- [x] HA 첫 부팅 + onboarding 페이지 도달 확인 (`GET /` → 302 /onboarding)
-- [ ] **초기 admin 2FA(TOTP) 활성화** — Settings → People → Security (사용자 UI 작업, config 불가)
-- [ ] Fold4 Companion App URL 등록 → Health Connect 센서 활성화 (Sleep Duration 우선)
-- [ ] PoC: 수면 1개 메트릭 end-to-end (Fold4 → HA → lifetract API) 검증
-- [ ] HA Long-lived access token 발급 → lifetract import 스크립트 설계
-- [ ] PoC 통과 후 메트릭 확장 (Heart Rate / HRV / Steps / Weight)
+- [x] `ip_ban_enabled: true` + `login_attempts_threshold: 5`
+- [x] Netlify DNS: `ha.junghanacs.com` A 레코드 (사용자)
+- [x] HA 첫 부팅 + onboarding 도달
+- [x] admin TOTP 2FA 활성화 (사용자 UI)
+- [x] Companion App 등록 (디바이스: `SM-S942N-S26-GLGMAN`, mobile_app `b6a48768e1c2b22a`)
+- [x] Health Connect 센서 토글 + Samsung Health → Health Connect 권한
+- [x] **PoC end-to-end 통과** — `sensor.sm_s942n_s26_glgman_sleep_duration = 427 min` (어젯밤 7h7m), heart_rate / resting_heart_rate / daily_steps / weight 등 16개 활성
+- [x] Long-lived access token 발급 → `pass show 2fa/totp/ha/junghanacs` (이름은 totp 디렉토리지만 내용은 JWT access token)
 
-### Gotcha 발견 (2026-05-17)
+### Health Connect 라이브 메트릭 (2026-05-17 첫 sync)
 
-- **Caddyfile bind-mount inode 교체**: 호스트 `Edit`/`Write`가 atomic rename으로 inode 교체 → caddy 컨테이너는 옛 inode 잡고 있어서 `caddy reload`가 "config is unchanged"로 종료. 해결: `docker compose restart caddy`로 재바인딩. AGENTS.md gotcha 항목 후보.
+값 들어오는 것: `sleep_duration`, `heart_rate`, `resting_heart_rate`, `daily_steps`, `steps_sensor`(누적), `daily_distance`, `total_calories_burned`, `weight`
+
+unknown (Samsung Health 미수집 / 디바이스 없음): `heart_rate_variability`, `oxygen_saturation`, `systolic/diastolic_blood_pressure`, `blood_glucose`, `active_calories_burned`
+
+### Baton pass → lifetract repo
+
+여기 nixos-config의 인프라 layer는 닫음. 다음 단계는 [`~/repos/gh/lifetract`](file:///home/junghan/repos/gh/lifetract):
+
+- [ ] **AGENTS.md 신설** — 현재 없음. README.md(Mar 10)/SKILL.md(Feb 22)는 있는데 에이전트 담당자 문서가 빠짐. 코드는 Mar 17 이후 손 안 댐 → 현재 동작과 문서 일치 여부부터 점검
+- [ ] HA REST import 스크립트 — `/api/states/sensor.sm_s942n_s26_glgman_*` polling
+- [ ] cron 일1회 (NUC 또는 laptop에서)
+- [ ] aTimeLogger 파서와 통합 (기존 Samsung Health CSV import는 점진 마이그레이션)
+- [ ] 토큰 로딩: `pass show 2fa/totp/ha/junghanacs` (JWT long-lived access token)
+
+### Gotcha 발견 (영속화 옮길 항목)
+
+다음 사이클에 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 또는 AGENTS.md gotcha 섹션에 옮길 것:
+
+- **Caddyfile bind-mount inode 교체**: 호스트 `Edit`/`Write`의 atomic rename으로 inode 교체 → caddy 컨테이너가 옛 inode 잡고 있어 `caddy reload`가 "config is unchanged"로 무효 종료. 해결: `docker compose restart caddy`로 재바인딩. Caddyfile 변경 워크플로우 표준 절차에 포함 필요.
 
 ### 메모 — Health Connect 노출 범위
 
