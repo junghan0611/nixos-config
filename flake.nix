@@ -61,6 +61,9 @@
         # Bun from unstable (25.11 has 1.3.3, unstable has 1.3.10)
         bun = unstable.bun;
 
+        # scrcpy from unstable (25.11 has 3.3.4, unstable has 4.0)
+        scrcpy = unstable.scrcpy;
+
         # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
         microsoft-edge = pinned.microsoft-edge;
 

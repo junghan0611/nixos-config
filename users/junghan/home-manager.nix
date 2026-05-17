@@ -165,6 +165,7 @@ in {
     usbutils        # USB tools
     minicom         # Serial port terminal
     gdmap           # Disk usage visualizer (GUI)
+    scrcpy          # Android screen mirroring (4.0 from unstable)
 
     # Security (ElleNajit)
     keybase         # Encrypted communication
