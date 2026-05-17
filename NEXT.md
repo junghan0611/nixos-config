@@ -111,6 +111,25 @@
 - [ ] **plugin config `spawnTimeoutSeconds` 전달 갭**: openclaw.json `plugins.entries.pi-shell-acp.config.spawnTimeoutSeconds=600` 박았는데 plugin DIAG `timeoutMs=60000` (default 60s) 출력. spin-loop fix 후엔 60s로도 충분하지만 갭 자체는 추적 대상.
 - [ ] **adad76af session 누적 ack 청소 정책**: 이전 stuck cycle trajectory에 "Note: I'll respond..." 5건 누적. 현재 새 session `fb3331af` 사용 중이지만 stale session archive 정책 검토.
 
+### 운영 사실 — openclaw stuck session auto-recovery (2026-05-18 확인)
+
+[pi-shell-acp issue #18](https://github.com/junghan0611/pi-shell-acp/issues/18) 발생 직후, main(default) 봇이 codex stream hang으로 605s(10분) stuck. 운영자가 수동 abort 고민했으나 **openclaw 자체에 stuck-recovery 메커니즘이 있어 자동 풀림** 확인.
+
+```
+recovery=none      ← "아직 발사 안 함" 의미. 무한 stuck 아님
+recovery=checking  ← 605s 즈음 자체 timeout 발사
+stuck session recovery: action=abort_embedded_run aborted=true drained=true
+→ 다음 turn 자연 진입, 새 codex child spawn
+```
+
+운영 함의:
+- `stalled session ... recovery=none` 로그는 **즉시 액션 필요 아님**. 10분 안에 자체 회복됨
+- 8분 stuck 응답은 손실되지만 봇 자체는 자동 살아남음
+- 수동 강제 종료(`docker exec ... kill`, gateway restart)는 다른 봇 영향 + 회복 매커니즘 중복 → **606s 이전엔 일단 기다리는 게 정공법**
+- codex stream hang 자체 빈도가 누적되면 별도 추적 (pi-shell-acp #18과 다른 issue — OpenAI/Codex 측 stream chunk 끊김)
+
+영속화 옮길 자리: AGENTS.md §5 Operational workflow의 "stuck-recovery 룰" 한 줄 또는 §7 Gotchas.
+
 ### 영속 기록 옮길 destination (다음 정리 사이클)
 
 - `~/openclaw/README.md` change history: Phase 1.8 β 완전 통과 stamp
