@@ -118,7 +118,7 @@ show_menu() {
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
-    echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC)"
+    echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC + Docker prune on oracle)"
     echo "    d) Disk usage (디스크 사용량 확인)"
     echo ""
     echo "    0) Exit"
@@ -270,6 +270,31 @@ main() {
 
                     info "8/8 시스템 Nix GC 실행..."
                     execute_cmd "sudo nix-collect-garbage --delete-older-than 7d"
+
+                    # Oracle 호스트: docker 잔재(dangling 이미지 + build cache) 정리
+                    if [[ "$DEVICE" == "oracle" ]] && command -v docker >/dev/null 2>&1; then
+                        echo ""
+                        info "Oracle 호스트 감지 — Docker 정리 단계"
+                        echo ""
+                        info "현재 Docker 사용량:"
+                        docker system df 2>/dev/null || warn "docker system df 실패"
+                        echo ""
+                        warn "Dangling 이미지 + 사용 안 하는 빌드 캐시를 정리합니다. (실행 중 컨테이너 이미지는 보존) 계속? (y/N)"
+                        read -p "> " docker_confirm
+                        if [[ "$docker_confirm" =~ ^[Yy]$ ]]; then
+                            info "9/10 Docker dangling 이미지 정리..."
+                            execute_cmd "docker image prune -a -f --filter \"until=24h\""
+
+                            info "10/10 Docker 빌드 캐시 정리..."
+                            execute_cmd "docker builder prune -a -f"
+
+                            echo ""
+                            info "정리 후 Docker 사용량:"
+                            docker system df 2>/dev/null
+                        else
+                            info "Docker 정리 건너뜀."
+                        fi
+                    fi
 
                     echo ""
                     info "정리 후 디스크 사용량:"

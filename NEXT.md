@@ -131,20 +131,24 @@
 
 이 주제는 IoT 실무 dogfooding 가치가 커서 **관심 추적 대상**. homeagent-config 검증과도 직접 연결.
 
+**✅ 진행 게이트 통과** (2026-05-17): §6 정리로 디스크 97% → 67%, 32G 여유.
+
 ### 결정 사항
 
 - 호스팅: Oracle ARM Docker (openclaw 패턴 재사용)
-- 도메인: `ha.junghanacs.com` (health 아님 — HA는 자동화 허브로 확장)
+- 도메인: `ha.junghanacs.com` (health 아님 — HA는 자동화 허브로 확장). Netlify DNS에 A 레코드 추가 → Oracle 퍼블릭 IP → caddy 자동 LE 발급
 - 데이터 경로: Galaxy Fold4 → Samsung Health → Health Connect → HA Companion App → HA Core → lifetract
 - lifetract import 1차: REST polling, 1일 1회 cron (recorder DB direct / MQTT는 PoC 이후)
+- 도커 패턴: `docker/homeassistant/docker-compose.yml` 신규, `proxy` external network 가입, `~/docker-data/homeassistant/config` 볼륨 — remark42 단일 컨테이너 패턴 복제
 
-### 구축 액션
+### 구축 액션 (§6 통과 후)
 
-- [ ] `~/docker/homeassistant/docker-compose.yml` 초안 (openclaw 도커 패턴 — 같은 caddy network join)
+- [ ] `docker/homeassistant/docker-compose.yml` 초안 (remark42 패턴 복제, `proxy` external network)
 - [ ] Caddy site block 추가: `ha.junghanacs.com` → `homeassistant:8123` (자동 LE)
-- [ ] `configuration.yaml` — `http.use_x_forwarded_for: true` + `trusted_proxies` (caddy 네트워크 대역). 없으면 Companion App 로그인 실패.
+- [ ] `configuration.yaml` — `http.use_x_forwarded_for: true` + `trusted_proxies: [172.16.0.0/12]` (Docker bridge 대역). 없으면 Companion App 로그인 실패.
 - [ ] `recorder.purge_keep_days: 30` + automation/script/updater exclude — 디스크 폭주 방지
-- [ ] 초기 admin 계정 2FA(TOTP) + `ip_ban` 활성화
+- [ ] Netlify DNS: `ha.junghanacs.com` A 레코드 → Oracle 퍼블릭 IP
+- [ ] 초기 admin 계정 2FA(TOTP) + `ip_ban` 활성화 (외부 노출 필수)
 - [ ] Fold4 Companion App URL 등록 → Health Connect 센서 활성화 (Sleep Duration 우선)
 - [ ] PoC: 수면 1개 메트릭 end-to-end (Fold4 → HA → lifetract.db) 검증
 - [ ] PoC 통과 후 메트릭 확장 (Heart Rate / HRV / Steps / Weight)
@@ -164,3 +168,36 @@ HA Companion App (2024+)이 잡는 것: Sleep Duration/Stages, Heart Rate (avg/m
 - `nixos-config/AGENTS.md`: Oracle 운영 컨테이너 목록에 homeassistant 추가
 - `nixos-config/docs/`: HA 운영 노트 (trusted_proxies, 2FA, recorder 정책)
 - `lifetract` skill: HA REST 경로 첫 클래스 입력으로 승격
+
+## 6. Oracle 디스크 정리 — HA 도입 선결조건 ✅
+
+**2026-05-17 완료.** 97% → 67%, +28GB 회수. §5 HA 게이트 해제.
+
+### 회수 결과 (2026-05-17)
+
+```
+              before          after
+df Used%      97%             67%
+Avail         3.3GB           32GB
+Images        29.39GB (20)    4.925GB (7)
+Build cache   7.687GB (207)   0
+Reclaimable   27.46GB (93%)   0B (0%)
+```
+
+배운 점: `docker system df`의 reclaimable 명목치는 layer 공유 무시. 27GB 명목 → 실회수는 image prune 2.4GB + **builder prune 7.687GB**가 본 회수원. 다음 사이클에는 빌드캐시부터 본다.
+
+### 절차 (참고용 기록)
+
+- [x] llmlog 결정 정리 (`20260517T160459`)
+- [x] 사용자: oracle에서 `./run.sh` → `C)` Cleanup ALL (nix gc + 시스템 캐시 → 0.4G 회수)
+- [x] run.sh `C)`에 docker prune 단계 통합 (oracle 호스트 분기) — 다음 사이클에서 한 흐름
+- [x] `docker image prune -a -f --filter "until=24h"` — dangling 11 + node + openclaw base untag → 2.1GB
+- [x] `docker builder prune -a -f` — 207 build cache → 7.687GB
+- [x] 회수량 측정 + `df -h /` 결과 stamp
+- [ ] (선택) `~/docker-data/{mattermost,synapse}` archival — 비활성 후 데이터 잔존 (사용자 결정 필요, 비긴급)
+
+### 영속화 (다음 정리 사이클)
+
+- `nixos-config/AGENTS.md` §7 Gotchas에 **"OpenClaw 업그레이드 사이클마다 dangling 이미지 + build cache 누적 → run.sh C)로 정기 prune"** 룰 추가
+- "`docker system df` reclaimable 명목치 ≠ 실 회수량, builder prune이 본 회수원" 메모 추가
+- run.sh `C)` Docker 통합은 AGENTS.md commands 섹션에서 언급
