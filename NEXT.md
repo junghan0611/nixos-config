@@ -124,3 +124,43 @@
 - [ ] `agent-config` 임시 정책 추적: 0.6.0 prerelease 동안 server-mode가 `pi-shell-acp` main 추적(`agent-config` 5f17d70). Phase 3 release 후 ref pinning 복귀 결정.
 - [ ] `plugins/openclaw/README.md` Install layers 항목 보강: settings.json의 host absolute path 호환성 — Docker 환경에서 compose에 `/home/junghan/.pi/agent` 동등 path 두 번째 mount 필요 함정 한 줄.
 - [ ] α 별도 advanced smoke (공개 기본값): 통과선 1/1b/2/세션 자기인식만. 별도 사이클.
+
+## 5. Home Assistant on Oracle Docker — Health Connect → lifetract 자동화
+
+**2026-05-17 — 의사결정 완료, 구축 대기.** Samsung Health 수면 데이터를 데일리로 lifetract에 흡수하는 자동화. Tasker/Flutter/Kotlin 자체 앱 검토 끝에 *HA Companion App + 자체 HA 인스턴스* 단일 경로로 압축. 의사결정 근거 전문: `~/org/llmlog/20260517T160459--healthconnect-ha-lifetract-자동화-경로-검토__healthconnect_homeassistant_iot_lifetract_llmlog_nixos.org`.
+
+이 주제는 IoT 실무 dogfooding 가치가 커서 **관심 추적 대상**. homeagent-config 검증과도 직접 연결.
+
+### 결정 사항
+
+- 호스팅: Oracle ARM Docker (openclaw 패턴 재사용)
+- 도메인: `ha.junghanacs.com` (health 아님 — HA는 자동화 허브로 확장)
+- 데이터 경로: Galaxy Fold4 → Samsung Health → Health Connect → HA Companion App → HA Core → lifetract
+- lifetract import 1차: REST polling, 1일 1회 cron (recorder DB direct / MQTT는 PoC 이후)
+
+### 구축 액션
+
+- [ ] `~/docker/homeassistant/docker-compose.yml` 초안 (openclaw 도커 패턴 — 같은 caddy network join)
+- [ ] Caddy site block 추가: `ha.junghanacs.com` → `homeassistant:8123` (자동 LE)
+- [ ] `configuration.yaml` — `http.use_x_forwarded_for: true` + `trusted_proxies` (caddy 네트워크 대역). 없으면 Companion App 로그인 실패.
+- [ ] `recorder.purge_keep_days: 30` + automation/script/updater exclude — 디스크 폭주 방지
+- [ ] 초기 admin 계정 2FA(TOTP) + `ip_ban` 활성화
+- [ ] Fold4 Companion App URL 등록 → Health Connect 센서 활성화 (Sleep Duration 우선)
+- [ ] PoC: 수면 1개 메트릭 end-to-end (Fold4 → HA → lifetract.db) 검증
+- [ ] PoC 통과 후 메트릭 확장 (Heart Rate / HRV / Steps / Weight)
+
+### 메모 — Health Connect 노출 범위
+
+HA Companion App (2024+)이 잡는 것: Sleep Duration/Stages, Heart Rate (avg/min/max/resting), HRV, Steps, Distance, Active/Total Calories, Active Time, Weight, Body Fat, Hydration, VO2 Max, Blood Pressure, Oxygen Saturation. *Samsung 독점 스트레스 점수는 Health Connect로 안 넘어옴* — 필요 시 별도 ADB 백업 경로 검토.
+
+### Cross-repo 연계
+
+- [ ] `lifetract` repo: HA REST polling import 스크립트 (기존 Samsung Health CSV import와 병행 가능하게 — 점진 마이그레이션)
+- [ ] `homeagent-config`: HA 인스턴스가 외부에 뜨면 homeagent 플랫폼의 dogfooding/통합 테스트 환경으로 재활용 검토
+- [ ] `agent-config`: lifetract 스킬 doc에 HA 경로 활성화 시점 갱신
+
+### 영속화 destination (PoC 통과 후)
+
+- `nixos-config/AGENTS.md`: Oracle 운영 컨테이너 목록에 homeassistant 추가
+- `nixos-config/docs/`: HA 운영 노트 (trusted_proxies, 2FA, recorder 정책)
+- `lifetract` skill: HA REST 경로 첫 클래스 입력으로 승격
