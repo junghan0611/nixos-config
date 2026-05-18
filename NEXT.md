@@ -26,34 +26,34 @@
   - 평가축: first-result precision, freshness, CJK short query, operator trust
   - 결과 기록: `~/org/llmlog/` 새 노트 (denote 형식)
 - [ ] **`--force` 직후 dirty=true 현상 — 8B 사이클에도 재현되는지**
-  - 5.7+4B 사이클에서 6 agents 모두 `dirty=true` → incremental 1회로 해소됐던 패턴. 8B에서도 동일하면 upstream issue로 보고.
+  - 5.7+4B 사이클에서 6 agents 모두 `dirty=true` → incremental 1회로 해소됐던 패턴
+  - **5.18 영향 가능**: changelog L199 `Memory-core: scan persisted memory source sessions on startup, comparing on-disk transcripts against the index and marking only missing/newer/resized files dirty for incremental sync. Fixes #82341.` — 5.18 업그레이드 후 dirty 패턴 자연 해소 가능성. 업그레이드 후 재측정 우선
 
 ## 2. active-memory 확장 후속 (main/glg/gpt/mini)
 
-(2026-05-09 12:59 KST 확장) gpt 단독 24h 관찰 OK → main/glg/mini 추가. gemini(삭제 예정)/bbot(ACP path) 제외. 24h 결과는 AGENTS.md §3 active memory 섹션에 stamp 완료.
+(2026-05-09 12:59 KST 확장) gpt 단독 24h 관찰 OK → main/glg/mini 추가. **2026-05-16 bbot 추가** (Phase 1.8 β 통과 후 ACP path 호환성 확보). gemini(삭제 예정) 제외.
 
-24h 관찰 결과 (2026-05-08 08:58 ~ 2026-05-09 03:45 UTC, gpt 14 invocation):
+24h 관찰 baseline (2026-05-08 08:58 ~ 2026-05-09 03:45 UTC, gpt 14 invocation):
 - status: ok 4 / empty 10 / timeout 0
 - elapsedMs: min 5388 / max 13256 / 평균 ~8.3s
 - summaryChars (ok): 164 / 178 / 203 / 216 — 모두 220 한도 내
-- 13.2s spike 1건은 동시 발생 `event_loop_delay 1678ms` liveness warning과 상관
 
 확장 후 후속 관찰:
 
 - [ ] **glg(가족 봇) 응답 latency 체감 변화**
   - 가족 사용 turn 후 가족 피드백 수집. "느려졌다" 류 호소 발생하면 glg만 다시 제외
-  - active-memory recall sub-agent 자체가 5–10s 본질이라 main 응답 자체에 추가되는 latency가 아님 — 메인 응답 시작 직전 한 번 도는 구조
 - [ ] **main agent 회상 품질 정성 평가**
   - main은 가장 generalist deep work라 회상이 가장 유의미할 가능성. status=ok 비율 추적
 - [ ] **mini agent에서 의미 있는지 재검증**
   - mini는 format/proofread 전용이라 "이전 대화 이어서" 패턴이 거의 없음. status=empty가 압도적이면 mini만 제외 검토
-- [ ] **확장 후 14일 baseline**
+- [ ] **확장 후 14일 baseline (cutoff 2026-05-23 임박)**
   - 4개 봇 합산 invocation/day, status 분포, elapsed 분포 집계
   - timeout 빈도 0% 유지되는지 — 다중 봇 동시 호출 시 OAuth quota 경합 검증
+  - **5.18 영향**: changelog L195/L197/L198 subagent completion handoff fixes — recall sub-agent (5.4-mini lane) 동작에 영향 가능. baseline 비교 자리에서 5.12 vs 5.18 분리해 측정
 
 ## 3. (참고) gemini agent 정리
 
-비긴급. AGENTS.md §3 Model routing에 "Copilot 잔재(`gemini` agent)는 **삭제 예정**" 표시. 5.7 운영 안정 확인 후 별도 사이클에서 처리.
+비긴급. AGENTS.md §3 Model routing에 "Copilot 잔재(`gemini` agent)는 **삭제 예정**" 표시. 단 §4에서 pi-shell-acp/Gemini CLI로 전환 검증 진행 중이라 결정 후순위. 5.18 운영 안정 확인 후 별도 사이클.
 
 - [ ] gpt-5.4로 통합할지 (workspace-gemini → workspace-gpt로 흡수) 또는 agent 자체 삭제할지 결정
 - [ ] 텔레그램 봇 `@glg_gemini_bot` 회수 절차 (BotFather)
@@ -61,28 +61,7 @@
 
 ## 4. pi-shell-acp OpenClaw plugin — Phase 1.8 β 완전 통과
 
-**2026-05-15 18:08 KST — bbot이 `pi-shell-acp/claude-opus-4-7` primary로 텔레그램 turn 완전 통과. workspace 파일(`SOUL.md`/`USER.md`/`memory/*`) 직접 read + 컨텍스트 응답 생성: "오랜만이야, 정한..." 진짜 대화. Phase 1.8 keystone 닫음.**
-
-### 산을 넘은 fix chain
-
-| commit | 내용 | 영향 |
-|---|---|---|
-| `98c8741` | delivery contract bridge (message tool synthetic toolCall) | spawn 통과해도 final text→message toolCall 정합 |
-| `7071f4d` | exit→close fallback (500ms 강제 finalize) | child가 죽어도 stream pending 안 됨 |
-| **`02c9c36`** | **stdout parser spin-loop fix** (`while (nl >= 0)` → `while (true) { const nl=...; if (nl<0) break; }`) | **진짜 원인 — JSON parse loop의 nl 재계산 누락이 CPU 100%, event loop 80s 막힘, exit/close listener 미발사** |
-| `4e8237c` | docker-lab repro 샘플 추가 (docs only) | 재현 환경 보존 |
-
-### 통과 검증 (Oracle live)
-
-```
-[DIAG] turn msgs=3 roles=user,assistant,user deliveryViaMessageTool=0
-[DIAG] pre-spawn signalAborted=0 model=claude-opus-4-7
-[DIAG] child spawned pid=99 timeoutMs=60000
-[DIAG] child exit pid=99 code=0 signal=null         ← 7s clean exit
-[DIAG] child finalize kind=close hasFinal=1
-       cacheRead=9704 cacheWrite=9996 output=83 token
-[telegram] sendMessage ok chat=123861330 message=327
-```
+**2026-05-15 18:08 KST — bbot이 `pi-shell-acp/claude-opus-4-7` primary로 텔레그램 turn 완전 통과.** Phase 1.8 keystone 닫음. 핵심 fix chain: `98c8741` delivery contract bridge → `7071f4d` exit→close fallback → **`02c9c36` stdout parser spin-loop fix (진짜 원인)** → `4e8237c` docker-lab repro.
 
 ### 현재 Oracle 상태
 
@@ -102,18 +81,19 @@
 - plugin install: `openclaw plugins install <path> --link --dangerously-force-unsafe-install` → `plugins.allow` / `plugins.entries.<id>.enabled=true` 자동 박힘
 - β path = host passthrough, trusted single-user. 공개 default는 α (in-container login + named volumes)
 
-
 ### 남은 잔여 작업 (Phase 1.8 keystone 후 부속)
 
-- [ ] **gemini agent 봇 turn 검증**: bbot GREEN과 동일 path로 `@glg_gemini_bot` turn 확인. Copilot 의존 완전 끊고 pi-shell-acp/Gemini CLI 정상 작동.
-- [ ] **main picker `/model pi-shell-acp/...` 전환 turn**: 5개 모델 각 단발 turn 검증.
-- [ ] **풀세트 6축 검증 (β 통과선)**: skill manifest (3a) + skill invocation (3b) + 세션 자기인식 + workspace 인식. bbot이 이미 workspace read한 정황으로 거의 통과 상태.
-- [ ] **plugin config `spawnTimeoutSeconds` 전달 갭**: openclaw.json `plugins.entries.pi-shell-acp.config.spawnTimeoutSeconds=600` 박았는데 plugin DIAG `timeoutMs=60000` (default 60s) 출력. spin-loop fix 후엔 60s로도 충분하지만 갭 자체는 추적 대상.
-- [ ] **adad76af session 누적 ack 청소 정책**: 이전 stuck cycle trajectory에 "Note: I'll respond..." 5건 누적. 현재 새 session `fb3331af` 사용 중이지만 stale session archive 정책 검토.
+**⏸ FREEZE 모드** (2026-05-19~): pi-shell-acp 코어 0.7.0 npm publish 라운드가 노트북에서 진행 중. 이 라운드 끝날 때까지 plugin-side 디버깅/수정 모두 보류. operational use(git pull로 main 따라가기)는 가능하지만 plugin 코드 *고치는* 작업은 정지. publish 완료 + Phase 3 진입 stamp 후 unfreeze 결정.
 
-### 운영 사실 — openclaw stuck session auto-recovery (2026-05-18 확인)
+- [ ] ⏸ **gemini agent 봇 turn 검증**: bbot GREEN과 동일 path로 `@glg_gemini_bot` turn 확인. Copilot 의존 완전 끊고 pi-shell-acp/Gemini CLI 정상 작동
+- [ ] ⏸ **main picker `/model pi-shell-acp/...` 전환 turn**: 5개 모델 각 단발 turn 검증
+- [ ] ⏸ **풀세트 6축 검증 (β 통과선)**: skill manifest (3a) + skill invocation (3b) + 세션 자기인식 + workspace 인식. bbot이 이미 workspace read한 정황으로 거의 통과 상태
+- [ ] ⏸ **plugin config `spawnTimeoutSeconds` 전달 갭**: openclaw.json `plugins.entries.pi-shell-acp.config.spawnTimeoutSeconds=600` 박았는데 plugin DIAG `timeoutMs=60000` (default 60s) 출력. spin-loop fix 후엔 60s로도 충분하지만 갭 자체는 추적 대상
+- [ ] ⏸ **adad76af session 누적 ack 청소 정책**: 이전 stuck cycle trajectory에 "Note: I'll respond..." 5건 누적. 현재 새 session `fb3331af` 사용 중이지만 stale session archive 정책 검토
 
-[pi-shell-acp issue #18](https://github.com/junghan0611/pi-shell-acp/issues/18) 발생 직후, main(default) 봇이 codex stream hang으로 605s(10분) stuck. 운영자가 수동 abort 고민했으나 **openclaw 자체에 stuck-recovery 메커니즘이 있어 자동 풀림** 확인.
+### 운영 사실 — openclaw stuck session auto-recovery (2026-05-18 확인, `ee1a046` stamp)
+
+[pi-shell-acp issue #18](https://github.com/junghan0611/pi-shell-acp/issues/18) 발생 직후 main(default) 봇이 codex stream hang으로 605s(10분) stuck → **openclaw 자체 stuck-recovery로 자동 풀림 확인**.
 
 ```
 recovery=none      ← "아직 발사 안 함" 의미. 무한 stuck 아님
@@ -123,12 +103,11 @@ stuck session recovery: action=abort_embedded_run aborted=true drained=true
 ```
 
 운영 함의:
-- `stalled session ... recovery=none` 로그는 **즉시 액션 필요 아님**. 10분 안에 자체 회복됨
-- 8분 stuck 응답은 손실되지만 봇 자체는 자동 살아남음
-- 수동 강제 종료(`docker exec ... kill`, gateway restart)는 다른 봇 영향 + 회복 매커니즘 중복 → **606s 이전엔 일단 기다리는 게 정공법**
-- codex stream hang 자체 빈도가 누적되면 별도 추적 (pi-shell-acp #18과 다른 issue — OpenAI/Codex 측 stream chunk 끊김)
+- `stalled session ... recovery=none` 로그는 **즉시 액션 필요 아님**. 10분 안에 자체 회복
+- 수동 강제 종료(docker exec kill / gateway restart)는 다른 봇 영향 + 매커니즘 중복 → **606s 이전엔 일단 기다리는 게 정공법**
+- **5.18 영향**: changelog L59 `Release stability: recover stale session diagnostics and Codex OAuth fallback state so stuck runs and reused refresh tokens clear without blocking follow-up work.` — 이 회로가 추가 강화됨. 5.18 업그레이드 후 stuck-recovery latency 재측정 가능
 
-영속화 옮길 자리: AGENTS.md §5 Operational workflow의 "stuck-recovery 룰" 한 줄 또는 §7 Gotchas.
+영속화 옮길 자리: AGENTS.md §5 Operational workflow 또는 §7 Gotchas.
 
 ### 영속 기록 옮길 destination (다음 정리 사이클)
 
@@ -138,110 +117,178 @@ stuck session recovery: action=abort_embedded_run aborted=true drained=true
 
 ### Cross-repo follow-up
 
-- [ ] `pi-shell-acp` Phase 2 후보: Codex도 Claude처럼 `require.resolve("@zed-industries/codex-acp/package.json")` fallback 추가. 현재 Codex는 PATH-only라 Docker 실수 포인트가 크다.
-- [ ] `pi-shell-acp` 문서에 Docker auth boundary 섹션 추가 여부 확인: "backend CLI auth는 backend가 소유, pi-shell-acp는 token을 읽거나 변환하지 않음."
-- [ ] `agent-config` 임시 정책 추적: 0.6.0 prerelease 동안 server-mode가 `pi-shell-acp` main 추적(`agent-config` 5f17d70). Phase 3 release 후 ref pinning 복귀 결정.
-- [ ] `plugins/openclaw/README.md` Install layers 항목 보강: settings.json의 host absolute path 호환성 — Docker 환경에서 compose에 `/home/junghan/.pi/agent` 동등 path 두 번째 mount 필요 함정 한 줄.
-- [ ] α 별도 advanced smoke (공개 기본값): 통과선 1/1b/2/세션 자기인식만. 별도 사이클.
+- [x] ~~`pi-shell-acp` Phase 2 후보: Codex도 Claude처럼 `require.resolve("@zed-industries/codex-acp/package.json")` fallback 추가~~ — **0.7.0 cut에 들어감** (`resolveCodexAcpLaunch` 0.7.0 changelog 참고)
+- [ ] `pi-shell-acp` 문서에 Docker auth boundary 섹션 추가 여부 확인: "backend CLI auth는 backend가 소유, pi-shell-acp는 token을 읽거나 변환하지 않음"
+- [ ] `agent-config` 임시 정책 추적: 0.6.0 prerelease 동안 server-mode가 `pi-shell-acp` main 추적(`agent-config` 5f17d70). **0.7.0 cut됨 → Phase 3 진입 trigger**. publish 라운드 완료 후 ref pinning 복귀 결정
+- [ ] `plugins/openclaw/README.md` Install layers 항목 보강: settings.json의 host absolute path 호환성 — Docker 환경에서 compose에 `/home/junghan/.pi/agent` 동등 path 두 번째 mount 필요 함정 한 줄 (⏸ plugin sibling publish 수준 도달 후)
+- [ ] α 별도 advanced smoke (공개 기본값): 통과선 1/1b/2/세션 자기인식만. 별도 사이클
 
-## 5. Home Assistant on Oracle Docker — Health Connect → lifetract 자동화
+## 5. Home Assistant on Oracle Docker — baton pass 완료
 
-**2026-05-17 — 의사결정 완료, 구축 대기.** Samsung Health 수면 데이터를 데일리로 lifetract에 흡수하는 자동화. Tasker/Flutter/Kotlin 자체 앱 검토 끝에 *HA Companion App + 자체 HA 인스턴스* 단일 경로로 압축. 의사결정 근거 전문: `~/org/llmlog/20260517T160459--healthconnect-ha-lifetract-자동화-경로-검토__healthconnect_homeassistant_iot_lifetract_llmlog_nixos.org`.
+**2026-05-17 nixos-config 인프라 layer 닫음.** PoC end-to-end 통과 (`sensor.sm_s942n_s26_glgman_sleep_duration = 427 min`, Health Connect 라이브 16개 센서 활성). 인프라 구축 풀 디테일은 commit `7567b7c` (Dockerfile/compose/Caddy) + commit `53a8d2e` (baton pass stamp) + llmlog `20260517T160459` 참고.
 
-이 주제는 IoT 실무 dogfooding 가치가 커서 **관심 추적 대상**. homeagent-config 검증과도 직접 연결.
+라이브 메트릭 (참고): `sleep_duration`, `heart_rate`, `resting_heart_rate`, `daily_steps`, `steps_sensor`, `daily_distance`, `total_calories_burned`, `weight` ✅ / `hrv`, `oxygen_saturation`, `blood_pressure`, `blood_glucose`, `active_calories_burned` unknown (Samsung 미수집).
 
-**✅ 진행 게이트 통과** (2026-05-17): §6 정리로 디스크 97% → 67%, 32G 여유.
+### Baton 받은 쪽 (lifetract repo)
 
-### 결정 사항
+여기 nixos-config 측 인프라는 닫음. 다음 단계는 [`~/repos/gh/lifetract`](file:///home/junghan/repos/gh/lifetract):
 
-- 호스팅: Oracle ARM Docker (openclaw 패턴 재사용)
-- 도메인: `ha.junghanacs.com` (health 아님 — HA는 자동화 허브로 확장). Netlify DNS에 A 레코드 추가 → Oracle 퍼블릭 IP → caddy 자동 LE 발급
-- 데이터 경로: Galaxy Fold4 → Samsung Health → Health Connect → HA Companion App → HA Core → lifetract
-- lifetract import 1차: REST polling, 1일 1회 cron (recorder DB direct / MQTT는 PoC 이후)
-- 도커 패턴: `docker/homeassistant/docker-compose.yml` 신규, `proxy` external network 가입, `~/docker-data/homeassistant/config` 볼륨 — remark42 단일 컨테이너 패턴 복제
-
-### 구축 액션 — 완료 (2026-05-17)
-
-- [x] `docker/homeassistant/docker-compose.yml` (remark42 패턴 복제, `proxy` external network, expose 8123)
-- [x] Caddy site block: `ha.junghanacs.com` → `homeassistant:8123` (LE 자동 발급)
-- [x] `configuration.yaml` 사전 작성 — `use_x_forwarded_for: true` + `trusted_proxies: [172.18.0.0/16, 127.0.0.1, ::1]` (실측 docker proxy subnet) + `external_url`
-- [x] `recorder.purge_keep_days: 30` + automation/script/updater exclude
-- [x] `ip_ban_enabled: true` + `login_attempts_threshold: 5`
-- [x] Netlify DNS: `ha.junghanacs.com` A 레코드 (사용자)
-- [x] HA 첫 부팅 + onboarding 도달
-- [x] admin TOTP 2FA 활성화 (사용자 UI)
-- [x] Companion App 등록 (디바이스: `SM-S942N-S26-GLGMAN`, mobile_app `b6a48768e1c2b22a`)
-- [x] Health Connect 센서 토글 + Samsung Health → Health Connect 권한
-- [x] **PoC end-to-end 통과** — `sensor.sm_s942n_s26_glgman_sleep_duration = 427 min` (어젯밤 7h7m), heart_rate / resting_heart_rate / daily_steps / weight 등 16개 활성
-- [x] Long-lived access token 발급 → `pass show 2fa/totp/ha/junghanacs` (이름은 totp 디렉토리지만 내용은 JWT access token)
-
-### Health Connect 라이브 메트릭 (2026-05-17 첫 sync)
-
-값 들어오는 것: `sleep_duration`, `heart_rate`, `resting_heart_rate`, `daily_steps`, `steps_sensor`(누적), `daily_distance`, `total_calories_burned`, `weight`
-
-unknown (Samsung Health 미수집 / 디바이스 없음): `heart_rate_variability`, `oxygen_saturation`, `systolic/diastolic_blood_pressure`, `blood_glucose`, `active_calories_burned`
-
-### Baton pass → lifetract repo
-
-여기 nixos-config의 인프라 layer는 닫음. 다음 단계는 [`~/repos/gh/lifetract`](file:///home/junghan/repos/gh/lifetract):
-
-- [ ] **AGENTS.md 신설** — 현재 없음. README.md(Mar 10)/SKILL.md(Feb 22)는 있는데 에이전트 담당자 문서가 빠짐. 코드는 Mar 17 이후 손 안 댐 → 현재 동작과 문서 일치 여부부터 점검
+- [ ] **AGENTS.md 신설** — 현재 없음. 코드는 Mar 17 이후 손 안 댐 → 현재 동작과 문서 일치 여부부터 점검 (2026-05-18 노트북 담당자가 §2 베이스라인 정렬 통과 stamp)
 - [ ] HA REST import 스크립트 — `/api/states/sensor.sm_s942n_s26_glgman_*` polling
 - [ ] cron 일1회 (NUC 또는 laptop에서)
-- [ ] aTimeLogger 파서와 통합 (기존 Samsung Health CSV import는 점진 마이그레이션)
 - [ ] 토큰 로딩: `pass show 2fa/totp/ha/junghanacs` (JWT long-lived access token)
 
-### Gotcha 발견 (영속화 옮길 항목)
+### Gotcha 영속화 옮길 항목
 
-다음 사이클에 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 또는 AGENTS.md gotcha 섹션에 옮길 것:
+다음 사이클에 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md):
 
-- **Caddyfile bind-mount inode 교체**: 호스트 `Edit`/`Write`의 atomic rename으로 inode 교체 → caddy 컨테이너가 옛 inode 잡고 있어 `caddy reload`가 "config is unchanged"로 무효 종료. 해결: `docker compose restart caddy`로 재바인딩. Caddyfile 변경 워크플로우 표준 절차에 포함 필요.
+- **Caddyfile bind-mount inode 교체**: 호스트 `Edit`/`Write`의 atomic rename으로 inode 교체 → caddy 컨테이너가 옛 inode 잡고 있어 `caddy reload`가 "config is unchanged"로 무효 종료. 해결: `docker compose restart caddy`로 재바인딩
 
-### 메모 — Health Connect 노출 범위
-
-HA Companion App (2024+)이 잡는 것: Sleep Duration/Stages, Heart Rate (avg/min/max/resting), HRV, Steps, Distance, Active/Total Calories, Active Time, Weight, Body Fat, Hydration, VO2 Max, Blood Pressure, Oxygen Saturation. *Samsung 독점 스트레스 점수는 Health Connect로 안 넘어옴* — 필요 시 별도 ADB 백업 경로 검토.
-
-### Cross-repo 연계
-
-- [ ] `lifetract` repo: HA REST polling import 스크립트 (기존 Samsung Health CSV import와 병행 가능하게 — 점진 마이그레이션)
-- [ ] `homeagent-config`: HA 인스턴스가 외부에 뜨면 homeagent 플랫폼의 dogfooding/통합 테스트 환경으로 재활용 검토
-- [ ] `agent-config`: lifetract 스킬 doc에 HA 경로 활성화 시점 갱신
-
-### 영속화 destination (PoC 통과 후)
+### 영속화 destination (PoC 통과 후, 다음 정리 사이클)
 
 - `nixos-config/AGENTS.md`: Oracle 운영 컨테이너 목록에 homeassistant 추가
 - `nixos-config/docs/`: HA 운영 노트 (trusted_proxies, 2FA, recorder 정책)
 - `lifetract` skill: HA REST 경로 첫 클래스 입력으로 승격
 
-## 6. Oracle 디스크 정리 — HA 도입 선결조건 ✅
+## 6. Oracle 디스크 정리 — 완료 ✅
 
-**2026-05-17 완료.** 97% → 67%, +28GB 회수. §5 HA 게이트 해제.
+**2026-05-17 완료** (commit `9214a6e` run.sh C) docker prune 통합). 97% → 67%, +28GB 회수. §5 HA 게이트 해제.
 
-### 회수 결과 (2026-05-17)
+배운 점: `docker system df` reclaimable 명목치는 layer 공유 무시. 27GB 명목 → 실회수는 image prune 2.4GB + **builder prune 7.687GB**가 본 회수원. 다음 사이클에는 빌드캐시부터 본다.
 
-```
-              before          after
-df Used%      97%             67%
-Avail         3.3GB           32GB
-Images        29.39GB (20)    4.925GB (7)
-Build cache   7.687GB (207)   0
-Reclaimable   27.46GB (93%)   0B (0%)
-```
+영속화 (다음 정리 사이클):
 
-배운 점: `docker system df`의 reclaimable 명목치는 layer 공유 무시. 27GB 명목 → 실회수는 image prune 2.4GB + **builder prune 7.687GB**가 본 회수원. 다음 사이클에는 빌드캐시부터 본다.
-
-### 절차 (참고용 기록)
-
-- [x] llmlog 결정 정리 (`20260517T160459`)
-- [x] 사용자: oracle에서 `./run.sh` → `C)` Cleanup ALL (nix gc + 시스템 캐시 → 0.4G 회수)
-- [x] run.sh `C)`에 docker prune 단계 통합 (oracle 호스트 분기) — 다음 사이클에서 한 흐름
-- [x] `docker image prune -a -f --filter "until=24h"` — dangling 11 + node + openclaw base untag → 2.1GB
-- [x] `docker builder prune -a -f` — 207 build cache → 7.687GB
-- [x] 회수량 측정 + `df -h /` 결과 stamp
-- [ ] (선택) `~/docker-data/{mattermost,synapse}` archival — 비활성 후 데이터 잔존 (사용자 결정 필요, 비긴급)
-
-### 영속화 (다음 정리 사이클)
-
-- `nixos-config/AGENTS.md` §7 Gotchas에 **"OpenClaw 업그레이드 사이클마다 dangling 이미지 + build cache 누적 → run.sh C)로 정기 prune"** 룰 추가
-- "`docker system df` reclaimable 명목치 ≠ 실 회수량, builder prune이 본 회수원" 메모 추가
+- `nixos-config/AGENTS.md` §7 Gotchas: **"OpenClaw 업그레이드 사이클마다 dangling 이미지 + build cache 누적 → run.sh C)로 정기 prune"** 룰
+- "`docker system df` reclaimable 명목치 ≠ 실 회수량, builder prune이 본 회수원" 메모
 - run.sh `C)` Docker 통합은 AGENTS.md commands 섹션에서 언급
+
+남은 잔재 (비긴급, 사용자 결정):
+
+- [ ] `~/docker-data/{mattermost,synapse}` archival — 비활성 후 데이터 잔존
+
+## 7. OpenClaw 5.12 → 5.18 업그레이드 검토 (2026-05-19, **의사결정 대기**)
+
+릴리즈 노트: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.18> (250+ 라인 변경, bug-fix 위주 + Codex 다수 안정화).
+
+**riskiness 사전 판단: low-medium.** major breaking change 없음. 5.12 정공법 (`openai/*` + `agentRuntime.id="codex"`) 그대로 유지 가능. 단 pi-shell-acp `0.6.0-prerelease.0` 쓰는 우리는 ACP wire / Codex app-server 영역 다수 변경에 대해 **검증 우선**.
+
+### 5.12 정공법 강화 (우리에게 좋음)
+
+- **L164** `Agents/Codex: route OpenAI runs that resolve to openai-codex through Codex provider and bootstrap stored OAuth profile.` — 5.12 마이그레이션 follow-up fix. doctor가 못 잡는 nested config가 있어도 runtime이 OAuth profile을 더 잘 찾아감
+- **L121** `legacy oauthRef-backed OAuth profiles usable while doctor --fix migrates them back to inline, without creating new sidecar credentials.` — 5.12 OAuth profile 암호화 secret key (`auth-profile-secrets` mount) 와 호환, 재로그인 불필요 보장
+- **L122** `load the selected provider owner alongside the Codex harness runtime so openai-codex models resolve when plugin allowlists scope runtime loading. Fixes #83380.` — 5.12 `plugins.allow` 명시 정공법과 직접 연결
+- **L99** `OpenAI/Codex: stop rejecting available openai-codex GPT-5.1/5.2/5.3 model refs during config validation.` — 우리 5.4/5.5 직접 영향 적지만 fallback chain 검증 폭 ↑
+
+### Telegram polling reliability (가족 봇 직접 win)
+
+5.12 boot 직후 fetch-timeout 1건 stuck 함정과 같은 영역 다수 패치.
+
+- **L132** `keep isolated long polling below the hard getUpdates request guard so idle bot accounts with high timeoutSeconds do not false-disconnect and restart-loop.`
+- **L139** `keep hot-reload restarts from marking polling accounts manually stopped and restart isolated ingress cleanly after worker shutdown.`
+- **L123** `fail stalled isolated-ingress handlers into tombstones and abort same-lane reply work before restarting.`
+- **L95** `retry HTTP 421 Misdirected Request send failures on a fresh fallback transport.`
+- **L94/L52** forum-topic origin / topic ID 보존
+
+→ **가족 봇 안정성 최대 win 영역.** 5.12 함정 거의 해소 기대.
+
+### Memory-core (§1 검증과 직접 연결)
+
+- **L199** `scan persisted memory source sessions on startup, comparing on-disk transcripts against the index and marking only missing/newer/resized files dirty for incremental sync. Fixes #82341.` — 우리 §1 `dirty=true` 후속 자연 해소 가능성. **업그레이드 후 §1 항목 재측정 우선**
+- **L136** sqlite-vec load fail vs missing semantic embeddings 진단 분리 — vector.{enabled,storeAvailable,semanticAvailable,available} 정확도 ↑
+- **L135** `Memory/QMD: keep lexical search on raw hyphenated queries while normalizing semantic QMD sub-searches.` — Denote ID 검색 영향 가능
+
+### pi-shell-acp Phase 1.8 β 호환성 (**최우선 검증 영역**)
+
+`0.6.0-prerelease.0` plugin이 5.18 host의 ACP wire / Codex app-server와 합치는지.
+
+- **L165** `Agents/ACP: distinguish prompt-submitted and runtime-active child stalls from true interactive waits, including redacted proxy-env diagnostics for Codex ACP no-output runs.`
+- **L168** `ACP/Codex: honor terminal ACP turn results so failed Codex/acpx runs are not recorded as successful after only progress text.`
+- **L142** `Codex app-server: rotate oversized native Codex threads before resume and cap dynamic tool-result text.`
+- **L144** `Agents/Codex: use the Codex runtime context window for OpenAI-model preflight compaction.`
+- **L137** Subagents sandbox-peer controller ownership preserve
+
+→ bbot opus-4-7 turn(`fa3b8f7`/`02c9c36`) final/abnormal guard와 같은 카테고리. plugin 측 가드와 host 측 가드 양쪽 강화 방향이라 충돌 가능성은 낮지만 trace 검증 필요. **β path 트라이 turn으로 회귀 확인 필수**.
+
+### Subagent — active-memory recall lane (§2 직접 연결)
+
+- **L195** `keep successful keep-mode completion payloads pending after final-delivery retry exhaustion.`
+- **L197** `wait for queued completion handoffs to reach the parent transcript before marking them announced.`
+- **L198** `route group/channel subagent completions through message-tool-only handoffs when required.`
+
+→ active-memory recall sub-agent (5.4-mini lane) 호환성 영향. **24h 관찰 baseline 위에 5.12 vs 5.18 분리 재측정**.
+
+### Build / runtime 변경
+
+- **L17** Pi packages 0.75.1 + Node 22.19 minimum — 베이스 이미지가 가져옴, Dockerfile 변경 불필요 (단 `docker compose build --pull`로 새 base 받아야 함)
+- **L18** `OPENCLAW_IMAGE_APT_PACKAGES` 신표준 + legacy fallback `OPENCLAW_DOCKER_APT_PACKAGES` — 우리 Dockerfile `RUN apt-get install ...` 직접 박혀 있어 영향 없음
+
+### 우리 안 쓰는 영역 (skip)
+
+Mac app 리디자인 다수 / Discord / Signal / WhatsApp / QQBot / Feishu / xAI / GitHub Copilot / Together / Xiaomi / Moonshot / Browser CDP / Android Talk Mode / meme-maker / python-debugger 등.
+
+### 업그레이드 시퀀스 — split-variable + freeze 정합 (2026-05-19 결정)
+
+**전제 조건**:
+- pi-shell-acp 코어 0.7.0이 노트북에서 npm publish 라운드 진행 중 (publish 자체는 pending). 우리는 publish 완료 + Phase 3 진입 stamp까지 **plugin-side 코드 수정 freeze** (§4 잔여 작업 ⏸ 표시).
+- OpenClaw plugin sibling (`@junghan0611/openclaw-pi-shell-acp`)은 공개 수준 미달 — operational use(git pull) 외에는 손 안 댐.
+- 변수 1개씩만 흔든다. 버전 헷갈리지 않게.
+
+**Stage 1 — plugin git pull only (host 5.12 그대로)**
+
+목적: 0.6.0-prerelease → 0.7.0 surface로 host overlay만 따라가기. `resolveCodexAcpLaunch` require.resolve fallback 등 0.7.0 정합 변경분 흡수. host 변수 zero.
+
+- [ ] 사전 — Oracle 호스트에서 현 plugin overlay HEAD 확인 (`git -C ~/.pi/agent/git/github.com/junghan0611/pi-shell-acp log --oneline -1`) → `4e8237c` 기록
+- [ ] `git pull` (main → `f4eeed1` 또는 그 후) — Oracle 호스트의 `~/.pi/agent/git/github.com/junghan0611/pi-shell-acp`
+- [ ] plugin link 살아있으면 build만 (`plugins/openclaw` 내부에서 `pnpm build` 또는 plugin install 매뉴얼 따름). 깨졌으면 `openclaw plugins install <path>/plugins/openclaw --link --dangerously-force-unsafe-install` 재실행
+- [ ] `docker compose restart openclaw-gateway` (host overlay bind-mount이라 recreate 아님 — plugin 코드 reload만)
+- [ ] **bbot `pi-shell-acp/claude-opus-4-7` turn 검증 (β path 회귀 여부)**
+  - 텔레그램으로 단발 turn — workspace read + 컨텍스트 응답 5.15 keystone 수준 유지
+  - DIAG: `child spawned` → `child exit code=0` → `child finalize kind=close hasFinal=1`
+  - 회귀 시: `git -C ~/.pi/agent/git/.../pi-shell-acp checkout 4e8237c` → restart로 즉시 롤백 (5분 이내)
+- [ ] **24h soak** — Stage 2 진입 전. 가족 봇 turn 자연 발생 모니터링
+
+**Stage 2 — host 5.12 → 5.18 (plugin 0.7.0 surface 고정)**
+
+목적: host만 단독 변수. Stage 1 안정 baseline 위에 host 업그레이드. pi-shell-acp는 그대로 박혀 있으니 5.18 ACP wire 변경이 plugin과 합치는지 isolate 검증 가능.
+
+- [ ] **사전 백업**
+  - `~/openclaw/config/memory/*.sqlite` 백업 (8B 4096d 재구축 1290s 비용 회피)
+  - `~/openclaw/auth-profile-secrets/` 백업 (OAuth profile secret key 분실 = 전 봇 재로그인)
+  - `git -C ~/openclaw log --oneline -5` + `git -C ~/repos/gh/nixos-config log --oneline -5` 현 시점 기록
+- [ ] **이미지 빌드 + recreate**
+  - `~/openclaw/Dockerfile`의 `FROM ghcr.io/openclaw/openclaw:2026.5.12` → `2026.5.18` (롤백용 주석은 5.12로 갱신)
+  - `cd ~/openclaw && docker compose build --pull openclaw-gateway`
+  - `docker compose up -d --force-recreate openclaw-gateway`
+  - ready 시간 측정 (5.12는 8.8s)
+- [ ] **6 봇 polling boot 검증 (5.12 함정 회귀 여부)**
+  - boot 직후 1분 로그 watch — fetch-timeout / isolated polling stuck / restart-loop 없는지
+  - `getMe` 모두 OK 확인
+- [ ] **bbot turn 회귀 검증 (5.18 ACP wire 변경 영역)**
+  - Stage 1과 동일 단발 turn. DIAG chain 정상
+  - 회귀 시: Dockerfile FROM `5.18` → `5.12`로 되돌리고 build+recreate (10분 이내)
+- [ ] **doctor --fix 동작 변경 확인**
+  - 5.18 doctor가 5.12 정공법 (`openai/*` + `agentRuntime.id="codex"`) 손대는지. config diff 확인 후 수동 unrevert 필요한지 판단
+  - L99 `openai-codex/*` legacy ref 허용 변화로 우리 정공법이 다시 legacy로 끌리지 않는지
+- [ ] **main/glg/gpt active-memory recall**
+  - 4봇 lane status 분포 5.12 baseline (ok 4 / empty 10 / timeout 0) 대비 회귀 없는지
+  - timeout 1건이라도 나면 즉시 추적
+- [ ] **memory index 진단 (§1 직접 연결)**
+  - `openclaw memory status --deep --json` — vector.{enabled,storeAvailable,semanticAvailable} 정확도 ↑ 확인
+  - `--force` 직후 dirty=true 패턴 재현 여부 — L199 fix가 우리 사이클에서도 작동하는지
+- [ ] **stuck-recovery 회로 (§4 운영 사실 직접 연결)**
+  - L59 강화 후 stuck-recovery latency 변화 측정 가능 (단 인위적 trigger 어려움. 자연 발생 시 재기록)
+
+**Stage 3 — plugin-side freeze 해제 (pi-shell-acp 코어 publish 완료 후, 별도 사이클)**
+
+trigger: 노트북 `~/repos/gh/pi-shell-acp`의 `npm publish` 완료 + Phase 3 진입 stamp. 그때 §4 잔여 작업 (⏸ 표시) unfreeze 결정 + plugin sibling publish 가능 수준 도달 시 npm scope 마이그레이션 검토.
+
+### 의사결정 대기
+
+- Stage 1 진행 timing — 가족 사용 적은 시간대 (밤/이른 아침)
+- Stage 1 → Stage 2 사이 soak 길이 — 기본 24h, 가족 사용 패턴 따라 조정
+
+### 영속화 destination (Stage 2 성공 후)
+
+- `nixos-config/AGENTS.md` §3 baseline: 5.12 → 5.18 운영 사실 stamp
+- `nixos-config/docs/openclaw-gotchas.md`: 5.18 회귀 케이스 (있었다면)
+- `~/openclaw/README.md` change history: 5.18 업그레이드 + Node 22.19 base + plugin 0.7.0 surface 동기화
