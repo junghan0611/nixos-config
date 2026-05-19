@@ -338,11 +338,36 @@ Dockerfile FROM `2026.5.12` → `2026.5.18`. build 3m31s (Node 22.19 새 base + 
 | bbot `pi-shell-acp/claude-opus-4-7` cold turn | ✅ 9.8s clean exit, `timeoutMs=600000`, `abnormal=0 timeoutFired=0` |
 | gemini `pi-shell-acp/gemini-3.1-pro-preview` cold turn (first proper validation) | ✅ 24.6s clean exit, fence 정합 |
 | **5.18 신규 hook `prepareNextTurn`** — plugin 0.7.0 호환 | ✅ optsKeys에 추가, ACP wire 깨짐 없음 |
-| doctor: 5.12 정공법 자동 변경 0 | ✅ `pi-shell-acp/...` + `openai/*` + agentRuntime.id=codex 모두 유지 |
+| doctor: 5.12 정공법 자동 변경 0 (model/provider config) | ✅ `pi-shell-acp/...` + `openai/*` + agentRuntime.id=codex 모두 유지 |
+| **doctor --fix OAuth migration 의무 (별도)** | ⚠️ 17:42 발견 — 4 봇 (main/glg/gpt/mini) `openai-codex` auth fail → 17:55 `doctor --fix --yes --non-interactive` 적용으로 복구. sidecar → inline 자동 migrate, backup `.oauth-ref.<ts>.bak` 4개 생성, main inline 3653 bytes |
 | Skills Eligible 41 / Missing 0 / Blocked 0 | ✅ |
 | Plugins Loaded 17 / Errors 0 | ✅ |
 
 **5.12 함정 (fetch-timeout boot stuck) 회귀 0건** — L132 guard가 의도대로 작동.
+
+#### 5.18 운영 함정 발견 — doctor --fix OAuth migration 의무
+
+5.12에서 OAuth profile을 sidecar로 분리(`auth-profile-secrets` mount)했던 자리가 5.18 changelog L121 영역. 5.18은 *legacy sidecar*를 *inline OAuth credentials*로 다시 migrate해야 함. recreate 후 `doctor --fix` 안 돌리면 4 봇 (main/glg/gpt/mini, Codex OAuth lane) 전부 `FailoverError: No API key found for provider "openai-codex"`로 응답 실패. bbot active-memory recall sub-agent도 같은 lane (mini codex) 사용해서 영향. pi-shell-acp 봇 (bbot/gemini) 자체는 backend CLI auth라 별도 영향 없음.
+
+**복구 명령** (in-container):
+```bash
+docker exec openclaw-gateway openclaw doctor --fix --yes --non-interactive
+```
+
+자동 동작:
+- `~/.openclaw/agents/<bot>/agent/auth-profiles.json` sidecar refs → inline OAuth credentials 변환
+- `auth-profiles.json.oauth-ref.<ts>.bak` 안전 backup 자동 생성 (롤백 가능)
+- main agent에 모든 inline credentials, 다른 봇은 main 참조하는 구조 (main 3653 bytes vs others ~1040)
+- 부수: `~/.openclaw` permission 700 tighten
+
+**5.7 → 5.12 마이그레이션 때 박은 in-container doctor --fix 패턴**과 동일. 운영 함의: **5.x → 5.y host upgrade마다 recreate 직후 `doctor --fix` 의무 1회 추가** — Stage 2 절차에 추가 박아야 할 자리. 영속화는 `docs/openclaw-gotchas.md` 또는 AGENTS.md §5 Operational workflow.
+
+#### 부수 추적 (24h 안에 별도 처리)
+
+- **anthropic:claude-cli expiring 4h** — bbot이 쓰는 backend CLI auth. host에서 `claude login` 또는 `openclaw models auth login --provider anthropic`
+- **google-gemini-cli:junghanacs@gmail.com expiring 54m** — gemini bot backend. host에서 `gemini login`
+- stale OAuth profile shadow (bbot/gemini/glg/gpt/mini local shadow vs fresher main) — `doctor --fix` 한 번 더 또는 자연 갱신 확인
+- main agent orphan transcript 1건 (`485e865f-...`) — `doctor --fix`로 *.deleted 처리 가능
 
 ### Stage 3 (plugin-side freeze 해제) — 변동 없음
 
@@ -359,8 +384,8 @@ pi-shell-acp 코어 0.7.0 publish 라운드 완료 + Phase 3 진입 stamp 대기
 ### 영속화 destination (Stage 2 성공 후 — 24h soak 통과 시 다음 사이클에서 옮김)
 
 - `nixos-config/AGENTS.md` §3 baseline: 5.12 → 5.18 운영 사실 stamp
-- `nixos-config/docs/openclaw-gotchas.md`: 5.18 회귀 케이스 0건 (참고 stamp만)
-- `~/openclaw/README.md` change history: 5.18 업그레이드 + Node 22.19 base + plugin 0.7.0 surface 동기화
+- `nixos-config/AGENTS.md` §5 또는 `docs/openclaw-gotchas.md`: **5.x → 5.y host upgrade 절차에 `doctor --fix --yes --non-interactive` 의무 박기** (OAuth profile sidecar → inline migration. 미실행 시 Codex OAuth lane 4 봇 전부 응답 실패)
+- `~/openclaw/README.md` change history: 5.18 업그레이드 + Node 22.19 base + plugin 0.7.0 surface 동기화 + doctor --fix 적용 stamp
 
 ### 24h 운영 모니터링 자리 (2026-05-20 17:30 KST까지)
 
