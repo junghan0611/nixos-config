@@ -69,8 +69,8 @@
 - gemini: `pi-shell-acp/gemini-3.1-pro-preview` (검증 미완 — bbot GREEN 후 후순위)
 - main: picker 5개 enroll (gpt-5.5 primary 유지)
 - glg/gpt/mini: 그대로
-- Plugin pi-shell-acp `0.6.0-prerelease.0`, install path `~/.pi/agent/git/.../plugins/openclaw` (link mode)
-- Host overlay HEAD `4e8237c` main 추적
+- Plugin pi-shell-acp `0.7.0` surface (publish-pending), install path `~/.pi/agent/git/.../plugins/openclaw` (link mode)
+- Host overlay HEAD `d4f5772` main 추적 (2026-05-19 Stage 1 pull)
 
 ### 영속화 — 다음 사이클에 AGENTS.md / docs로 옮길 사실
 
@@ -88,8 +88,48 @@
 - [ ] ⏸ **gemini agent 봇 turn 검증**: bbot GREEN과 동일 path로 `@glg_gemini_bot` turn 확인. Copilot 의존 완전 끊고 pi-shell-acp/Gemini CLI 정상 작동
 - [ ] ⏸ **main picker `/model pi-shell-acp/...` 전환 turn**: 5개 모델 각 단발 turn 검증
 - [ ] ⏸ **풀세트 6축 검증 (β 통과선)**: skill manifest (3a) + skill invocation (3b) + 세션 자기인식 + workspace 인식. bbot이 이미 workspace read한 정황으로 거의 통과 상태
-- [ ] ⏸ **plugin config `spawnTimeoutSeconds` 전달 갭**: openclaw.json `plugins.entries.pi-shell-acp.config.spawnTimeoutSeconds=600` 박았는데 plugin DIAG `timeoutMs=60000` (default 60s) 출력. spin-loop fix 후엔 60s로도 충분하지만 갭 자체는 추적 대상
+- [x] ~~**plugin config `spawnTimeoutSeconds` 전달 갭**~~ → **closed 2026-05-19** (`cc0c033 fix(plugin/openclaw): resolve pluginConfig via nested OpenClaw path`). FactoryCtx를 OpenClaw `ProviderCreateStreamFnContext` SSOT에 align. issue #18 cold lane bootstrap SIGTERM 본질. Oracle live 검증: `timeoutMs=60000 → 600000` propagate, 새 DIAG 키 3종(ctxKeys/pluginCfgKeys/spawnTimeoutSec) 출력, 첫 turn cold lane 60s 죽음 회귀 0. **메모 정정**: 이전 "spin-loop fix 후엔 60s로도 충분" 평가는 부정확 — issue #18은 cold lane bootstrap 누적 비용(model-switch + spawn + workspace read + opus cold KV miss)이라 spin-loop와 별개. cc0c033으로 해소.
 - [ ] ⏸ **adad76af session 누적 ack 청소 정책**: 이전 stuck cycle trajectory에 "Note: I'll respond..." 5건 누적. 현재 새 session `fb3331af` 사용 중이지만 stale session archive 정책 검토
+
+### 운영 사실 — Stage 1 plugin pull 검증 GREEN (2026-05-19, Oracle live)
+
+Host overlay `cd092b7 → d4f5772` pull 후 gateway restart 1회. **8축 검증 다 통과**:
+
+| # | 항목 | 결과 |
+|---|---|---|
+| 1 | `cc0c033` spawnTimeoutSeconds gap fix (#18) | ✅ `timeoutMs=60000→600000` propagate, DIAG 새 3 키 출력 |
+| 2 | `d4f5772` event-mapper fence sanitize | ✅ `[tool:done]` 코드블록 fence 정합, 회귀 없음 |
+| 3 | bbot β path 회귀 (cold turn) | ✅ workspace read 풀 응답, 60s 죽음 없음 |
+| 4 | MCP surface 라이브 (`pi-tools-bridge`) | ✅ `entwurf_self` / `entwurf_peers` 실호출, envelope 반환 |
+| 5 | host alias 컨테이너 누수 | ✅ 0% (4중 격리, plugin `spawn(piBinary, args)` raw exec) |
+| 6 | entwurf spawn (`openai-codex/gpt-5.4`) | ✅ Task `023b435a`, 3 turns, $0.0522, registry routing 정확 |
+| 7 | entwurf_resume + self-check | ✅ 2 turns, $0.0574, GPT-5.4 정체성 *재검증으로* 확정 |
+| 8 | entwurf live/saved surface 분리 실증 | ✅ peers count:0, controlDir 디렉토리 부재 / JSONL `2026-05-19T08-01-32_entwurf-023b435a.jsonl` 47KB alive |
+
+→ Phase 1.8 β의 keystone이 모델만이 아니라 **MCP surface + entwurf workflow + registry routing + live/saved schema 분리까지 전부 라이브**.
+
+#### plugin 실 argv (line 740, alias 누수 검증 부산물)
+
+```
+pi -p <userText> --no-session --no-tools --mode json --offline --provider pi-shell-acp --model <modelId>
+```
+
+`--entwurf-control` / `--emacs-agent-socket` 0건. control socket / MCP는 settings.json `packages` + `mcpServers` 등록 차원에서 자동 활성. host `~/.bashrc.local` alias는 컨테이너로 흘러갈 길 없음 (compose mount X / 컨테이너 파일 X / 컨테이너 shell alias X / plugin raw spawn).
+
+#### 두 layer 분리 (`--entwurf-control` flag 부재 함의)
+
+| Layer | 활성 조건 | bbot 상태 |
+|---|---|---|
+| Extension 등록 (MCP tools 노출) | settings `packages: [...pi-shell-acp]` → pi.extensions auto-load | ✅ active |
+| Control socket 생성 (외부 send endpoint) | child pi launch 시 `--entwurf-control` flag | ❌ inactive (의도된 가족 봇 보안 자리) |
+
+→ bbot은 텔레그램 안에서만 응답. 다른 pi session에서 send로 침입 불가.
+
+#### 새 추적 후보 3건 (⏸ pi-shell-acp 코어 publish 완료 후 issue 검토)
+
+- **(a) 분신 child env hallucination** — Codex(GPT-5.4) child가 host env `PI_AGENT_ID=pi-shell-acp/claude-opus-4-7` 그대로 상속해서 첫 응답에 자기를 Claude로 자기보고. 운영 함의: 분신 self-identification 시 env 인용 위험. pi-shell-acp 측에서 child env 청소 정책 검토 후보
+- **(b) `entwurf_self.socketPath` placeholder 반환** — control socket file이 디스크에 없어도 socketPath가 어쨌든 반환됨 (bbot은 controlDir 디렉토리 자체가 없는데 path 반환). operator 해석 함정. `entwurf_self`가 socket file stat 후 반환하는 게 정확
+- **(c) MCP bridge child `PI_SESSION_ID` env stale** — bridge child가 spawn 시점 env 캐시, 부모 pi가 새 session으로 갱신해도 env 반영 안 됨. UUID v7 prefix mismatch (env `019e3f4a` vs entwurf_self `019e3f39`)
 
 ### 운영 사실 — openclaw stuck session auto-recovery (2026-05-18 확인, `ee1a046` stamp)
 
@@ -233,19 +273,16 @@ Mac app 리디자인 다수 / Discord / Signal / WhatsApp / QQBot / Feishu / xAI
 - OpenClaw plugin sibling (`@junghan0611/openclaw-pi-shell-acp`)은 공개 수준 미달 — operational use(git pull) 외에는 손 안 댐.
 - 변수 1개씩만 흔든다. 버전 헷갈리지 않게.
 
-**Stage 1 — plugin git pull only (host 5.12 그대로)**
+**Stage 1 — plugin git pull only (host 5.12 그대로)** ✅ **통과 2026-05-19**
 
-목적: 0.6.0-prerelease → 0.7.0 surface로 host overlay만 따라가기. `resolveCodexAcpLaunch` require.resolve fallback 등 0.7.0 정합 변경분 흡수. host 변수 zero.
+목적: 0.6.0-prerelease → 0.7.0 surface로 host overlay만 따라가기. host 변수 zero. 검증 매트릭스 8축은 §4 "운영 사실 — Stage 1 plugin pull 검증 GREEN" 섹션 참조.
 
-- [ ] 사전 — Oracle 호스트에서 현 plugin overlay HEAD 확인 (`git -C ~/.pi/agent/git/github.com/junghan0611/pi-shell-acp log --oneline -1`) → `4e8237c` 기록
-- [ ] `git pull` (main → `f4eeed1` 또는 그 후) — Oracle 호스트의 `~/.pi/agent/git/github.com/junghan0611/pi-shell-acp`
-- [ ] plugin link 살아있으면 build만 (`plugins/openclaw` 내부에서 `pnpm build` 또는 plugin install 매뉴얼 따름). 깨졌으면 `openclaw plugins install <path>/plugins/openclaw --link --dangerously-force-unsafe-install` 재실행
-- [ ] `docker compose restart openclaw-gateway` (host overlay bind-mount이라 recreate 아님 — plugin 코드 reload만)
-- [ ] **bbot `pi-shell-acp/claude-opus-4-7` turn 검증 (β path 회귀 여부)**
-  - 텔레그램으로 단발 turn — workspace read + 컨텍스트 응답 5.15 keystone 수준 유지
-  - DIAG: `child spawned` → `child exit code=0` → `child finalize kind=close hasFinal=1`
-  - 회귀 시: `git -C ~/.pi/agent/git/.../pi-shell-acp checkout 4e8237c` → restart로 즉시 롤백 (5분 이내)
-- [ ] **24h soak** — Stage 2 진입 전. 가족 봇 turn 자연 발생 모니터링
+- [x] 사전 — Oracle 호스트에서 현 plugin overlay HEAD 확인 → `cd092b7` 였음 (NEXT.md `4e8237c` 기록은 stale, 이미 앞서 있었음)
+- [x] `git pull` → `cd092b7` → `cc0c033` → `d4f5772`. fast-forward
+- [x] plugin link 살아있음 확인 (installs.json: `pluginId=pi-shell-acp`, link mode, source `/home/node/.pi/.../plugins/openclaw`). dist/index.js commit에 포함되어 build 불필요
+- [x] `docker compose restart openclaw-gateway` 2회 (cc0c033 후 + d4f5772 후 안전 차원). ready 9~11s
+- [x] bbot β path 회귀 검증 — workspace read 풀 응답, 60s 죽음 회귀 0
+- [x] **plugin 코드 freeze 모드 유지** — git pull 이후 plugin-side 수정 작업 0건. operational use만
 
 **Stage 2 — host 5.12 → 5.18 (plugin 0.7.0 surface 고정)**
 
@@ -282,10 +319,10 @@ Mac app 리디자인 다수 / Discord / Signal / WhatsApp / QQBot / Feishu / xAI
 
 trigger: 노트북 `~/repos/gh/pi-shell-acp`의 `npm publish` 완료 + Phase 3 진입 stamp. 그때 §4 잔여 작업 (⏸ 표시) unfreeze 결정 + plugin sibling publish 가능 수준 도달 시 npm scope 마이그레이션 검토.
 
-### 의사결정 대기
+### 의사결정 결과 (2026-05-19 17:30 KST)
 
-- Stage 1 진행 timing — 가족 사용 적은 시간대 (밤/이른 아침)
-- Stage 1 → Stage 2 사이 soak 길이 — 기본 24h, 가족 사용 패턴 따라 조정
+- **Stage 1 ✅ 통과** (Oracle live, 검증 8축 GREEN — §4 운영 사실 참조)
+- **Stage 2 즉시 진행 결정** — soak 24h 룰 건너뜀. 사유: 가족 봇 사용자 없음 확인 (operator 직접 확인). 회귀 시 Dockerfile FROM 한 줄 + recreate로 10분 이내 롤백 가능. 5.18 win (Telegram polling 안정성 / Memory-core L199 / stuck-recovery L59) 가져오는 게 즉시 가치 있음.
 
 ### 영속화 destination (Stage 2 성공 후)
 
