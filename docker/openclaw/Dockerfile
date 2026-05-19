@@ -1,8 +1,10 @@
-# 5.7 → 5.12: agents.defaults.model.fallbacks (배열) 신규 + memory streaming RSS 252→27 MiB
-# + Telegram HTML 보존/group policy/media handling 개선 + per-sender tool policies.
-# pnpm 11 / WhatsApp·Slack·Bedrock·Vertex 외부화는 우리 경로 무관 (안 씀).
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.7
-FROM ghcr.io/openclaw/openclaw:2026.5.12
+# 5.12 → 5.18 (2026-05-19): Node 22.19 minimum + Pi packages 0.75.1 + Telegram polling
+# 안정성 다수 (isolated polling guard / hot-reload restart / HTTP 421 retry / forum-topic) +
+# Memory-core L199 incremental sync fix + Codex OAuth fallback 강화 (L164/L121/L122) +
+# stuck-recovery L59 강화 + ACP wire 정리 (L165/L168).
+# 5.12 정공법 (openai/* + agentRuntime.id=codex) 그대로 유지. plugin pi-shell-acp d4f5772.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.12
+FROM ghcr.io/openclaw/openclaw:2026.5.18
 
 USER root
 
