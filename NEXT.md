@@ -131,6 +131,14 @@ pi -p <userText> --no-session --no-tools --mode json --offline --provider pi-she
 - **(b) `entwurf_self.socketPath` placeholder 반환** — control socket file이 디스크에 없어도 socketPath가 어쨌든 반환됨 (bbot은 controlDir 디렉토리 자체가 없는데 path 반환). operator 해석 함정. `entwurf_self`가 socket file stat 후 반환하는 게 정확
 - **(c) MCP bridge child `PI_SESSION_ID` env stale** — bridge child가 spawn 시점 env 캐시, 부모 pi가 새 session으로 갱신해도 env 반영 안 됨. UUID v7 prefix mismatch (env `019e3f4a` vs entwurf_self `019e3f39`)
 
+#### closed 1건 (2026-05-20)
+
+- ~~**(d) post-#17 active-memory pre_compute silent empty final**~~ → **closed 2026-05-20** ([pi-shell-acp #20](https://github.com/junghan0611/pi-shell-acp/issues/20)). 두 fix 검증 GREEN, Oracle live:
+  - `e7eefeb fix(openclaw): recover empty assistant finals` — empty-final recovery 중앙화 + last-resort placeholder
+  - `8b25c1e fix(openclaw): use role-preserving prompt context` — JSON-as-data prompt assembly (chat-completion mirroring 근본 차단) + `stripChatCompletionTail()` output sanitizer (defense-in-depth)
+  - 검증 매트릭스: bbot turn `pi-shell-acp/claude-opus-4-7` + active-memory, multi-tool botlog request 4804 chars 풀 응답, `recoveryKind=as-is` `abnormal=0`, `partialTextLen=4832 → finalTextLen=4804` (28 char diff = sanitizer 작동 자국), `</environment_details>` leak 0, fabricated `User:` 0, prompt cache 250k 정상 유지
+  - 운영 함의: pi-shell-acp `npm pull` 시 host clone (`~/repos/gh/pi-shell-acp`) **외에** plugin overlay (`~/.pi/agent/git/.../pi-shell-acp`)에도 `git pull` 별도 필요 — 컨테이너는 overlay path를 path-link로 로드. 어제(05-19) Stage 1 GREEN도 같은 패턴. dist는 commit에 동봉되므로 build 불필요
+
 ### 운영 사실 — openclaw stuck session auto-recovery (2026-05-18 확인, `ee1a046` stamp)
 
 [pi-shell-acp issue #18](https://github.com/junghan0611/pi-shell-acp/issues/18) 발생 직후 main(default) 봇이 codex stream hang으로 605s(10분) stuck → **openclaw 자체 stuck-recovery로 자동 풀림 확인**.
@@ -393,4 +401,5 @@ pi-shell-acp 코어 0.7.0 publish 라운드 완료 + Phase 3 진입 stamp 대기
 - Telegram polling reliability 체감 (L132 win 영역)
 - stuck-recovery 자연 발생 시 latency 측정 (L59 강화 검증)
 - Memory-core dirty=true 자연 해소 패턴 (L199 검증, §1 항목)
+- ~~**bbot active-memory pre_compute silent empty final 회귀**~~ → **closed 2026-05-20** (§4 (d) / pi-shell-acp #20, `e7eefeb` + `8b25c1e` fix chain). 후속 watch: 같은 plugin boundary(prompt assembly / output sanitizer / empty-body invariant)에서 *세 번째* leak class 등장하면 즉시 stamp + 새 issue
 - 회귀 신호 발견 시 즉시 NEXT.md에 stamp + 필요 시 Dockerfile FROM `2026.5.12`로 롤백 (10분 이내 가능, 백업 `~/openclaw-backups/pre-5.18-20260519-172825/`)
