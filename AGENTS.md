@@ -105,6 +105,15 @@ run.sh           operator entrypoint for recurring tasks
 
 Shared human+agent operator interface. If a task already has a `run.sh` path, extend it rather than duplicate. Current scope: flake updates, rebuild/switch/rollback, cleanup, Oracle service helpers, OpenClaw tunnel/restart/status/pairing, skill deploy (`k)`).
 
+### ACP route — pi-shell-acp plugin position
+
+bbot / gemini는 OpenClaw 안에서 [`pi-shell-acp`](https://github.com/junghan0611/pi-shell-acp) OpenClaw plugin을 통해 ACP child로 돈다. 운영 사실 (모델/streaming/active-memory)은 §3 model routing 표에 박혀있고, architectural stance는 다음:
+
+- **Backend 자치권**: pi backend가 자기 session / ACP wire / prompt assembly를 자기 책임으로 갖는다. OpenClaw native Codex가 base/personality를 갖는 패턴 (5.19 L33)과 같은 모양.
+- **OpenClaw 책임 범위**: runtime context + delivery guidance + tool surface만 contribute. visible body / final-message recovery / chat-completion tail sanitization 같은 plugin-boundary 책임은 pi-shell-acp 자체 plugin code가 진다 (issue #17 / #20 audit 영역).
+- **`@openclaw/acpx`와의 차이**: acpx는 OpenClaw가 만든 ACP harness (legacy, 5.2 외부화)로 우리는 disabled (`plugins.entries.acpx.enabled=false`). pi-shell-acp는 third-party native plugin path — OpenClaw plugin SDK 위에서 자체 ACP child spawn. acpx에 의존 0.
+- **운영 함의**: OpenClaw 업그레이드의 ACP/Codex 영역 fix layer는 일반 Agents/ACP child handling 자리만 우리에게 spill-over. plugin code 책임 자리는 pi-shell-acp commit chain으로 추적 (e7eefeb / 8b25c1e / cc0c033 등).
+
 ### Workflow preference
 
 Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared flow over rigid tracker workflow.

@@ -83,6 +83,7 @@ Self-hosted services running on Oracle Cloud ARM VM:
 - Mattermost channel: `@openclaw` bot in `chat.junghanacs.com`
 - Multi-agent routing: each bot → independent agent with own workspace
 - Custom Dockerfile: gh CLI, ripgrep, fd, jq, tree, skills support
+- **ACP route**: bbot (Claude opus-4-7) / gemini agents run through the [`pi-shell-acp`](https://github.com/junghan0611/pi-shell-acp) OpenClaw plugin — third-party native ACP plugin path with its own pi backend (not `@openclaw/acpx`). See `AGENTS.md §2 → ACP route` for the architectural position.
 - Web UI (Control UI): SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 oracle` → `http://127.0.0.1:18789/`
 - Config managed in private repo: [openclaw-config](https://github.com/junghan0611/openclaw-config) (Oracle VM agent workspace)
 
