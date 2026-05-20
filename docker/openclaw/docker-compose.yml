@@ -36,6 +36,15 @@ services:
       # doctor --deep 권장 (Oracle ARM small host) — 5.2 부팅/CLI 가속, side-effect 없음
       - NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
       - OPENCLAW_NO_RESPAWN=1
+      # ACP route (bbot) child spawn 보강 — pi-shell-acp #21 consumer-side workaround.
+      # pi-shell-acp claude-plugin이 child env를 비워두는 자리 (issue #21) 해소.
+      # ① CLI skill bin parent dir 7개 prepend — gitcli/denotecli/lifetract/gog 등 bare 호출이 PATH로 잡히도록.
+      # ② Nix store emacsclient — emacs SKILL.md bare 호출 해소. nix store hash는 volumes mount와 동기화.
+      # ③ PI_EMACS_AGENT_SOCKET — emacs SKILL.md가 명시한 contract ("injected by pi-shell-acp when launched with --emacs-agent-socket"). server 소켓 (/run/emacs/server) 활성.
+      - PATH=/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      # short name "server"는 ${XDG_RUNTIME_DIR}/emacs/server 또는 /tmp/emacs<uid>/server에서 찾음.
+      # 컨테이너 mount는 /run/emacs/server라 short name resolution 실패 → full path 명시.
+      - PI_EMACS_AGENT_SOCKET=/run/emacs/server
 
     # gateway는 컨테이너 내에서 lan 바인딩 필요
     command: ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789"]
@@ -88,8 +97,11 @@ services:
       - ~/.gemini:/home/node/.gemini:rw
       - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
-      - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
-      - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
+      # ⚠️ Nix store hash hardcoded — NixOS rebuild 시 갱신 의무.
+      # 갱신 절차: `readlink -f /run/current-system/sw/bin/emacsclient` → emacs hash,
+      # `ldd <emacsclient> | grep libc` → glibc hash. 두 자리 volumes + PATH 두 서비스 모두 일관 갱신.
+      - /nix/store/jjjpj4p9bz505ac1c747f2j5z3xw170p-glibc-2.40-224:/nix/store/jjjpj4p9bz505ac1c747f2j5z3xw170p-glibc-2.40-224:ro
+      - /nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2:ro
       - /run/user/1000/emacs:/run/emacs:ro
 
     networks:
@@ -117,6 +129,11 @@ services:
       - TERM=xterm-256color
       - BROWSER=echo
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
+      # ACP route child spawn 보강 — gateway service와 동일 (pi-shell-acp #21 consumer-side workaround)
+      - PATH=/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      # short name "server"는 ${XDG_RUNTIME_DIR}/emacs/server 또는 /tmp/emacs<uid>/server에서 찾음.
+      # 컨테이너 mount는 /run/emacs/server라 short name resolution 실패 → full path 명시.
+      - PI_EMACS_AGENT_SOCKET=/run/emacs/server
 
     entrypoint: ["node", "openclaw.mjs"]
 
@@ -163,8 +180,11 @@ services:
       - ~/.gemini:/home/node/.gemini:rw
       - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
-      - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
-      - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
+      # ⚠️ Nix store hash hardcoded — NixOS rebuild 시 갱신 의무.
+      # 갱신 절차: `readlink -f /run/current-system/sw/bin/emacsclient` → emacs hash,
+      # `ldd <emacsclient> | grep libc` → glibc hash. 두 자리 volumes + PATH 두 서비스 모두 일관 갱신.
+      - /nix/store/jjjpj4p9bz505ac1c747f2j5z3xw170p-glibc-2.40-224:/nix/store/jjjpj4p9bz505ac1c747f2j5z3xw170p-glibc-2.40-224:ro
+      - /nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2:ro
       - /run/user/1000/emacs:/run/emacs:ro
 
 networks:
