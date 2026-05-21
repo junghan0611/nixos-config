@@ -45,11 +45,13 @@ Do this even if the session hook already reported the values. Wrong host assumpt
 
 ### ThinkPad local AI policy
 
-- **Ollama Vulkan 상시 서비스 활성** (2026-05-07 재도입). 세션 임베딩 빈도가 높아 OpenRouter 단독 의존이 비효율적.
+- **Ollama Vulkan은 보존하되 자동 시작 비활성** (2026-05-21). 현재 로컬 임베딩을 상시 사용하지 않으므로 boot에 올리지 않는다.
+- `services.ollama.enable = true`는 유지해 package/service를 남기고, `systemd.services.ollama.wantedBy = lib.mkForce []`로 multi-user auto-start만 막는다.
+- 필요할 때 `sudo systemctl start ollama`로 수동 시작.
 - Vulkan via Mesa RADV (AMD Radeon 780M); package auto-selected by `services.ollama.acceleration = "vulkan"`.
 - Recommended model: `qwen3-embedding:4b` (2560-dim, andenken과 동일 차원).
-- `OLLAMA_KEEP_ALIVE=10m` — idle 시 VRAM 자동 해제. 데몬은 살아 있되 GPU는 거의 0.
-- History: 04-15 추가 → 04-17 revert (always-on 정책) → 05-07 재도입 (세션 임베딩 워크로드 증가).
+- `OLLAMA_KEEP_ALIVE=10m` — idle 시 VRAM 자동 해제.
+- History: 04-15 추가 → 04-17 revert (always-on 정책) → 05-07 재도입 (세션 임베딩 워크로드 증가) → 05-21 자동 시작 비활성.
 
 ### Oracle is different
 

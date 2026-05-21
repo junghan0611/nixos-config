@@ -49,7 +49,7 @@ A comprehensive NixOS configuration for building **identical computing environme
 
 ### Local AI (ThinkPad)
 
-**Ollama with Vulkan** on AMD Radeon 780M (Mesa RADV), enabled as a persistent NixOS service.
+**Ollama with Vulkan** on AMD Radeon 780M (Mesa RADV). Package/service is kept, but boot auto-start is disabled; start manually only when local embedding is needed.
 
 | Item | Value |
 |------|-------|
@@ -59,10 +59,11 @@ A comprehensive NixOS configuration for building **identical computing environme
 | Endpoint | `http://127.0.0.1:11434` |
 | Keep-alive | `OLLAMA_KEEP_ALIVE=10m` — idle 10분 후 VRAM 언로드 |
 
-History: 2026-04-15 추가 → 04-17 revert (always-on 정책) → **05-07 재도입** (andenken/semantic-memory 세션 임베딩 빈도 ↑, OpenRouter 보조).
+History: 2026-04-15 추가 → 04-17 revert (always-on 정책) → **05-07 재도입** (andenken/semantic-memory 세션 임베딩 빈도 ↑, OpenRouter 보조) → **05-21 자동 시작 비활성** (현재 미사용, 수동 시작 유지).
 
-Pull the embedding model after rebuild:
+Manual use:
 ```bash
+sudo systemctl start ollama
 ollama pull qwen3-embedding:4b
 ```
 
