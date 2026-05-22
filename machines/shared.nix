@@ -334,6 +334,7 @@ in
     freerdp        # Command-line RDP client
     infisical      # 시크릿 관리 CLI (필요 시만)
     awscli2        # AWS CLI (Oracle 호스트에서 쓰지 않음)
+    qemu           # ~700MB. pi-chat Gondolin micro-VM 격리 (Oracle 헤드리스 제외)
   ];
 
   # Default desktop environment: i3
