@@ -231,38 +231,94 @@ stuck session recovery: action=abort_embedded_run aborted=true drained=true
 - `~/.openclaw chmod 700` 권장
 - gateway `0.0.0.0` bind WARN — caddy + auth로 가리는 자리, 정공법
 
-### 5.18 → 5.20 보류 (2026-05-22)
+### 5.18 → 5.20 직진 결정 (2026-05-22, idle window)
 
-릴리즈: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.20>. 핵심 변수:
+릴리즈: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.20>. 5.19 거대 리팩토링 + 5.20 안정화 chain. hejdev6 담당자 검증 + Oracle live 사전 점검으로 차단 사유 0건 확인 → 직진.
 
-- **Codex harness `@openai/codex` 0.132.0 bump** — 모든 LLM 라우트 영향. app-server model-list catalog refresh
-- Codex account precedence: `models auth order set` / `config.auth.order` > stale `lastGood` (#84412). 어제(5.21 snapshot)에서 gpt agent `openai-codex` profile 제거한 것과 맞물림 — 5.20 후 `/codex account` 거동 변화 확인 필요
-- Codex Docker prune 보존 — official release image keep list에 codex plugin 박힘 (#83613)
-- Codex `image_generate` 120s watchdog (#84254) — 이전 30s 폴백 문제 해결
-- Codex bootstrap hooks path+content workspace files 정상화 (#84736)
-- Codex encrypted Responses reasoning replay provenance-bound — 스테일 mirrored transcript 차단
-- Doctor: **sandbox tool policy MCP 차단 WARN** (#84699) — pi-shell-acp `pi-tools-bridge` MCP 영향 검증 포인트
-- Doctor: plaintext secret 경고 (#84718) — 우리 env 주입이라 무난 가능성
-- Doctor: stale `compat.thinkingFormat` 자동 제거 (fixes #77803)
-- **Exec approvals**: SKILL.md `cat ... && printf ... && <skill-wrapper>` allowlist 제거 — 이제 SKILL.md는 read tool로만, 실 executable만 auto-allowed. **우리 스킬 호출 패턴 직접 영향 risk**
-- bundled Policy plugin 신규 (#80407) — channel conformance, doctor lint, opt-in workspace repair
-- Plugin discovery 성능 fix (중복 fs walk 제거)
-- OpenRouter `params.provider` routing 정책 honor — 우리 Qwen3-8B 임베딩 라우팅 미세 조정 가능
-- `agents.list[].experimental.localModelLean` per-agent — 전체→일부 가능
+#### 5.19 (Codex OAuth/app-server 거대 리팩토링)
 
-**의사결정 (2026-05-22)**: 보류. **hejdev6 SSH 단일 사용자 환경에서 5.20 single-user 테스트 — 로딩 / turn latency 체감 회귀**. codex 0.132.0 bump 의심 (cold lane bootstrap 누적 비용에 영향 가능성). 추가 관찰 후 Oracle 진행 결정. Oracle 환경은 5.18 유지.
+- **#354** `openai/*` → `openai-codex` resolve 시 Codex provider 자동 통과 + OAuth profile 자동 bootstrap. 이전 `No API key found` 자동 해소
+- **#310** `doctor --fix`가 legacy `oauthRef` → inline credentials **자동 마이그레이션** — 우리 5.18 Stage 2에서 손으로 박은 정공법(`auth-profiles.json.oauth-ref.<ts>.bak`)이 5.19에서 자동화됨
+- 🚨 **#148 Codex app-server scope 분리** — native Codex가 base/personality 소유, OpenClaw는 runtime context + delivery guidance만 contribute. **어제 박은 AGENTS.md §2 architectural stance ↔ #148 identical direction**. 우리 stance가 upstream과 align됨 → §2에 "5.19 #148 align" 한 줄 보강 자리
+- #156 채팅 안에서 `/codex plugins list/enable/disable` — config 편집 없이 plugin 토글
+- #332 oversized 네이티브 Codex thread 자동 rotation before resume — long-context 봇 stuck 회피
+- #366-367 Telegram `/verbose` Codex tool progress 가시성 — 봇 군단 운영 win
+- #243 stale session diagnostics + Codex OAuth fallback state 회복 — NEXT §4 stuck-recovery 회로 강화
+- #137 Node 22.19 floor — Oracle `v24.14.0` 통과 ✅
+- #220 Linux host bwrap/network namespace 정책 충돌 시 sandboxed Codex turn 실패 risk — 5.20 #247/#248로 후속 완화
 
-Re-trigger 조건:
-- hejdev6에서 latency 회귀 원인 분리 (codex 0.132 vs ACP wire vs cold KV miss)
-- 또는 5.21+ 릴리즈에서 codex 관련 추가 안정화 fix 등장
+#### 5.20 (안정화 + harness bump)
 
-진행 결정 시 검증 매트릭스:
-- [ ] **Exec approvals SKILL.md wrapper 제거** — 우리 pi-skills 스킬 entrypoint가 read tool 통과인지 wrapping인지 확인. 봇 turn 깨짐 가장 큰 risk
-- [ ] **Doctor sandbox MCP WARN** — pi-shell-acp `pi-tools-bridge` MCP tool 가시화 영향
-- [ ] **Codex account precedence** — `auth-state.json` `lastGood` 의존도 재평가. gpt agent codex profile 제거 결과 검증
-- [ ] **cold turn latency** — Stage 2 5.18 baseline (bbot 9.8s, gemini 24.6s) 대비 회귀 여부. hejdev6 관측 재현 시 진행 X
-- [ ] **doctor --fix OAuth migration 의무** — 5.18 발견 정공법 (sidecar → inline) 5.20에서도 그대로 적용 필요한지 확인. recreate 직후 1회 의무
-- [ ] **사전 백업 재준비** — `~/openclaw/config/memory/*.sqlite` (8B 4096d 재구축 1290s 회피) + `~/openclaw/auth-profile-secrets/` (분실 = 전 봇 재로그인) + repo HEAD 기록
+- **#47** 번들 Codex harness `@openai/codex` 0.132.0
+- **#125** `/codex account` precedence — `config.auth.order` > stale `lastGood`. **order 명시 시 lastGood 무시 / order 없으면 lastGood 여전히 fallback** (담당자 검증 정정 — 내 원분석 "order 없으면 lastGood 무력화" 비약. 우리 환경 risk 가벼움)
+- #114 encrypted Responses reasoning replay provenance-bound
+- #82 Codex `image_generate` 120s watchdog (이전 30s 폴백 해결)
+- #88 before/after_compaction hook 30s timeout
+- **#45** Skill `cat SKILL.md && printf ... && <skill-wrapper>` allowlist 제거 — read tool 강제. Oracle grep 결과 **0건** ✅
+- #96 Docker official release image keep list에 codex plugin 보존
+- **#247** sandboxed Codex code-mode turn에서 OpenClaw sandbox가 outbound egress 허용 시 network access 보존
+- **#248** sandboxed workspace-write turn에서 writable Docker bind mounts honor — Docker sandbox 호환성 정공법 개선. risk가 5.18보다 줄어듬
+
+#### hejdev6 ground truth (2026-05-22 담당자 보고)
+
+| 영역 | 5.19 | 5.20 |
+|---|---|---|
+| turn (voc Codex 첫 turn) | 43.27s | **11.85s ← 큰 단축** |
+| 부팅 listen | 3.1s | **22.7s ← 늘어남** |
+
+부팅 vs turn **분리 관측 의무** (담당자 정정): 부팅은 일회성(plugin init / auth resolve / secrets startup), turn-time bwrap은 매 turn. hejdev6 22.7s는 bwrap 안 쓰는 host-native 환경에서도 발생 — bwrap 단독 인과 아님. 어제 내 "로딩/turn 느려짐 stamp"는 부정확.
+
+사고 한 번: hejdev6 `auth.profiles` 빔 → 5.20 #125가 같은 영역 막는 방향. 우리는 main 봇 SSOT inline 완전 박힘 + gpt 봇 lastGood만 `openai-codex` 빠진 상태 (5.21 snapshot drift) — risk 영역 가벼움.
+
+#### 사전 점검 결과 (Oracle live, 2026-05-22 11:35 KST)
+
+| 점검 | 결과 |
+|---|---|
+| Node 버전 (5.19 #137 floor v22.19) | `v24.14.0` ✅ |
+| Skill `cat SKILL.md && printf...` 패턴 grep | **0건** ✅ |
+| 현 sandbox 설정 | `plugins.entries.codex.config.appServer.sandbox` / `agents.defaults.sandbox` / top-level `sandbox` 모두 NOT SET → default 동작. 5.20 #247/#248로 default도 5.18보다 안전 |
+
+→ **차단 사유 0건**.
+
+#### 직진 시퀀스 5건
+
+1. **사전 백업** (5.18 Stage 2 동일 패턴) — `~/openclaw-backups/pre-5.20-<timestamp>/`:
+   - `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` (8B 4096d 재구축 1290s 회피)
+   - `~/openclaw/auth-profile-secrets/` (분실 = 전 봇 재로그인)
+   - 3 repo HEAD (`openclaw` + `nixos-config` + `pi-shell-acp` overlay)
+
+2. **`openclaw.json` 두 자리 명시** (담당자 검증 정정 — 정공법 위치 정확히):
+   ```json
+   "auth": {
+     "order": { "openai-codex": ["openai-codex:junghanacs@gmail.com"] },
+     "profiles": { /* 기존 4종 그대로 */ }
+   },
+   "plugins": { "entries": { "codex": {
+     "config": { "appServer": { "sandbox": "danger-full-access" } }
+   } } }
+   ```
+   - `auth.order`: top-level (schema `properties.auth.properties.order`, propertyNames=provider id → profile id array)
+   - `plugins.entries.codex.config.appServer.sandbox`: enum `read-only` / `workspace-write` / `danger-full-access`. 5.20 #247/#248 덕에 default도 안전 — 박는 게 필수는 아니나 **conservative 선택** (Cloud VM + Docker namespace + bwrap 3중 중 bwrap 무력화)
+
+3. **Dockerfile FROM `2026.5.18` → `2026.5.20`** (롤백 주석 5.18로 갱신) → `docker compose build --pull` + `up -d --force-recreate`. ready 시간 측정 (5.18 baseline 36.3s cold)
+
+4. **recreate 직후 즉시 OAuth migration**: `docker exec openclaw-gateway openclaw doctor --fix --yes --non-interactive` (5.19 #310 자동 마이그레이션 활용. main 봇 이미 완전 inline이라 `oauth-ref.<ts>.bak` 새로 안 쌓일 가능성)
+
+5. **검증 매트릭스**:
+   - 6 봇 polling boot OK (5.18 baseline 12 plugins, 5.20 bundled Policy 추가 가능)
+   - bbot/gemini cold turn latency (5.18 baseline 9.8s / 24.6s) — **부팅 ready vs turn latency 분리**
+   - main/glg/gpt active-memory recall status 회귀 X
+   - bundled Policy plugin (#80407) channel conformance/lint 영향
+   - memory index `--deep --json` vector 진단
+
+회귀 시 Dockerfile FROM 5.18로 되돌리고 build+recreate (10분 이내). 백업 디렉토리에서 memory sqlite restore.
+
+#### 영속화 (직진 통과 후, 다음 정리 사이클)
+
+- `AGENTS.md` §3 model routing: 5.18 → 5.20 baseline stamp
+- `AGENTS.md` §2 ACP route stance: 5.19 #148 align 한 줄 보강 (upstream과 동일 방향)
+- `docs/openclaw-gotchas.md`: top-level `auth.order` 정공법 + plugin sandbox config 정공법 + Node floor + skill prefix 패턴 점검
+- `~/openclaw/README.md` change history: 5.20 + harness 0.132 stamp
 
 ### 스킬 배포 후속 — logickocli 신규 (2026-05-22)
 
