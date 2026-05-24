@@ -60,6 +60,9 @@ services:
       # Java user.home = /root (Docker root user, /etc/passwd 기준)
       - ~/sync/org:/root/sync/org:ro
       - ~/repos/gh/notes/content:/root/repos/gh/notes/content:ro
+      # lifetract.db — WAL 모드라 ro 마운트 + JDBC ?immutable=1 조합으로 안전.
+      # 호스트의 lifetract write 에 영향 없음, 매 connection 새로 읽어 갱신 반영.
+      - ~/repos/gh/self-tracking-data/lifetract.db:/root/repos/gh/self-tracking-data/lifetract.db:ro
 
       # --- Nix store (바이너리 런타임) ---
       # geworfen native-image가 링크된 glibc
