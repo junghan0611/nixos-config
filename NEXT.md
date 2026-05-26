@@ -330,3 +330,73 @@ stuck session recovery: action=abort_embedded_run aborted=true drained=true
 ### Stage 3 (plugin-side freeze 해제) — 변동 없음
 
 pi-shell-acp 코어 0.7.0 publish 라운드 완료 + Phase 3 진입 stamp 대기. §4 잔여 ⏸ 항목 + 새 추적 후보 3건 (분신 env hallucination / socketPath placeholder / PI_SESSION_ID stale)은 그때 unfreeze.
+
+---
+
+## 8. OpenClaw 5.22 검토 (2026-05-24)
+
+릴리즈: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.22> (2026-05-24 01:12 UTC published). 5.20 baseline GREEN(commit `3686dfb`) 후 하루 만의 minor hop. 다음 세션에서 직진 여부 판단.
+
+### 핵심 — 우리가 손으로 잡은 자리의 자동화
+
+| 영역 | 5.22 변화 | 우리 컨텍스트 |
+|---|---|---|
+| **Codex OAuth sidecar (Auth/Codex)** | embedded runner secrets-runtime auth loaders가 legacy OAuth sidecar 자동 인식. Telegram replies / cron-triggered / **isolated sub-agent lanes** 모두 `doctor` 거치지 않고 `#83312 refresh-and-rewrite` migration 자동 도달 | 5.18 incident (cd45fbbc 세션, doctor --fix로 4봇 main/glg/gpt/mini auth-profiles.json 마이그레이션) 자리. 5.19 #310 host-level 자동화의 sub-agent lane 보강. **active-memory recall sub-agent (mini lane) 도 자동 처리** |
+| **dreaming side-effect gate** | `dreaming.enabled=false`일 때 recall tracking이 dreaming 부산물 안 씀 (#84436) | 우리 `thinking=off, persistTranscripts=false`와 정합. 부수 잡음 제거 자리 |
+| **Memory-core dreaming session keys** | stable narrative subagent session keys per workspace/phase. `dreaming-narrative-*` 누적 fix (#68252/#69187/#70402) | dreaming off라 즉시 win은 아니지만 향후 활성화 시 안전 |
+
+### ACP path (bbot/gemini)
+
+| 영역 | 5.22 변화 | 우리 컨텍스트 |
+|---|---|---|
+| **sessions_spawn orphan cleanup** | parent session reset/delete 시 child ACP session 자동 정리. orphan `claude-agent-acp` 누적으로 인한 memory exhaustion 회피 (fixes #68916) | **bbot/gemini pi-shell-acp route 직접 영향**. §4 잔여 검증에 메모리 안정성 축 +1 |
+| **embedded sessions_spawn child handoff terminal progress** | accepted handoff을 terminal progress로 인식. false non-deliverable failures 해소 (#85054) | Phase 1.8 bbot turn에서 봤던 패턴과 같은 자리 |
+| **pi-coding-agent auto-retry off** | OpenClaw 자체 retry/failover와 nested SDK retry 충돌 회피 (#73781) | pi-shell-acp route 장기 안정성 |
+
+### Telegram isolated polling (5.12 함정 자동화)
+
+| 영역 | 5.22 변화 | 우리 컨텍스트 |
+|---|---|---|
+| **pollingStallThresholdMs honor (default isolated path)** | silent worker 자동 restart (fixes #83950) | **5.12 baseline AGENTS.md §3 stamp**: "isolated polling은 boot 직후 fetch-timeout 발생 시 polling thread를 죽일 수 있어 즉시 restart 필요" — 자동 회복 가능. **gotchas.md 갱신 자리** |
+| **dead-letter poisoned spool** | poisoned update 1건이 같은 lane 후속 차단 안 함 (#85470) | 6 봇 spool 격리 강화 |
+| **replay dedupe** | isolated-ingress replay 중복 dispatch 방지 (#84886) | |
+
+### Gateway 성능 (ARM cold-start)
+
+| 영역 | 5.22 변화 | 우리 컨텍스트 |
+|---|---|---|
+| plugin metadata snapshot reuse | startup/config/model/channel/setup/secret reader가 immutable snapshot 공유 | 5.20 ready 46s baseline 대비 단축 가능. 측정 자리 |
+| lazy-load startup-idle plugin work | core gateway method handlers + ACPX runtime lazy | acpx disabled라 부분 적용 |
+| `/models` per-call 20s → 5ms (~4100×) | provider auth-state map pre-warm (#84816) | `/status`/`/models` 응답성 |
+| deferred prewarm after readiness | 초기 gateway tool/session 요청이 auth discovery에 막히지 않음 (#85272) | boot 직후 부하 감소 |
+
+### ⚠️ 주의 자리 — 직진 전 검증
+
+| 영역 | 5.22 변화 | 우리 컨텍스트 |
+|---|---|---|
+| **Retired catalog prune + doctor migration** | retired Groq/Copilot/OpenAI/xAI/old Claude catalog 제거 + doctor가 current provider refs로 업그레이드 | **5.20 #96 keep list로 우리가 보존한 자리와 충돌 가능**. 업그레이드 후 `doctor --fix` 직접 돌리면 catalog가 다시 떨어질 risk. **dry-run 먼저** (config diff 비교) |
+| **Subagent bootstrap context 축소 (#85283)** | default sub-agent에 `AGENTS.md` + `TOOLS.md`만 전달. persona/identity/user/memory/heartbeat/setup 제외 | active-memory recall sub-agent (5.4-mini lane) context 축소 → `status=empty` 비율 변화 가능. §2 14d baseline 비교에 측정 변수 추가 자리 |
+| **plugins discovery `-plugin` suffix strip (#85170)** | package name → manifest id 매칭 자동 | pi-shell-acp `@openclaw/pi-shell-acp-plugin` 이름 영향 확인 자리 (현재 link install이라 영향 없을 가능성 높지만 검토) |
+
+### 직진 vs hejdev6 사전 검증 — 다음 세션 판단
+
+- **직진 근거**: 5.20 → 5.22 hop이 짧고 (3일), 우리가 손으로 잡은 자리 자동화 위주. 신규 destructive 변화 없음
+- **hejdev6 사전 검증 근거**: catalog prune (L79) + subagent context 축소 (L34) 두 자리는 우리 환경에 측정 가능한 영향. hejdev6 담당자에서 미리 확인 가능하면 risk 줄어듬
+- **결정 자리**: 5.20 baseline 14일 soak 진행 중인 점 고려. 안정성 우선 vs 자동화 가치 trade-off
+
+### 직진 시퀀스 (선택 시)
+
+1. **사전 백업** — `~/openclaw-backups/pre-5.22-<timestamp>/`: memory sqlite + auth-profile-secrets + Dockerfile.5.20 + openclaw.json.5.20 + 3 repo HEAD (5.20 직진 패턴 동일)
+2. **Dockerfile FROM `2026.5.22`** (롤백 주석 5.20으로 갱신) → `docker compose build --pull` + `up -d --force-recreate`. ready 시간 측정 (5.20 baseline 46s cold)
+3. **`doctor --fix --yes --non-interactive`** 전 — **config dry-run**: `python3` diff로 catalog prune 영향 확인. keep list와 충돌 시 keep list 재명시
+4. **6 봇 polling boot OK** + bbot/gemini cold turn latency + main/glg/gpt active-memory recall status 회귀 X
+5. **신규 측정 축**: `/models` 응답시간 (5.22 perf claim 검증, 5.20 baseline 측정 필요)
+
+회귀 시 Dockerfile FROM 5.20으로 되돌리고 build+recreate. memory sqlite restore.
+
+### 영속화 (직진 통과 후, 다음 정리 사이클)
+
+- `AGENTS.md` §3 model routing: 5.20 → 5.22 baseline stamp
+- `AGENTS.md` §3 Telegram polling stamp: "5.22부터 isolated polling stall 자동 restart" — boot 직후 fetch-timeout 수동 restart 의무 해제 가능 여부 확인 후 갱신
+- `docs/openclaw-gotchas.md`: catalog prune ↔ keep list 충돌 검증 결과 추가
+- `~/openclaw/README.md` change history: 5.22 stamp

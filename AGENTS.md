@@ -135,9 +135,17 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (OpenClaw 2026.5.12 baseline, 2026-05-15 갱신)
+### Model routing (OpenClaw 2026.5.20 baseline, 2026-05-26 갱신 — main `claude-cli/sonnet-4-6` 전환)
 
-LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)는 **삭제 예정**.
+**LLM 호출 — 분기 (2026-05-26)**:
+- **main**: Anthropic Max via `claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
+- **glg / gpt**: Codex OAuth ($100 plan)
+- **mini**: Codex OAuth, but **직접 대화 X** — active-memory 영역 보조 lane으로 격리 (운영 정책 2026-05-26)
+- **bbot / gemini**: pi-shell-acp ACP route (별도 §4)
+
+Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)는 **삭제 예정**.
+
+**Fallback 정공법 (2026-05-26)**: 모든 봇 `fallbacks: []` 비움. `agents.defaults.model.fallbacks: []` 포함. 정공법은 **안 되면 안 되는 거 — 응답 막히면 모델 자체를 바꾼다**. Codex sidecar stuck / extra usage 소진 등으로 다른 path로 자동 fallback (quota inflation / 다른 path 소진 연쇄) 차단. 5.12 baseline의 `fallbacks: ["openai/gpt-5.4"]` 명시 정책 폐기.
 
 **5.12 model ID 정규화 — 정공법 (2026-05-15)**: `openai-codex/*` provider/model이 5.12에서 deprecate. 새 형식은 `openai/*` + `agentRuntime.id="codex"` marker. 즉 model ID는 OpenAI catalog로 통합되고, 어떤 OAuth path로 라우트할지는 별도 marker로 표시. 호스트 `codex login`으로 받은 OAuth profile은 그대로 보존되고 (`auth.profiles."openai-codex:junghanacs@gmail.com"` 키 이름 그대로), agentRuntime marker가 새 model ID와 기존 profile을 매핑. **재로그인 불필요**.
 
@@ -153,18 +161,20 @@ LLM 호출은 모두 **Codex OAuth ($100 plan)** — Anthropic flat-rate / Copil
 
 **plugins.allow 정공법 (5.12 codex 외부화)**: 5.12에서 codex가 `@openclaw/codex` 별도 plugin으로 외부화. `plugins.allow`가 빈 상태면 "non-bundled plugins may auto-load" WARN. 정공법은 사용 plugin 전체 명시: `["telegram","perplexity","google","anthropic","openai","github-copilot","active-memory","memory-core","deepseek","codex","browser","canvas","device-pair","file-transfer","phone-control","talk-voice"]`. **함정**: `["codex"]`만 박으면 명시 안 한 bundled (active-memory, telegram, file-transfer 등) 모두 disabled되어 봇 polling/응답 깨짐.
 
-**Live model IDs** (5.12부터 `openai/*` + `agentRuntime.id="codex"`. 이전 표기 `openai-codex/*`는 5.12 doctor가 자동 rename — 호스트 OAuth profile은 그대로 유지됨. ACP route는 별도 — `pi-shell-acp/*`로 표기):
+**Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `claude-cli/*` = Claude Code CLI spawn, `pi-shell-acp/*` = ACP route):
 
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
-| main | `openai/gpt-5.5` | `workspace/` | partial | ✓ | 일반 (default 봇, 2026-05-10부터 5.4 → 5.5) |
-| glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot` |
+| **main** | **`claude-cli/claude-sonnet-4-6`** | `workspace/` | off (default) | ✓ | `@junghan_openclaw_bot`. **2026-05-26 전환** — Codex sidecar stuck 회피 + Sonnet 4.6 검증. Max 20x rate tier |
+| glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot`. Codex OAuth |
 | gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~) |
 | **bbot** | **`pi-shell-acp/claude-opus-4-7`** | `workspace-bbot/` | **off** | **✓** (2026-05-16 추가) | `@glg_b_bot`. ACP route via pi-shell-acp 0.6.0-prerelease + plugins/openclaw. Phase 1.8 β 통과 2026-05-15 |
-| mini | `openai/gpt-5.4-mini` | `workspace-mini/` | partial | — | 가벼운 turn, 풀 스킬셋. Codex Plus 0.29x lane |
+| **mini** | **`openai/gpt-5.4`** | `workspace-mini/` | partial | — (별도 lane) | **직접 대화 X (2026-05-26)** — active-memory 영역 보조. 모델은 `5.4-mini` → `5.4` 승급. recall sub-agent lane은 별개 (`openai/gpt-5.4-mini` 그대로 유지 — §Active memory) |
 | **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. Phase 1.8 β gemini turn 검증 진행 중 |
 | subagents | `openai/gpt-5.4` | — | — | — | |
 
+> **claude-cli provider (2026-05-26 추가)**: OpenClaw native first-class Claude path. Codex와 짝 — backend는 `@anthropic-ai/claude-agent-sdk` v0.3.143 (Anthropic 공식 SDK)를 `node_modules`에서 직접 spawn. 실제 invocation은 `claude -p` 자체 (`--input-format stream-json --output-format stream-json --session-id <id> [--resume]` + `--permission-prompt-tool stdio`). 세션 jsonl은 `~/.claude/projects/-<cwd-encoded>/<session-id>.jsonl` — 호스트 `~/.claude/projects/`와 컨테이너 `/home/node/.claude/projects/`가 mount 공유라 호스트 Claude Code 세션과 동일 디렉토리에 섞임. OAuth는 `/home/node/.claude/.credentials.json`의 `claudeAiOauth` (refresh_token 자동 갱신). **결제 분리의 핵심**: pi-shell-acp가 같은 SDK를 wrap하면 Anthropic이 **third-party harness 식별** → extra usage 풀로 강제 (2026-05-26 KST pi 테스트: `400 You're out of extra usage`). OpenClaw native claude-cli는 same SDK를 direct import → **Pro/Max 한도로 인식** (자기인식 응답: "Anthropic의 공식 CLI 도구인 Claude Code 환경에서 작동 중"). 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라지는 자리.
+>
 > **Tool-trace inline 해소 (2026-05-16)**: `~/.pi/agent/settings.json` 의 `piShellAcpProvider.showToolNotifications: true → false` 한 줄로 정착. 이전엔 pi backend가 final assistant text 안에 `[tool:start] Skill / [tool:done] Read File — ...` 같은 trace를 inline string으로 박았는데 (plugin `fa3b8f7` block-type filter는 통과 — 단일 `text` block 내부 inline이라 strip 불가), pi-CLI의 child가 매 turn spawn 시 settings 새로 읽는 구조라 gateway restart 없이 즉시 적용됨. workspace-local 새 파일 만들 필요 없음 — 글로벌 한 줄로 충분.
 >
 > **Streaming policy (2026-05-16)**: pi-shell-acp 라우트 봇은 **streaming=off 권장 기본값**. 이유: partial mode는 editMessageText 사이클이 mid-stream wrong-final 회귀 시점에 본문을 짧은 metadata로 replace해 UX 회귀 (2026-05-16 04:01 incident). off는 final 1회 flush라 plugin `fa3b8f7` role/abnormal guard와 잘 합치고 디버그도 쉽다. gemini는 turn 검증 중이라 partial 유지 — 검증 완료 후 off로 전환.

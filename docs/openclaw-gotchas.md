@@ -12,6 +12,34 @@
 
 ## 활성
 
+### claude-cli provider — `claude` binary not on PATH → EPIPE on every turn (2026-05-26)
+
+OpenClaw 5.20 (`dist/cli-backend-CO2SZJAY.js`)이 `claude-cli` provider를 자동 등록하면서 spawn args를 `command: "claude"`로 박는다. PATH에서 `claude`를 찾는데, image는 `@anthropic-ai/claude-agent-sdk` (+ `@anthropic-ai/claude-agent-sdk-linux-arm64/claude` 번들 binary)만 install 하고 `node_modules/.bin/claude` symlink는 만들지 않음 (SDK package.json에 `bin` field 없음). 결과:
+
+```
+spawn("claude", ...) → ENOENT
+child exits in ~4ms
+parent stdin write → EPIPE
+log: "claude live session close: reason=abort" + "model fallback decision: reason=timeout detail=write EPIPE"
+telegram UX: "⚠️ Agent failed before reply: write EPIPE. Please try again, or use /new to start a fresh session."
+```
+
+함정 자리:
+- `openclaw infer model run --model claude-cli/...` 은 **잘 작동**. 다른 dispatch path (one-shot capability) 사용.
+- `openclaw agent --agent <id>` + 텔레그램 inbound 둘 다 같은 live session path → 둘 다 EPIPE.
+- `/status` 도 정상 표시 (model lookup만 하고 spawn 안 함).
+
+Fix (정공법, env 변경 — force-recreate 필요):
+
+```yaml
+# docker-compose.yml — gateway service AND child env (두 자리)
+- PATH=/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64:/home/junghan/.pi/agent/claude-plugin/skills/bibcli:.../bin
+```
+
+SDK 디렉토리에는 `claude` + LICENSE/README/package.json만 있어서 다른 binary와 충돌 0. `node_modules`가 image 안이라 영구.
+
+대안 (안 채택): host `npm i -g @anthropic-ai/claude-code` 후 mount — 호스트 의존 늘어남. Dockerfile에 `npm i -g` 추가도 가능 — image 재빌드 비용.
+
 ### bonjour plugin — disable on Oracle Cloud + Docker (since 2026-04-24)
 
 OpenClaw 2026.4.24 split bonjour LAN discovery into a default-on plugin (`@homebridge/ciao`). On Oracle Cloud + Docker with IPv6 disabled (our setup), the mDNS probe fails and emits `Unhandled promise rejection: CIAO PROBING CANCELLED` every ~30s, taking gateway down with it (restart loop). LAN discovery has no value to us — we reach gateway via SSH tunnel, not Bonjour.

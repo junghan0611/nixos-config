@@ -41,7 +41,8 @@ services:
       # ① CLI skill bin parent dir 7개 prepend — gitcli/denotecli/lifetract/gog 등 bare 호출이 PATH로 잡히도록.
       # ② Nix store emacsclient — emacs SKILL.md bare 호출 해소. nix store hash는 volumes mount와 동기화.
       # ③ PI_EMACS_AGENT_SOCKET — emacs SKILL.md가 명시한 contract ("injected by pi-shell-acp when launched with --emacs-agent-socket"). server 소켓 (/run/emacs/server) 활성.
-      - PATH=/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      # claude-cli provider needs `claude` on PATH; SDK ships binary at `/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64/claude` (no auto-symlink). Without this entry the `spawn("claude", ...)` from `dist/cli-backend-CO2SZJAY.js` ENOENTs → child exits ~4ms → parent stdin write hits EPIPE.
+      - PATH=/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64:/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       # short name "server"는 ${XDG_RUNTIME_DIR}/emacs/server 또는 /tmp/emacs<uid>/server에서 찾음.
       # 컨테이너 mount는 /run/emacs/server라 short name resolution 실패 → full path 명시.
       - PI_EMACS_AGENT_SOCKET=/run/emacs/server
@@ -130,7 +131,8 @@ services:
       - BROWSER=echo
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       # ACP route child spawn 보강 — gateway service와 동일 (pi-shell-acp #21 consumer-side workaround)
-      - PATH=/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      # claude-cli provider needs `claude` on PATH; SDK ships binary at `/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64/claude` (no auto-symlink). Without this entry the `spawn("claude", ...)` from `dist/cli-backend-CO2SZJAY.js` ENOENTs → child exits ~4ms → parent stdin write hits EPIPE.
+      - PATH=/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64:/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       # short name "server"는 ${XDG_RUNTIME_DIR}/emacs/server 또는 /tmp/emacs<uid>/server에서 찾음.
       # 컨테이너 mount는 /run/emacs/server라 short name resolution 실패 → full path 명시.
       - PI_EMACS_AGENT_SOCKET=/run/emacs/server
