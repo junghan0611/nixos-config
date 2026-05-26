@@ -358,6 +358,36 @@ pi-shell-acp 코어 0.7.0 publish 라운드 완료 + Phase 3 진입 stamp 대기
 - **OAuth refresh 자동 검증**: `expiresAt` 8h마다 새로 받는지 24h 관찰
 - **active-memory 35s timeout 빈도**: claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능
 
+---
+
+## 9. pi-shell-acp 의존 정리 사이클 (2026-05-26 시작, 큰 자리)
+
+claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 사용 + 1M context + workspace-aware skills를 모두 충족하면서 **pi-shell-acp wrap path의 필요성이 크게 줄어듬**. 정리 사이클.
+
+### 검증된 자리 (2026-05-26)
+
+- main 봇 `claude-cli/claude-sonnet-4-6` → `claude-cli/claude-opus-4-7` 둘 다 통과 (텔레그램 turn GREEN, 1M context, workspace skill 호출)
+- mini 봇 `claude-cli/claude-sonnet-4-6` 검증 lane (active-memory off baseline)
+- `verboseDefault: on` 전역 — 운영자가 봇 내부 검토 가능
+
+### 검토 자리 (다음 사이클)
+
+| 자리 | 검토 내용 |
+|---|---|
+| bbot 전환 | `pi-shell-acp/claude-opus-4-7` → `claude-cli/claude-opus-4-7`. 동일 모델인데 path만 변경. third-party harness 식별 회피 (extra usage 풀 의존 제거) |
+| gemini 전환 | `pi-shell-acp/gemini-3.1-pro-preview` → ? `@google/gemini-cli` 자체가 image에 있으니 별도 `gemini-cli` provider 등록 가능한지 확인 |
+| compose mount 정리 | `~/.pi/agent`, `~/.claude-plugin/skills` mount들이 claude-cli 전환 후 의미가 줄어듬. 필요 mount만 남기기 |
+| AGENTS.md §2 ACP route stance 재검토 | "pi backend가 자기 session/ACP wire 자치권 가짐" stance는 third-party harness 식별 / extra usage 분리 자리에서 의미 변화. claude-cli native가 first-class라 stance 자체를 갱신할 수도 |
+| docs/openclaw-gotchas.md ACPX 비활성 자리 | ACPX 자리들도 claude-cli native와 함께 재정리 가능 |
+| pi-shell-acp 활용 자리 | 정말 필요한 자리만 남김 (예: 다른 cloud provider, 다른 모델 via pi backend 등) vs 완전 deprecation |
+
+### Trigger 조건
+
+다음 자리에서 진행:
+- bbot turn 5-7d soak에서 안정성 확인 (claude-cli 의존)
+- Gemini CLI 자체 capability 확인 (Gemini 3.1 Pro로 turn 가능한지)
+- 정리 후 mount 줄어들면 storage 효과 측정
+
 ### 직전 §8 release notes 분석 (참고용 보존)
 
 릴리즈: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.22> (2026-05-24 01:12 UTC published). 5.20 baseline GREEN(commit `3686dfb`) 후 하루 만의 minor hop. 다음 세션에서 직진 여부 판단.

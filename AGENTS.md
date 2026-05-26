@@ -165,19 +165,25 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
-| **main** | **`claude-cli/claude-sonnet-4-6`** | `workspace/` | off (default) | ✓ | `@junghan_openclaw_bot`. **2026-05-26 전환** — Codex sidecar stuck 회피 + Sonnet 4.6 검증. Max 20x rate tier |
+| **main** | **`claude-cli/claude-opus-4-7`** | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. **2026-05-26 opus 승급** (sonnet 검증 OK 후). Max 20x rate tier, 1M context |
 | glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot`. Codex OAuth |
 | gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~) |
-| **bbot** | **`pi-shell-acp/claude-opus-4-7`** | `workspace-bbot/` | **off** | **✓** (2026-05-16 추가) | `@glg_b_bot`. ACP route via pi-shell-acp 0.6.0-prerelease + plugins/openclaw. Phase 1.8 β 통과 2026-05-15 |
-| **mini** | **`openai/gpt-5.4`** | `workspace-mini/` | partial | — (별도 lane) | **직접 대화 X (2026-05-26)** — active-memory 영역 보조. 모델은 `5.4-mini` → `5.4` 승급. recall sub-agent lane은 별개 (`openai/gpt-5.4-mini` 그대로 유지 — §Active memory) |
-| **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. Phase 1.8 β gemini turn 검증 진행 중 |
+| **bbot** | **`pi-shell-acp/claude-opus-4-7`** | `workspace-bbot/` | **off** | **✓** (2026-05-16 추가) | `@glg_b_bot`. ACP route via pi-shell-acp 0.6.0-prerelease + plugins/openclaw. **claude-cli 검증 완료 후 native 전환 후보** (third-party harness 식별 회피) |
+| **mini** | **`claude-cli/claude-sonnet-4-6`** | `workspace-mini/` | off | — | **2026-05-26 검증 lane** — sonnet 4.6 단독 동작. active-memory 빠진 baseline (대화 응답 깨끗) |
+| **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. claude-cli 전환 검토 후순위 |
 | subagents | `openai/gpt-5.4` | — | — | — | |
 
 > **claude-cli provider (2026-05-26 추가, 5.22 갱신)**: OpenClaw native first-class Claude path. Codex와 짝. **5.20까지** `@anthropic-ai/claude-agent-sdk` v0.3.143 (SDK + 번들 `claude` binary) 자동 install. **5.22부터** raw `@anthropic-ai/sdk@0.97.1` (API client만)로 슬림화 — `claude` binary 별도 install 필요 (`npm i -g @anthropic-ai/claude-code` Dockerfile RUN 단계). 실제 invocation은 `claude -p` 자체 (`--input-format stream-json --output-format stream-json --session-id <id> [--resume]` + `--permission-prompt-tool stdio` + `--verbose`). 세션 jsonl은 `~/.claude/projects/-<cwd-encoded>/<session-id>.jsonl` — 호스트 `~/.claude/projects/`와 컨테이너 `/home/node/.claude/projects/`가 mount 공유라 호스트 Claude Code 세션과 동일 디렉토리에 섞임 (sub-dir로 격리). OAuth는 `/home/node/.claude/.credentials.json`의 `claudeAiOauth` (refresh_token 자동 갱신). **결제 분리의 핵심**: pi-shell-acp가 같은 SDK를 wrap하면 Anthropic이 **third-party harness 식별** → extra usage 풀로 강제 (2026-05-26 KST pi 테스트: `400 You're out of extra usage`). OpenClaw native claude-cli는 same SDK를 direct import → **Pro/Max 한도로 인식** (자기인식 응답: "Anthropic의 공식 CLI 도구인 Claude Code 환경에서 작동 중", `rate_limit_event.isUsingOverage=false` + `overageStatus=rejected overageDisabledReason=org_level_disabled` 검증). 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라지는 자리.
 >
 > **EPIPE 회피 (2026-05-26)**: 5.22 image는 `claude` binary 안 들고 옴. `command:"claude"` (dist/cli-backend-CO2SZJAY.js)가 PATH에서 못 찾으면 child 4ms 만에 exit → parent stdin EPIPE → "⚠️ Agent failed before reply". Dockerfile에 `@anthropic-ai/claude-code` 명시. → 자세한 incident는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
 >
-> **Streaming policy 확장 (2026-05-26)**: `claude-cli` 라우트 봇도 **streaming=off 권장** — pi-shell-acp 5-16 incident 동일 패턴 (partial mode editMessageText 사이클이 active-memory diagnostic 메시지로 본문 회귀해 답변이 "보였다 사라짐"). `channels.telegram.accounts.default.streaming.mode: off` 박음 (bbot 패턴 일관). final 1회 flush.
+> **Streaming policy 확장 (2026-05-26)**: `claude-cli` 라우트 봇도 **streaming=off 권장** — pi-shell-acp 5-16 incident 동일 패턴 (partial mode editMessageText 사이클이 active-memory diagnostic 메시지로 본문 회귀해 답변이 "보였다 사라짐"). `channels.telegram.accounts.{default,mini}.streaming.mode: off` 박음 (bbot 패턴 일관). final 1회 flush.
+>
+> **1M context (2026-05-26 발견)**: Claude Code 환경 (`claude-cli` provider)에선 sonnet 4.6 / opus 4.7 모두 **1M context로 잡힘** (`/status` "Context: 159k/1.0m" 검증). third-party API 직접 호출 시 200k와 대조. 즉 native claude-cli path가 결제 풀(Pro/Max 한도) + capability(1M ctx) 둘 다 third-party와 다른 자리. 큰 context 작업이 sub-agent rotate 없이 한 turn에 들어감 — Codex 라우트 200k 한도와 본질적 차이.
+>
+> **Workspace-aware skills (2026-05-26 검증)**: default 봇 turn이 자기 workspace (`/home/node/.openclaw/workspace/`) 안의 skills를 자체 호출. 즉 workspace-local skill 동작 정상 — claude code SDK가 workspace cwd를 root로 보고 skill discovery 진행. `~/.pi/agent/claude-plugin/skills/*` 같은 외부 mount 의존 없음.
+>
+> **verboseDefault on (2026-05-26)**: `agents.defaults.verboseDefault: "on"` 전역 박음. 모든 봇 새 session 시작 시 verbose on 기본 (active-memory diagnostic / sub-agent trace 등이 텔레그램에 표시되어 운영자가 봇 내부 동작 검토 가능). 봇별 `/verbose off`로 session-level 토글 가능.
 >
 > **Tool-trace inline 해소 (2026-05-16)**: `~/.pi/agent/settings.json` 의 `piShellAcpProvider.showToolNotifications: true → false` 한 줄로 정착. 이전엔 pi backend가 final assistant text 안에 `[tool:start] Skill / [tool:done] Read File — ...` 같은 trace를 inline string으로 박았는데 (plugin `fa3b8f7` block-type filter는 통과 — 단일 `text` block 내부 inline이라 strip 불가), pi-CLI의 child가 매 turn spawn 시 settings 새로 읽는 구조라 gateway restart 없이 즉시 적용됨. workspace-local 새 파일 만들 필요 없음 — 글로벌 한 줄로 충분.
 >
