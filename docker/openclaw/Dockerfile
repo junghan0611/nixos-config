@@ -1,10 +1,19 @@
-# 5.12 → 5.18 (2026-05-19): Node 22.19 minimum + Pi packages 0.75.1 + Telegram polling
-# 안정성 다수 (isolated polling guard / hot-reload restart / HTTP 421 retry / forum-topic) +
-# Memory-core L199 incremental sync fix + Codex OAuth fallback 강화 (L164/L121/L122) +
-# stuck-recovery L59 강화 + ACP wire 정리 (L165/L168).
-# 5.12 정공법 (openai/* + agentRuntime.id=codex) 그대로 유지. plugin pi-shell-acp d4f5772.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.12
-FROM ghcr.io/openclaw/openclaw:2026.5.18
+# 5.20 → 5.22 (2026-05-26): Codex OAuth sidecar 자동화 (#83312 refresh-and-rewrite migration,
+# sub-agent lane 포함) + ACP sessions_spawn orphan cleanup (#68916) + Telegram isolated polling
+# pollingStallThresholdMs honor (#83950) + plugin metadata snapshot reuse / /models prewarm (#84816).
+# claude-cli provider는 5.20에서 검증 통과 (Anthropic Max 20x rate tier, native first-class path).
+# 주의 자리: retired catalog prune + doctor migration (#84718) — 우리 picker entries에 retired 모델 0건.
+# subagent bootstrap context 축소 (#85283) — active-memory recall lane 영향 측정 후속.
+# 5.18 → 5.20 (2026-05-22): Codex harness @openai/codex 0.132.0 bump + 5.19 거대 리팩토링 +
+# 5.20 안정화. 핵심: #354 openai/* auto-Codex resolve + OAuth bootstrap / #310 doctor --fix
+# legacy oauthRef → inline 자동 / #148 Codex app-server scope 분리 (우리 AGENTS.md §2 stance와 align) /
+# #156 /codex plugins 채팅 토글 / #332 oversized thread 자동 rotation / #366-367 Telegram /verbose
+# Codex tool 가시성 / #125 config.auth.order > stale lastGood / #247-248 Docker sandbox 호환성 개선.
+# config 보강 2건: top-level auth.order 명시 + plugins.entries.codex.config.appServer.sandbox=danger-full-access
+# (Cloud VM + Docker namespace 1차 boundary 안에서 bwrap 무력화, conservative).
+# 5.12 정공법 (openai/* + agentRuntime.id=codex) 그대로 유지. plugin pi-shell-acp 8b25c1e.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.20
+FROM ghcr.io/openclaw/openclaw:2026.5.22
 
 USER root
 
@@ -43,11 +52,14 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 
 # pi-shell-acp 런타임 (Phase 1.8 β host passthrough 경로)
 # - pi: child process 호출 entrypoint
-# - codex-acp / gemini: backend ACP executables (Claude는 pi-shell-acp 내부 require.resolve)
+# - codex-acp / gemini: backend ACP executables
+# - claude-code: 5.22 base가 더 이상 binary 번들하지 않음 (5.20까지 @anthropic-ai/claude-agent-sdk 번들,
+#   5.22는 raw @anthropic-ai/sdk만) → claude-cli provider가 spawn할 `claude` binary를 별도 install.
 # pi-shell-acp 자체는 host ~/.pi/agent bind-mount로 노출 (compose 참조)
 RUN npm install -g \
       @earendil-works/pi-coding-agent \
       @zed-industries/codex-acp \
-      @google/gemini-cli
+      @google/gemini-cli \
+      @anthropic-ai/claude-code
 
 USER node

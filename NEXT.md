@@ -333,7 +333,32 @@ pi-shell-acp 코어 0.7.0 publish 라운드 완료 + Phase 3 진입 stamp 대기
 
 ---
 
-## 8. OpenClaw 5.22 검토 (2026-05-24)
+## 8. OpenClaw 5.22 직진 GREEN (2026-05-26)
+
+릴리즈: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.22>. 5.20 → 5.22 직진 완료.
+
+### 결과
+
+| 자리 | 결과 |
+|---|---|
+| Pull 5.22 | 47s (직전 `compose build --pull` 18분 stuck — daemon hang, kill 후 직접 pull로 회복) |
+| Build | 1m58s → 40s (cache 활용 rebuild) |
+| Recreate ready | 9s |
+| **Dockerfile patch** | `@anthropic-ai/claude-code` 추가 — 5.22가 더 이상 `claude` binary 번들 안 함 (5.20까지 `@anthropic-ai/claude-agent-sdk` SDK+binary, 5.22는 raw `@anthropic-ai/sdk@0.97.1`만). 누락 시 EPIPE 즉시 abort. **release notes 누락 자리** |
+| Streaming policy 확장 | `claude-cli` 라우트도 pi-shell-acp 5-16 incident 동일 패턴 ("답변 보였다 사라짐") → `channels.telegram.accounts.default.streaming.mode: off` |
+| Agent CLI turn | "claude-cli/claude-sonnet-4-6 · OpenClaw 2026.5.22" 응답 |
+| 텔레그램 turn | 깨끗하게 도착 (streaming off 후) |
+
+영속 stamp는 AGENTS.md §3 (5.22 baseline) + claude-cli provider note + docs/openclaw-gotchas.md (EPIPE 활성 항목)로 이관.
+
+### 남은 후속 (다음 세션 측정 자리)
+
+- **subagent bootstrap context 축소 (#85283) 측정**: active-memory recall sub-agent (5.4-mini lane) `status=empty` 비율 변화. 14d soak baseline 비교
+- **`@anthropic-ai/claude-code` 버전 추적**: 현재 2.1.150. Dockerfile pin 여부 검토
+- **OAuth refresh 자동 검증**: `expiresAt` 8h마다 새로 받는지 24h 관찰
+- **active-memory 35s timeout 빈도**: claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능
+
+### 직전 §8 release notes 분석 (참고용 보존)
 
 릴리즈: <https://github.com/openclaw/openclaw/releases/tag/v2026.5.22> (2026-05-24 01:12 UTC published). 5.20 baseline GREEN(commit `3686dfb`) 후 하루 만의 minor hop. 다음 세션에서 직진 여부 판단.
 

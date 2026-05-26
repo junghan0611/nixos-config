@@ -135,7 +135,7 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (OpenClaw 2026.5.20 baseline, 2026-05-26 갱신 — main `claude-cli/sonnet-4-6` 전환)
+### Model routing (OpenClaw 2026.5.22 baseline, 2026-05-26 갱신 — main `claude-cli/sonnet-4-6` 전환)
 
 **LLM 호출 — 분기 (2026-05-26)**:
 - **main**: Anthropic Max via `claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
@@ -173,7 +173,11 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 | **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. Phase 1.8 β gemini turn 검증 진행 중 |
 | subagents | `openai/gpt-5.4` | — | — | — | |
 
-> **claude-cli provider (2026-05-26 추가)**: OpenClaw native first-class Claude path. Codex와 짝 — backend는 `@anthropic-ai/claude-agent-sdk` v0.3.143 (Anthropic 공식 SDK)를 `node_modules`에서 직접 spawn. 실제 invocation은 `claude -p` 자체 (`--input-format stream-json --output-format stream-json --session-id <id> [--resume]` + `--permission-prompt-tool stdio`). 세션 jsonl은 `~/.claude/projects/-<cwd-encoded>/<session-id>.jsonl` — 호스트 `~/.claude/projects/`와 컨테이너 `/home/node/.claude/projects/`가 mount 공유라 호스트 Claude Code 세션과 동일 디렉토리에 섞임. OAuth는 `/home/node/.claude/.credentials.json`의 `claudeAiOauth` (refresh_token 자동 갱신). **결제 분리의 핵심**: pi-shell-acp가 같은 SDK를 wrap하면 Anthropic이 **third-party harness 식별** → extra usage 풀로 강제 (2026-05-26 KST pi 테스트: `400 You're out of extra usage`). OpenClaw native claude-cli는 same SDK를 direct import → **Pro/Max 한도로 인식** (자기인식 응답: "Anthropic의 공식 CLI 도구인 Claude Code 환경에서 작동 중"). 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라지는 자리.
+> **claude-cli provider (2026-05-26 추가, 5.22 갱신)**: OpenClaw native first-class Claude path. Codex와 짝. **5.20까지** `@anthropic-ai/claude-agent-sdk` v0.3.143 (SDK + 번들 `claude` binary) 자동 install. **5.22부터** raw `@anthropic-ai/sdk@0.97.1` (API client만)로 슬림화 — `claude` binary 별도 install 필요 (`npm i -g @anthropic-ai/claude-code` Dockerfile RUN 단계). 실제 invocation은 `claude -p` 자체 (`--input-format stream-json --output-format stream-json --session-id <id> [--resume]` + `--permission-prompt-tool stdio` + `--verbose`). 세션 jsonl은 `~/.claude/projects/-<cwd-encoded>/<session-id>.jsonl` — 호스트 `~/.claude/projects/`와 컨테이너 `/home/node/.claude/projects/`가 mount 공유라 호스트 Claude Code 세션과 동일 디렉토리에 섞임 (sub-dir로 격리). OAuth는 `/home/node/.claude/.credentials.json`의 `claudeAiOauth` (refresh_token 자동 갱신). **결제 분리의 핵심**: pi-shell-acp가 같은 SDK를 wrap하면 Anthropic이 **third-party harness 식별** → extra usage 풀로 강제 (2026-05-26 KST pi 테스트: `400 You're out of extra usage`). OpenClaw native claude-cli는 same SDK를 direct import → **Pro/Max 한도로 인식** (자기인식 응답: "Anthropic의 공식 CLI 도구인 Claude Code 환경에서 작동 중", `rate_limit_event.isUsingOverage=false` + `overageStatus=rejected overageDisabledReason=org_level_disabled` 검증). 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라지는 자리.
+>
+> **EPIPE 회피 (2026-05-26)**: 5.22 image는 `claude` binary 안 들고 옴. `command:"claude"` (dist/cli-backend-CO2SZJAY.js)가 PATH에서 못 찾으면 child 4ms 만에 exit → parent stdin EPIPE → "⚠️ Agent failed before reply". Dockerfile에 `@anthropic-ai/claude-code` 명시. → 자세한 incident는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
+>
+> **Streaming policy 확장 (2026-05-26)**: `claude-cli` 라우트 봇도 **streaming=off 권장** — pi-shell-acp 5-16 incident 동일 패턴 (partial mode editMessageText 사이클이 active-memory diagnostic 메시지로 본문 회귀해 답변이 "보였다 사라짐"). `channels.telegram.accounts.default.streaming.mode: off` 박음 (bbot 패턴 일관). final 1회 flush.
 >
 > **Tool-trace inline 해소 (2026-05-16)**: `~/.pi/agent/settings.json` 의 `piShellAcpProvider.showToolNotifications: true → false` 한 줄로 정착. 이전엔 pi backend가 final assistant text 안에 `[tool:start] Skill / [tool:done] Read File — ...` 같은 trace를 inline string으로 박았는데 (plugin `fa3b8f7` block-type filter는 통과 — 단일 `text` block 내부 inline이라 strip 불가), pi-CLI의 child가 매 turn spawn 시 settings 새로 읽는 구조라 gateway restart 없이 즉시 적용됨. workspace-local 새 파일 만들 필요 없음 — 글로벌 한 줄로 충분.
 >
