@@ -117,7 +117,7 @@ in {
     # claude-code
     claude-monitor
     # claude-code-acp
-    claude-code-router
+    # claude-code-router
 
     # System tools
     fortune
@@ -150,6 +150,7 @@ in {
     iproute2        # ip command
     nettools        # ifconfig, arp, etc.
     iftop           # Network monitoring
+    tdlib             # TDLib (telega.el 의존성, GUI Emacs에서만 필요)
   ]) ++ (lib.optionals (isLinux && !isOracle) [
     # Desktop GUI / 주변장치 / 무거운 런타임 — Oracle headless 제외
     firefox
@@ -158,7 +159,6 @@ in {
     # telegram-desktop  # Telegram 메신저 (한글 입력 불가)
 
     telegram-bot-api  # Telegram Bot API server (OpenClaw는 Docker 안에서 실행)
-    tdlib             # TDLib (telega.el 의존성, GUI Emacs에서만 필요)
 
     # System utilities (ElleNajit) — 데스크톱/주변장치
     powertop        # Power management
