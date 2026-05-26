@@ -96,16 +96,7 @@ config.keys = {
     {key = "F11", mods = "", action = wezterm.action{SendString="\x1b\x1f\x27\x40\x1f"}},
     {key = "F12", mods = "", action = wezterm.action{SendString="\x1b\x1f\x28\x20\x1f"}},
 
-    -- Tab switching (ghostty와 동일: Alt+1..9 로 N번째 탭 이동, Alt+0 = 마지막 탭)
-    {key = "1", mods = "ALT", action = wezterm.action.ActivateTab(0)},
-    {key = "2", mods = "ALT", action = wezterm.action.ActivateTab(1)},
-    {key = "3", mods = "ALT", action = wezterm.action.ActivateTab(2)},
-    {key = "4", mods = "ALT", action = wezterm.action.ActivateTab(3)},
-    {key = "5", mods = "ALT", action = wezterm.action.ActivateTab(4)},
-    {key = "6", mods = "ALT", action = wezterm.action.ActivateTab(5)},
-    {key = "7", mods = "ALT", action = wezterm.action.ActivateTab(6)},
-    {key = "8", mods = "ALT", action = wezterm.action.ActivateTab(7)},
-    {key = "9", mods = "ALT", action = wezterm.action.ActivateTab(-1)}, -- 마지막 탭
+    -- ALT+숫자는 Emacs workspace 전환(M-1..M-9) 우선. wezterm 탭 이동은 기본값 CTRL+SHIFT+숫자 사용.
 }
 
 return config
