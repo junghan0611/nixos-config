@@ -90,6 +90,13 @@ in {
         quotePath = false;           # 한글 파일명 정상 표시
         precomposeunicode = true;    # 유니코드 정규화
         autocrlf = "input";          # Linux/Mac line endings
+
+        # Global commit/push safety rail — SSOT in agent-config.
+        # Scans staged/pushed diffs for identity terms (public repos only)
+        # + secrets (all repos). Blocks the operation on violation.
+        # Bypass (GLG only): AGENT_ALLOW_UNSAFE_COMMIT=1
+        # See: ~/repos/gh/agent-config/git-hooks/README.md
+        hooksPath = "${config.home.homeDirectory}/repos/gh/agent-config/git-hooks";
       };
 
       diff = {

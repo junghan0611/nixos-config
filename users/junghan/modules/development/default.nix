@@ -19,7 +19,8 @@
 
     # Version control
     gh              # GitHub CLI
-    trufflehog      # Secret scanning in git repos
+    trufflehog      # Secret scanning in git repos (deep history)
+    gitleaks        # Secret scanning — used by agent-config global pre-commit/pre-push hooks
 
     # Build tools
     libnotify
