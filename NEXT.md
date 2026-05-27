@@ -6,6 +6,33 @@
 
 ---
 
+## 0. Forge — 포지 레이어 인프라 (활성, 2026-05-27 가동)
+
+`forge.junghanacs.com` (Forgejo 15.0.2 LTS, postgres 16-alpine, Caddy + Let's Encrypt) Oracle 가동. 봇멘트의 코드면 확장. 설계: 노트 `20260527T073823`.
+
+### 운영 책임 경계
+
+| 자리 | 책임 |
+|---|---|
+| **이 repo** `docker/forge/` | Docker compose, Caddy 블록, host-specific 인프라 (oracle 박힘, alskdjf 예정) |
+| **`forge-config` repo** | 운영 ownership — 라벨/footer/봇 행동 규약 + bin/forge CLI + agent skill SSOT |
+| **`agent-config/skills/forge`** | thin pointer → forge-config repo (앞으로 추가) |
+
+### 다음 한 걸음
+
+- [ ] **alskdjf 추가** — 같은 compose 구조 복사, DOMAIN/데이터 path만 호스트별 변경. SETUP.org 그대로 재사용 가능
+- [ ] **gotchas 박제** — `INSTALL_LOCK=false` env 함정 / 단일 파일 bind mount inode caching → `docker/forge/SETUP.org` 트러블슈팅 섹션은 이미 채워짐. 운영 사실로 진화하면 별도 docs/forge-gotchas.md 분리
+- [ ] **백업 cron 도입** — `pg_dump` + `tar` 일별 자동 (현재 수동)
+- [ ] **fail2ban Forgejo jail** — 도메인 노출 후 공격 패턴 관찰하고 활성
+
+### 운영 책임 아님
+
+- ❌ 라벨 정책 / footer 규약 / agent 행동 → forge-config repo
+- ❌ bin/forge CLI / agent skill → forge-config repo
+- ❌ 7-spike 로드맵 → agent-config #13 + forge-config/NEXT.md
+
+---
+
 ## 1. pi-shell-acp 의존 정리 사이클 (활성, 2026-05-26 시작)
 
 claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M context + workspace-aware skills 모두 충족 → pi-shell-acp wrap path의 필요성 크게 감소. 정리 사이클 진행 중.
