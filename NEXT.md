@@ -33,7 +33,7 @@
 - ✅ `glg-bot/sandbox` (검증용) — round-trip × 2 (state/list/comment + label-add)
 - ✅ `glg-bot/forge-config` (운영면) — GitHub junghan0611/forge-config의 짝, 라벨 5개 박힘
 - ✅ bin/forge minimal 4-command + agent-config thin pointer 박힘
-- ✅ OpenClaw 6봇 verboseDefault `on → full` (hot reload 적용)
+- ✅ OpenClaw 6봇 verboseDefault `on → full` (2026-05-27 gateway restart로 확정 적용)
 - ✅ 함정 3개 봇로그 박제 — `INSTALL_LOCK=false` env, `write:user` scope, 단일 파일 bind mount inode caching
 
 ### 운영 책임 아님
@@ -53,7 +53,7 @@ claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M con
 - main `claude-cli/claude-opus-4-7` + mini `claude-cli/claude-sonnet-4-6` 텔레그램 turn GREEN
 - 1M context 잡힘 (third-party API 200k와 본질적 차이)
 - workspace-aware skill 호출 정상
-- `verboseDefault: on` 전역 — 봇 내부 동작 검토 가능
+- `verboseDefault: full` 전역 — 봇 내부 동작 검토 가능
 - pi-shell-acp Issue #25 분석 요청 작성: <https://github.com/junghan0611/pi-shell-acp/issues/25>
 
 ### Trigger 대기

@@ -183,7 +183,7 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 >
 > **Workspace-aware skills (2026-05-26 검증)**: default 봇 turn이 자기 workspace (`/home/node/.openclaw/workspace/`) 안의 skills를 자체 호출. 즉 workspace-local skill 동작 정상 — claude code SDK가 workspace cwd를 root로 보고 skill discovery 진행. `~/.pi/agent/claude-plugin/skills/*` 같은 외부 mount 의존 없음.
 >
-> **verboseDefault on (2026-05-26)**: `agents.defaults.verboseDefault: "on"` 전역 박음. 모든 봇 새 session 시작 시 verbose on 기본 (active-memory diagnostic / sub-agent trace 등이 텔레그램에 표시되어 운영자가 봇 내부 동작 검토 가능). 봇별 `/verbose off`로 session-level 토글 가능.
+> **verboseDefault full (2026-05-27)**: `agents.defaults.verboseDefault: "full"` 전역 박음. 모든 봇 새 session 시작 시 full verbose 기본 (active-memory diagnostic / sub-agent trace / provider detail 등이 텔레그램에 표시되어 운영자가 봇 내부 동작 검토 가능). 파일 변경 감지는 되었지만 hot reload 적용 로그가 애매했던 적이 있어, 이 값 변경 후에는 gateway restart로 확정 적용한다. 봇별 `/verbose off`로 session-level 토글 가능.
 >
 > **Tool-trace inline 해소 (2026-05-16)**: `~/.pi/agent/settings.json` 의 `piShellAcpProvider.showToolNotifications: true → false` 한 줄로 정착. 이전엔 pi backend가 final assistant text 안에 `[tool:start] Skill / [tool:done] Read File — ...` 같은 trace를 inline string으로 박았는데 (plugin `fa3b8f7` block-type filter는 통과 — 단일 `text` block 내부 inline이라 strip 불가), pi-CLI의 child가 매 turn spawn 시 settings 새로 읽는 구조라 gateway restart 없이 즉시 적용됨. workspace-local 새 파일 만들 필요 없음 — 글로벌 한 줄로 충분.
 >
