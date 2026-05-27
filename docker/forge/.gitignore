@@ -1,0 +1,2 @@
+# 방어망 — 시크릿(.env)은 절대 commit X. .env.example만 commit.
+.env

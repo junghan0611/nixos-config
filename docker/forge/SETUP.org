@@ -1,0 +1,252 @@
+#+title: Forgejo 포지 레이어 설정 가이드
+#+date: [2026-05-27 Wed]
+#+filetags: :forge:forgejo:docker:oracle:setup:
+
+* 개요
+
+[[https://forgejo.org][Forgejo]] 셀프호스팅 git forge. 힣 에이전트의 공유 코드 작업면.
+Oracle Cloud ARM VM (=forge.junghanacs.com=)에서 Docker로 운영.
+
+설계 배경: 노트 [[denote:20260527T073823][포지 레이어: 힣 에이전트의 공유 코드 작업면]]
+
+- URL: https://forge.junghanacs.com
+- 버전: Forgejo 15 LTS (현재 stable)
+- DB: PostgreSQL 16-alpine (별도 인스턴스 =forge-db=)
+- SSL: Caddy (Let's Encrypt 자동)
+- SSH: v1 비활성 — HTTPS git push만 사용
+- 가입: =DISABLE_REGISTRATION=true= — admin만 사용자 생성 (닫힌 계)
+
+* 사전 요구사항
+
+1. DNS A 레코드: =forge.junghanacs.com= → Oracle VM 공인 IP
+2. Oracle Cloud Security List: TCP 80, 443 이미 개방 (remark42/umami와 공유)
+3. NixOS 방화벽: =machines/oracle.nix= 에서 80, 443 개방됨 (변경 불필요)
+4. Caddy proxy 네트워크: 이미 생성됨 (=docker network ls | grep proxy=)
+5. Disk 여유: ~1G 이상 (postgres 200MB + forge data 가변)
+
+* 배포
+
+** 1. 데이터 디렉토리 (이미 생성됨)
+
+#+begin_src bash
+ls -la ~/docker-data/forge/data ~/docker-data/forge-db/pgdata
+# drwxr-xr-x junghan users  ...
+#+end_src
+
+** 2. 환경변수 설정
+
+#+begin_src bash
+cd ~/nixos-config/docker/forge
+cp .env.example .env
+chmod 600 .env
+
+# DB 패스워드 생성
+openssl rand -base64 32 | tr -d '/+=' | head -c 32
+# → .env의 FORGE_DB_PASSWORD= 에 붙여넣기
+#+end_src
+
+** 3. 기동
+
+#+begin_src bash
+cd ~/nixos-config/docker/forge
+docker compose up -d
+
+# DB 헬스체크 통과 후 forge 컨테이너 시작
+docker compose logs -f
+#+end_src
+
+** 4. Caddy 리로드
+
+Caddyfile에 =forge.junghanacs.com= 블록 추가됨 (이 repo의 docker/caddy/Caddyfile).
+
+#+begin_src bash
+cd ~/nixos-config/docker/caddy
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+# 또는 caddy 컨테이너 재시작
+docker compose restart caddy
+#+end_src
+
+** 5. Setup Wizard 통과 (첫 boot 1회만)
+
+브라우저: https://forge.junghanacs.com/
+
+자동으로 setup 페이지로 리다이렉트. 대부분 값은 env에서 박혀 있으므로 확인만:
+
+| 항목                | 값                                  |
+|---------------------+-------------------------------------|
+| Database Type       | PostgreSQL (env 박힘, 변경 X)       |
+| Site Title          | =힣 Forge= (또는 원하는 이름)       |
+| Repository Path     | =/data/git/repositories= (기본값)   |
+| Server Domain       | =forge.junghanacs.com= (env 박힘)   |
+| SSH Port            | 비활성 (env =DISABLE_SSH=true=)     |
+| Application URL     | =https://forge.junghanacs.com/=     |
+
+스크롤 하단:
+- =Disable Self-Registration= 체크 (이미 env에서 true)
+- =Require Sign-In to View Pages= 체크 해제 (공개 read OK)
+- =Administrator Account Settings= 펼치고:
+  - Username: =junghan= (힣 본인 계정 — 봇 아님)
+  - Password: 강한 패스워드
+  - Email: =junghanacs@gmail.com=
+
+=Install Forgejo= 클릭 → app.ini 자동 생성, =INSTALL_LOCK=true= 박힘.
+
+* 봇 계정 생성 — =glg-bot=
+
+힣 본인 계정으로 로그인 후, =Site Administration → User Accounts → Create User Account=:
+
+| 항목     | 값                                |
+|----------+-----------------------------------|
+| Username | =glg-bot=                         |
+| Email    | =glg-bot@junghanacs.com= (가상 OK)|
+| Password | 강한 패스워드 (1회용)             |
+| Activate | ✅ Activated                      |
+
+생성 후 =glg-bot= 으로 로그인 → =Settings → Applications → Generate New Token=:
+- Token Name: =agent-bus=
+- Scopes: =write:issue=, =write:repository=, =read:user=, =write:organization=
+- 토큰 발급 후 =~/.env.local= 에 추가:
+
+#+begin_src bash
+# ~/.env.local (호스트, git ignore)
+export FORGE_URL="https://forge.junghanacs.com"
+export FORGE_TOKEN="<발급된 토큰>"
+export FORGE_USER="glg-bot"
+#+end_src
+
+forge 스킬(=forge-config= repo)이 이 두 변수만으로 동작.
+
+* API 검증
+
+#+begin_src bash
+source ~/.env.local
+
+# 자기 정보 확인
+curl -s -H "Authorization: token $FORGE_TOKEN" \
+  "$FORGE_URL/api/v1/user" | jq .login
+# → "glg-bot"
+
+# 버전 확인
+curl -s "$FORGE_URL/api/v1/version" | jq .
+# → {"version": "15.0.x"}
+
+# 첫 organization 생성 (선택)
+curl -s -X POST -H "Authorization: token $FORGE_TOKEN" \
+  -H "Content-Type: application/json" \
+  "$FORGE_URL/api/v1/orgs" \
+  -d '{"username": "junghanacs", "visibility": "public"}'
+#+end_src
+
+* GitHub mirror 설정 (Spike 2 — 나중)
+
+Forgejo는 GitHub로 push mirror 지원. 각 repo의 =Settings → Mirrors=:
+
+| 항목                | 값                                                  |
+|---------------------+-----------------------------------------------------|
+| Git Remote Repo URL | =https://github.com/junghan0611/<repo>.git=        |
+| Authorization       | Personal Access Token (push 권한)                  |
+| Sync schedule       | =@every 1h= (또는 push 시 trigger)                 |
+
+Spike 2에서 자동화 — 지금은 수동.
+
+* 관리
+
+#+begin_src bash
+cd ~/nixos-config/docker/forge
+
+# 상태
+docker compose ps
+
+# 로그
+docker compose logs --tail=50 forge
+docker compose logs --tail=50 forge-db
+
+# 재시작
+docker compose restart forge      # DB는 그대로
+docker compose restart            # 둘 다
+
+# 업그레이드 (15.0.x → 15.0.y 패치)
+docker compose pull forge
+docker compose up -d forge
+
+# 메이저 업그레이드 (15 → 16, 6개월 뒤 예정)
+# 반드시 release-notes 읽고 진행. DB 백업 먼저.
+
+# 중지
+docker compose down               # 데이터 보존
+#+end_src
+
+* 백업
+
+** 일회성 백업
+
+#+begin_src bash
+# DB
+docker compose exec forge-db pg_dump -U forgejo forgejo \
+  | gzip > ~/backup/forge-db-$(date +%Y%m%d).sql.gz
+
+# 데이터 (avatars, attachments, lfs, repositories)
+tar -czf ~/backup/forge-data-$(date +%Y%m%d).tar.gz \
+  -C ~/docker-data/forge data
+#+end_src
+
+** 복구
+
+#+begin_src bash
+# DB 복구
+gunzip -c ~/backup/forge-db-YYYYMMDD.sql.gz | \
+  docker compose exec -T forge-db psql -U forgejo forgejo
+
+# 데이터 복구
+docker compose down
+tar -xzf ~/backup/forge-data-YYYYMMDD.tar.gz -C ~/docker-data/forge
+docker compose up -d
+#+end_src
+
+* 트러블슈팅
+
+** =forge-db= healthcheck 실패
+
+#+begin_src bash
+docker compose logs forge-db
+# pg_data 권한 확인
+ls -la ~/docker-data/forge-db/pgdata
+# postgres:postgres (UID 70 in alpine) 소유여야 함 — 첫 boot 시 자동 chown
+#+end_src
+
+** =forge= 컨테이너가 시작 후 즉시 종료
+
+#+begin_src bash
+docker compose logs forge
+# 자주 보는 오류:
+# - "unable to connect to database" → forge-db healthcheck 통과 대기
+# - "permission denied /data" → ~/docker-data/forge/data 소유권 확인
+sudo chown -R 1000:100 ~/docker-data/forge/data
+#+end_src
+
+** =forge.junghanacs.com= 502 Bad Gateway
+
+#+begin_src bash
+# forge 컨테이너 proxy 네트워크에 있는지 확인
+docker network inspect proxy | jq '.[0].Containers | keys'
+# → "forge" 포함되어야 함
+
+# 컨테이너 내부에서 직접 접근
+docker compose exec caddy wget -O- http://forge:3000/api/v1/version
+#+end_src
+
+** Setup Wizard 페이지가 안 뜨고 로그인 페이지로 가는 경우
+
+#+begin_src bash
+# 이미 INSTALL_LOCK=true 박혀버린 상태. /data/forgejo/conf/app.ini 확인:
+docker compose exec forge cat /data/forgejo/conf/app.ini | grep INSTALL_LOCK
+# = false 로 바꾸고 forge 재시작
+#+end_src
+
+* 관련
+
+- 노트: [[denote:20260527T073823][포지 레이어: 힣 에이전트의 공유 코드 작업면]]
+- 부모 패턴: [[denote:20260328T112722][봇멘트: 힣의 분신과 댓글로 소통하라]]
+- 스킬 repo: =forge-config= (별도, =forge= 스킬 코드/문서)
+- Caddy 설정: =docker/caddy/Caddyfile= (=forge.junghanacs.com= 블록)
+- agent-config 이슈 #13: https://github.com/junghan0611/agent-config/issues/13

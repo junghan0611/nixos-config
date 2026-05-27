@@ -59,3 +59,7 @@ beads.right.meta.json
 # bv (beads viewer) local config and caches
 .bv/
 docker/openclaw/openclaw.json
+
+# Secrets — never commit. .env.example만 commit.
+.env
+**/.env

@@ -1,0 +1,103 @@
+services:
+  forge-db:
+    image: postgres:16-alpine
+    container_name: forge-db
+    restart: unless-stopped
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    environment:
+      - POSTGRES_USER=forgejo
+      - POSTGRES_PASSWORD=${FORGE_DB_PASSWORD}
+      - POSTGRES_DB=forgejo
+
+    volumes:
+      - /home/junghan/docker-data/forge-db/pgdata:/var/lib/postgresql/data
+
+    networks:
+      - forge-internal
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgejo -d forgejo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  forge:
+    image: codeberg.org/forgejo/forgejo:15
+    container_name: forge
+    hostname: forge
+    restart: unless-stopped
+    depends_on:
+      forge-db:
+        condition: service_healthy
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # 포트 직접 노출 없음 — Caddy 리버스 프록시가 처리
+    # SSH(22)는 v1 비활성. HTTPS git push만 사용
+    expose:
+      - "3000"
+
+    environment:
+      # Run as junghan (1000:100) — host volume permission alignment
+      - USER_UID=1000
+      - USER_GID=100
+
+      # Server
+      - FORGEJO__server__DOMAIN=forge.junghanacs.com
+      - FORGEJO__server__ROOT_URL=https://forge.junghanacs.com/
+      - FORGEJO__server__HTTP_PORT=3000
+      - FORGEJO__server__SSH_DOMAIN=forge.junghanacs.com
+      - FORGEJO__server__DISABLE_SSH=true
+      - FORGEJO__server__LFS_START_SERVER=true
+
+      # Database
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=forge-db:5432
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      - FORGEJO__database__PASSWD=${FORGE_DB_PASSWORD}
+
+      # Service — 닫힌 계: 외부 가입 차단, admin만 사용자 생성
+      - FORGEJO__service__DISABLE_REGISTRATION=true
+      - FORGEJO__service__REQUIRE_SIGNIN_VIEW=false
+      - FORGEJO__service__ENABLE_NOTIFY_MAIL=false
+      - FORGEJO__openid__ENABLE_OPENID_SIGNIN=false
+      - FORGEJO__openid__ENABLE_OPENID_SIGNUP=false
+
+      # Webhook — agent bus가 수신할 endpoint 허용 목록
+      # v1은 internal로 시작. 외부 endpoint 필요 시 명시 추가.
+      - FORGEJO__webhook__ALLOWED_HOST_LIST=private,loopback
+
+      # Security
+      # INSTALL_LOCK은 env로 박지 않는다 — wizard가 app.ini에 자동 true로 박고,
+      # env가 매번 false로 덮으면 "installed인데 lock 없음" 모순으로 crash loop.
+      # SECRET_KEY / INTERNAL_TOKEN / JWT_SECRET 는 첫 boot 시 wizard가 app.ini에 생성
+
+      # Logging
+      - FORGEJO__log__MODE=console
+      - FORGEJO__log__LEVEL=info
+
+    volumes:
+      - /home/junghan/docker-data/forge/data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+    networks:
+      - forge-internal
+      - proxy          # Caddy 리버스 프록시 접근용
+
+networks:
+  forge-internal:
+    driver: bridge
+  proxy:
+    external: true   # Caddy가 생성한 네트워크

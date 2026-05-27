@@ -22,6 +22,13 @@ ha.junghanacs.com {
     reverse_proxy homeassistant:8123
 }
 
+# Forgejo — 힣 에이전트 공유 코드 작업면 (포지 레이어)
+# 봇멘트의 코드면 확장. issue/PR/label/CI/comment 공통면.
+# 노트: 20260527T073823
+forge.junghanacs.com {
+    reverse_proxy forge:3000
+}
+
 # # Mattermost 채팅 서버 (비활성)
 # chat.junghanacs.com {
 #     reverse_proxy mattermost:8065
