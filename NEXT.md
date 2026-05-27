@@ -14,16 +14,23 @@
 
 | 자리 | 책임 |
 |---|---|
-| **이 repo** `docker/forge/` | Docker compose, Caddy 블록, host-specific 인프라 (oracle 박힘, alskdjf 예정) |
+| **이 repo** `docker/forge/` | Docker compose, Caddy 블록, host-specific 인프라 (oracle 박힘, alskdjf 구축 중 2026-05-27) |
 | **`forge-config` repo** | 운영 ownership — 라벨/footer/봇 행동 규약 + bin/forge CLI + agent skill SSOT |
-| **`agent-config/skills/forge`** | thin pointer → forge-config repo (앞으로 추가) |
+| **`agent-config/skills/forge`** | thin pointer (forge-config 담당자 별도 세션 디자인 진행 중) |
 
 ### 다음 한 걸음
 
-- [ ] **alskdjf 추가** — 같은 compose 구조 복사, DOMAIN/데이터 path만 호스트별 변경. SETUP.org 그대로 재사용 가능
-- [ ] **gotchas 박제** — `INSTALL_LOCK=false` env 함정 / 단일 파일 bind mount inode caching → `docker/forge/SETUP.org` 트러블슈팅 섹션은 이미 채워짐. 운영 사실로 진화하면 별도 docs/forge-gotchas.md 분리
+- [~] **alskdjf 구축 중** — 같은 compose 구조 복사, DOMAIN/데이터 path만 호스트별 변경. SETUP.org 그대로 재사용. 진행 결과는 봇로그 히스토리에 박을 것
 - [ ] **백업 cron 도입** — `pg_dump` + `tar` 일별 자동 (현재 수동)
 - [ ] **fail2ban Forgejo jail** — 도메인 노출 후 공격 패턴 관찰하고 활성
+
+### 검증된 운영 사실 (2026-05-27)
+
+- ✅ Forgejo 인스턴스 + Caddy 30초 인증서 발급
+- ✅ `glg-bot` user + token + ~/.env.local + pass 이중화
+- ✅ `glg-bot/sandbox` (검증용) — round-trip × 2 (state/list/comment + label-add)
+- ✅ `glg-bot/forge-config` (운영면) — GitHub junghan0611/forge-config의 짝, 라벨 5개 박힘
+- ✅ 함정 3개 봇로그 박제 — `INSTALL_LOCK=false` env, `write:user` scope, 단일 파일 bind mount inode caching
 
 ### 운영 책임 아님
 
