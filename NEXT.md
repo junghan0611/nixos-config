@@ -16,7 +16,7 @@
 |---|---|
 | **이 repo** `docker/forge/` | Docker compose, Caddy 블록, host-specific 인프라 (oracle 박힘, alskdjf 구축 중 2026-05-27) |
 | **`forge-config` repo** | 운영 ownership — 라벨/footer/봇 행동 규약 + bin/forge CLI + agent skill SSOT |
-| **`agent-config/skills/forge`** | thin pointer (forge-config 담당자 별도 세션 디자인 진행 중) |
+| **`agent-config/skills/forge`** | thin pointer 박힘 (별도 세션 결과 회수 2026-05-27) — SSOT는 `~/repos/gh/forge-config/bin/forge` |
 
 ### 다음 한 걸음
 
@@ -26,10 +26,14 @@
 
 ### 검증된 운영 사실 (2026-05-27)
 
-- ✅ Forgejo 인스턴스 + Caddy 30초 인증서 발급
-- ✅ `glg-bot` user + token + ~/.env.local + pass 이중화
+- ✅ Forgejo 인스턴스 + Caddy 30초 인증서 발급 (oracle)
+- ✅ work(alskdjf) forge 가동 검증 — v15.0.2 / glg-bot 응답 OK
+- ✅ `glg-bot` user + token × 2 — oracle/work 분리 (`~/.env.local` FORGE_/FORGE_WORK_ + pass `api/forge/{junghanacs,work}/glg-bot`)
+- ✅ GitHub PAT 분리 — `GITHUB_PERSONAL_TOKEN` / `GITHUB_WORK_TOKEN` 명시 호출 패턴 (의도된 `GITHUB_TOKEN` unset)
 - ✅ `glg-bot/sandbox` (검증용) — round-trip × 2 (state/list/comment + label-add)
 - ✅ `glg-bot/forge-config` (운영면) — GitHub junghan0611/forge-config의 짝, 라벨 5개 박힘
+- ✅ bin/forge minimal 4-command + agent-config thin pointer 박힘
+- ✅ OpenClaw 6봇 verboseDefault `on → full` (hot reload 적용)
 - ✅ 함정 3개 봇로그 박제 — `INSTALL_LOCK=false` env, `write:user` scope, 단일 파일 bind mount inode caching
 
 ### 운영 책임 아님
