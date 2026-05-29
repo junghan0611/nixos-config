@@ -56,21 +56,28 @@ claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M con
 - `verboseDefault: full` 전역 — 봇 내부 동작 검토 가능
 - pi-shell-acp Issue #25 분석 요청 작성: <https://github.com/junghan0611/pi-shell-acp/issues/25>
 
-### Trigger 대기
+### 진행 (2026-05-29) — 5.27 업글 + bbot native 전환 + opus 4.8
 
-- [ ] **pi-shell-acp Issue #25 분석 결과** (담당자 OpenClaw 5.22 dist 분석 → A/B/C 정책 결정)
-- [ ] **bbot turn 5-7d soak GREEN** (claude-cli 전환 안정성 확인)
+- ✅ **bbot `pi-shell-acp/claude-opus-4-7` → `claude-cli/claude-opus-4-8` 전환** — third-party harness extra-usage 빈응답 탈출. winner=claude-cli, fallbackUsed=false GREEN. claude ACP 경로는 이로써 정리 완료 (gemini만 ACP 잔존)
+- ✅ **main(default)+bbot opus 4.8 승급, 4.7 폐기** (GLG 결정). 활성 봇에 opus-4-7 잔재 없음
+- ✅ **verboseDefault full → on** 환원 (full은 도구 raw stdout까지 stream해 응답 과다)
+- ✅ **pi-shell-acp host bind-mount git pull 12 commits** (→ d864823). auth #26 fix(`ANTHROPIC_API_KEY` shim → no-auth sentinel) 반영 확인 (`stderrTail=""`). build/install 불필요 (root index.ts는 pi가 source 실행, openclaw plugin dist in-sync)
 
-### Trigger 후 검토 자리
+### 다음 한 걸음
+
+- [ ] **gemini ACP 빈응답 — pi-shell-acp Issue #27** (<https://github.com/junghan0611/pi-shell-acp/issues/27>). pi-shell-acp 최신화 후에도 gemini child ~2s 무출력 exit(placeholder recovery, isError). auth(GEMINI_API_KEY+OAuth creds)·gemini CLI 0.44.1 정상 존재 → gemini-path visible-body 회수 / backend turn-start 영역. **지금 손 못 댐, 이슈로만 추적**. gemini는 삭제 후보라 우선순위 낮음
+- [ ] **gemini 거취 결정** — (a) agent 삭제 (텔레그램 봇 회수 / workspace-gemini archival) vs (b) #27 해결 후 ACP 유지. claude-cli 비해당(Gemini 모델군)이라 native 전환 불가
+- [ ] **bbot turn 5-7d soak GREEN** (claude-cli/opus-4.8 전환 안정성 확인)
+- [ ] **pi-shell-acp Issue #25 분석 결과** (담당자 OpenClaw dist 분석 → A/B/C 정책)
+
+### 정리 후 검토 자리 (claude ACP 정리 완료 후)
 
 | 자리 | 검토 내용 |
 |---|---|
-| bbot 전환 | `pi-shell-acp/claude-opus-4-7` → `claude-cli/claude-opus-4-7`. 동일 모델, path만 변경 |
-| gemini 전환 | `pi-shell-acp/gemini-3.1-pro-preview` → 별도 `gemini-cli` provider 등록 가능한지 확인 (`@google/gemini-cli` image에 있음). 또는 agent 자체 삭제 (gpt-5.4로 통합 / 텔레그램 봇 회수 / workspace-gemini archival) |
-| compose mount 정리 | `~/.pi/agent`, `~/.claude-plugin/skills` 등 claude-cli 전환 후 의미 줄어듬. 필요한 mount만 남김 |
-| AGENTS.md §2 ACP route stance | "pi backend 자치권" stance 재검토. claude-cli native가 first-class라 stance 의미 변화 |
+| compose mount 정리 | `~/.pi/agent`, `~/.claude-plugin/skills` 등 — gemini가 마지막 ACP 사용처. gemini 거취 결정 후 필요한 mount만 남김 |
+| AGENTS.md §2 ACP route stance | "pi backend 자치권" stance 재검토. claude-cli native가 first-class + claude ACP 정리 완료라 stance 의미 변화 |
 | gotchas.md ACPX 비활성 자리 | claude-cli native와 함께 재정리 |
-| pi-shell-acp 활용 자리 | 정말 필요한 자리(다른 cloud / 다른 모델 via pi backend)만 남김 vs 완전 deprecation |
+| pi-shell-acp 활용 자리 | gemini(#27) 외 정말 필요한 자리만 남김 vs 완전 deprecation |
 
 ---
 
@@ -79,7 +86,7 @@ claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M con
 5.22 hop 완료 (`8a2f8ef` stamp). 운영은 안정이나 다음 자리 측정:
 
 - [ ] **subagent bootstrap context 축소 (#85283)** — active-memory recall sub-agent (5.4-mini lane) `status=empty` 비율 변화. 14d soak baseline 비교
-- [ ] **`@anthropic-ai/claude-code` 버전 추적** — 현재 2.1.150. Dockerfile pin 여부 검토
+- [ ] **`@anthropic-ai/claude-code` 버전 추적** — 5.27 image 재빌드 후 컨테이너 `claude` 2.1.156 (5.22 시점 2.1.150). `--help`에 `claude-opus-4-8` 명시 → opus 4.8 지원. Dockerfile pin 여부 검토
 - [ ] **OAuth refresh 자동 검증** — Anthropic `expiresAt` 8h마다 새로 받는지 24h 관찰
 - [ ] **active-memory 35s timeout 빈도** — claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능
 
