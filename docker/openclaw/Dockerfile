@@ -12,8 +12,15 @@
 # config 보강 2건: top-level auth.order 명시 + plugins.entries.codex.config.appServer.sandbox=danger-full-access
 # (Cloud VM + Docker namespace 1차 boundary 안에서 bwrap 무력화, conservative).
 # 5.12 정공법 (openai/* + agentRuntime.id=codex) 그대로 유지. plugin pi-shell-acp 8b25c1e.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.20
-FROM ghcr.io/openclaw/openclaw:2026.5.22
+# 5.22 → 5.27 (2026-05-29): Codex OAuth compaction을 OpenAI-Codex 경로로 라우팅 (host-native 레퍼런스가 맞은
+# `No_API_key_found_for_provider_openai during compaction` 수정 — glg/gpt/subagents/active-memory recall lane 영향) +
+# Codex runtime model 선해결 / app-server client 생존성 (startup·spawned-helper failure 후에도 shared client 보존) /
+# gateway hot path cache 보강. 신규 strict 검증: gateway timeout / model limit / directory limit / message option /
+# webhook 의 loose·malformed numeric 거부 (우리 config 스캔 결과 string-numeric 0건 — 통과). memory embedding provider
+# registration deprecated(compat) — memorySearch qwen3-embedding-8b 업글 후 검증. codex plugin은 stock(번들)이라
+# 베이스 이미지 bump와 함께 자동 5.27 (host-native 레퍼런스의 별도 @openclaw/codex 버전 정합 함정 비해당).
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.22
+FROM ghcr.io/openclaw/openclaw:2026.5.27
 
 USER root
 
