@@ -49,7 +49,10 @@ in {
   };
 
   # Session PATH — ~/.profile에 기록되어 SSH 비인터랙티브에서도 유효
+  # pnpm v11 uses $PNPM_HOME/bin for global command shims; keep the
+  # parent path for older v10-era shims until they are migrated.
   home.sessionPath = [
+    "/home/${vars.username}/.local/share/pnpm/bin"
     "/home/${vars.username}/.local/share/pnpm"
     "/home/${vars.username}/.local/bin"
     "/home/${vars.username}/go/bin"
@@ -175,6 +178,10 @@ in {
       eval "$(dircolors -b)"
 
       export PNPM_HOME="/home/${vars.username}/.local/share/pnpm"
+      case ":$PATH:" in
+        *":$PNPM_HOME/bin:"*) ;;
+        *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+      esac
       case ":$PATH:" in
         *":$PNPM_HOME:"*) ;;
         *) export PATH="$PNPM_HOME:$PATH" ;;
