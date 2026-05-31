@@ -182,6 +182,15 @@ Verification path (least effort first):
 
 ## 역사 — resolved / superseded (정책 근거 보존)
 
+### 4.24 warn-ignored incidents — "Warn = Error" 원칙의 근거 (2026-04)
+
+AGENTS.md §5 "Warn = Error" 원칙이 태어난 두 사건. 둘 다 여러 사이클 동안 무해한 startup noise로 치부됐다가 4.24에서 폭발했다.
+
+- **task registry malformed**: `Failed to restore task registry` (`code:"ERR_SQLITE_ERROR" errcode:779 errstr:"database disk image is malformed"`) — 4.21부터 매 gateway start마다 떴고 11일간 "tolerable startup noise"로 방치. 4.24가 restart-continuation을 같은 task registry로 라우팅하면서, malformed `runs.sqlite`가 background warning → 100% CPU silent retry loop로 돌변해 inbound message 처리가 얼어붙음. Fix: gateway 정지 → `~/openclaw/config/tasks/runs.sqlite`를 백업 폴더로 이동 → start (새 DB 자동 생성, in-flight task state만 손실, user data 없음).
+- **bonjour probe loop**: `bonjour: watchdog detected non-announced service` — 4.23부터 반복된 warn을 "ARM cloud LAN noise"로 무시. 4.24가 bonjour를 default-on plugin으로 승격하자 같은 probe 실패가 `Unhandled promise rejection: CIAO PROBING CANCELLED` → ~30s restart loop가 됨. Fix: `plugins.entries.bonjour: { enabled: false }` (현재 활성 gotcha로 박제 — 위 "활성" 참조).
+
+교훈: 두 warn을 사이클 내내 무시한 대가는 user-visible 봇 downtime이었다. warn 조사 비용은 분 단위, 방치 비용은 시간 단위.
+
 ### 4.24 → 4.26 / 4.29 lazy-staging incident — resolved on 5.2 (2026-05-03)
 
 **RESOLVED on 5.2.** 4.23 → 4.29 attempt on 2026-05-03 reproduced the same lazy-staging hot-path incident — first inbound message triggered `[plugins] alibaba/runway/tts-local-cli staging bundled runtime deps` mid-hot-path with `eventLoopDelayMaxMs=17213.4` and `[telegram] sendChatAction failed`. Same incident class as 4.26. 4.29 brought the diagnostic timeline + slow-host-startup fixes but no structural fix for "scope of plugin runtime preloads". Jumped directly to **5.2** which carries the structural fix:

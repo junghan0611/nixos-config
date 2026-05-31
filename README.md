@@ -265,9 +265,18 @@ nixos-config provides:
 
 ## Documentation
 
+### Operator Docs (handbook)
+
+운영자(사람·에이전트)가 이 repo에서 일할 때 읽는 핸드북. 세 문서가 시간축으로 분업한다 — **과거는 ROADMAP, 현재는 AGENTS, 미래는 NEXT**.
+
+- [AGENTS.md](./AGENTS.md) - **현재 운영 상태** SSOT. 디바이스 식별, OpenClaw 런타임 모델 라우팅, 키/시크릿 흐름, 업그레이드·커밋 워크플로. "지금 어떤 상태인가"만 답한다.
+- [NEXT.md](./NEXT.md) - **다음 할 일** (휘발성 후속). 미완 작업과 검증 항목. 끝나면 지우고, ✅ 완료분은 ROADMAP으로 흘려보낸다.
+- [ROADMAP.md](./ROADMAP.md) - **버전·업그레이드·운영 결정 이력** SSOT. OpenClaw 5.2→5.27 업그레이드 연혁, claude-cli 전환, 정공법들. "어떻게 여기까지 왔는가"를 답한다.
+- [docs/openclaw-gotchas.md](./docs/openclaw-gotchas.md) - 함정 카탈로그 (활성/비활성/역사). 다음 세션이 또 밟을 것.
+
 ### Configuration Guides
 
-- [CHANGELOG.md](./CHANGELOG.md) - Version history and package tracking
+- [CHANGELOG.md](./CHANGELOG.md) - NixOS 시스템 구성 변경 이력 (패키지·모듈·키바인딩, Keep a Changelog 형식) — OpenClaw 운영 이력은 ROADMAP.md로 분리
 - [Package Installation Guide](./docs/PACKAGE_GUIDE.md) - How to add packages (for AI agents and users)
 - [External Packages](./docs/EXTERNAL_PACKAGES.md) - Non-NixOS packages (uv, pnpm, Docker)
 - [Keybindings Reference](./docs/KEYBINDINGS.md) - i3 keybindings

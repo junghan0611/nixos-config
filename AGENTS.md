@@ -1,6 +1,11 @@
 # nixos-config AGENTS.md
 
-> **Next steps live in [NEXT.md](NEXT.md).** 끝나지 않은 일과 후속 검증 항목은 항상 그쪽에 둔다 — 이 문서는 *현재 운영 상태*, NEXT.md는 *앞으로 할 일*. 새 작업 마무리 시 끝나지 않은 후속이 있으면 NEXT.md에 추가하고 끝난 항목은 지운다.
+> **세 문서의 분업** — 이 문서(AGENTS.md)는 *현재 운영 상태*만, [NEXT.md](NEXT.md)는 *앞으로 할 일*만, [ROADMAP.md](ROADMAP.md)는 *어떻게 여기까지 왔는가*(버전·업그레이드·운영 결정 이력)만 답한다.
+>
+> - 끝나지 않은 일·후속 검증 → **NEXT.md**. 새 작업 마무리 시 끝난 항목은 지우고 새 후속은 추가.
+> - 본문에 날짜가 박히기 시작하면 → **ROADMAP.md**로 옮길 때다. AGENTS.md는 "지금 어떤 상태인가"만 유지.
+> - NEXT.md의 ✅ 완료 항목이 쌓이면 → ROADMAP.md로 흘려보낸다.
+> - 다음 세션이 또 밟을 함정 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
 
 Operator brief for a multi-device NixOS repository across `oracle`, `nuc`, `laptop`, `thinkpad`.
 
@@ -135,67 +140,33 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (OpenClaw 2026.5.27 baseline, 2026-05-29 갱신 — 5.22→5.27 업그레이드 + verbose on)
+### Model routing (현재: OpenClaw 2026.5.27 baseline)
 
-> **5.22 → 5.27 업그레이드 (2026-05-29, GREEN)**: 별도 host-native(비-Docker) 레퍼런스 배포가 먼저 5.27 검증 완료한 것을 reference 로 oracle(Docker) 적용. Docker 절차는 `~/openclaw/Dockerfile` `FROM ...:2026.5.22 → :2026.5.27` + `docker compose build --pull && up -d --force-recreate` 한 번. **codex plugin 은 `stock:codex/index.js` (베이스 이미지 번들)라 base bump 와 함께 자동 5.27** — host-native 레퍼런스의 별도 `@openclaw/codex` 버전 정합 함정 비해당. 5.27 핵심: Codex OAuth compaction 을 OpenAI-Codex 경로로 라우팅 (host-native 레퍼런스가 맞은 `No_API_key_found_for_provider_openai during compaction` 수정 — oracle glg/gpt/subagents/active-memory recall lane 영향) / Codex runtime model 선해결 / app-server client 생존성 / gateway hot path cache / **신규 strict 검증** (gateway timeout·model limit·directory limit·message option·webhook 의 loose·malformed numeric 거부 — 우리 config 스캔 string-numeric 0건, 통과) / memory embedding provider registration deprecated(compat, 기능 영향 없음 — 의미검색 GREEN). 검증: `OpenClaw 2026.5.27`, codex plugin 2026.5.27, ready 5.4s, 12 plugins, healthy. 라이브: main `winner=claude-cli/claude-opus-4-7 fallbackUsed=false` ("hi"), glg `winner=openai-codex/gpt-5.4 fallbackUsed=false` ("안녕", compaction/API-key 에러 0 → **OAuth 재인증 불필요**). memorySearch 308 chunks(4096d)·의미검색 score 정상. telegram 6봇 isolated polling 기동. 유일 WARN = `plugins.entries.discord` 미설치(harmless, 기존 잔재). **bbot/gemini (pi-shell-acp ACP 경로) 는 업글 후에도 빈 응답** — child 정상 spawn/exit(code=0) + context budget(1M) 계산까지 OpenClaw 메커니즘은 정상인데 claude 가 0 토큰 반환. ANTHROPIC_API_KEY UNSET(OAuth Max 경로 정상)이라, 이는 **5.27 탓이 아니라 2026-05-26 기록된 기존 이슈** — pi-shell-acp 가 same Claude SDK 를 wrap → Anthropic third-party harness 식별 → extra usage 풀 강제 → 빈 응답. pi-shell-acp plugin 은 host bind-mount v0.0.1 로 업글에 미변경. stderr 에 `registerProvider("pi-shell-acp") apiKey "ANTHROPIC_API_KEY"` legacy env-ref deprecation 경고(미래 릴리즈 breaking 예고, 현재는 resolve 됨). bbot/gemini 는 claude-cli native 전환 후보(third-party harness 식별 회피) — 별도 트랙. 롤백: Dockerfile FROM 5.22 환원(주석 보존) + rebuild·recreate.
+> 버전 업그레이드 이력 / 운영 결정 연혁 (5.2→5.27, claude-cli 전환, 정공법들)은 [ROADMAP.md](ROADMAP.md)로 이관. 이 섹션은 *현재 라우팅 상태*만 답한다.
 
-> **bbot pi-shell-acp → claude-cli 전환 + opus-4-8 지원 확인 (2026-05-29)**: bbot 이 `pi-shell-acp/claude-opus-4-7` 에서 빈 응답(third-party harness extra-usage)이라, OpenClaw 공식 native 경로 `claude-cli/claude-opus-4-7` 로 전환 → `winner=claude-cli/claude-opus-4-7 fallbackUsed=false` GREEN (Max 한도 인식, main/mini 와 동일 경로). **claude-cli 전환은 model.primary 를 `claude-cli/<id>` 로 바꾸고 agent `models` 카탈로그에 `"claude-cli/<id>": {}` 등록하면 끝 — plugins.allow/entries 수동 등록 불필요(코어 내장 runtime alias, 모델 ID 등장만으로 auto-enable).** gemini 는 Gemini 모델군이라 claude-cli 비해당(삭제 예정 유지). **opus 4.8 지원 확인됨**: 컨테이너 `claude` 바이너리 2.1.156 이 `--help` 에 `claude-opus-4-8` 명시 + bbot primary 를 `claude-cli/claude-opus-4-8` 로 두고 라이브 호출 시 `winner=claude-cli/claude-opus-4-8 fallbackUsed=false`, 봇 자기보고 모델명 `claude-opus-4-8`, `cli exec: provider=claude-cli model=claude-opus-4-8` 로그 확인. **함정**: `--model claude-cli/claude-opus-4-8` CLI override 는 "not allowed for agent" 으로 막힘 — 미지원이 아니라 override allow-list 가 primary 기준이라 발생하는 별개 quirk. **primary 로 지정하면 정상**. **2026-05-29 GLG 결정 — main(default)+bbot opus 4.8 승급, 4.7 폐기**: main/bbot primary 모두 `claude-cli/claude-opus-4-8`, 카탈로그의 opus-4-7 entry 도 4-8 로 교체. 라이브 검증 GREEN (main `winner=claude-cli/claude-opus-4-8`, 자기보고 `claude-opus-4-8`; bbot 동일). glg/gpt 는 Codex OAuth, mini 는 sonnet 4-6 이라 무관.
-
-> **pi-shell-acp 최신화 (2026-05-29)**: gemini 가 ACP 경로를 쓰므로 host bind-mount `~/.pi/agent/git/github.com/junghan0611/pi-shell-acp` 를 `git pull --ff-only` 로 12 commits 최신화(→ d864823). 핵심 반영: `ef56394 fix(auth): #26 — ANTHROPIC_API_KEY shim → no-auth sentinel` (이전 ACP turn stderr 의 `registerProvider apiKey "ANTHROPIC_API_KEY"` legacy env-ref deprecation 경고 제거 확인 — restart 후 `stderrTail=""`). **build/install 불필요**: auth 수정은 root `index.ts`(pi 런타임이 source 실행), `plugins/openclaw/dist/index.js` 는 미변경(src 와 timestamp in-sync), runtime deps 변경 없음 → gateway restart 만으로 반영. pi 런타임 `@earendil-works/pi-coding-agent@0.77.0` 유지. **gemini 는 여전히 빈 응답** — auth(GEMINI_API_KEY SET + `/home/node/.gemini` OAuth creds + gemini CLI 0.44.1) 모두 정상 존재하나 child 가 ~2s 무출력 exit(placeholder recovery). 이는 pi-shell-acp gemini-path 의 visible-body 회수 미해결 영역(AGENTS.md §2 plugin-boundary 책임)으로 버전 bump 만으로 안 풀림. gemini 는 삭제 예정 — 별도 트랙.
-
-**LLM 호출 — 분기 (2026-05-26)**:
+**LLM 호출 — 분기**:
 - **main**: Anthropic Max via `claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
 - **glg / gpt**: Codex OAuth ($100 plan)
-- **mini**: Codex OAuth, but **직접 대화 X** — active-memory 영역 보조 lane으로 격리 (운영 정책 2026-05-26)
-- **bbot / gemini**: pi-shell-acp ACP route (별도 §4)
+- **mini**: Codex OAuth, but **직접 대화 X** — active-memory 영역 보조 lane으로 격리
+- **gemini**: pi-shell-acp ACP route (유일한 ACP 잔존 봇 — 삭제 예정, §4)
 
 Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)는 **삭제 예정**.
 
-**Fallback 정공법 (2026-05-26)**: 모든 봇 `fallbacks: []` 비움. `agents.defaults.model.fallbacks: []` 포함. 정공법은 **안 되면 안 되는 거 — 응답 막히면 모델 자체를 바꾼다**. Codex sidecar stuck / extra usage 소진 등으로 다른 path로 자동 fallback (quota inflation / 다른 path 소진 연쇄) 차단. 5.12 baseline의 `fallbacks: ["openai/gpt-5.4"]` 명시 정책 폐기.
-
-**5.12 model ID 정규화 — 정공법 (2026-05-15)**: `openai-codex/*` provider/model이 5.12에서 deprecate. 새 형식은 `openai/*` + `agentRuntime.id="codex"` marker. 즉 model ID는 OpenAI catalog로 통합되고, 어떤 OAuth path로 라우트할지는 별도 marker로 표시. 호스트 `codex login`으로 받은 OAuth profile은 그대로 보존되고 (`auth.profiles."openai-codex:junghanacs@gmail.com"` 키 이름 그대로), agentRuntime marker가 새 model ID와 기존 profile을 매핑. **재로그인 불필요**.
-
-**적용 절차**:
-1. `openclaw doctor --fix --force --yes --non-interactive` (in-container) — `agents.{defaults,list[]}.model` rename + 모든 `models.openai/gpt-X` 항목에 `agentRuntime.{id: "codex"}` marker 추가. atomic, 65 paths, backup 자동 생성.
-2. doctor가 **놓치는 곳**:
-   - per-agent `agents.list[].model`이 bare string으로 남음 → strict 검증 잡힘 ("a bare string with no fallbacks ... clobbers defaults"). 수동으로 `{primary, fallbacks}` object로 변환 필요.
-   - nested plugin config (예: `plugins.entries.active-memory.config.model`)는 doctor 미발견. 수동 patch 필요.
-
-**Fallback chain (5.12 신규)**: `agents.defaults.model.fallbacks: ["openai/gpt-5.4"]` + per-agent `agents.list[].model.fallbacks: ["openai/gpt-5.4"]` 명시. 5.12에서 default fallbacks는 per-agent에서 자동 inherit 안 됨 (clobber). 5.5(main/gpt) 봇은 5.4로 자동 fallback. 5.4 봇(glg/bbot)은 fallback도 5.4라 실효 없지만 글로벌 일관성 유지. mini는 primary 5.4-mini라 fallback이 5.4로 떨어지면 quota inflation (0.29x→1.0x) — 단 같은 OAuth 계정 quota 소진 시엔 5.4도 같이 막혀 실효 미미. gemini는 Copilot 별도 라우트라 `fallbacks: []`.
-
-**OAuth profile secret key (5.12 신규 보안)**: 5.12에서 OAuth profile credential을 disk에 plain JSON으로 두지 않고 AES 암호화. 암호화 key는 stateDir(`~/.openclaw`) **외부**에 보관 (state backup/sync에 secret이 같이 끌려가지 않게). XDG 표준 경로 `$HOME/.config/openclaw/auth-profile-secret-key`. **Docker 추가 mount 필수**: `./auth-profile-secrets:/home/node/.config/openclaw`. 누락 시 doctor가 "OAuth profile secret key source is required to persist OAuth profile secrets" 에러를 내고 codex harness 등록 실패 → 모든 OAuth 봇 응답 불가. host의 secret key file은 별도 안전 백업 필요 — 분실 시 모든 OAuth profile 재로그인.
-
-**plugins.allow 정공법 (5.12 codex 외부화)**: 5.12에서 codex가 `@openclaw/codex` 별도 plugin으로 외부화. `plugins.allow`가 빈 상태면 "non-bundled plugins may auto-load" WARN. 정공법은 사용 plugin 전체 명시: `["telegram","perplexity","google","anthropic","openai","github-copilot","active-memory","memory-core","deepseek","codex","browser","canvas","device-pair","file-transfer","phone-control","talk-voice"]`. **함정**: `["codex"]`만 박으면 명시 안 한 bundled (active-memory, telegram, file-transfer 등) 모두 disabled되어 봇 polling/응답 깨짐.
+**Fallback**: 모든 봇 `fallbacks: []`. 정공법은 **안 되면 안 되는 거 — 응답 막히면 자동 fallback이 아니라 모델 자체를 바꾼다**. 자동 fallback이 부르는 quota inflation / 다른 path 소진 연쇄를 차단. 근거·이력은 [ROADMAP.md](ROADMAP.md).
 
 **Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `claude-cli/*` = Claude Code CLI spawn, `pi-shell-acp/*` = ACP route):
 
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
-| **main** | **`claude-cli/claude-opus-4-8`** | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. **2026-05-29 opus 4.8 승급** (4.7 폐기 — GLG 결정). Max 20x rate tier, 1M context |
+| **main** | `claude-cli/claude-opus-4-8` | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. Max 20x rate tier, 1M context |
 | glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot`. Codex OAuth |
-| gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 (2026-05-09~) |
-| **bbot** | **`claude-cli/claude-opus-4-8`** | `workspace-bbot/` | **off** | **✓** (2026-05-16 추가) | `@glg_b_bot`. **2026-05-29 pi-shell-acp → claude-cli native 전환 + opus 4.8 승급** (third-party harness extra-usage 빈응답 탈출, Max 한도 인식). 카탈로그 `claude-cli/claude-opus-4-8`·`pi-shell-acp/claude-opus-4-8`. 4.7 폐기 |
-| **mini** | **`claude-cli/claude-sonnet-4-6`** | `workspace-mini/` | off | — | **2026-05-26 검증 lane** — sonnet 4.6 단독 동작. active-memory 빠진 baseline (대화 응답 깨끗) |
-| **gemini** | **`pi-shell-acp/gemini-3.1-pro-preview`** | `workspace-gemini/` | partial (테스트) | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. claude-cli 전환 검토 후순위 |
-| subagents | `openai/gpt-5.4` | — | — | — | |
+| gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 |
+| **bbot** | `claude-cli/claude-opus-4-8` | `workspace-bbot/` | off | ✓ | `@glg_b_bot`. claude-cli native (pi-shell-acp 전환 완료) |
+| mini | `claude-cli/claude-sonnet-4-6` | `workspace-mini/` | off | — | sonnet 4.6 단독. active-memory 제외 검증 lane |
+| **gemini** | `pi-shell-acp/gemini-3.1-pro-preview` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. 빈응답 미해결 — 삭제 예정 |
+| subagents | `openai/gpt-5.4` | — | — | — | active-memory recall lane은 `openai/gpt-5.4-mini`로 분리 (main lane quota 보호) |
 
-> **claude-cli provider (2026-05-26 추가, 5.22 갱신)**: OpenClaw native first-class Claude path. Codex와 짝. **5.20까지** `@anthropic-ai/claude-agent-sdk` v0.3.143 (SDK + 번들 `claude` binary) 자동 install. **5.22부터** raw `@anthropic-ai/sdk@0.97.1` (API client만)로 슬림화 — `claude` binary 별도 install 필요 (`npm i -g @anthropic-ai/claude-code` Dockerfile RUN 단계). 실제 invocation은 `claude -p` 자체 (`--input-format stream-json --output-format stream-json --session-id <id> [--resume]` + `--permission-prompt-tool stdio` + `--verbose`). 세션 jsonl은 `~/.claude/projects/-<cwd-encoded>/<session-id>.jsonl` — 호스트 `~/.claude/projects/`와 컨테이너 `/home/node/.claude/projects/`가 mount 공유라 호스트 Claude Code 세션과 동일 디렉토리에 섞임 (sub-dir로 격리). OAuth는 `/home/node/.claude/.credentials.json`의 `claudeAiOauth` (refresh_token 자동 갱신). **결제 분리의 핵심**: pi-shell-acp가 같은 SDK를 wrap하면 Anthropic이 **third-party harness 식별** → extra usage 풀로 강제 (2026-05-26 KST pi 테스트: `400 You're out of extra usage`). OpenClaw native claude-cli는 same SDK를 direct import → **Pro/Max 한도로 인식** (자기인식 응답: "Anthropic의 공식 CLI 도구인 Claude Code 환경에서 작동 중", `rate_limit_event.isUsingOverage=false` + `overageStatus=rejected overageDisabledReason=org_level_disabled` 검증). 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라지는 자리.
->
-> **EPIPE 회피 (2026-05-26)**: 5.22 image는 `claude` binary 안 들고 옴. `command:"claude"` (dist/cli-backend-CO2SZJAY.js)가 PATH에서 못 찾으면 child 4ms 만에 exit → parent stdin EPIPE → "⚠️ Agent failed before reply". Dockerfile에 `@anthropic-ai/claude-code` 명시. → 자세한 incident는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
->
-> **Streaming policy 확장 (2026-05-26)**: `claude-cli` 라우트 봇도 **streaming=off 권장** — pi-shell-acp 5-16 incident 동일 패턴 (partial mode editMessageText 사이클이 active-memory diagnostic 메시지로 본문 회귀해 답변이 "보였다 사라짐"). `channels.telegram.accounts.{default,mini}.streaming.mode: off` 박음 (bbot 패턴 일관). final 1회 flush.
->
-> **1M context (2026-05-26 발견)**: Claude Code 환경 (`claude-cli` provider)에선 sonnet 4.6 / opus 4.7 모두 **1M context로 잡힘** (`/status` "Context: 159k/1.0m" 검증). third-party API 직접 호출 시 200k와 대조. 즉 native claude-cli path가 결제 풀(Pro/Max 한도) + capability(1M ctx) 둘 다 third-party와 다른 자리. 큰 context 작업이 sub-agent rotate 없이 한 turn에 들어감 — Codex 라우트 200k 한도와 본질적 차이.
->
-> **Workspace-aware skills (2026-05-26 검증)**: default 봇 turn이 자기 workspace (`/home/node/.openclaw/workspace/`) 안의 skills를 자체 호출. 즉 workspace-local skill 동작 정상 — claude code SDK가 workspace cwd를 root로 보고 skill discovery 진행. `~/.pi/agent/claude-plugin/skills/*` 같은 외부 mount 의존 없음.
->
-> **verboseDefault on (2026-05-29, full→on 환원)**: `agents.defaults.verboseDefault: "on"` 전역. 2026-05-27 `full` 로 올렸다가, full 은 도구 출력 자체까지 텔레그램에 stream 해 응답이 과도하게 길어진다는 운영 판단으로 `on` 으로 되돌림 (full→on). `on` 은 도구 호출 시점/sub-agent trace 안내는 유지하되 raw 도구 stdout 본문은 채널에 붙이지 않는다. 파일 변경 감지는 되었지만 hot reload 적용 로그가 애매했던 적이 있어, 이 값 변경 후에는 gateway restart 로 확정 적용한다 (`config change detected; evaluating reload (agents.defaults.verboseDefault)` 로그 확인). 봇별 `/verbose full|on|off`로 session-level 토글 가능.
->
-> **Tool-trace inline 해소 (2026-05-16)**: `~/.pi/agent/settings.json` 의 `piShellAcpProvider.showToolNotifications: true → false` 한 줄로 정착. 이전엔 pi backend가 final assistant text 안에 `[tool:start] Skill / [tool:done] Read File — ...` 같은 trace를 inline string으로 박았는데 (plugin `fa3b8f7` block-type filter는 통과 — 단일 `text` block 내부 inline이라 strip 불가), pi-CLI의 child가 매 turn spawn 시 settings 새로 읽는 구조라 gateway restart 없이 즉시 적용됨. workspace-local 새 파일 만들 필요 없음 — 글로벌 한 줄로 충분.
->
-> **Streaming policy (2026-05-16)**: pi-shell-acp 라우트 봇은 **streaming=off 권장 기본값**. 이유: partial mode는 editMessageText 사이클이 mid-stream wrong-final 회귀 시점에 본문을 짧은 metadata로 replace해 UX 회귀 (2026-05-16 04:01 incident). off는 final 1회 flush라 plugin `fa3b8f7` role/abnormal guard와 잘 합치고 디버그도 쉽다. gemini는 turn 검증 중이라 partial 유지 — 검증 완료 후 off로 전환.
->
-> **Active-memory ACP path 호환성 (2026-05-16)**: bbot 추가는 fa3b8f7 (user-role echo로의 final flip 차단 가드) 적용 후 안전성 확보. recall sub-agent는 별도 `openai/gpt-5.4-mini` lane으로 OAuth quota 격리. 메인 lane(pi-shell-acp/opus-4-7)과 충돌 없음.
+> **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native `claude-cli`는 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. claude-cli 전환은 model.primary를 `claude-cli/<id>`로 바꾸고 카탈로그에 `"claude-cli/<id>": {}` 등록하면 끝(plugins.allow 수동 등록 불필요). 전환 타임라인·EPIPE 함정·streaming off 근거는 [ROADMAP.md](ROADMAP.md).
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
@@ -204,15 +175,11 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 
 > 운영 컨텍스트 메모: catalog 표기가 `266k/1025k` 같은 "이론치/확장치"로 보여도 라이브 `/status`는 보통 200k로 잡힌다. 5.4 vs 5.5 컨텍스트 트레이드오프는 사실상 없음.
 
-> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. 우리 배치 원칙: 가벼운 turn은 5.4-mini, 가족/일반은 5.4, 신형 트라이얼은 5.5(gpt 봇 단독). active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호.
+> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. 배치 원칙: 가벼운 turn은 5.4-mini, 가족/일반은 5.4, 신형 트라이얼은 5.5(gpt 봇 단독). active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호.
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`).
 
-ACPX disabled (`plugins.entries.acpx.enabled=false` + `acp.enabled=false`, 5.2가 `@openclaw/acpx` beta로 externalize). 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
-
-5.7 업그레이드 (2026-05-08 두 번째): Codex OAuth 라우트 보존 (5.5 doctor rewrite 버그는 5.6에서 revert). `agent model: openai-codex/gpt-5.4` 그대로. ready 5.7s, 6 텔레그램 봇 정상 기동.
-
-5.12 업그레이드 (2026-05-15): codex provider 외부화 + model ID 정규화 + OAuth profile 암호화 + plugins.allow 명시 — 위 정공법 4종 모두 적용. ready 8.8s, 10 plugins (5.7의 9 + codex), 6봇 polling 정상 기동. Telegram isolated polling 6 spool dir로 분리 (`/home/node/.openclaw/telegram/ingress-spool-{default,glg,gpt,gemini,mini,bbot}`) — 5.12 신규 "isolated polling, durable local spooling" 기능. memory streaming RSS 252→27 MiB, peak 부하 감소. memorySearch (`qwen3-embedding-8b` via OpenRouter, 4096d) 한글 query 정상 매칭 검증 완료. **Trip-up**: 첫 boot 후 default 봇 `getMe` fetch-timeout 1건 발생 → isolated polling cycle stuck → restart로 해소. 5.12 isolated polling은 일시적 timeout에 polling thread를 죽일 수 있어 boot 직후 fetch-timeout 발생 시 즉시 restart 필요 (per-account isolated restart는 CLI 옵션 없음).
+ACPX disabled (`plugins.entries.acpx.enabled=false` + `acp.enabled=false`). 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
 
 라이브 값 확인:
 
@@ -225,26 +192,16 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — main/glg/gpt/bbot (bbot 2026-05-16 추가)
-
-5.7+8B baseline에서 gpt 단독으로 24h 관찰 (2026-05-08 17:58 KST 시작) → 2026-05-09 12:59 KST main/glg/mini 추가 → 15:55 KST mini 제외 (mini는 5.4-mini로 되돌리고 active-memory도 빠짐 — 가벼운/빠른 turn 용도라 5–10s recall latency도 비용 0.29x→1.0x→2.0x 같은 인플레이션도 안 어울림). 그 시점 gemini(삭제 예정)/bbot(ACP path 호환성 미검증) 제외. **2026-05-16 bbot 추가** — Phase 1.8 β 통과 + plugin fa3b8f7 (user-role echo final flip 차단) 적용 후 ACP path 호환성 확보. recall sub-agent는 별도 `openai/gpt-5.4-mini` lane이라 메인 lane(pi-shell-acp/opus-4-7)과 OAuth/path 격리.
+### Active memory — 현재 main/glg/gpt/bbot 활성
 
 운영 config:
-- `agents: ["main", "glg", "gpt", "bbot"]` — 4개 활성
-- `model: "openai/gpt-5.4-mini"` — recall lane을 mini로 분리 (5.12 정공법: `openai-codex/*` → `openai/*` + `agentRuntime.id="codex"`). main lane과 OAuth quota 경합 회피
+- `agents: ["main", "glg", "gpt", "bbot"]` — 4개 활성 (mini/gemini 제외)
+- `model: "openai/gpt-5.4-mini"` — recall lane을 mini로 분리, main lane과 OAuth quota 경합 회피
 - `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
 - `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호
-- `maxSummaryChars: 220` — docs default. 한국어→영어 요약 가능
-- `thinking: "off"`, `persistTranscripts: false`, `logging: true` — 유지
+- `maxSummaryChars: 220` (docs default, 한국어→영어 요약 가능), `thinking: "off"`, `persistTranscripts: false`, `logging: true`
 
-24h 관찰 결과 (2026-05-08 08:58 ~ 2026-05-09 03:45 UTC, gpt 봇 14 invocation):
-- status: ok 4회 (28.6%) / empty 10회 (71.4%) / timeout 0회
-- elapsedMs: min 5388 / max 13256 / 평균 ~8.3s. 13.2s spike 1건은 동시 발생한 `event_loop_delay 1678ms` liveness warning과 상관 (Oracle ARM 일시 부하)
-- summaryChars (ok 호출): 164 / 178 / 203 / 216 — 모두 220 한도 내, 한국어→영어 요약 정상
-- 해석: codex OAuth path는 모델 크기와 무관하게 5–10s latency 본질. timeout 0건 — `setupGraceTimeoutMs=30000`이 매번 5s timeoutMs 덮음. strict promptStyle이 false-positive 차단 작동
-- 적용은 hot reload (`config hot reload applied (plugins.entries.active-memory.config.agents)`) — gateway restart 불필요했지만 안전 차원에서 추가 restart 수행
-
-비활성 절차 / 함정은 [docs/openclaw-gotchas.md "비활성 — active-memory"](docs/openclaw-gotchas.md) 그대로 유지.
+도입 타임라인·24h 관찰 결과(latency 분포, status ok/empty 비율)는 [ROADMAP.md](ROADMAP.md) "active-memory 도입·관찰". 비활성 절차 / 함정은 [docs/openclaw-gotchas.md "비활성 — active-memory"](docs/openclaw-gotchas.md).
 
 ### Memory / embedding layers (since 2026-05-08 baseline stamp)
 
@@ -256,10 +213,8 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding) b
 | andenken (org KB + sessions) | OpenRouter (query) / local vLLM (index) | `qwen/qwen3-embedding-4b` | 2560 | LanceDB (indexing host) | **skill needed — not deployed** |
 
 - `agents.defaults.memorySearch.experimental.sessionMemory: true` since 2026-05-08 — sessions transcript indexing finally activated. Before that the `sources: ["sessions"]` line was being silently dropped by `normalizeSources()` because the experimental gate was closed. Verify with `openclaw memory status --agent <id>` showing `Sources: memory, sessions` and a non-zero `sessions ·` row under `By source:`.
-- **5.2 baseline (2026-05-08 06:14 UTC)**: 6 agents force-reindexed → total 2540 chunks (1234 memory + 1306 sessions). main 73 / glg 1599 / gpt 436 / gemini 266 / mini 73 / bbot 93. tool-call heavy bots had aggressive sanitization on indexable content.
-- **5.7 baseline (2026-05-08 10:30 UTC)**: same 6 agents force-reindexed → total **4981 chunks (1234 memory + 3747 sessions, +187% sessions)**. main 303 / glg 1831 / gpt 1923 / gemini 670 / mini 127 / bbot 127. memory chunks unchanged → chunking algorithm constant. sessions chunks grew because 5.7 transcript-hygiene preserves delivered assistant replies on disk and applies provider-specific sanitization only to outbound payloads, so indexing now sees full transcript instead of pre-stripped content. Tool-call heavy bots (main 8.4×, gpt 4.4×, gemini 2.5×) gained the most; family-dialog glg gained little (1.13×) because its turns survived 5.2 sanitization already.
-- 5.7 신규 분리 리포트: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider가 별도로 진단됨. `vec0.so` 경로 확인 가능.
-- **8B baseline (2026-05-08 16:43 UTC)**: 4B → 8B 전환. OpenRouter 가격 4B $0.02/M → 8B **$0.01/M (절반)**. native dim 2560 → **4096** (matryoshka truncate 안 함, 모델 풀 활용). 절차: `agents.defaults.memorySearch.model: "qwen/qwen3-embedding-8b"` + `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` 삭제 + gateway restart → schema 자동 4096d 재생성. **Reindex 필수** (4B와 8B 임베딩 공간은 직교: 같은 텍스트 cos(4B,8B)≈0). 6 agents force reindex 결과: total **4982 chunks (1234 memory + 3748 sessions)** — 5.7+4B의 4981과 거의 동일 (chunking 알고리즘은 모델 독립). 분포도 그대로 (main 303 / glg 1832 / gpt 1923 / gemini 670 / mini 127 / bbot 127). reindex 소요 1290s (~21분, glg 362s + gpt 616s). storage 621M → **975M (1.57×)**. OpenRouter privacy 설정에서 8B endpoint 허용 필요 (default 차단되며 "No endpoints available matching your guardrail restrictions" 에러).
+- baseline reindex chunk 수치 이력 (5.2 → 5.7 → 8B 4096d 전환 절차 + chunk 분포 + storage)은 [ROADMAP.md](ROADMAP.md) "임베딩 baseline 전환". 현재 baseline = 8B 4096d, 총 ~4982 chunks. **재현 함정**: 8B 전환 시 `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` 삭제 + restart로 schema 4096d 재생성 후 **reindex 필수**(4B↔8B 임베딩 공간 직교). OpenRouter privacy에서 8B endpoint 허용 필요(default 차단 시 "No endpoints available matching your guardrail restrictions").
+- 진단: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider 별도 진단, `vec0.so` 경로 확인.
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
 - `~/org:/home/node/org:ro` is for file access (denotecli / bibcli / botlog), not embedding. Do not remove.
 - andenken layer is still separate by *storage* (LanceDB vs sqlite), *corpus* (org KB vs OpenClaw sessions/memory), and **since 2026-05-08 16:00 also by *model*** (4B vs 8B) until andenken follows. To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle — but cross-store retrieval will be slightly miscalibrated until both layers share a model again.
@@ -340,10 +295,8 @@ Implication: if `docker compose up` runs from a shell that never sourced `.env.l
 
 Treat **every** OpenClaw gateway WARN as an Error until proven harmless. Silent retry loops have no log signature and look identical to "idle" CPU activity from the outside. The cost of investigating a warn is minutes; the cost of letting one ride through an upgrade can be hours of family-bot downtime.
 
-Concrete cases observed in this deployment:
+이 원칙을 낳은 구체 사건(4.24 task registry / bonjour silent loop)은 [docs/openclaw-gotchas.md "역사 — Warn = Error 원칙의 근거"](docs/openclaw-gotchas.md)에 박제. 다음 함정만 운영 절차로 남긴다:
 
-- `Failed to restore task registry` (`code:"ERR_SQLITE_ERROR" errcode:779 errstr:"database disk image is malformed"`) — appeared on every gateway start from 4.21 onward, was treated as "tolerable startup noise" for 11 days. 4.24 then routed restart-continuation through the same task registry; the malformed `runs.sqlite` flipped from background warning into a 100% CPU silent retry loop that froze inbound message processing. Fix: stop gateway, move `~/openclaw/config/tasks/runs.sqlite` to a backup folder, start gateway — new DB is auto-created (in-flight task state only, no user data).
-- `bonjour: watchdog detected non-announced service` — repeating warn from 4.23 onward, ignored as "ARM cloud LAN noise". 4.24 promoted bonjour to a default-on plugin, the same probe failure became `Unhandled promise rejection: CIAO PROBING CANCELLED` and took the gateway into a ~30s restart loop. Fix: `plugins.entries.bonjour: { enabled: false }`.
 - Any `database disk image is malformed` on **any** SQLite under `~/openclaw/config/`: do not assume a single corruption. Run integrity check across the set:
 
   ```bash

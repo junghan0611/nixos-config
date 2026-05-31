@@ -24,17 +24,9 @@
 - [ ] **백업 cron 도입** — `pg_dump` + `tar` 일별 자동 (현재 수동)
 - [ ] **fail2ban Forgejo jail** — 도메인 노출 후 공격 패턴 관찰하고 활성
 
-### 검증된 운영 사실 (2026-05-27)
+### 검증된 운영 사실
 
-- ✅ Forgejo 인스턴스 + Caddy 30초 인증서 발급 (oracle)
-- ✅ work(alskdjf) forge 가동 검증 — v15.0.2 / glg-bot 응답 OK
-- ✅ `glg-bot` user + token × 2 — oracle/work 분리 (`~/.env.local` FORGE_/FORGE_WORK_ + pass `api/forge/{junghanacs,work}/glg-bot`)
-- ✅ GitHub PAT 분리 — `GITHUB_PERSONAL_TOKEN` / `GITHUB_WORK_TOKEN` 명시 호출 패턴 (의도된 `GITHUB_TOKEN` unset)
-- ✅ `glg-bot/sandbox` (검증용) — round-trip × 2 (state/list/comment + label-add)
-- ✅ `glg-bot/forge-config` (운영면) — GitHub junghan0611/forge-config의 짝, 라벨 5개 박힘
-- ✅ bin/forge minimal 4-command + agent-config thin pointer 박힘
-- ✅ OpenClaw 6봇 verboseDefault `on → full` (2026-05-27 gateway restart로 확정 적용)
-- ✅ 함정 3개 봇로그 박제 — `INSTALL_LOCK=false` env, `write:user` scope, 단일 파일 bind mount inode caching
+Forge 가동 검증 완료분(인스턴스 + Caddy 30초 인증서, work alskdjf v15.0.2, glg-bot user/token × 2, GitHub PAT 분리, sandbox round-trip, forge-config 라벨 5개, bin/forge 4-command, 함정 3개 봇로그 박제)은 [ROADMAP.md](ROADMAP.md) "Forge 레이어 가동"으로 이관. (verboseDefault는 이후 full→on 환원 — ROADMAP 참조.)
 
 ### 운영 책임 아님
 
@@ -48,20 +40,7 @@
 
 claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M context + workspace-aware skills 모두 충족 → pi-shell-acp wrap path의 필요성 크게 감소. 정리 사이클 진행 중.
 
-### 검증된 자리 (2026-05-26)
-
-- main `claude-cli/claude-opus-4-7` + mini `claude-cli/claude-sonnet-4-6` 텔레그램 turn GREEN
-- 1M context 잡힘 (third-party API 200k와 본질적 차이)
-- workspace-aware skill 호출 정상
-- `verboseDefault: full` 전역 — 봇 내부 동작 검토 가능
-- pi-shell-acp Issue #25 분석 요청 작성: <https://github.com/junghan0611/pi-shell-acp/issues/25>
-
-### 진행 (2026-05-29) — 5.27 업글 + bbot native 전환 + opus 4.8
-
-- ✅ **bbot `pi-shell-acp/claude-opus-4-7` → `claude-cli/claude-opus-4-8` 전환** — third-party harness extra-usage 빈응답 탈출. winner=claude-cli, fallbackUsed=false GREEN. claude ACP 경로는 이로써 정리 완료 (gemini만 ACP 잔존)
-- ✅ **main(default)+bbot opus 4.8 승급, 4.7 폐기** (GLG 결정). 활성 봇에 opus-4-7 잔재 없음
-- ✅ **verboseDefault full → on** 환원 (full은 도구 raw stdout까지 stream해 응답 과다)
-- ✅ **pi-shell-acp host bind-mount git pull 12 commits** (→ d864823). auth #26 fix(`ANTHROPIC_API_KEY` shim → no-auth sentinel) 반영 확인 (`stderrTail=""`). build/install 불필요 (root index.ts는 pi가 source 실행, openclaw plugin dist in-sync)
+> 완료분(2026-05-26 검증 자리, 2026-05-29 bbot native 전환·opus 4.8 승급·verbose full→on·pi-shell-acp 12 commits 최신화)은 [ROADMAP.md](ROADMAP.md) "운영 결정 이력"으로 이관. pi-shell-acp Issue #25 분석 요청: <https://github.com/junghan0611/pi-shell-acp/issues/25>.
 
 ### 다음 한 걸음
 
