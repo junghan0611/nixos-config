@@ -21,14 +21,23 @@
 
 ---
 
-## 현재 위치 (2026-05-29 기준)
+## 현재 위치 — `v2026.5.31` (첫 CalVer 태그)
 
-- ✅ **OpenClaw 2026.5.27 baseline** (2026-05-29) — Docker 이미지 5.22→5.27, ready 5.4s, 12 plugins, 6봇 isolated polling. Codex OAuth compaction 경로 수정 반영.
-- ✅ **main(default) + bbot opus 4.8 승급** (2026-05-29, GLG 결정) — 둘 다 `claude-cli/claude-opus-4-8`, opus 4.7 폐기.
-- ✅ **bbot pi-shell-acp → claude-cli native 전환** (2026-05-29) — third-party harness extra-usage 빈응답 탈출. claude ACP 경로 정리 완료 (gemini만 ACP 잔존).
-- ✅ **verboseDefault `full` → `on` 환원** (2026-05-29) — full은 도구 raw stdout까지 stream해 응답 과다.
-- ✅ **Forge 레이어 가동** (2026-05-27) — `forge.junghanacs.com` Forgejo 15.0.2 + alskdjf work forge. 상세는 [NEXT.md §0](NEXT.md).
-- 🔵 **다음** — gemini 거취 결정(삭제 vs #27 해결), bbot opus-4.8 soak GREEN, pi-shell-acp 의존 정리 마무리. → [NEXT.md](NEXT.md).
+이 repo의 첫 CalVer 스냅샷. 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 상세는 아래 업그레이드/결정 이력.
+
+**인프라 형상**
+- **디바이스 4종**: `oracle`(aarch64 클라우드 VM, headless, 봇 런타임) / `nuc`(home server) / `laptop`(Samsung NT930SBE) / `thinkpad`(work GUI). i3는 oracle 제외 GUI 디바이스에만, oracle은 headless 프로파일.
+- **Docker 스택 (Oracle, 설정값까지 공개)**: openclaw · forge · caddy · remark42 · homeassistant · geworfen · umami · autoheal (+ 비활성 mattermost/synapse). nixos-config 커스텀만으로 이 oracle 형상을 재현 가능 — 반년+ 담금질한 공개 인프라.
+- **NixOS 채널**: `nixos-25.11` + home-manager 25.11 (stateVersion 25.05 고정). **26.05 업그레이드 대기** — 25.11 EOL 2026-06-30, → [NEXT.md §8](NEXT.md).
+
+**봇 런타임 요약**
+- OpenClaw **2026.5.28**, ready 4.6s, 13 plugins, healthy.
+- main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
+- gemini만 legacy ACP 잔존 (거취 결정 대기, [NEXT.md §1](NEXT.md)).
+
+**문서·릴리즈 체계**
+- AGENTS.md(현재 상태) / NEXT.md(다음) / ROADMAP.md(이력·서사) / CHANGELOG.md(무엇이 바뀌었나, CalVer) + 디바이스 핸드북 ORACLE.md·THINKPAD.md + docs/openclaw-gotchas.md(함정).
+- 릴리즈: agent-config `tag-release` 스킬(CalVer `vYYYY.M.D`) + `commit` 스킬(daily loop). `v2026.5.31`이 첫 적용.
 
 ---
 

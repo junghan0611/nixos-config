@@ -1,14 +1,49 @@
 # Changelog
 
-All notable changes to this NixOS configuration will be documented in this file.
+이 NixOS 설정의 주요 변경 기록.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+`v2026.5.31`부터 **CalVer 날짜 태그**(`vYYYY.M.D`, 선택적 `-beta.N`/`-rc.N`)를 쓴다 —
+이 repo는 버전 라이브러리가 아니라 재현 가능한 인프라라, 의미는 날짜가 담는다.
+아래 `0.1.0`~`0.3.2`는 이전 SemVer 이력으로 그대로 보존한다. 서사(왜/어떻게)는
+[ROADMAP.md](ROADMAP.md)에, 이 파일은 "무엇이 바뀌었나" 로그다.
 
-## [Unreleased]
+## Unreleased
 
-- **i3/xkb**: CapsLock → Menu 키 매핑 추가 (Emacs 한/영 토글용)
-- **microsoft-edge**: 144.0.3719.115 → 145.0.3800.70 업데이트 (144 크래시 해결, pinned rev 갱신)
+## v2026.5.31
+
+첫 CalVer 스냅샷 — 마지막 SemVer 릴리즈(`0.3.2`, 2026-02-22) 이후 전부를 접어 넣는다.
+OpenClaw 봇런타임 버전 hop(2026.2.x → 5.28)은 여기선 요약하고, 전체 운영 이력은
+[ROADMAP.md](ROADMAP.md)에 있다.
+
+### Added
+- **Forge**: Oracle에 셀프호스팅 Forgejo 15 스택 (`forge.junghanacs.com`, Caddy + Postgres 16)
+- **Home Assistant**: Oracle 가동 (Health Connect → lifetract 파이프라인)
+- **agenda.junghanacs.com** 라이브
+- **글로벌 git 안전레일**: `core.hooksPath` 훅 + gitleaks + trufflehog — 커밋/푸시 시 시크릿·식별어 차단
+- **파일매니저**: Thunar(XFCE) 주력 — `programs.thunar` + `gvfs` + `tumbler`, archive/volman 플러그인 (pcmanfm 폴백 유지)
+- **문서 체계**: NEXT.md(후속), ROADMAP.md(이력), 디바이스 핸드북 ORACLE.md / THINKPAD.md, MEMORY.md, openclaw-gotchas.md
+- **geworfen**: Docker healthcheck + autoheal(stale emacs 소켓 자가복구), stats 데이터 마운트
+- **봇멘트 인프라**: remark42 셀프호스팅 댓글 (`comments.junghanacs.com`)
+- **패키지**: bun, scrcpy, qemu(pi-chat micro-VM), asciinema/gifski, ghostscript, UNIX 데이터 도구
+- **thinkpad**: Ollama Vulkan 서비스 (qwen3-embedding:4b)
+
+### Changed
+- **OpenClaw**: 2026.2.x → 5.28; claude-cli native 경로 + Opus 4.8 canonical, active-memory, Qwen3-Embedding-8B 4096d (상세 → ROADMAP)
+- **입력기**: kime → fcitx5 복원 (per-app group 분리, 한글 passthrough)
+- **터미널**: WezTerm cell-widths / 유니코드 drift 해소, ghostty/wezterm config live symlink, 커서 색 통일(#ff4769)
+- **폰트**: 시스템 + WezTerm 이모지 monochrome 전환
+- **AGENTS.md**: 멀티디바이스 operator brief로 재구조화 후 슬림화 (이력 → ROADMAP)
+- **Emacs**: 소켓 분리(user=GUI / server=agent), 데스크탑 호스트 emacs-gtk + GTK dark
+- **툴체인**: nodejs 22 → 24; flake/home-manager **nixos-25.11** 채널로 bump
+- **i3/xkb**: CapsLock → Menu 매핑(Emacs 한/영 토글), Mod+e → 어디서나 emacs
+
+### Fixed
+- **shell**: pnpm v11 global bin 경로; 비대화형 SSH의 PNPM_HOME/PATH
+- **oracle**: headless 프로파일 슬림화(xrdp 제거, vconsole/kmscon 비활성); NOPASSWD sudoers의 systemctl stable 경로
+- **thinkpad**: Ollama 자동시작 비활성
+- **브라우저**: Chrome 145 SIGTRAP → 146; microsoft-edge 144 크래시 → pinned 145
+- **remark42**: Dev-auth 자기참조 DNS
+- **geworfen**: Docker TZ=Asia/Seoul (KST 날짜 보정)
 
 ## [0.3.2] - 2026-02-22
 

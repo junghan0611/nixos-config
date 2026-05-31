@@ -194,9 +194,6 @@
     dunst
     libnotify
 
-    # File manager
-    pcmanfm
-
     # Clipboard manager
     xclip
     xsel
@@ -214,5 +211,21 @@
 
     # Network manager applet
     networkmanagerapplet
+
+    # File manager — pcmanfm (가벼운 폴백, 유지)
+    pcmanfm
   ];
+
+  # File manager — Thunar (XFCE) 주력 (2026-05-31). pcmanfm 과 공존.
+  # programs.thunar 가 thunar 패키지 + 플러그인 통합을 끌어온다.
+  # systemPackages 에 thunar 를 직접 넣지 않는다 (모듈이 책임).
+  programs.thunar = {
+    enable = true;
+    plugins = with pkgs.xfce; [
+      thunar-archive-plugin   # 압축파일 우클릭 풀기/묶기
+      thunar-volman           # 착탈식 매체 자동 관리
+    ];
+  };
+  services.gvfs.enable = true;     # 휴지통 · 네트워크/자동 마운트
+  services.tumbler.enable = true;  # 썸네일 생성
 }
