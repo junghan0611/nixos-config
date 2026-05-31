@@ -267,11 +267,18 @@ nixos-config provides:
 
 ### Operator Docs (handbook)
 
-운영자(사람·에이전트)가 이 repo에서 일할 때 읽는 핸드북. 세 문서가 시간축으로 분업한다 — **과거는 ROADMAP, 현재는 AGENTS, 미래는 NEXT**.
+운영자(사람·에이전트)가 이 repo에서 일할 때 읽는 핸드북. **시간축**으로 셋, **디바이스축**으로 둘이 분업한다 — 과거는 ROADMAP, 현재는 AGENTS, 미래는 NEXT. 디바이스별 상세는 필요할 때만 꺼내본다.
 
-- [AGENTS.md](./AGENTS.md) - **현재 운영 상태** SSOT. 디바이스 식별, OpenClaw 런타임 모델 라우팅, 키/시크릿 흐름, 업그레이드·커밋 워크플로. "지금 어떤 상태인가"만 답한다.
+시간축:
+
+- [AGENTS.md](./AGENTS.md) - **현재 운영 상태** SSOT (디바이스 공통 baseline). 디바이스 식별 + 공통 명령 + 디바이스 핸드북 라우팅. "지금 어떤 상태인가"만 답한다.
 - [NEXT.md](./NEXT.md) - **다음 할 일** (휘발성 후속). 미완 작업과 검증 항목. 끝나면 지우고, ✅ 완료분은 ROADMAP으로 흘려보낸다.
 - [ROADMAP.md](./ROADMAP.md) - **버전·업그레이드·운영 결정 이력** SSOT. OpenClaw 5.2→5.27 업그레이드 연혁, claude-cli 전환, 정공법들. "어떻게 여기까지 왔는가"를 답한다.
+
+디바이스축 (필요할 때만):
+
+- [ORACLE.md](./ORACLE.md) - **Oracle / OpenClaw 운영 핸드북**. ownership, 봇 model routing, env/secret SSOT, 업그레이드/restart, skills deploy, 함정. `oracle` 디바이스 또는 OpenClaw 작업일 때만 연다 — 다른 디바이스엔 불필요.
+- [THINKPAD.md](./THINKPAD.md) - **ThinkPad 로컬 AI** (Ollama Vulkan policy). `thinkpad` 작업일 때만.
 - [docs/openclaw-gotchas.md](./docs/openclaw-gotchas.md) - 함정 카탈로그 (활성/비활성/역사). 다음 세션이 또 밟을 것.
 
 ### Configuration Guides
