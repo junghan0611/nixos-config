@@ -36,6 +36,16 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.5.28 (2026-05-31, GREEN)
+
+Docker rebuild: `~/openclaw/Dockerfile` `FROM ...:2026.5.27 → :2026.5.28` + `docker compose build --pull && up -d --force-recreate`. codex plugin은 stock(번들)이라 base bump와 함께 자동 5.28. 디스크 제약 대비 dangling prune 선행(3.38GB 회수, `/` 82%).
+
+5.28 핵심: **Claude Opus 4.8 정식 카탈로그**(`anthropic/claude-opus-4-8`, default+alias:opus) — 05-29 승급 때의 legacy `claude-cli/*` prefix가 비로소 canonical `anthropic/* + agentRuntime claude-cli`로 정착하는 전제 / doctor가 non-canonical `api_key` auth profile을 canonical로 재작성 + **per-agent auth health 라벨**(stale OAuth shadow 진단) / Codex model migration 시 explicit agentRuntime pin 보존 / Claude CLI transcript probe retry · live tool progress watchdog. Breaking(우리 비해당): Haiku 4.5→Sonnet 자동 migrate 중단, workspace dotenv provider credential 무시.
+
+**Breaking 함정 (crash loop 발생)**: 5.28이 `agents.defaults.agentRuntime`(defaults 직속 top-level 키)를 **Unrecognized key로 거부** → recreate 직후 게이트웨이 `Invalid config / Gateway failed to start` crash loop(봇 다운). 원인은 정공법 편집이 아니라 5.27이 받던 기존 defaults 형태. 해소: defaults 직속 `agentRuntime` 제거(우리 claude 모델은 이미 model-scoped `agentRuntime: claude-cli`를 가져 무해 — 오히려 pi-shell-acp/deepseek가 default runtime을 잘못 상속하던 latent bug 제거). 재현 시 업그레이드 직후 `openclaw doctor`로 정확한 invalid 필드 확인 후 surgical 제거 → restart. (NEXT §6 "업그레이드 직후 doctor --fix 의무"의 구체 사례.)
+
+검증: `OpenClaw 2026.5.28`, ready 4.6s, 13 plugins, healthy. 라이브 headless(`openclaw agent --agent <id> --json`, `--deliver` 없이): main `winner=claude-cli/claude-opus-4-8 fallbackUsed=false runner=cli`, bbot 동일(opus-4-8), mini `claude-cli/claude-sonnet-4-6`. doctor Errors 0 / Missing requirements 0. 롤백: Dockerfile FROM 5.27 환원(주석 보존) + rebuild·recreate.
+
 ### 2026.5.27 (2026-05-29, GREEN)
 
 별도 host-native(비-Docker) 레퍼런스 배포가 먼저 5.27 검증 완료한 것을 reference로 oracle(Docker) 적용. Docker 절차는 `~/openclaw/Dockerfile` `FROM ...:2026.5.22 → :2026.5.27` + `docker compose build --pull && up -d --force-recreate` 한 번. **codex plugin은 `stock:codex/index.js`(베이스 이미지 번들)라 base bump와 함께 자동 5.27** — host-native 레퍼런스의 별도 `@openclaw/codex` 버전 정합 함정 비해당.
@@ -67,6 +77,18 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 ---
 
 ## 운영 결정 이력
+
+### Opus 4.8 canonical 정공법 + per-agent auth inherit (2026-05-31)
+
+05-29의 `claude-cli/<id>` prefix는 4.8 공식 카탈로그 지원 전의 legacy 표기였다. 5.28이 `anthropic/claude-opus-4-8`를 정식 Anthropic 카탈로그 모델로 추가하면서 **canonical 정공법으로 전환**:
+
+- **canonical 형태**: `anthropic/claude-opus-4-8` + `agentRuntime: { id: "claude-cli" }`. provider prefix(`anthropic/`)는 카탈로그 식별자일 뿐 **과금 경로가 아니다** — 과금은 runtime이 결정한다(`claude-cli`=구독 `claude -p`). main/bbot=opus-4-8, mini=sonnet-4-6. 전환 대상은 3봇뿐인데, **oracle은 `subagents.model`이 `openai/gpt-5.4`(Codex)**라 subagent엔 claude auth가 불필요(별도 host-native 레퍼런스는 subagent가 claude sonnet이라 claude 직접 안 쓰는 보조 봇까지 login 필요했던 것과 갈리는 자리).
+- **레거시 정리(헷갈림 제거)**: config 전체에서 `claude-cli/*` prefix 0, `opus-4-7`·`opus-4-6` 0(defaults.models 포함, opus는 4.8만), ACP-route `pi-shell-acp/claude-*` picker 엔트리 제거(第3자 harness 과금 풀 → Claude 경로 이중화 해소), legacy `anthropic:default`(token) 프로필 제거(top-level + per-agent bbot/mini). gemini/codex용 `pi-shell-acp/gpt-*`·`gemini`는 유지(gemini 거취 별건).
+- **auth는 공식 플로우만**: `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동). paste-token·auth-profiles.json 수기편집·`--set-default` 트릭 안 씀.
+- **per-agent auth 분기 — host-native 레퍼런스와 정반대 결론**: GLG가 bbot/mini에 login해 per-agent `anthropic:claude-cli` 프로필을 만들었으나, **oracle은 Docker라 `~/.claude`가 전 봇 공유 mount** → main 프로필만 갱신되고 bbot/mini의 login-시점 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 진단. `openclaw doctor --fix`가 이를 제거하고 **main의 갱신되는 auth를 inherit**시킴. 제거 후 재호출에서 bbot/mini 여전히 GREEN(claude-cli/opus-4-8·sonnet-4-6). → 별도 host-native 레퍼런스의 "봇 수만큼 login 유지"는 **공유 mount가 없는 host-native 전제**라 oracle엔 그대로 적용 안 됨. login 단계 자체는 필요(top-level `anthropic:claude-cli` + `order.anthropic` 등록 = 정공법 기반)했고, doctor가 per-agent 복사본만 정리한 것.
+- **검증**: doctor Errors 0 / Missing 0, "Headless Claude auth: OK (oauth)", auth profile `anthropic:claude-cli (provider claude-cli)`. 3봇 라이브 GREEN.
+- **부수 발견(별건)**: doctor가 `google-gemini-cli` per-agent 프로필(glg/gpt/gemini/bbot/mini)도 같은 stale shadow로 플래그 — 기존 cruft, claude 아님, gemini 삭제 예정이라 거취 결정 때 정리(NEXT §1).
+- **과금 변화 예고**(모델 표기 무관, `claude -p` 경로 공통): ~2026-06-15부터 구독 plan 한도 차감 → 월 Agent SDK 크레딧 소진 후 standard API rate. pi-shell-acp ACP 경로도 동일 크레딧 대상.
 
 ### claude-cli native 전환 + opus 4.8 (2026-05-26 ~ 05-29)
 

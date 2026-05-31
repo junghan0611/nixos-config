@@ -19,8 +19,15 @@
 # webhook 의 loose·malformed numeric 거부 (우리 config 스캔 결과 string-numeric 0건 — 통과). memory embedding provider
 # registration deprecated(compat) — memorySearch qwen3-embedding-8b 업글 후 검증. codex plugin은 stock(번들)이라
 # 베이스 이미지 bump와 함께 자동 5.27 (host-native 레퍼런스의 별도 @openclaw/codex 버전 정합 함정 비해당).
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.22
-FROM ghcr.io/openclaw/openclaw:2026.5.27
+# 5.27 → 5.28 (2026-05-31): Claude Opus 4.8 정식 카탈로그 추가 (anthropic/claude-opus-4-8, default+alias:opus) +
+# doctor 가 non-canonical api_key auth profile 을 canonical 로 재작성 + per-agent auth health 라벨 (#label auth health by
+# agent) + Codex model migration 시 explicit agentRuntime pin 보존 + Claude CLI transcript probe retry / live tool
+# progress watchdog 가시성. Breaking: Haiku 4.5 → Sonnet 자동 migrate 중단 (우리 비해당). workspace dotenv provider
+# credential 무시 (우리는 docker env_file 경로라 비해당). 정공법 전환 근거: legacy claude-cli/* → anthropic/* +
+# agentRuntime claude-cli (provider prefix 는 카탈로그 식별자, 과금은 runtime 이 결정 — claude-cli=구독). codex plugin
+# stock(번들)이라 base bump 와 함께 자동 5.28.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.27
+FROM ghcr.io/openclaw/openclaw:2026.5.28
 
 USER root
 

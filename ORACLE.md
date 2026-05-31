@@ -75,12 +75,12 @@ gemini는 OpenClaw 안에서 [`pi-shell-acp`](https://github.com/junghan0611/pi-
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (현재: OpenClaw 2026.5.27 baseline)
+### Model routing (현재: OpenClaw 2026.5.28 baseline)
 
 > 버전 업그레이드 이력 / 운영 결정 연혁 (5.2→5.27, claude-cli 전환, 정공법들)은 [ROADMAP.md](ROADMAP.md)로 이관. 이 섹션은 *현재 라우팅 상태*만 답한다.
 
 **LLM 호출 — 분기**:
-- **main**: Anthropic Max via `claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
+- **main**: Anthropic Max via canonical `anthropic/claude-opus-4-8` + `agentRuntime claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
 - **glg / gpt**: Codex OAuth ($100 plan)
 - **mini**: Codex OAuth, but **직접 대화 X** — active-memory 영역 보조 lane으로 격리
 - **gemini**: pi-shell-acp ACP route (유일한 ACP 잔존 봇 — 삭제 예정, §3)
@@ -89,19 +89,21 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 
 **Fallback**: 모든 봇 `fallbacks: []`. 정공법은 **안 되면 안 되는 거 — 응답 막히면 자동 fallback이 아니라 모델 자체를 바꾼다**. 자동 fallback이 부르는 quota inflation / 다른 path 소진 연쇄를 차단. 근거·이력은 [ROADMAP.md](ROADMAP.md).
 
-**Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `claude-cli/*` = Claude Code CLI spawn, `pi-shell-acp/*` = ACP route):
+**Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), `pi-shell-acp/*` = ACP route). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix는 카탈로그 식별자, 과금은 runtime이 결정:
 
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
-| **main** | `claude-cli/claude-opus-4-8` | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. Max 20x rate tier, 1M context |
+| **main** | `anthropic/claude-opus-4-8` | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context |
 | glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot`. Codex OAuth |
 | gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 |
-| **bbot** | `claude-cli/claude-opus-4-8` | `workspace-bbot/` | off | ✓ | `@glg_b_bot`. claude-cli native (pi-shell-acp 전환 완료) |
-| mini | `claude-cli/claude-sonnet-4-6` | `workspace-mini/` | off | — | sonnet 4.6 단독. active-memory 제외 검증 lane |
+| **bbot** | `anthropic/claude-opus-4-8` | `workspace-bbot/` | off | ✓ | `@glg_b_bot`. claude-cli runtime native |
+| mini | `anthropic/claude-sonnet-4-6` | `workspace-mini/` | off | — | sonnet 4.6 단독. active-memory 제외 검증 lane |
 | **gemini** | `pi-shell-acp/gemini-3.1-pro-preview` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. 빈응답 미해결 — 삭제 예정 |
 | subagents | `openai/gpt-5.4` | — | — | — | active-memory recall lane은 `openai/gpt-5.4-mini`로 분리 (main lane quota 보호) |
 
-> **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native `claude-cli`는 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. claude-cli 전환은 model.primary를 `claude-cli/<id>`로 바꾸고 카탈로그에 `"claude-cli/<id>": {}` 등록하면 끝(plugins.allow 수동 등록 불필요). 전환 타임라인·EPIPE 함정·streaming off 근거는 [ROADMAP.md](ROADMAP.md).
+> **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native claude-cli runtime은 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. **canonical 등록(5.28)**: model.primary/카탈로그를 `anthropic/<id>`로 두고 `{ "agentRuntime": { "id": "claude-cli" } }`를 붙이면 끝 — provider prefix `anthropic/`는 카탈로그 식별자일 뿐, runtime이 `claude-cli`면 구독 경로. legacy `claude-cli/<id>` prefix는 폐기(doctor/update가 canonical로 auto-migrate — profile 먼저 등록 필수). EPIPE·streaming off·전환 타임라인은 [ROADMAP.md](ROADMAP.md).
+
+> **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 Codex(`openai/gpt-5.4`)라 claude login은 main/bbot/mini 3봇만.
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
