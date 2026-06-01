@@ -164,8 +164,9 @@
     net-tools
     # Fingerprint (if available)
     fprintd
-    # Office suite (optional, thinkpad only)
+    # Office / library tools (thinkpad only)
     libreoffice-fresh
+    calibre           # Provides calibredb
   ];
 
   # Bluetooth management
