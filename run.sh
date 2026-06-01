@@ -118,7 +118,7 @@ show_menu() {
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
     echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
-    echo "    C) Cleanup ALL (모든 캐시 + 휴지통 + Nix GC + Docker prune on oracle)"
+    echo "    C) Cleanup ALL (공격적: 3일 GC + optimise + pnpm/journal/docker, 전 디바이스)"
     echo "    d) Disk usage (디스크 사용량 확인)"
     echo ""
     echo "    0) Exit"
@@ -214,11 +214,16 @@ main() {
                 ;;
             C)
                 echo ""
+                # 공격적 정리 보존 기간(일). 기본 3일 — 더 강하게 비우려면 AGGRESSIVE_RETAIN=1 등으로 낮춘다.
+                AGGRESSIVE_RETAIN="${AGGRESSIVE_RETAIN:-3}"
                 info "현재 디스크 사용량:"
                 df -h /
                 echo ""
                 info "/nix 폴더 크기:"
                 du -sh /nix 2>/dev/null || echo "측정 중..."
+                echo ""
+                info "현재 시스템 클로저 크기:"
+                nix path-info -Sh /run/current-system 2>/dev/null || echo "측정 실패"
                 echo ""
                 info "GC roots 개수:"
                 nix-store --gc --print-roots 2>/dev/null | grep -v '/proc/' | wc -l
@@ -226,37 +231,47 @@ main() {
                 info "Home-manager 세대 수:"
                 ls ~/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | wc -l
                 echo ""
-                info "정리 대상:"
-                echo "  - Nix 시스템: 7일 이상 오래된 세대"
-                echo "  - Home-manager: 7일 이상 오래된 세대"
+                info "정리 대상 (공격적):"
+                echo "  - Nix 시스템/사용자 세대: ${AGGRESSIVE_RETAIN}일 이상 오래된 것"
+                echo "  - Home-manager: 최근 3개 세대만 유지"
+                echo "  - nix-store --optimise: 중복 파일 하드링크 (store 축소)"
                 echo "  - result 심볼릭 링크: ~/repos 하위"
                 echo "  - direnv 캐시: ~/repos 하위 .direnv/"
                 echo "  - 휴지통: ~/.local/share/Trash"
-                echo "  - 캐시: uv, pip, puppeteer, go-build, zig, nix"
-                echo "  - npm 캐시"
+                echo "  - 캐시: uv, pip, puppeteer, go-build, zig, nix, qmd, bun"
+                echo "  - npm 캐시 + pnpm store prune"
+                echo "  - systemd 저널: 200M로 vacuum"
+                echo "  - Docker: dangling 이미지 + 빌드 캐시 (디바이스 무관)"
                 echo ""
-                warn "모든 Nix 관련 캐시를 정리합니다. 계속하시겠습니까? (y/N)"
+                warn "공격적으로 정리합니다 (보존 ${AGGRESSIVE_RETAIN}일). 계속하시겠습니까? (y/N)"
                 read -p "> " confirm
                 if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                    info "1/8 휴지통 비우기..."
-                    rm -rf ~/.local/share/Trash/* 2>/dev/null && success "휴지통 정리 완료" || warn "휴지통이 비어있음"
+                    info "1/11 휴지통 비우기..."
+                    rm -rf ~/.local/share/Trash/files/* ~/.local/share/Trash/info/* 2>/dev/null && success "휴지통 정리 완료" || warn "휴지통이 비어있음"
 
-                    info "2/8 일반 캐시 정리..."
-                    rm -rf ~/.cache/uv ~/.cache/pip ~/.cache/puppeteer ~/.cache/go-build ~/.cache/zig ~/.cache/nix 2>/dev/null
+                    info "2/11 일반 캐시 정리..."
+                    rm -rf ~/.cache/uv ~/.cache/pip ~/.cache/puppeteer ~/.cache/go-build ~/.cache/zig ~/.cache/nix ~/.cache/qmd ~/.cache/.bun 2>/dev/null
                     success "캐시 정리 완료"
 
-                    info "3/8 npm 캐시 정리..."
+                    info "3/11 npm 캐시 정리..."
                     npm cache clean --force 2>/dev/null && success "npm 캐시 정리 완료" || warn "npm 없음"
 
-                    info "4/8 result 심볼릭 링크 삭제..."
+                    info "4/11 pnpm store prune..."
+                    if command -v pnpm >/dev/null 2>&1; then
+                        pnpm store prune 2>/dev/null && success "pnpm store 정리 완료" || warn "pnpm store prune 실패"
+                    else
+                        warn "pnpm 없음"
+                    fi
+
+                    info "5/11 result 심볼릭 링크 삭제..."
                     find ~/repos -maxdepth 3 -name "result" -type l -delete 2>/dev/null
                     success "result 링크 삭제 완료"
 
-                    info "5/8 direnv 캐시 정리..."
+                    info "6/11 direnv 캐시 정리..."
                     find ~/repos -maxdepth 3 -type d -name ".direnv" -exec rm -rf {} + 2>/dev/null
                     success "direnv 캐시 정리 완료"
 
-                    info "6/8 Home-manager 이전 세대 정리..."
+                    info "7/11 Home-manager 이전 세대 정리..."
                     if [[ -d ~/.local/state/nix/profiles ]]; then
                         # home-manager 프로파일에서 오래된 세대 삭제 (최근 3개만 유지)
                         nix-env --delete-generations +3 -p ~/.local/state/nix/profiles/home-manager 2>/dev/null && success "Home-manager 세대 정리 완료 (최근 3개 유지)" || warn "Home-manager 프로파일 없음"
@@ -264,28 +279,33 @@ main() {
                         warn "Home-manager 프로파일 디렉토리 없음"
                     fi
 
-                    info "7/8 사용자 Nix 프로파일 GC..."
-                    nix-collect-garbage --delete-older-than 7d 2>/dev/null
+                    info "8/11 사용자 Nix 프로파일 GC (${AGGRESSIVE_RETAIN}일)..."
+                    nix-collect-garbage --delete-older-than "${AGGRESSIVE_RETAIN}d" 2>/dev/null
                     success "사용자 프로파일 GC 완료"
 
-                    info "8/8 시스템 Nix GC 실행..."
-                    execute_cmd "sudo nix-collect-garbage --delete-older-than 7d"
+                    info "9/11 시스템 Nix GC 실행 (${AGGRESSIVE_RETAIN}일)..."
+                    execute_cmd "sudo nix-collect-garbage --delete-older-than ${AGGRESSIVE_RETAIN}d"
 
-                    # Oracle 호스트: docker 잔재(dangling 이미지 + build cache) 정리
-                    if [[ "$DEVICE" == "oracle" ]] && command -v docker >/dev/null 2>&1; then
+                    info "10/11 systemd 저널 vacuum (200M)..."
+                    sudo journalctl --vacuum-size=200M 2>/dev/null && success "저널 정리 완료" || warn "저널 정리 실패"
+
+                    info "11/11 nix-store 최적화 (중복 하드링크, 시간 소요)..."
+                    nix-store --optimise 2>/dev/null && success "store 최적화 완료" || warn "store 최적화 실패"
+
+                    # Docker 잔재(dangling 이미지 + build cache) 정리 — 디바이스 무관, docker 있으면 실행
+                    if command -v docker >/dev/null 2>&1; then
                         echo ""
-                        info "Oracle 호스트 감지 — Docker 정리 단계"
-                        echo ""
+                        info "Docker 감지 — 정리 단계"
                         info "현재 Docker 사용량:"
                         docker system df 2>/dev/null || warn "docker system df 실패"
                         echo ""
-                        warn "Dangling 이미지 + 사용 안 하는 빌드 캐시를 정리합니다. (실행 중 컨테이너 이미지는 보존) 계속? (y/N)"
+                        warn "Dangling 이미지(24h 이상) + 빌드 캐시를 정리합니다. (실행 중 컨테이너 이미지는 보존) 계속? (y/N)"
                         read -p "> " docker_confirm
                         if [[ "$docker_confirm" =~ ^[Yy]$ ]]; then
-                            info "9/10 Docker dangling 이미지 정리..."
+                            info "Docker dangling 이미지 정리..."
                             execute_cmd "docker image prune -a -f --filter \"until=24h\""
 
-                            info "10/10 Docker 빌드 캐시 정리..."
+                            info "Docker 빌드 캐시 정리..."
                             execute_cmd "docker builder prune -a -f"
 
                             echo ""
@@ -302,6 +322,8 @@ main() {
                     echo ""
                     info "정리 후 /nix 폴더 크기:"
                     du -sh /nix 2>/dev/null || echo "측정 중..."
+                    echo ""
+                    info "오래된 부트 엔트리는 다음 'nixos-rebuild boot/switch'(메뉴 5/6) 때 정리됩니다."
                 else
                     info "취소되었습니다."
                 fi
