@@ -9,6 +9,19 @@
 
 ## Unreleased
 
+## v2026.6.2
+
+### Added
+- **문서/OCR 데스크톱 스택**: zathura(기본 PDF 뷰어, vim 키바인딩, mupdf 백엔드) + readest·foliate(EPUB) + mupdf + libreoffice. apvlv 대체
+- **한국어 OCR**: tesseract(eng+kor+osd, 전체 1.1GiB→경량) + ocrmypdf(엔진 공유) + gImageReader(GUI 프론트엔드)
+- **calibre**: ebook 관리 (thinkpad)
+
+### Changed
+- **`run.sh C)` 공격적 정리**: Nix GC 7→3일 + `nix-store --optimise` + pnpm store prune + journal vacuum 200M + Docker prune 전 디바이스(oracle 전용 해제)
+- **mimeapps.list 가변화**: nix store 불변 심볼릭 → 레포 out-of-store 심볼릭. Thunar 런타임 기본앱 변경 + rebuild 없이 레포 편집 즉시 반영 (pdf=zathura, epub=foliate, doc/docx/odt=libreoffice writer)
+
+> 위 데스크톱 항목은 전부 `!isOracle` — 헤드리스 oracle 제외.
+
 ## v2026.5.31
 
 첫 CalVer 스냅샷 — 마지막 SemVer 릴리즈(`0.3.2`, 2026-02-22) 이후 전부를 접어 넣는다.
