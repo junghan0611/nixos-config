@@ -28,5 +28,6 @@ in
     ./dunst.nix      # notification daemon
     ./picom.nix      # compositor
     ./gtk.nix        # GTK dark theme
+    ./zathura.nix    # PDF viewer (vim 스타일, 기본 핸들러)
   ];
 }

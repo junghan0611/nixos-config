@@ -5,6 +5,10 @@
 let
   isLinux = pkgs.stdenv.isLinux;
 
+  # OCR: 전체 언어 tesseract는 1.1GiB → 영어+한국어 + osd(방향/스크립트 감지,
+  # ocrmypdf --rotate-pages/--deskew 가 사용)만. ocrmypdf 도 이 엔진을 공유.
+  tesseractKor = pkgs.tesseract.override { enableLanguages = [ "eng" "kor" "osd" ]; };
+
   # Get hostname for pattern matching
   hostname = config.networking.hostName or currentSystemName;
 
@@ -187,7 +191,14 @@ in {
     # Desktop applications (ElleNajit platforms/linux.nix)
     # chromium        # Alternative browser
     signal-desktop  # Messaging
-    apvlv           # PDF viewer
+    # 문서: PDF 뷰어 zathura는 programs.zathura(modules/zathura.nix)로 관리 (apvlv 대체)
+    readest         # EPUB 리더 (Tauri)
+    foliate         # EPUB 리더 대안 (GTK)
+    mupdf           # 빠른 렌더링 + mutool CLI (PDF 조작/추출)
+    tesseractKor    # OCR 엔진 (eng+kor)
+    (ocrmypdf.override { tesseract = tesseractKor; })  # 스캔 PDF → 검색가능 텍스트 레이어 (kor)
+    gImageReader    # tesseract GUI 프론트엔드 (이미지/PDF OCR)
+    libreoffice     # doc/docx/odt 기본 핸들러 (writer.desktop)
     vlc             # Video player
     gimp            # Image editor
     # x86_64 Linux-specific packages (not available on ARM/Oracle VM)
@@ -241,6 +252,13 @@ in {
       executable = true;
     };
     ".inputrc".text = builtins.readFile ./configs/inputrc;
+
+    # 기본 애플리케이션(mimeapps.list): nix store 불변 심볼릭 대신 레포 파일로
+    # out-of-store symlink → Thunar 등에서 런타임 변경 가능 (쓰면 레포 파일에 반영).
+    # pdf=zathura, epub=foliate, doc/docx/odt=libreoffice writer.
+    ".config/mimeapps.list".source = config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/mimeapps.list";
+
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
 
