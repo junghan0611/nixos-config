@@ -5,10 +5,6 @@
 let
   isLinux = pkgs.stdenv.isLinux;
 
-  # OCR: 전체 언어 tesseract는 1.1GiB → 영어+한국어 + osd(방향/스크립트 감지,
-  # ocrmypdf --rotate-pages/--deskew 가 사용)만. ocrmypdf 도 이 엔진을 공유.
-  tesseractKor = pkgs.tesseract.override { enableLanguages = [ "eng" "kor" "osd" ]; };
-
   # Get hostname for pattern matching
   hostname = config.networking.hostName or currentSystemName;
 
@@ -195,9 +191,8 @@ in {
     readest         # EPUB 리더 (Tauri)
     foliate         # EPUB 리더 대안 (GTK)
     mupdf           # 빠른 렌더링 + mutool CLI (PDF 조작/추출)
-    tesseractKor    # OCR 엔진 (eng+kor)
-    (ocrmypdf.override { tesseract = tesseractKor; })  # 스캔 PDF → 검색가능 텍스트 레이어 (kor)
-    gImageReader    # tesseract GUI 프론트엔드 (이미지/PDF OCR)
+    # OCR: tesseract/ocrmypdf/gImageReader 제거 (2026-06-02). 한글 스캔 OCR 경로는
+    # marker(surya, memex-kb flake의 uv venv)로 일원화됨. tesseract 한글 품질 사용 불가.
     libreoffice     # doc/docx/odt 기본 핸들러 (writer.desktop)
     vlc             # Video player
     gimp            # Image editor
