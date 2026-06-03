@@ -177,7 +177,7 @@ in {
       };
     };
     doomemacs = {
-      name = "Doom Emacs";
+      name = "Doom Emacs Stable";
       genericName = "Text Editor";
       comment = "Doom Emacs - Edit text";
       exec = "env GTK_IM_MODULE=emacs XMODIFIERS=@im=emacs EMACS=emacs DOOMDIR=${doomConfigPath} ${config.home.homeDirectory}/doomemacs/bin/doom run";
