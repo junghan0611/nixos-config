@@ -222,6 +222,10 @@ in {
       # peon-ping tab completions
       [ -f "$HOME/.claude/hooks/peon-ping/completions.bash" ] && source "$HOME/.claude/hooks/peon-ping/completions.bash"
 
+      # pi garden launcher (pia/pit/pid/… + _pi_garden_pi) lives in ~/.bashrc.local
+      # alongside the rest of the pi aliases (pial, etc.), sourced below. Single
+      # home — do not duplicate it here (it would be shadowed by .bashrc.local).
+
       # Claude Config bash 설정 로드
       if [ -f "$HOME/claude-config/bash/bashrc" ]; then
          source "$HOME/claude-config/bash/bashrc"
