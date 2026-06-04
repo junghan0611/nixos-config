@@ -9,6 +9,16 @@
 
 ## Unreleased
 
+## v2026.6.4
+
+### Changed
+- **git 커밋 귀속을 `junghan0611` GitHub 계정으로**: identity를 `hosts/*/vars.nix`의 `gitName`/`gitEmail`로 분리. OS username(`junghan`)·실메일(`junghanacs@gmail.com`)과 독립, noreply 이메일로 귀속
+- **Firefox**: HTML 기본 핸들러 설정 + Doom Emacs 데스크톱 항목 이름 정리
+- **openclaw Syncthing 관리 중단**: `~/repos/gh`로 이전, `.stignore`에서 전체 무시
+
+### Removed
+- **한국어 OCR 스택 철회**: tesseract/ocrmypdf/gImageReader 제거 (v2026.6.2에서 추가했으나 용량·유지보수 부담으로 되돌림)
+
 ## v2026.6.2
 
 ### Added
