@@ -67,8 +67,11 @@ in {
 
     settings = {
       user = {
-        name = vars.username;
-        email = vars.email;
+        # Commit attribution → junghan0611 GitHub account.
+        # Identity lives in hosts/*/vars.nix (gitName/gitEmail), kept
+        # separate from vars.email (the real mail used by email.nix/msmtp).
+        name = vars.gitName;
+        email = vars.gitEmail;
       };
 
       alias = {
@@ -115,7 +118,7 @@ in {
       };
 
       # GitHub identity
-      github.user = vars.username;
+      github.user = vars.gitName;
 
       # Git LFS
       filter.lfs = {
