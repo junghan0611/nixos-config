@@ -26,8 +26,17 @@
 # credential 무시 (우리는 docker env_file 경로라 비해당). 정공법 전환 근거: legacy claude-cli/* → anthropic/* +
 # agentRuntime claude-cli (provider prefix 는 카탈로그 식별자, 과금은 runtime 이 결정 — claude-cli=구독). codex plugin
 # stock(번들)이라 base bump 와 함께 자동 5.28.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.27
-FROM ghcr.io/openclaw/openclaw:2026.5.28
+# 5.28 → 6.1 (2026-06-04): host-native 레퍼런스 3봇 GREEN 선검증 후 oracle 적용. 핵심 breaking:
+# "public OpenAI API-key profiles 를 native Codex app-server auth 로 취급하지 않음" → codex lane(glg/gpt)
+# 이 api.openai.com 401 로 깨졌다가 `openclaw doctor --fix`(legacy OpenAI Codex auth profile → canonical
+# 마이그레이션)로 복구 = 업그레이드 후 doctor --fix 의무. 신규: SecretRefs advisory(평문 secret-bearing
+# config → `openclaw secrets configure` 권고, action 아닌 WARN) + doctor disk-space health check + post-upgrade
+# JSON probe 안정화 + vector-disabled FTS index 가 sync 중 embedding provider resolve 안 함(우리 memorySearch
+# vector enabled 라 영향 적음). tokenjuice/Copilot 이 official npm plugin 으로 externalize(우리 미설치 무관).
+# codex plugin stock(번들)이라 base bump 와 함께 자동 6.1 — host-native 의 `plugins update @openclaw/codex`
+# 동시 업글 함정(버전 mismatch) 비해당. mattermost 컨테이너 주소 churn(그 레퍼런스 고유) 비해당.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.28
+FROM ghcr.io/openclaw/openclaw:2026.6.1
 
 USER root
 

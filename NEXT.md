@@ -61,10 +61,12 @@ claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M con
 
 ---
 
-## 2. 5.22 후속 측정 (다음 세션)
+## 2. 버전 hop 후속 측정 (다음 세션)
 
-5.22 hop 완료 (`8a2f8ef` stamp). 운영은 안정이나 다음 자리 측정:
+6.1 hop 완료 (2026-06-04, headless 5봇 GREEN, [ROADMAP](ROADMAP.md) "2026.6.1"). 운영은 안정이나 다음 자리 측정:
 
+- [ ] **6.1 텔레그램 실사용 soak** — headless GREEN 확인됐으나 실 텔레그램 turn 관찰 필요. 특히 **codex lane glg(가족 봇)** — 6.1 codex auth canonical migration 후 실대화에서 401/empty 없는지. claude lane(main/bbot/mini)도 5-7d soak. codex thread compaction(긴 turn 후 `thread not found`) 회귀 여부도 같이.
+- [ ] **6.1 state SQLite 통합 안정성** — plugin/task/telegram state가 shared SQLite로 이관됨(legacy `.migrated` archive). 며칠 후 `.migrated` 잔재 정리 가능 여부 + sqlite 통합 후 telegram dedupe/offset 정상 동작 확인.
 - [ ] **subagent bootstrap context 축소 (#85283)** — active-memory recall sub-agent (5.4-mini lane) `status=empty` 비율 변화. 14d soak baseline 비교
 - [ ] **`@anthropic-ai/claude-code` 버전 추적** — 5.27 image 재빌드 후 컨테이너 `claude` 2.1.156 (5.22 시점 2.1.150). `--help`에 `claude-opus-4-8` 명시 → opus 4.8 지원. Dockerfile pin 여부 검토
 - [ ] **OAuth refresh 자동 검증** — Anthropic `expiresAt` 8h마다 새로 받는지 24h 관찰

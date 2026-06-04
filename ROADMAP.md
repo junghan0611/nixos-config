@@ -31,7 +31,7 @@
 - **NixOS 채널**: `nixos-25.11` + home-manager 25.11 (stateVersion 25.05 고정). **26.05 업그레이드 대기** — 25.11 EOL 2026-06-30, → [NEXT.md §8](NEXT.md).
 
 **봇 런타임 요약**
-- OpenClaw **2026.5.28**, ready 4.6s, 13 plugins, healthy.
+- OpenClaw **2026.6.1**, ready 4.9s, 13 plugins, healthy.
 - main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
 - gemini만 legacy ACP 잔존 (거취 결정 대기, [NEXT.md §1](NEXT.md)).
 
@@ -44,6 +44,22 @@
 ## OpenClaw 업그레이드 이력
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
+
+### 2026.6.1 (2026-06-04, GREEN)
+
+별도 host-native(비-Docker) 레퍼런스가 같은 hop을 먼저 밟아 **3봇 GREEN** 으로 검증한 뒤 oracle(Docker) 적용. "삽질을 먼저 해둔" 선검증 사이클. Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.5.28 → :2026.6.1` + `docker compose build --pull && up -d --force-recreate`. **codex plugin은 base image 번들이라 자동 6.1** — host-native 의 `pnpm -g add openclaw@latest && openclaw plugins update @openclaw/codex` 동시 업글(버전 mismatch = `listRegisteredPluginAgentPromptGuidance is not a function`) 함정 **비해당**.
+
+**핵심 breaking — codex lane 401 → doctor --fix canonical migration (의무)**: 6.1이 *"public OpenAI API-key profiles 를 native Codex app-server auth 로 취급하지 않음"* 으로 바꿔, codex lane(glg `openai/gpt-5.4` · gpt `openai/gpt-5.5`)이 `api.openai.com 401` 로 깨질 수 있다. `openclaw doctor --fix` 가 **"Migrated legacy OpenAI Codex auth profile config to the canonical OpenAI provider"** (`~/.openclaw/agents/main/agent/auth-profiles.json` → provider `openai`, backup `.openai-provider-unification`) 로 복구. 업그레이드 직후 `doctor`가 `Legacy openai-codex/* session route state detected. needs repair` 로 표면화 → `--fix` 적용 후 소멸. (NEXT §6 "업그레이드 직후 doctor --fix 의무"의 6.1 사례.)
+
+**state migration (6.1 자동, SQLite 통합)**: plugin install index + 500 plugin-state sidecar + task registry/delivery/flow rows + telegram update-offset/sent-message/dispatch-dedupe 전부 → shared SQLite, legacy 는 `.migrated` 로 archive(데이터 손실 없음). 1건(`telegram.bot-info-cache/bbot`)은 shared state 에 6 rows 이미 존재해 sidecar in-place 유지 — harmless WARN.
+
+**per-agent stale OAuth shadow 정리**: `doctor --fix` 2회차가 bbot/gemini 등 per-agent 복사본 5건을 `Removed stale OAuth auth profile shadow … inherits main auth` 로 제거 — oracle `~/.claude` 공유 mount 패턴(아래 "운영 결정 이력" 2026-05-31 항목과 동일 메커니즘, 6.1에서도 재확인). 제거 후 bbot 재호출 GREEN.
+
+**SecretRefs advisory (6.1 신규) = oracle 비해당**: secret(telegram/openai/openrouter) 전부 `.env` 경유라 `openclaw.json` 에 평문 없음 → advisory 미발생. 그 host-native 레퍼런스는 mattermost 토큰이 평문이라 `plaintext secret-bearing config → SecretRefs` advisory 가 떴던 것(`openclaw secrets configure` 권고, action 아님). mattermost 컨테이너 주소 churn(그 레퍼런스 고유) 도 oracle 비해당.
+
+**tokenjuice/Copilot externalize**: 6.1이 official npm plugin 으로 분리. 우리 미설치라 무관 — 설치해도 `agentToolResultMiddleware` 가 bundled-only 게이트(registry origin≠bundled 거부)라 거부됨(그 레퍼런스가 시도→롤백으로 검증).
+
+**검증**: `OpenClaw 2026.6.1`, ready 4.9s, 13 plugins, healthy. doctor **Errors 0 / Missing requirements 0**. 라이브 headless(`openclaw agent --agent <id> --json`, `--deliver` 없이): glg `winner=openai/gpt-5.4 fallbackUsed=false runner=embedded`(실 한국어 응답), gpt `openai/gpt-5.5`, main+bbot `claude-cli/claude-opus-4-8 runner=cli`, mini `claude-cli/claude-sonnet-4-6 runner=cli`. gemini(ACP route, 빈응답 미해결, 삭제 예정)는 회귀 대상 아님 — skip. WARN 분류: non-loopback bind(harmless 기존)·discord 미설치(harmless)·Personal Codex CLI assets isolated-homes(harmless info). 롤백: Dockerfile FROM 5.28 환원(주석 보존) + rebuild·recreate.
 
 ### 2026.5.28 (2026-05-31, GREEN)
 
