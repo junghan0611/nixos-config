@@ -410,79 +410,11 @@ in {
   #---------------------------------------------------------------------
   # Tmux
   #---------------------------------------------------------------------
-  programs.tmux = {
-    enable = true;
-    terminal = "tmux-256color"; # tmux 전용 terminfo (screen-256color보다 정확)
-    # shortcut = "a";           # 주석 = Ctrl-b 기본 prefix 사용
-    baseIndex = 1;
-    escapeTime = 0;
-    historyLimit = 50000;
-    keyMode = "vi";
-    clock24 = true;
-    mouse = true;
-    focusEvents = true;
-
-    extraConfig = ''
-      # Alt-c를 보조 prefix로 추가 (Ctrl-b와 병행)
-      set -g prefix2 M-c
-
-      # True-color(24bit) 지원
-      # terminal-features: tmux → 외부 터미널 방향 (RGB 색상 패스스루)
-      # terminal-overrides: 모든 터미널에 Tc(true-color) 활성화
-      set -as terminal-features ",xterm-256color:RGB"
-      set -as terminal-features ",xterm-ghostty:RGB"
-      set -as terminal-features ",tmux-256color:RGB"
-      set -as terminal-overrides ",*:Tc"
-
-      # COLORTERM 전달: tmux 내부 프로세스(Emacs 등)가 true-color 감지용
-      # update-environment: 새 세션 생성 시 외부에서 가져올 변수 목록
-      # set-environment: tmux 글로벌 환경에 직접 설정 (폴백)
-      set -ga update-environment "COLORTERM"
-      set-environment -g COLORTERM "truecolor"
-
-      # OSC-52 클립보드 지원 (SSH 원격 복사)
-      set -g set-clipboard on
-      set -g allow-passthrough on
-
-      # Vi 복사 모드 with OSC-52
-      bind-key -T copy-mode-vi v send-keys -X begin-selection
-      bind-key -T copy-mode-vi C-v send-keys -X rectangle-toggle
-      bind-key -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'cat | base64 -w0 | xargs -I{} printf "\033]52;c;{}\007"'
-      bind-key -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel 'cat | base64 -w0 | xargs -I{} printf "\033]52;c;{}\007"'
-
-      # 상태바 설정 (심플)
-      set -g status-bg colour235
-      set -g status-fg white
-      set -g status-left '#[fg=green]#S #[fg=yellow]#H '
-      set -g status-right '#[fg=cyan]%Y-%m-%d %H:%M'
-
-      # 창 분할 키 (현재 경로 유지)
-      bind | split-window -h -c "#{pane_current_path}"
-      bind - split-window -v -c "#{pane_current_path}"
-      bind c new-window -c "#{pane_current_path}"
-
-      # 창 이동 vim 스타일
-      bind h select-pane -L
-      bind j select-pane -D
-      bind k select-pane -U
-      bind l select-pane -R
-
-      # 창 크기 조절 (Alt + 방향키)
-      bind -n M-Left resize-pane -L 5
-      bind -n M-Right resize-pane -R 5
-      bind -n M-Up resize-pane -U 5
-      bind -n M-Down resize-pane -D 5
-
-      # 설정 리로드
-      bind r source-file ~/.config/tmux/tmux.conf \; display "Config reloaded!"
-
-      # 세션 로깅 (작업 기록용)
-      bind P pipe-pane -o "cat >>~/tmux-#W.log" \; display "Logging to ~/tmux-#W.log"
-
-      # 윈도우 자동 리넘버링
-      set -g renumber-windows on
-    '';
-  };
+  home.packages = [
+    pkgs.tmux
+  ];
+  # 설정 본문은 users/junghan/configs/tmux.conf 를 직접 symlink.
+  # 라이브 편집/테스트를 위해 Home Manager 생성 conf 대신 repo 파일을 사용.
 
   #---------------------------------------------------------------------
   # Zellij (modern terminal multiplexer)

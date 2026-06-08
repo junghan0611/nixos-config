@@ -230,6 +230,9 @@ in {
     # ghostty: 레포 파일로 직접 symlink (편집 가능, nix store 경유 아님)
     ".config/ghostty/config".source = config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/ghostty.linux";
+    # tmux: 레포 파일로 직접 symlink (편집 가능, nix store 경유 아님)
+    ".config/tmux/tmux.conf".source = config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/tmux.conf";
     # kitty: NixOS 관리에서 분리 — 직접 ~/.config/kitty/kitty.conf 편집으로 테스트 중
     # ".config/kitty/kitty.conf".text = builtins.readFile ./configs/kitty;
     # wezterm: 레포 파일로 직접 symlink (편집 가능, nix store 경유 아님)
