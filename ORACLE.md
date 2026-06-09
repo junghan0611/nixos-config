@@ -94,7 +94,7 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
 | **main** | `anthropic/claude-opus-4-8` | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context |
-| glg (가족) | `openai/gpt-5.4` | `workspace-glg/` | partial | ✓ | `@glg_junghanacs_bot`. Codex OAuth |
+| glg (가족) | `openai/gpt-5.5` | `workspace-glg/` | partial | — | `@glg_junghanacs_bot`. Codex OAuth. 5.5 승격 2026-06-09 (가족 대소사 + 아내 지원). active-memory 제외(응답성 우선) |
 | gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 |
 | **bbot** | `anthropic/claude-opus-4-8` | `workspace-bbot/` | off | ✓ | `@glg_b_bot`. claude-cli runtime native |
 | mini | `anthropic/claude-sonnet-4-6` | `workspace-mini/` | off | — | sonnet 4.6 단독. active-memory 제외 검증 lane |
@@ -112,7 +112,7 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 
 > 운영 컨텍스트 메모: catalog 표기가 `266k/1025k` 같은 "이론치/확장치"로 보여도 라이브 `/status`는 보통 200k로 잡힌다. 5.4 vs 5.5 컨텍스트 트레이드오프는 사실상 없음.
 
-> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. 배치 원칙: 가벼운 turn은 5.4-mini, 가족/일반은 5.4, 신형 트라이얼은 5.5(gpt 봇 단독). active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호.
+> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. 배치 원칙: 가벼운 turn은 5.4-mini, **가족(glg)·개인(gpt)은 5.5**(glg 2026-06-09 승격 — 가정사 추론·아내 지원, 5.5=2x 비용이라 `Week % left` 주시), active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호.
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`).
 
@@ -129,10 +129,10 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — 현재 main/glg/gpt/bbot 활성
+### Active memory — 현재 main/gpt/bbot 활성
 
 운영 config:
-- `agents: ["main", "glg", "gpt", "bbot"]` — 4개 활성 (mini/gemini 제외)
+- `agents: ["main", "gpt", "bbot"]` — 3개 활성 (glg 2026-06-09 제외: recall 훅이 가족 응답을 16~35s 지연시켜 응답성 우선으로 제거. mini/gemini 제외)
 - `model: "openai/gpt-5.4-mini"` — recall lane을 mini로 분리, main lane과 OAuth quota 경합 회피
 - `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
 - `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호
