@@ -21,9 +21,9 @@
 
 ---
 
-## 현재 위치 — `v2026.5.31` (첫 CalVer 태그)
+## 현재 위치 — `v2026.6.10`
 
-이 repo의 첫 CalVer 스냅샷. 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 상세는 아래 업그레이드/결정 이력.
+`v2026.5.31`(첫 CalVer) 이후 `v2026.6.2`·`v2026.6.4`를 거쳐 현재. 이번 스냅샷의 큰 줄기: **OpenClaw 6.1→6.5 업그레이드 + gemini ACP→네이티브 OAuth 전환 + pi-shell-acp 제거**(이 배포에 third-party ACP 0). 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 상세는 아래 업그레이드/결정 이력.
 
 **인프라 형상**
 - **디바이스 4종**: `oracle`(aarch64 클라우드 VM, headless, 봇 런타임) / `nuc`(home server) / `laptop`(Samsung NT930SBE) / `thinkpad`(work GUI). i3는 oracle 제외 GUI 디바이스에만, oracle은 headless 프로파일.
