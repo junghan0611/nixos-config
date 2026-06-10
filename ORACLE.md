@@ -49,16 +49,13 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 - Container state can always be nuked via `--force-recreate`; SSOT paths stay clear.
 - Real operational failures get recorded under [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) so the next agent does not repeat them.
 
-### ACP route — pi-shell-acp plugin position
+### ACP 제거 완료 (2026-06-10) — 이 배포에 ACP 없음
 
-gemini는 OpenClaw 안에서 [`pi-shell-acp`](https://github.com/junghan0611/pi-shell-acp) OpenClaw plugin을 통해 ACP child로 돈다 (bbot은 claude-cli native 전환 완료, gemini만 ACP 잔존 — 삭제 예정). 운영 사실 (모델/streaming/active-memory)은 §2 model routing 표에 박혀있고, architectural stance는 다음:
+마지막 ACP 사용처였던 gemini가 **네이티브 `google` provider(google-gemini-cli OAuth, Pro 쿼터)로 전환**되면서, `pi-shell-acp` plugin은 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거(acpx와 동일 패턴, 런타임 plugin 목록에서 빠짐). main의 죽은 `pi-shell-acp/*` picker 엔트리도 제거. acpx도 여전히 disabled(`plugins.entries.acpx.enabled=false` + `acp.enabled=false`).
 
-- **Backend 자치권**: pi backend가 자기 session / ACP wire / prompt assembly를 자기 책임으로 갖는다. OpenClaw native Codex가 base/personality를 갖는 패턴 (5.19 L33)과 같은 모양.
-- **OpenClaw 책임 범위**: runtime context + delivery guidance + tool surface만 contribute. visible body / final-message recovery / chat-completion tail sanitization 같은 plugin-boundary 책임은 pi-shell-acp 자체 plugin code가 진다 (issue #17 / #20 audit 영역).
-- **`@openclaw/acpx`와의 차이**: acpx는 OpenClaw가 만든 ACP harness (legacy, 5.2 외부화)로 우리는 disabled (`plugins.entries.acpx.enabled=false`). pi-shell-acp는 third-party native plugin path — OpenClaw plugin SDK 위에서 자체 ACP child spawn. acpx에 의존 0.
-- **운영 함의**: OpenClaw 업그레이드의 ACP/Codex 영역 fix layer는 일반 Agents/ACP child handling 자리만 우리에게 spill-over. plugin code 책임 자리는 pi-shell-acp commit chain으로 추적 (e7eefeb / 8b25c1e / cc0c033 등).
-
-> gemini 거취 결정(삭제 vs ACP 유지)은 [NEXT.md §1](NEXT.md). 결정되면 이 stance 자체를 재검토/삭제.
+- **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/bbot/mini), codex(glg/gpt), google-gemini-cli(gemini). third-party ACP harness 의존 0.
+- 전환 서사 / 옛 pi-shell-acp stance(backend 자치권 등) / 빈응답 사건은 [ROADMAP.md](ROADMAP.md) 운영 결정 이력으로 이관.
+- pi-shell-acp 엔트리는 삭제하지 않고 `enabled:false`로 남긴다 — **엔트리를 지우면 기본 로드로 복귀**하기 때문(2026-06-10 확인). 끄려면 반드시 엔트리 present + `enabled:false`.
 
 ---
 
@@ -83,13 +80,13 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 - **main**: Anthropic Max via canonical `anthropic/claude-opus-4-8` + `agentRuntime claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
 - **glg / gpt**: Codex OAuth ($100 plan)
 - **mini**: Codex OAuth, but **직접 대화 X** — active-memory 영역 보조 lane으로 격리
-- **gemini**: pi-shell-acp ACP route (유일한 ACP 잔존 봇 — 삭제 예정, §3)
+- **gemini**: 네이티브 `google` provider — `google-gemini-cli` OAuth (Pro 쿼터, **API 아님**). 2026-06-10 ACP→네이티브 전환
 
-Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)는 **삭제 예정**.
+Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로필은 잔재, 미사용).
 
 **Fallback**: 모든 봇 `fallbacks: []`. 정공법은 **안 되면 안 되는 거 — 응답 막히면 자동 fallback이 아니라 모델 자체를 바꾼다**. 자동 fallback이 부르는 quota inflation / 다른 path 소진 연쇄를 차단. 근거·이력은 [ROADMAP.md](ROADMAP.md).
 
-**Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), `pi-shell-acp/*` = ACP route). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix는 카탈로그 식별자, 과금은 runtime이 결정:
+**Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), `google/*`+`auth.order.google=[google-gemini-cli:…]` = Gemini 구독 쿼터(OAuth, runner=cli)). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix는 카탈로그 식별자, 과금은 runtime/auth가 결정:
 
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
@@ -98,7 +95,7 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 | gpt | `openai/gpt-5.5` | `workspace-gpt/` | partial | ✓ | 개인 — 5.5 단일 봇 트라이얼 |
 | **bbot** | `anthropic/claude-opus-4-8` | `workspace-bbot/` | off | ✓ | `@glg_b_bot`. claude-cli runtime native |
 | mini | `anthropic/claude-sonnet-4-6` | `workspace-mini/` | off | — | sonnet 4.6 단독. active-memory 제외 검증 lane |
-| **gemini** | `pi-shell-acp/gemini-3.1-pro-preview` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. ACP route, Gemini CLI backend. 빈응답 미해결 — 삭제 예정 |
+| **gemini** | `google/gemini-3.1-pro-preview` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. **네이티브** `google-gemini-cli` OAuth(`gtgkjh@gmail.com`, **Pro 쿼터**, runner=cli). **fallback 없음** — 안 되면 안 씀. API키(`GEMINI_API_KEY`) 회피는 `auth.order.google` 핀. 2026-06-10 ACP 탈출(실응답 검증) |
 | subagents | `openai/gpt-5.4` | — | — | — | active-memory recall lane은 `openai/gpt-5.4-mini`로 분리 (main lane quota 보호) |
 
 > **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native claude-cli runtime은 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. **canonical 등록(5.28)**: model.primary/카탈로그를 `anthropic/<id>`로 두고 `{ "agentRuntime": { "id": "claude-cli" } }`를 붙이면 끝 — provider prefix `anthropic/`는 카탈로그 식별자일 뿐, runtime이 `claude-cli`면 구독 경로. legacy `claude-cli/<id>` prefix는 폐기(doctor/update가 canonical로 auto-migrate — profile 먼저 등록 필수). EPIPE·streaming off·전환 타임라인은 [ROADMAP.md](ROADMAP.md).
@@ -114,9 +111,9 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀. Copilot 잔재(`gemini` agent)
 
 > Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. 배치 원칙: 가벼운 turn은 5.4-mini, **개인(gpt)은 5.5, 가족(glg)은 5.4**(glg 2026-06-10 5.5→5.4 강등 — cross-DM 판단 과잉 사건 후 "딱 할일만", 5.5=2x 비용 회수), active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호.
 
-이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`).
+이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`). **`GEMINI_API_KEY`는 이미지(나노바나나) 전용** — gemini 챗봇은 `auth.order.google` 핀으로 OAuth만 타고 API키는 안 씀.
 
-ACPX disabled (`plugins.entries.acpx.enabled=false` + `acp.enabled=false`). 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
+ACPX + pi-shell-acp 둘 다 disabled (`plugins.entries.{acpx,pi-shell-acp}.enabled=false` + `acp.enabled=false`). pi-shell-acp는 **엔트리 지우면 기본 로드로 복귀**하니 반드시 present + `enabled:false` 유지. 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
 
 라이브 값 확인:
 

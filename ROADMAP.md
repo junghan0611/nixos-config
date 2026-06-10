@@ -33,7 +33,7 @@
 **봇 런타임 요약**
 - OpenClaw **2026.6.5**, ready 5.2s, 14 plugins, healthy.
 - main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
-- gemini만 legacy ACP 잔존 (거취 결정 대기, [NEXT.md §1](NEXT.md)).
+- 전 봇 OpenClaw 네이티브 provider/runtime — **ACP 제거 완료**(2026-06-10, gemini→`google` google-gemini-cli OAuth). third-party ACP 의존 0.
 
 **문서·릴리즈 체계**
 - AGENTS.md(현재 상태) / NEXT.md(다음) / ROADMAP.md(이력·서사) / CHANGELOG.md(무엇이 바뀌었나, CalVer) + 디바이스 핸드북 ORACLE.md·THINKPAD.md + docs/openclaw-gotchas.md(함정).
@@ -55,7 +55,7 @@
 
 **안심 포인트**: 위험한 **session-metadata SQLite 마이그레이션은 6.5 beta train에서 의도적 보류**(JSON-backed 유지) — 가장 큰 마이그레이션 리스크가 빠진 릴리즈.
 
-**신규 WARN — pi-shell-acp provider 카탈로그 (gemini ACP)**: 6.5 strict provider 검증이 `plugins.entries.pi-shell-acp` 의 `provider must be an object` 를 새로 잡음(stub provider는 정상 registered). gemini ACP는 이미 **삭제 예정**([NEXT.md §1](NEXT.md))이라 무관 — 오히려 삭제 근거 강화. 그 외 WARN: non-loopback bind(harmless 기존)·Personal Codex CLI assets isolated-homes(harmless info).
+**신규 WARN — pi-shell-acp provider 카탈로그 (gemini ACP)**: 6.5 strict provider 검증이 `plugins.entries.pi-shell-acp` 의 `provider must be an object` 를 새로 잡음(stub provider는 정상 registered). gemini ACP는 이미 **삭제 예정**이라 무관 — 오히려 삭제 근거 강화. **→ 2026-06-10 gemini 네이티브 전환 + pi-shell-acp 제거로 이 WARN 해소**(아래 운영 결정 이력). 그 외 WARN: non-loopback bind(harmless 기존)·Personal Codex CLI assets isolated-homes(harmless info).
 
 **검증**: `OpenClaw 2026.6.5`, ready 5.2s, **14 plugins**(6.1의 13 + 신규 `openai` 플러그인 — Codex/OpenAI provider 분리), healthy. doctor **Errors 0**. 모델 전부 보존: main/bbot `claude-opus-4-8`, mini `sonnet-4-6`, glg `gpt-5.4`(전날 강등 유지), gpt `gpt-5.5`. 디스크 8.9G(91%, 약간 빠듯 — 추후 generation 정리 여지). 롤백: Dockerfile FROM 6.1 환원(주석 보존) + rebuild·recreate.
 
@@ -116,6 +116,16 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 ---
 
 ## 운영 결정 이력
+
+### gemini 네이티브 부활 + ACP 완전 제거 (2026-06-10)
+
+gemini는 그간 **유일한 ACP 잔존 봇**으로 `pi-shell-acp/gemini-3.1-pro-preview`(외부 gemini CLI를 ACP child로 spawn)에 의존했고, child ~2s 무출력 exit(빈응답, [pi-shell-acp #27](https://github.com/junghan0611/pi-shell-acp/issues/27)) 미해결로 "삭제 후보"였다. 6.5 업그레이드 조사 중 **OpenClaw 네이티브 `google` provider(stock 익스텐션, enabled)** + **`google-gemini-cli` OAuth**가 이 박스에 이미 깔려 있음을 확인 → ACP 우회 없이 정공법 부활.
+
+- **API 아닌 Pro 쿼터**: `google-gemini-cli` OAuth = 구독 라우트(`usage: Pro 100% left · Flash 100% left`). 종량 `GEMINI_API_KEY`(google provider)와 분리. 회피는 **canonical `auth.order.google = ["google-gemini-cli:gtgkjh@gmail.com"]` 핀** — anthropic→claude-cli, openai→OAuth와 동일한 order 메커니즘. `GEMINI_API_KEY`는 이미지(나노바나나) 전용으로 남김.
+- **밑단 creds**: `~/.gemini`가 이미 `active: gtgkjh@gmail.com`(Pro, `antigravity-cli/` 동거). OpenClaw 프로필만 옛 junghanacs(stale)라 **공식 `openclaw models auth login --provider google-gemini-cli`(TTY, method=`sync`)** 로 gtgkjh 동기화. `--device-code`는 이 provider에 없는 메서드라 실패 → 인터랙티브 `sync` 선택이 정답(브라우저 불필요, 기존 creds import).
+- **에이전트 canonical 전환**: `model.primary=google/gemini-3.1-pro-preview`, `fallbacks:[]`(안 되면 안 씀 — 정공법 원칙), agentRuntime 없음(runner=cli, google-gemini-cli 자체 CLI 바인딩). 라이브 검증: `provider=google-gemini-cli model=gemini-3.1-pro-preview fallbackUsed=false stopReason=completed refusal=false` + 실 한국어 응답(옛 ACP 빈응답과 정반대).
+- **pi-shell-acp 제거**: 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`(런타임 14 plugins에서 빠지고 `google` 자리잡음) + main의 죽은 `pi-shell-acp/*` picker 3개 제거. **함정: 엔트리를 *삭제*하면 기본 로드로 복귀**(2026-06-10 확인) → acpx처럼 엔트리 present + `enabled:false` 유지가 정답. doctor Errors 0.
+- **forward 리스크**: gemini-cli는 Antigravity(agy)로 통합 예정. 그땐 OpenClaw 업스트림(`antigravity`/agy provider)을 따라 프로필만 마이그레이션 — 손으로 creds 복사하는 우회가 아니라 공식 provider 추적. `~/.gemini/antigravity-cli/` 이미 존재로 계정 entitlement 준비됨.
 
 ### Opus 4.8 canonical 정공법 + per-agent auth inherit (2026-05-31)
 

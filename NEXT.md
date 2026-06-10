@@ -57,28 +57,19 @@ Forge 가동 검증 완료분(인스턴스 + Caddy 30초 인증서, work alskdjf
 
 ---
 
-## 1. pi-shell-acp 의존 정리 사이클 (활성, 2026-05-26 시작)
+## 1. pi-shell-acp 정리 — 완료, 잔재 청소만 (2026-06-10 ACP 제거)
 
-claude-cli native가 third-party harness 식별 회피 + Pro/Max 한도 + 1M context + workspace-aware skills 모두 충족 → pi-shell-acp wrap path의 필요성 크게 감소. 정리 사이클 진행 중.
+claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `google-gemini-cli` OAuth 전환(2026-06-10)** 으로 pi-shell-acp 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거. **이 배포에 third-party ACP 없음.** 정리 사이클의 본체는 끝났고 mount 잔재 청소만 남음.
 
-> 완료분(2026-05-26 검증 자리, 2026-05-29 bbot native 전환·opus 4.8 승급·verbose full→on·pi-shell-acp 12 commits 최신화, **2026-05-31 OpenClaw 5.28 업그레이드 + Opus 4.8 canonical 정공법 전환 + per-agent auth inherit + 레거시 정리**)은 [ROADMAP.md](ROADMAP.md) "운영 결정 이력"으로 이관. pi-shell-acp Issue #25 분석 요청: <https://github.com/junghan0611/pi-shell-acp/issues/25>.
+> 완료분(2026-05-26~31 자리들, **2026-06-10 gemini 네이티브 부활 + pi-shell-acp 제거**, **6.1→6.5 업그레이드**)은 [ROADMAP.md](ROADMAP.md) "운영 결정 이력"/"OpenClaw 업그레이드 이력"으로 이관. pi-shell-acp Issue #25: <https://github.com/junghan0611/pi-shell-acp/issues/25>.
 
-### 다음 한 걸음
+### 남은 한 걸음 (ACP 잔재 청소)
 
-- [ ] **gemini ACP 빈응답 — pi-shell-acp Issue #27** (<https://github.com/junghan0611/pi-shell-acp/issues/27>). pi-shell-acp 최신화 후에도 gemini child ~2s 무출력 exit(placeholder recovery, isError). auth(GEMINI_API_KEY+OAuth creds)·gemini CLI 0.44.1 정상 존재 → gemini-path visible-body 회수 / backend turn-start 영역. **지금 손 못 댐, 이슈로만 추적**. gemini는 삭제 후보라 우선순위 낮음
-- [ ] **gemini 거취 결정 (검토 1순위)** — (a) agent 삭제 (텔레그램 봇 회수 / workspace-gemini archival + `pi-shell-acp/gpt-*`·`gemini` picker 엔트리·관련 compose mount 정리) vs (b) #27 해결 후 ACP 유지. claude-cli 비해당(Gemini 모델군)이라 native 전환 불가. **이번 5.28 정공법 전환에서 gemini만 legacy ACP 잔존** — main/bbot/mini는 canonical 완료. 거취 결정이 ACP route stance(AGENTS/ORACLE §2)와 compose mount 정리의 trigger.
-- [ ] **gemini stale OAuth shadow 정리** — 5.28 doctor가 `google-gemini-cli` per-agent 프로필(glg/gpt/gemini/bbot/mini)을 stale shadow로 플래그(claude의 `anthropic:claude-cli` shadow는 `doctor --fix`로 이미 제거, main inherit). 이건 claude 아닌 기존 cruft 라 이번 scope 밖 — gemini 거취 결정 시 `doctor --fix`로 함께 정리(현재 Errors 0, 비긴급)
-- [ ] **bbot turn 5-7d soak GREEN** (canonical `anthropic/claude-opus-4-8` + claude-cli runtime 안정성 확인. 5.28 전환 직후 headless GREEN, 텔레그램 실사용 soak 관찰)
-- [ ] **pi-shell-acp Issue #25 분석 결과** (담당자 OpenClaw dist 분석 → A/B/C 정책)
-
-### 정리 후 검토 자리 (claude ACP 정리 완료 후)
-
-| 자리 | 검토 내용 |
-|---|---|
-| compose mount 정리 | `~/.pi/agent`, `~/.claude-plugin/skills` 등 — gemini가 마지막 ACP 사용처. gemini 거취 결정 후 필요한 mount만 남김 |
-| AGENTS.md §2 ACP route stance | "pi backend 자치권" stance 재검토. claude-cli native가 first-class + claude ACP 정리 완료라 stance 의미 변화 |
-| gotchas.md ACPX 비활성 자리 | claude-cli native와 함께 재정리 |
-| pi-shell-acp 활용 자리 | gemini(#27) 외 정말 필요한 자리만 남김 vs 완전 deprecation |
+- [ ] **compose mount 정리** — gemini가 마지막 ACP 사용처였다. `docker-compose.yml`의 ACP 전용 mount(`~/.pi/agent`, `~/.claude-plugin/skills` 등)가 남아있으면 제거(이제 unblocked). 단 claude-skills overlay(§ skills)와 겹치는 mount는 남김 — 헷갈리지 말 것.
+- [ ] **pi-shell-acp 엔트리 최종 거취** — `enabled:false`로 무력화 완료. **엔트리 *삭제*는 기본 로드 복귀 함정**(2026-06-10 확인)이라 불가 → present + `enabled:false` 영구 유지가 정답. workspace-gemini archival 여부만 별도 판단(현재 네이티브 gemini가 씀, 유지).
+- [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.
+- [ ] **bbot turn soak GREEN** (canonical `anthropic/claude-opus-4-8` + claude-cli runtime 텔레그램 실사용 관찰)
+- [ ] **gemini Pro 쿼터 soak** — `usage: Pro/Flash 100% left`에서 실사용 시 소진 곡선 관찰. fallback 없으니 쿼터 소진=무응답, `Week % left` 주시.
 
 ---
 
