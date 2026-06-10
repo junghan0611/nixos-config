@@ -31,7 +31,7 @@
 - **NixOS 채널**: `nixos-25.11` + home-manager 25.11 (stateVersion 25.05 고정). **26.05 업그레이드 대기** — 25.11 EOL 2026-06-30, → [NEXT.md §8](NEXT.md).
 
 **봇 런타임 요약**
-- OpenClaw **2026.6.1**, ready 4.9s, 13 plugins, healthy.
+- OpenClaw **2026.6.5**, ready 5.2s, 14 plugins, healthy.
 - main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
 - gemini만 legacy ACP 잔존 (거취 결정 대기, [NEXT.md §1](NEXT.md)).
 
@@ -44,6 +44,20 @@
 ## OpenClaw 업그레이드 이력
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
+
+### 2026.6.5 (2026-06-10, GREEN)
+
+릴리즈 트레인이 **월별 patch 넘버링으로 전환** — 6.2~6.4 stable 부재, 6.1(6/3) 다음 stable이 곧 6.5(6/9). 따라서 6.1 → 6.5 는 **stable 한 칸**. Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.6.1 → :2026.6.5` + `docker compose build --pull && up -d --force-recreate`. codex plugin은 stock(번들)이라 base bump와 함께 자동 6.5.
+
+**우리 직접 이득 (이 hop을 택한 이유)**: Anthropic/Codex/ACP/agent recovery 대거 수정 — stream start 이벤트를 `message_start`까지 지연시켜 **prompt-cache 만료·Gateway restart 후 extended-thinking 복구**(#90667/#90697), compaction 후 stale thinking signature 제거, **빈 completion handoff 거부**, parent streaming-off override 보존, Codex 세션/스레드 마이그레이션 엣지케이스(#90729 외). + **MCP tool-result 강제 coercion**(`resource_link`/`audio`/malformed image를 materialize 경계에서 text화 → Anthropic 400·세션 히스토리 오염 방지, #90710/#90728). + message-tool send가 delivery로 카운트(#90123). ROADMAP에 박힌 EPIPE·빈응답·streaming-off 계열의 정공 수정 묶음.
+
+**Breaking/마이그레이션 — auth profiles → SQLite (#89102, 의무 확인)**: auth 저장 형식이 per-agent JSON → SQLite로 이전. 업그레이드 후 `openclaw doctor --fix` 실행 → `openclaw-agent.sqlite` 생성, 구 `auth-profiles.json`/`auth-state.json`/`auth.json`은 `*.sqlite-import.<ts>.bak`로 보존(데이터 손실 0). 검증 결과 **stale OAuth shadow 미발생** — 모든 봇 `anthropic:claude-cli: expiring(7h)`(정상 만료 advisory, 자동 refresh), `Headless Claude auth: OK(oauth)`. 공유 `~/.claude` mount 함정(2026-05-31·6.1 사례)이 이번엔 재발 안 함. cron legacy JSON → SQLite도 doctor preflight 자동 마이그레이션.
+
+**안심 포인트**: 위험한 **session-metadata SQLite 마이그레이션은 6.5 beta train에서 의도적 보류**(JSON-backed 유지) — 가장 큰 마이그레이션 리스크가 빠진 릴리즈.
+
+**신규 WARN — pi-shell-acp provider 카탈로그 (gemini ACP)**: 6.5 strict provider 검증이 `plugins.entries.pi-shell-acp` 의 `provider must be an object` 를 새로 잡음(stub provider는 정상 registered). gemini ACP는 이미 **삭제 예정**([NEXT.md §1](NEXT.md))이라 무관 — 오히려 삭제 근거 강화. 그 외 WARN: non-loopback bind(harmless 기존)·Personal Codex CLI assets isolated-homes(harmless info).
+
+**검증**: `OpenClaw 2026.6.5`, ready 5.2s, **14 plugins**(6.1의 13 + 신규 `openai` 플러그인 — Codex/OpenAI provider 분리), healthy. doctor **Errors 0**. 모델 전부 보존: main/bbot `claude-opus-4-8`, mini `sonnet-4-6`, glg `gpt-5.4`(전날 강등 유지), gpt `gpt-5.5`. 디스크 8.9G(91%, 약간 빠듯 — 추후 generation 정리 여지). 롤백: Dockerfile FROM 6.1 환원(주석 보존) + rebuild·recreate.
 
 ### 2026.6.1 (2026-06-04, GREEN)
 

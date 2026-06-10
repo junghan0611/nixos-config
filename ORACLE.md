@@ -75,7 +75,7 @@ gemini는 OpenClaw 안에서 [`pi-shell-acp`](https://github.com/junghan0611/pi-
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (현재: OpenClaw 2026.6.1 baseline)
+### Model routing (현재: OpenClaw 2026.6.5 baseline)
 
 > 버전 업그레이드 이력 / 운영 결정 연혁 (5.2→5.28, claude-cli 전환, 정공법들, 6.1 codex auth canonical migration)은 [ROADMAP.md](ROADMAP.md)로 이관. 이 섹션은 *현재 라우팅 상태*만 답한다.
 

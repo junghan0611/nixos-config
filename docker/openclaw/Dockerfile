@@ -35,8 +35,16 @@
 # vector enabled 라 영향 적음). tokenjuice/Copilot 이 official npm plugin 으로 externalize(우리 미설치 무관).
 # codex plugin stock(번들)이라 base bump 와 함께 자동 6.1 — host-native 의 `plugins update @openclaw/codex`
 # 동시 업글 함정(버전 mismatch) 비해당. mattermost 컨테이너 주소 churn(그 레퍼런스 고유) 비해당.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.5.28
-FROM ghcr.io/openclaw/openclaw:2026.6.1
+# 6.1 → 6.5 (2026-06-10): 릴리즈 트레인 월별 patch 넘버링 전환(6.2~6.4 stable 없음, 6.1 다음 stable=6.5).
+# 우리 직접 이득: Anthropic/Codex/ACP/agent recovery 대거 수정(stream start를 message_start까지 대기 → prompt-cache
+# 만료·Gateway restart 후 복구, compaction stale thinking signature 제거, 빈 completion handoff 거부, Codex
+# 세션/스레드 마이그레이션 엣지케이스) + MCP tool-result 강제 coercion(Anthropic 400·세션 오염 방지) +
+# message-tool send 가 delivery 로 카운트. Breaking/마이그레이션: auth profiles → SQLite 이전(#89102) →
+# 업그레이드 후 doctor --fix 의무 + 3봇(main/bbot/mini) Anthropic auth GREEN 재확인(공유 ~/.claude mount 함정과
+# 겹침). cron legacy JSON → SQLite 는 doctor preflight 자동 마이그레이션. 안심: 위험한 session-metadata SQLite
+# 마이그레이션은 6.5 에서 의도적 보류(JSON-backed 유지). codex plugin stock(번들)이라 base bump 와 함께 자동 6.5.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.1
+FROM ghcr.io/openclaw/openclaw:2026.6.5
 
 USER root
 
