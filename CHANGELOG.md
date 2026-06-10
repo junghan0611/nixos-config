@@ -9,6 +9,19 @@
 
 ## Unreleased
 
+## v2026.6.10
+
+### Changed
+- **OpenClaw 2026.6.1 → 6.5 업그레이드**: `docker/openclaw/Dockerfile` FROM bump. Anthropic/Codex/ACP recovery 수정 + MCP tool-result coercion + auth profiles SQLite 마이그레이션(`doctor --fix`). 모델 전부 보존, doctor Errors 0.
+- **gemini 봇 ACP → 네이티브 OAuth 전환**: `pi-shell-acp` ACP route를 OpenClaw 네이티브 `google-gemini-cli/gemini-3.1-pro-preview`(OAuth, **Pro 쿼터**)로 교체. fallback 없음. provider prefix가 과금 경로를 가른다 — `google/`(api-key) 아닌 `google-gemini-cli/` 必(함정: `/status` `🔑` auth 라인이 진실, ROADMAP 기록).
+- **glg 가족봇 모델 라우팅**: gpt-5.5 승격 후 **gpt-5.4 강등**(cross-DM 판단 과잉 억제) + cross-DM **원문-only 전달 규칙** 신설.
+
+### Added
+- **tmux**: ctrl-friendly copy mode.
+
+### Removed
+- **pi-shell-acp 제거**: gemini 네이티브 전환으로 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`. 이 배포에서 third-party ACP 완전 소멸.
+
 ## v2026.6.4
 
 ### Changed
