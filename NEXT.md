@@ -70,7 +70,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.
 - [ ] **bbot turn soak GREEN** (canonical `anthropic/claude-opus-4-8` + claude-cli runtime 텔레그램 실사용 관찰)
 - [ ] **gemini Pro 쿼터 soak** — `usage: Pro/Flash 100% left`에서 실사용 시 소진 곡선 관찰. fallback 없으니 쿼터 소진=무응답, `Week % left` 주시.
-- [ ] **이미지생성(나노바나나) auth.order 영향 미재검증** — `auth.order.google=[OAuth]` 설정 후 `GEMINI_API_KEY` 기반 이미지생성이 여전히 동작하는지 확인. generate_image가 별도 env 경로면 무관(추정), google provider 모델 auth를 타면 깨질 수 있음 → 그 경우 이미지 모델만 api-key 프로필로 per-model 핀. **실제 이미지 호출 1회로 검증 전까지 단정 금지.**
+- [ ] **이미지생성(나노바나나) `GEMINI_API_KEY` 경로 미재검증** — gemini 챗봇이 `google-gemini-cli/` OAuth로 전환된 뒤, `GEMINI_API_KEY`(`google` api-key provider) 기반 이미지생성이 여전히 동작하는지 확인. 두 provider가 분리돼 무관할 가능성 큼(추정). **실제 이미지 호출 1회로 검증 전까지 단정 금지.** (`auth.order.google` 핀은 cross-provider라 안 먹어 제거됨 — 자세한 건 ROADMAP 2026-06-10 함정 항목)
 
 ---
 
