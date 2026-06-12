@@ -9,6 +9,9 @@
 
 ## Unreleased
 
+### Changed
+- **bbot 모델 opus-4-8 → claude-fable-5 승격**: OpenClaw 6.6 + 번들 claude CLI 2.1.175가 `claude-fable-5` 지원. claude-cli runtime canonical(`anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`). 라이브 검증 `model=claude-fable-5 runner=cli fallbackUsed=false`.
+
 ## v2026.6.13
 
 ### Changed
