@@ -21,9 +21,9 @@
 
 ---
 
-## 현재 위치 — `v2026.6.10`
+## 현재 위치 — `v2026.6.13`
 
-`v2026.5.31`(첫 CalVer) 이후 `v2026.6.2`·`v2026.6.4`를 거쳐 현재. 이번 스냅샷의 큰 줄기: **OpenClaw 6.1→6.5 업그레이드 + gemini ACP→네이티브 OAuth 전환 + pi-shell-acp 제거**(이 배포에 third-party ACP 0). 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 상세는 아래 업그레이드/결정 이력.
+`v2026.5.31`(첫 CalVer) 이후 `v2026.6.2`·`v2026.6.4`·`v2026.6.10`을 거쳐 현재. 이번 스냅샷의 큰 줄기: **OpenClaw 6.5→6.6 업그레이드(보안 경계 강화) + glg 가족봇 5.5 재승격 + gemini agy 이관 드리프트 방어 체계화**. gemini는 `google-gemini-cli` OAuth(Pro 쿼터)를 기준선으로 유지하되, `doctor --fix`/업글이 `google/`(api-key 금지경로)로 자동 재작성하는 드리프트가 당분간 구조적 — "이관 사안"으로 인지·검토하는 운영 원칙을 ORACLE.md에 박았다. 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 상세는 아래 업그레이드/결정 이력.
 
 **인프라 형상**
 - **디바이스 4종**: `oracle`(aarch64 클라우드 VM, headless, 봇 런타임) / `nuc`(home server) / `laptop`(Samsung NT930SBE) / `thinkpad`(work GUI). i3는 oracle 제외 GUI 디바이스에만, oracle은 headless 프로파일.
@@ -44,6 +44,18 @@
 ## OpenClaw 업그레이드 이력
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
+
+### 2026.6.6 (2026-06-13, GREEN)
+
+6.5 다음 stable **한 칸** — 보안 경계 강화 위주 patch. Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.6.5 → :2026.6.6`(runtime SSOT = openclaw-config repo, nixos-config `docker/openclaw/Dockerfile` 미러도 동기) + `docker compose build && up -d`. codex plugin stock 자동 6.6.
+
+**핵심 주의 — 보안 하드닝의 우리쪽 접점**: "host 환경 상속 / MCP stdio / sandbox bind / Codex HTTP 접근" 경계가 조여짐. oracle custom 빌드에서 유일하게 닿는 곳은 **`emacs-agent.sh` 의 env·소켓 주입** — recreate 후 스모크: `PI_EMACS_AGENT_SOCKET=/run/emacs/server` + `emacsclient` 바이너리 생존 확인 GREEN(하드닝이 주입 경로 미침해). **직접 이득**: Telegram 라우팅/스트리밍/콜백 신뢰성 수정(주 채널) + 무단 DM 텍스트 캐시/프롬프트 컨텍스트 미포함(cross-DM 계열 하드닝) + 세션 재바인드 후 stale approval followup 제거. **운영 변경**: compaction 기본 타임아웃 180s 단축(명시 설정 존중).
+
+**마이그레이션 — doctor --fix 의무 유지**: "SQLite 인증 마이그레이션 검증 후 정리"(6.5 SQLite 이전의 연장). 실행 결과 Errors 0, 3봇 Anthropic auth GREEN(공유 `~/.claude` mount 함정 미재발), openai/codex 서빙 ok.
+
+**⚠️ doctor가 일으킨 gemini 드리프트 (실측·되돌림)**: `doctor --fix`가 gemini를 `google-gemini-cli/gemini-3.1-pro-preview` → `google/gemini-3.1-pro-preview` + `agentRuntime.id=google-gemini-cli`로 **자동 재작성**. `google/`는 api-key(나노바나나 이미지 전용) 금지경로라 되돌림(config set primary + models 맵 엔트리 unset). agy 이관 진행 중이라 이 드리프트는 당분간 반복 예상 — 아래 운영 결정 이력 참조.
+
+**검증**: `OpenClaw 2026.6.6`, healthy, doctor Errors 0. 모델: main/bbot `claude-opus-4-8`, mini `sonnet-4-6`, glg `gpt-5.5`(이번 재승격), gpt `gpt-5.5`, gemini `google-gemini-cli/gemini-3.1-pro-preview`(되돌림, OAuth 스코프-403 별도 — GLG device-code 재로그인 대기). 롤백: Dockerfile FROM 6.5 환원(주석 보존) + rebuild·recreate.
 
 ### 2026.6.5 (2026-06-10, GREEN)
 
@@ -127,6 +139,15 @@ gemini는 그간 **유일한 ACP 잔존 봇**으로 `pi-shell-acp/gemini-3.1-pro
 - **에이전트 canonical 전환**: `model.primary=google-gemini-cli/gemini-3.1-pro-preview`, `fallbacks:[]`(안 되면 안 씀 — 정공법 원칙), agentRuntime 없음(provider prefix가 runner=cli 바인딩). 라이브 검증: `provider=google-gemini-cli model=gemini-3.1-pro-preview fallbackUsed=false stopReason=completed refusal=false` + 실 한국어 응답 + `/status` `🔑 oauth`(옛 ACP 빈응답·api-key 둘 다 탈출).
 - **pi-shell-acp 제거**: 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`(런타임 14 plugins에서 빠지고 `google` 자리잡음) + main의 죽은 `pi-shell-acp/*` picker 3개 제거. **함정: 엔트리를 *삭제*하면 기본 로드로 복귀**(2026-06-10 확인) → acpx처럼 엔트리 present + `enabled:false` 유지가 정답. doctor Errors 0.
 - **forward 리스크**: gemini-cli는 Antigravity(agy)로 통합 예정. 그땐 OpenClaw 업스트림(`antigravity`/agy provider)을 따라 프로필만 마이그레이션 — 손으로 creds 복사하는 우회가 아니라 공식 provider 추적. `~/.gemini/antigravity-cli/` 이미 존재로 계정 entitlement 준비됨.
+
+### gemini agy 이관 드리프트 실측 + glg 5.5 재승격 (2026-06-13)
+
+6.6 업그레이드 중 위 "forward 리스크"가 **드리프트로 현실화**. 이 항목은 *흔들림을 사안으로 고정*하는 닻 — gemini 설정이 또 바뀌어 보일 때 "버그"가 아니라 "agy 이관 사안"으로 인지하기 위한 좌표.
+
+- **doctor가 gemini를 금지경로로 자동 재작성 (실측)**: `doctor --fix`(6.6)가 `model.primary`를 `google-gemini-cli/gemini-3.1-pro-preview` → `google/gemini-3.1-pro-preview`로, `models` 맵에 `google/gemini-3.1-pro-preview { agentRuntime.id: google-gemini-cli }`를 추가. `google/`는 api-key(나노바나나 이미지 전용) provider라 **금지경로**. agent list는 google/를 가리키는데 카탈로그/probe엔 깨끗이 안 잡히는 **모호 상태** → 되돌림(`config set primary google-gemini-cli/…` + `config unset 'agents.list.<idx>.models["google/…"]'` + restart). 라이브 `google-gemini-cli/` 복원 확인.
+- **운영 원칙 (ORACLE.md per-agent auth 함정에 박음)**: ① 업글/`doctor --fix` 후 `agents list`로 gemini prefix 재확인, `google/`면 되돌림. ② **이건 한시적 방어** — 자꾸 바뀐다고 당황 말 것, "agy 이관 사안"으로 인지·검토. ③ agy 이관 공식화(gemini-cli 완전 deprecate) 시 `google-gemini-cli/` 전제 전체를 한 번에 재작성 — 그때가 진짜 이사. 그 전까지 OAuth(`google-gemini-cli/`)가 기준선.
+- **별건 — OAuth 스코프-403**: 이번 세션에서 gemini 무응답의 직접 원인은 드리프트가 아니라 `gtgkjh@gmail.com` OAuth 프로필의 `insufficient authentication scopes [403]`(토큰 만료 아님). fix는 device-code 재로그인(`models auth login --agent main --provider google-gemini-cli --device-code --force`, headless라 GLG 수동) — 노트북 작업으로 이월.
+- **glg 가족봇 5.4 → 5.5 재승격**: 2026-06-10 강등(cross-DM 판단 과잉 억제·비용 1/2)의 되돌림. **cross-DM 가드(원문-only 전달 규칙) 완료로 강등 사유 해소** → 가족 실무 답변 품질 우선. `config set agents.list.<glg>.model.primary openai/gpt-5.5` + restart. 기본값 변경은 **신규 세션부터** — 세션은 telegram user-id 단위로 분리되고 각 세션이 저장된 model을 유지하므로, 진행 중 DM(예: 아내 세션)은 `/model` 또는 세션 리셋 전까지 5.4 유지(영향 격리 확인).
 
 ### Opus 4.8 canonical 정공법 + per-agent auth inherit (2026-05-31)
 
