@@ -43,8 +43,19 @@
 # 업그레이드 후 doctor --fix 의무 + 3봇(main/bbot/mini) Anthropic auth GREEN 재확인(공유 ~/.claude mount 함정과
 # 겹침). cron legacy JSON → SQLite 는 doctor preflight 자동 마이그레이션. 안심: 위험한 session-metadata SQLite
 # 마이그레이션은 6.5 에서 의도적 보류(JSON-backed 유지). codex plugin stock(번들)이라 base bump 와 함께 자동 6.5.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.1
-FROM ghcr.io/openclaw/openclaw:2026.6.5
+# 6.5 → 6.6 (2026-06-13): 보안 경계 강화 위주 patch. 핵심 주의: "host 환경 상속 / MCP stdio / sandbox
+# bind / Codex HTTP 접근" 경계가 조여짐 — emacs-agent.sh 의 env·소켓 주입 경로가 유일한 우리쪽 리스크
+# (recreate 후 emacs-agent 동작 스모크 필수). 직접 이득: Telegram 라우팅/스트리밍/콜백 신뢰성 수정(주 채널)
+# + 무단 DM 텍스트가 캐시/프롬프트 컨텍스트 미포함(cross-DM 사건 계열 하드닝) + 세션 재바인드 후 stale
+# approval followup 제거 + 동일모델 호출 짧은 레이트리밋 재시도. 운영 변경: compaction 기본 타임아웃 180s
+# 단축(명시 설정은 존중 — 우리 config 미명시면 짧아짐) + config.patch 배열 명시적 대체 + Gateway RPC timeout
+# 입력검증 강화. provider: OpenRouter OAuth 온보딩 + Claude Fable 5 adaptive thinking + Ollama 선언 thinking
+# 기본값 존중. Breaking/마이그레이션: "SQLite 인증 마이그레이션 검증 후 정리" → 업그레이드 후 doctor --fix
+# 의무 유지(6.5 SQLite 이전의 연장) + 3봇 Anthropic auth GREEN 재확인(공유 ~/.claude mount 함정). gemini
+# OAuth 스코프-403 는 base bump 무관(별도 device-code 재로그인 — ORACLE.md per-agent auth 함정 참조). codex
+# plugin stock(번들)이라 base bump 와 함께 자동 6.6.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.5
+FROM ghcr.io/openclaw/openclaw:2026.6.6
 
 USER root
 

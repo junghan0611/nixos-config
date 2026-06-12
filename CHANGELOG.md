@@ -9,6 +9,16 @@
 
 ## Unreleased
 
+## v2026.6.13
+
+### Changed
+- **OpenClaw 2026.6.5 → 6.6 업그레이드**: `docker/openclaw/Dockerfile` FROM bump (runtime SSOT는 openclaw-config repo). 보안 경계 강화 위주 patch — host env 상속/MCP stdio/sandbox bind 하드닝(emacs-agent env·소켓 주입 생존 확인) + Telegram 라우팅·스트리밍·콜백 수정 + compaction 기본 타임아웃 180s. 업글 후 `doctor --fix` 의무(SQLite auth 마이그레이션 정리), Errors 0.
+- **glg 가족봇 기본 모델 5.4 → 5.5 재승격**: cross-DM 가드 완료로 강등 사유 해소 → 가족 실무 답변 품질 우선. 기본값 변경은 신규 세션부터 적용(기존 DM 세션은 저장된 model 유지).
+
+### Added
+- **ORACLE.md — gemini OAuth 스코프-403 함정**: 무응답 진단(`models status --probe`로 `insufficient authentication scopes` 식별) + device-code 재로그인 절차 + api-key(`google/`, 나노바나나 전용) 폴백 금지 경고.
+- **ORACLE.md — gemini agy 이관 드리프트 운영 원칙**: `google-gemini-cli` deprecation → agy(Antigravity) 이관 진행 중. `doctor --fix`/업글이 gemini를 `google/`로 자동 재작성하는 드리프트(6.6에서 실측·되돌림)가 당분간 구조적 — 흔들리지 말고 "이관 사안"으로 인지·검토하라는 원칙 + 한시적 방어(prefix 재확인·되돌림).
+
 ## v2026.6.10
 
 ### Changed
