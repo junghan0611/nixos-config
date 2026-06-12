@@ -65,6 +65,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 
 ### 남은 한 걸음 (ACP 잔재 청소)
 
+- [ ] **★ gemini OAuth 재로그인 (GLG 손, 노트북 — 즉시 자리)** — gemini 무응답 직접 원인은 `gtgkjh@gmail.com` OAuth 프로필의 `insufficient authentication scopes [403]`(토큰 만료 아님, 발급 스코프 부족). headless oracle이라 GLG가 노트북에서 수동: `docker exec -it openclaw-gateway node openclaw.mjs models auth login --agent main --provider google-gemini-cli --device-code --force`. `--device-code`가 `Unknown auth method`면 인터랙티브 메뉴의 `sync`(기존 `~/.gemini` creds import, 브라우저 불요 — ROADMAP 2026-06-10 함정 참조)로. 끝나면 `models status --probe`로 `google-gemini-cli/gemini-3.1-pro-preview` GREEN 확인. ※ agy 이관 드리프트 경계·되돌림 절차는 ORACLE.md per-agent auth 함정 + ROADMAP 2026-06-13 결정 항목에 영속화됨(여기 중복 금지).
 - [ ] **compose mount 정리** — gemini가 마지막 ACP 사용처였다. `docker-compose.yml`의 ACP 전용 mount(`~/.pi/agent`, `~/.claude-plugin/skills` 등)가 남아있으면 제거(이제 unblocked). 단 claude-skills overlay(§ skills)와 겹치는 mount는 남김 — 헷갈리지 말 것.
 - [ ] **pi-shell-acp 엔트리 최종 거취** — `enabled:false`로 무력화 완료. **엔트리 *삭제*는 기본 로드 복귀 함정**(2026-06-10 확인)이라 불가 → present + `enabled:false` 영구 유지가 정답. workspace-gemini archival 여부만 별도 판단(현재 네이티브 gemini가 씀, 유지).
 - [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.
