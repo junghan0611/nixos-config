@@ -85,7 +85,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [ ] **subagent bootstrap context 축소 (#85283)** — active-memory recall sub-agent (5.4-mini lane) `status=empty` 비율 변화. 14d soak baseline 비교
 - [ ] **`@anthropic-ai/claude-code` 버전 추적** — 5.27 image 재빌드 후 컨테이너 `claude` 2.1.156 (5.22 시점 2.1.150). `--help`에 `claude-opus-4-8` 명시 → opus 4.8 지원. Dockerfile pin 여부 검토
 - [ ] **OAuth refresh 자동 검증** — Anthropic `expiresAt` 8h마다 새로 받는지 24h 관찰
-- [ ] **active-memory 35s timeout 빈도** — claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능
+- [ ] **active-memory 35s timeout 빈도** — claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능. **2026-06-13 bbot 제외**(24h 16회 중 timeout 8 / ok 8, ok도 23~30s — 본 턴과 겹쳐 응답성 저해)로 가족·bbot 라인은 닫음. **근본(gpt-5.4-mini lane이 23~35s·절반 `stopReason=missing`)은 main/gpt에 잔존** — 5.4-mini 퇴화/모델 교체 검토 필요
 
 ---
 
@@ -93,9 +93,9 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 
 24h baseline 통과 (2026-05-08~09, gpt 14 invocation: ok 4 / empty 10 / timeout 0 / elapsed ~8.3s).
 
-확장 후 관찰 (mini가 `claude-cli/sonnet-4-6` 검증 lane으로 빠진 상태 — 현재 active-memory 대상: main/glg/gpt/bbot):
+확장 후 관찰 (mini가 `claude-cli/sonnet-4-6` 검증 lane으로 빠진 상태 — 현재 active-memory 대상: **main/gpt** 2봇. glg 2026-06-09·bbot 2026-06-13 제외):
 
-- [ ] **glg(가족 봇) 응답 latency 체감** — 가족 사용 turn 후 피드백. "느려졌다" 호소 시 glg만 제외
+- [x] **glg(가족 봇) 응답 latency 체감** — recall 훅 16~35s 지연 호소 → 2026-06-09 glg 제외로 해소. 같은 증상 bbot도 2026-06-13 제외.
 - [ ] **main agent 회상 품질 정성 평가** — `status=ok` 비율 추적
 - [ ] **14d baseline** — 4봇 합산 invocation/day, status 분포, elapsed 분포. timeout 빈도 0% 유지 확인 (다중 봇 동시 호출 시 OAuth quota 경합)
 
