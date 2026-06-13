@@ -10,7 +10,8 @@
 ## Unreleased
 
 ### Changed
-- **bbot 모델 opus-4-8 → claude-fable-5 승격**: OpenClaw 6.6 + 번들 claude CLI 2.1.175가 `claude-fable-5` 지원. claude-cli runtime canonical(`anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`). 라이브 검증 `model=claude-fable-5 runner=cli fallbackUsed=false`.
+- **글로벌 모델 allowlist에서 deepseek 제거 — auto-fallback 정체성 훼손 차단**: configured primary 실패 시 auto-fallback이 allowlist 첫 작동모델로 떨어지는데 `deepseek/deepseek-v4-pro`가 1번이라, bbot이 fable-5(서빙 실패) primary로 올라갔을 때 **deepseek로 응답하는 정체성 훼손** 발생. deepseek pro/flash를 `agents.defaults.models`에서 제거(참조 봇 0) → `openai/gpt-5.5`가 catch-all 1번. ORACLE.md에 "auto-fallback catch-all 함정" 박음.
+- **bbot fable-5 시도 → opus-4-8 환원**: 6.6 + 번들 claude CLI 2.1.175가 `claude-fable-5`를 인지하나 **구독/CLI 서빙은 아직 불가**(응답 실패). opus-4-8로 환원, 서빙되면 GLG가 세션 `/model`로 수동 승격 예정.
 
 ## v2026.6.13
 
