@@ -106,7 +106,6 @@ let
   # Shows scratchpad window if exists, otherwise creates it
   # Improvements:
   # - Tracks window ID to avoid marking wrong window
-  # - Handles emacsclient fallback correctly
   # - Timeout for i3-msg subscribe (prevents infinite wait)
   scratchpad-toggle = pkgs.writeShellScript "scratchpad-toggle" ''
     if [ $# -ne 2 ]; then
@@ -482,7 +481,7 @@ in {
 
           # Scratchpad (Regolith style: Ctrl+a=show, Ctrl+m=move)
           # -s user: GUI Emacs 소켓 (agent daemon은 -s server 사용)
-          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s user -a ${pkgs.emacs}/bin/emacs'";
+          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s user'";
           "${mod}+Ctrl+a" = "scratchpad show";
           "${mod}+Ctrl+m" = "move scratchpad";
 

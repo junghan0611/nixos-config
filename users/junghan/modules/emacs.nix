@@ -167,8 +167,8 @@ in {
     emacsclient = {
       name = "Emacs (Client)";
       genericName = "Text Editor";
-      comment = "Connect to Doom Emacs daemon";
-      exec = "${emacsPackage}/bin/emacsclient -s user --alternate-editor= --create-frame %F";
+      comment = "Connect to Doom Emacs user server";
+      exec = "${emacsPackage}/bin/emacsclient -s user --create-frame %F";
       icon = "emacs";
       terminal = false;
       categories = [ "Development" "TextEditor" ];
