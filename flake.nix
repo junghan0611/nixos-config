@@ -28,6 +28,10 @@
       url = "github:k3d3/claude-desktop-linux-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # zmx - terminal session persistence (not in nixpkgs; upstream flake)
+    # Upstream flake uses zig2nix (musl static build), no nixpkgs input to follow.
+    zmx.url = "github:neurosnap/zmx";
   };
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
@@ -78,6 +82,9 @@
         claude-monitor = unstable.claude-monitor;
         claude-code-acp = unstable.claude-code-acp;
         claude-code-router = unstable.claude-code-router;
+
+        # zmx from upstream flake (musl static build, no nix-store glibc dep)
+        zmx = inputs.zmx.packages.${prev.stdenv.hostPlatform.system}.zmx;
       })
     ];
 

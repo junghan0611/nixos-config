@@ -118,6 +118,7 @@ in {
     claude-monitor
     # claude-code-acp
     # claude-code-router
+    zmx              # terminal session persistence (live agent sessions)
 
     # System tools
     fortune
