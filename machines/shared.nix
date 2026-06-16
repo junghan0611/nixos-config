@@ -155,6 +155,13 @@ in
     useXkbConfig = false;
   };
 
+  # Keychron Launcher / ZMK Studio — WebHID over hidraw (Keychron VID 0x3434)
+  # 이동식 키보드라 전 디바이스 공통, oracle(headless)만 제외.
+  # 매칭 장치 미연결 머신에서는 no-op. TAG+="uaccess"로 활성 세션 사용자에 ACL 부여.
+  services.udev.extraRules = lib.mkIf (!isOracle) ''
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0660", TAG+="uaccess"
+  '';
+
   # Environment variables for Korean support
   environment.variables = {
     LANG = "en_US.UTF-8";
