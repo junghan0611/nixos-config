@@ -66,7 +66,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 ### 남은 한 걸음 (ACP 잔재 청소)
 
 - [⏸] **gemini 챗봇 DOWN — agy 연동 대기 (억지로 살리지 않는다, 2026-06-13)** — gemini 무응답은 `google-gemini-cli` OAuth의 `insufficient authentication scopes [403]`. **재로그인 시도했으나(2026-06-13, `models auth --agent main login --provider google-gemini-cli --force` 완료) probe는 여전히 403** — 발급 OAuth 스코프 자체가 OpenClaw의 Generative AI API 경로를 못 덮는다. **agy(Antigravity) 이관이 gemini-cli OAuth를 스코프 레벨에서 깬 것.** **방침(GLG): API(`google/`)로 억지로 살리지 말 것. 안 되는 대로 DOWN 유지하고 두고 본다.** 차단 해소 조건 = OpenClaw가 **agy/antigravity provider 연동**을 지원하거나 업스트림이 `google-gemini-cli` 스코프를 고칠 때. 그때 모델을 agy provider로 마이그레이션(손으로 creds 복사 아닌 공식 provider 추적 — ROADMAP 2026-06-10 forward 리스크). ⚠️ 재로그인은 config를 `google/` 드리프트시키니 시도 후 반드시 정리(절차·경계 전체는 ORACLE.md gemini 함정 블록).
-  - 관찰: OpenClaw 릴리즈 노트/플러그인에 `antigravity`/`agy` provider 등장 여부 주시. 등장 시 이 항목 재가동.
+  - 관찰: OpenClaw 릴리즈 노트/플러그인에 `antigravity`/`agy` provider 등장 여부 주시. 등장 시 이 항목 재가동. **6.8(2026-06-17) 체크 = 미등장** — doctor가 gemini를 `google/`로 또 드리프트시켜 되돌림(6.6에 이어 반복). 베이스라인 `google-gemini-cli/` 유지, 403 DOWN 그대로.
 - [ ] **compose mount 정리** — gemini가 마지막 ACP 사용처였다. `docker-compose.yml`의 ACP 전용 mount(`~/.pi/agent`, `~/.claude-plugin/skills` 등)가 남아있으면 제거(이제 unblocked). 단 claude-skills overlay(§ skills)와 겹치는 mount는 남김 — 헷갈리지 말 것.
 - [ ] **pi-shell-acp 엔트리 최종 거취** — `enabled:false`로 무력화 완료. **엔트리 *삭제*는 기본 로드 복귀 함정**(2026-06-10 확인)이라 불가 → present + `enabled:false` 영구 유지가 정답. workspace-gemini archival 여부만 별도 판단(현재 네이티브 gemini가 씀, 유지).
 - [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.

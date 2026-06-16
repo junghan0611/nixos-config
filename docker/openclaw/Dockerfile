@@ -54,8 +54,19 @@
 # 의무 유지(6.5 SQLite 이전의 연장) + 3봇 Anthropic auth GREEN 재확인(공유 ~/.claude mount 함정). gemini
 # OAuth 스코프-403 는 base bump 무관(별도 device-code 재로그인 — ORACLE.md per-agent auth 함정 참조). codex
 # plugin stock(번들)이라 base bump 와 함께 자동 6.6.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.5
-FROM ghcr.io/openclaw/openclaw:2026.6.6
+# 6.6 → 6.8 (2026-06-17): 유지보수·견고화 patch (6.7 stable 없음, 6.6 다음 stable=6.8 / 6.6→6.8=373 commits).
+# 직접 이득: Telegram rich delivery(표/리스트/expandable blockquote/의도된 줄바꿈 보존 — 주 채널, 전 가족봇)
+# + memory 견고화(과대 임베딩 배치 431 분할·full reindex rollback/cache 복구·QMD transient 유지) + Codex/Claude
+# replay 복구(OpenAI reasoning-sig·Anthropic thinking-sig recovery, heartbeat dedupe, auto-reply final reply,
+# unknown OpenAI selector 거부) + OAuth image-default를 Codex로 라우팅(우리 gpt-image-2 정합) + Hono 4.12.25 패치.
+# 주의(post 검증): ① provider-prefix 정규화(OpenRouter/Vertex 경로) — gemini agy 드리프트와 겹침, 업글 후 6봇
+# 모델 prefix 전수 재확인 의무(단 agy 이관 자체는 6.8에 없음 → gemini 403 DOWN 유지). ② web search auto-select
+# 폐기(key-free provider 명시 opt-in 화) — perplexity 구성이라 영향 낮으나 검색 1회 확인. ③ tool schema quarantine
+# (읽기불가/post-hook OpenAI·Anthropic schema 격리) — 스킬 도구 오격리 주시. SQLite auth 마이그레이션 연장선 →
+# doctor --fix + 3봇(main/bbot/mini) Anthropic auth GREEN 재확인 유지. 비해당: Copilot tool-streaming/LM Studio
+# binary-thinking/NFS WAL/WhatsApp·Slack·Discord·Feishu. codex plugin stock(번들)이라 base bump 와 함께 자동 6.8.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.6
+FROM ghcr.io/openclaw/openclaw:2026.6.8
 
 USER root
 

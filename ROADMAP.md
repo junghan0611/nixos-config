@@ -45,6 +45,20 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.6.8 (2026-06-17, GREEN)
+
+6.6 다음 stable **한 칸** (6.7은 beta만, 6.6→6.8=373 commits) — 유지보수·견고화 patch. Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.6.6 → :2026.6.8`(runtime SSOT = openclaw-config repo, nixos-config `docker/openclaw/Dockerfile` 미러 동기) + `docker compose build --pull && up -d --force-recreate`. codex plugin stock 자동 6.8.
+
+**직접 이득**: Telegram rich delivery(표/리스트/expandable blockquote/의도된 줄바꿈 보존 — 주 채널, 전 가족봇) + memory 견고화(과대 임베딩 배치 431 분할·full reindex rollback/cache 복구·QMD transient 유지) + Codex/Claude replay 복구(OpenAI reasoning-sig·Anthropic thinking-sig recovery, heartbeat dedupe, auto-reply final reply, unknown OpenAI selector 거부) + OAuth image-default를 Codex로 라우팅(우리 `gpt-image-2` 정합) + Hono 4.12.25 패치. **비해당**: Copilot tool-streaming / LM Studio binary-thinking / NFS WAL / WhatsApp·Slack·Discord·Feishu.
+
+**마이그레이션 — doctor --fix 의무 유지**(SQLite auth 마이그레이션 연장선): 실행 결과 Plugins Errors 0 / Skills Eligible 42·Blocked 0, 3봇 Anthropic auth GREEN(`anthropic:claude-cli=OAuth`, 공유 `~/.claude` mount 함정 미재발), openai/codex 서빙 ok.
+
+**⚠️ doctor가 일으킨 gemini 드리프트 (6.6에 이어 6.8에서도 실측·되돌림)**: `doctor --fix`가 또 gemini를 `google-gemini-cli/gemini-3.1-pro-preview` → `google/gemini-3.1-pro-preview` + agent `models` 맵에 `google/...{agentRuntime:google-gemini-cli}` 추가로 **자동 재작성**. `google/`는 api-key(나노바나나 이미지 전용) 금지경로라 되돌림(`config set agents.list.3.model.primary google-gemini-cli/...` + `config unset agents.list.3.models["google/..."]` + restart). **agy 이관 진행 중이라 이 드리프트는 doctor --fix마다 반복 — 6.8 릴리즈에 agy/antigravity provider 없음 확인**(gemini는 403 OAuth 스코프로 DOWN 유지, agy 연동 대기). 절차·경계는 ORACLE.md gemini 함정 블록.
+
+**우리쪽 접점 스모크**: force-recreate 후 `emacs-agent` env·소켓 주입 GREEN(`emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14`, 6.6 보안 하드닝 경로 유지). Telegram 6봇 provider 시작 + isolated polling ingress 정상, 에러 0.
+
+**검증**: `OpenClaw 2026.6.8`, healthy(t+15s), doctor Errors 0. 모델: main/bbot `claude-opus-4-8`, mini `sonnet-4-6`, glg/gpt `gpt-5.5`, gemini `google-gemini-cli/gemini-3.1-pro-preview`(되돌림, 403 DOWN). probe: claude-cli/codex 서빙 ok·gemini 403 그대로. 롤백: Dockerfile FROM 6.6 환원(주석 보존) + rebuild·recreate.
+
 ### 2026.6.6 (2026-06-13, GREEN)
 
 6.5 다음 stable **한 칸** — 보안 경계 강화 위주 patch. Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.6.5 → :2026.6.6`(runtime SSOT = openclaw-config repo, nixos-config `docker/openclaw/Dockerfile` 미러도 동기) + `docker compose build && up -d`. codex plugin stock 자동 6.6.
