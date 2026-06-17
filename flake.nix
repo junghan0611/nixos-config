@@ -68,10 +68,6 @@
         # scrcpy from unstable (25.11 has 3.3.4, unstable has 4.0)
         scrcpy = unstable.scrcpy;
 
-        # Telegram Desktop from unstable (25.11 has 6.6.2, locked unstable 6.8.1).
-        # Emacs telega가 터질 때의 GUI 폴백 — 텔레그램 웹은 제한이 많음.
-        telegram-desktop = unstable.telegram-desktop;
-
         # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
         microsoft-edge = pinned.microsoft-edge;
 

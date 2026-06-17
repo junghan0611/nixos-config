@@ -157,9 +157,10 @@ in {
     firefox
     microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
-    telegram-desktop  # Telegram 메신저 (unstable 6.8.1). Emacs telega 폴백용.
-                      # 과거 한글 입력 불가 이슈 — fcitx5 IME 환경(QT_IM_MODULE)
-                      # 재확인 필요. 읽기/긴급 대안으로는 즉시 유효.
+    telegram-desktop  # Telegram 메신저 (stable 6.6.2). Emacs telega 폴백용.
+                      # unstable(6.8.1, Qt 6.11)은 시스템 fcitx5 입력 플러그인
+                      # (Qt 6.10.2 빌드)과 Qt minor 불일치로 한글 입력이 죽는다.
+                      # stable은 Qt 6.10.2로 fcitx5와 일치 → 한글 입력 정상.
 
     telegram-bot-api  # Telegram Bot API server (OpenClaw는 Docker 안에서 실행)
 
