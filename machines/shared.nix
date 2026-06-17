@@ -157,9 +157,13 @@ in
 
   # Keychron Launcher / ZMK Studio — WebHID over hidraw (Keychron VID 0x3434)
   # 이동식 키보드라 전 디바이스 공통, oracle(headless)만 제외.
-  # 매칭 장치 미연결 머신에서는 no-op. TAG+="uaccess"로 활성 세션 사용자에 ACL 부여.
+  # 매칭 장치 미연결 머신에서는 no-op.
+  # GROUP="input" = 결정적 접근(junghan ∈ input). uaccess만 쓰면 logind가
+  # device add 시점에만 ACL을 주고, 로그인 전 재연결/세션 전환 시 누락돼
+  # "됐다 안 됐다" 한다(특히 키보드 입력 인터페이스 00은 uaccess 제외됨).
+  # GROUP으로 타이밍 의존을 없애고 uaccess는 보조로 남긴다.
   services.udev.extraRules = lib.mkIf (!isOracle) ''
-    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0660", TAG+="uaccess"
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", MODE="0660", GROUP="input", TAG+="uaccess"
   '';
 
   # Environment variables for Korean support
