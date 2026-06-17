@@ -157,7 +157,9 @@ in {
     firefox
     microsoft-edge
     claude-desktop  # Claude Desktop with MCP support
-    # telegram-desktop  # Telegram 메신저 (한글 입력 불가)
+    telegram-desktop  # Telegram 메신저 (unstable 6.8.1). Emacs telega 폴백용.
+                      # 과거 한글 입력 불가 이슈 — fcitx5 IME 환경(QT_IM_MODULE)
+                      # 재확인 필요. 읽기/긴급 대안으로는 즉시 유효.
 
     telegram-bot-api  # Telegram Bot API server (OpenClaw는 Docker 안에서 실행)
 
