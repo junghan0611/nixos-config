@@ -397,8 +397,12 @@ in {
           # Notifications (dunst control)
           "${mod}+n" = "exec ${pkgs.dunst}/bin/dunstctl close";
           "${mod}+Shift+n" = "exec ${pkgs.dunst}/bin/dunstctl close-all";
-          "${mod}+grave" = "exec ${pkgs.dunst}/bin/dunstctl history-pop";
+          "${mod}+Shift+grave" = "exec ${pkgs.dunst}/bin/dunstctl history-pop";
           "${mod}+Shift+period" = "exec ${pkgs.dunst}/bin/dunstctl action";
+
+          # 모니터(워크스페이스 그룹) 간 포커스 전환: eDP(1-5) ↔ HDMI(6-10)
+          # 출력 2개면 토글, 모니터 1개(노트북 단독)면 무동작
+          "${mod}+grave" = "focus output next";
 
           # i3-swap-focus: 마지막 두 창 사이 포커스 토글 (레골리스 방식)
           "${mod}+period" = "exec --no-startup-id pkill -USR1 -F \"$XDG_RUNTIME_DIR/swap_focus.pid\"";
