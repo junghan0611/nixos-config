@@ -199,3 +199,19 @@ pi-shell-acp 코어 0.7.0 npm publish 라운드 완료 + Phase 3 진입 stamp �
 - [ ] **work/ 임베디드(rockchip) 빌드 repo 31G** — 빌드 산출물 추정. 정리 대상이면 회수, 확인 필요 (repo명은 PRIVATE)
 - [ ] **pnpm store 18G** — 개선된 `C)` 한 번 돌리면 `pnpm store prune`으로 미참조분 회수
 - [ ] **store 78G 구조적** — nixpkgs 3트리(25.11 + unstable + pinned) 동시 보유. 26.05 전환 + unstable 정리 시 변화
+
+---
+
+## 10. 키크론 V10 Pro (ZMK) 키맵 닷파일 관리 (2026-06-17, thinkpad)
+
+새 키보드 도입. Q8 → V10 Pro **ZMK** 버전(USB `3434:13a8`, VIA 아님). 설정은 ZMK 웹(Keychron Launcher, `launcher.keychron.com`)에서 하되, **export 파일을 nixos-config에서 버전 관리**한다 (export/import 동작 확인됨).
+
+### 완료
+- [x] **hidraw udev rule** — Launcher(WebHID)가 키보드 접근하도록 `shared.nix`에 `uaccess` rule 추가 (커밋 `6d020e9`). oracle 제외, 이동식이라 전 디바이스 공통.
+- [x] **i3 `Win+grave` 재배정** — Q8엔 없던 grave(\`) 키가 V10엔 있음. dunst history-pop → `Win+Shift+grave`로 옮기고, `Win+grave` = `focus output next`(eDP 1-5 ↔ HDMI 6-10 모니터 전환).
+
+### 다음 한 걸음 (천천히 — 키 활용 미정)
+- [ ] **M1–M5 매크로 키 활용 결정** — Q8엔 없던 키. 아직 무엇에 쓸지 미정. 후보 떠오르면 여기 적고 ZMK 웹에서 바인딩 → export.
+- [ ] **export 파일 둘 위치 결정** — 예: `users/junghan/keychron/v10pro.json` 같은 자리. 키맵 자체는 ZMK 웹이 SSOT, 레포는 백업/재현용.
+- [ ] **마음에 안 드는 키만 우선 수정** — 전체 재설계 말고 거슬리는 키부터. 나머지 레이아웃은 쓰면서 천천히.
+- [ ] **(선택) 칩셋 확인** — RTL8762G vs nRF52840. 펌웨어 모드 진입해서 부트로더 볼륨/`dmesg`로 확인. nRF52840이면 `zmk-nix`로 소스 빌드까지 가능, RTL8762G면 Launcher export 관리에 머무름.
