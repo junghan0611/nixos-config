@@ -71,8 +71,21 @@
         # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
         microsoft-edge = pinned.microsoft-edge;
 
-        # TDLib from unstable (telega.el requires >= 1.8.60)
-        tdlib = unstable.tdlib;
+        # TDLib pinned to 1.8.65 (telega.el master 0.8.640 requires >= 1.8.64;
+        # nixpkgs unstable only ships 1.8.63). 1.8.64 itself fails to link the
+        # tg_cli/benchmark binaries (upstream AiComposeTone::store bug), so we
+        # use 1.8.65 which fixes it and still satisfies telega (max-version nil).
+        # tdlib doesn't tag minor versions; we pin the "Update version to X.Y.Z."
+        # commit. Bump rev+hash when telega's telega-tdlib-min-version advances.
+        tdlib = unstable.tdlib.overrideAttrs (old: {
+          version = "1.8.65";
+          src = prev.fetchFromGitHub {
+            owner = "tdlib";
+            repo = "td";
+            rev = "a8f21f5230172634becc1739050ef23ecd6ea291";
+            hash = "sha256-cCNXRyeu6ZMf/0oxipPPUyniGuLzvWFLWCvklPIYvzk=";
+          };
+        });
 
         # AI CLI tools from unstable
         gemini-cli = unstable.gemini-cli;
