@@ -65,8 +65,21 @@
 # (읽기불가/post-hook OpenAI·Anthropic schema 격리) — 스킬 도구 오격리 주시. SQLite auth 마이그레이션 연장선 →
 # doctor --fix + 3봇(main/bbot/mini) Anthropic auth GREEN 재확인 유지. 비해당: Copilot tool-streaming/LM Studio
 # binary-thinking/NFS WAL/WhatsApp·Slack·Discord·Feishu. codex plugin stock(번들)이라 base bump 와 함께 자동 6.8.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.6
-FROM ghcr.io/openclaw/openclaw:2026.6.8
+# 6.8 → 6.9 (2026-06-22): 유지보수·견고화 patch. 방침(GLG): gemini-cli 안 쫓음(403 DOWN 유지 수용), claude-cli+codex
+# 서빙 유지가 목표, doctor --fix 는 조심 — 설정 통째 재작성 위험이라 read-only `doctor`만 보고 surgical config set/unset.
+# 직접 이득: ① agent recovery 추가(session history repair, reply reconciliation, thinking-only·empty post-tool turn
+# 재시도, partial JSON/history artifact 복구 — main/bbot/mini claude-cli + compaction 경로에 정확히 듣는 fix) +
+# ② 보안 하드닝(secret redaction from debug/config output, open-DM tool exposure audit, HTTP session override 차단 —
+# 가족봇 노출면) + ③ CJK IME composition preservation(한국어). 주의(post 검증): ④ Standalone official provider
+# plugins(npm 외부화) + Gateway plugin discovery at startup — provider 로딩 구조 변경. codex/claude-cli 는 stock(번들)
+# 이라 base bump 로 따라옴(tokenjuice/Copilot externalize 전례와 동일, line 35), 단 google-gemini-cli 가 외부화로
+# 빠질 수 있으나 gemini 는 이미 403 DOWN → 안 쫓음. 업글 후 6봇 모델 prefix 전수 재확인(claude/codex 정상 서빙이 핵심,
+# gemini 드리프트는 이번엔 revert 안 함). ⑤ Codex 자동 plugin 승인(SecretRefs)·remote-node exec dynamic tool —
+# 승인/exec 동작 변화, 라이브 reply+exec 테스트 필수. GPT-5.3 Spark OAuth 라우팅은 우리 5.5/5.4 라 무관. 비해당:
+# SQLite WAL on NFS(로컬 fs)/iOS Watch·Android/Dashboard session rail/OpenTelemetry export/StepFun. codex plugin
+# stock(번들)이라 base bump 와 함께 자동 6.9.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.8
+FROM ghcr.io/openclaw/openclaw:2026.6.9
 
 USER root
 

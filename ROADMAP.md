@@ -31,7 +31,7 @@
 - **NixOS 채널**: `nixos-25.11` + home-manager 25.11 (stateVersion 25.05 고정). **26.05 업그레이드 대기** — 25.11 EOL 2026-06-30, → [NEXT.md §8](NEXT.md).
 
 **봇 런타임 요약**
-- OpenClaw **2026.6.5**, ready 5.2s, 14 plugins, healthy.
+- OpenClaw **2026.6.9**, ready ~1.6s, 13 plugins, healthy (provider 외부화로 perplexity/discord/deepseek 제거, config warnings 0).
 - main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
 - 전 봇 OpenClaw 네이티브 provider/runtime — **ACP 제거 완료**(2026-06-10, gemini→`google` google-gemini-cli OAuth). third-party ACP 의존 0.
 
@@ -44,6 +44,18 @@
 ## OpenClaw 업그레이드 이력
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
+
+### 2026.6.9 (2026-06-22, GREEN)
+
+6.8 다음 stable **한 칸** — 유지보수·견고화 patch. 방침(GLG): **gemini-cli 안 쫓음**(403 DOWN 유지 수용), **claude-cli + codex 서빙 유지가 목표**, **`doctor --fix` 미사용**(설정 통째 재작성 위험 — read-only `doctor`만 보고 surgical `config set/unset`). Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.6.8 → :2026.6.9`(runtime SSOT = openclaw-config repo, nixos-config `docker/openclaw/Dockerfile` 미러 동기) + `docker compose build --pull && up -d --force-recreate`. codex plugin stock 자동 6.9. 빌드 전 디스크 97%(3.7G) → builder/dangling prune로 **78%(21G)** 확보(빌드캐시 9.7G 회수).
+
+**⚠️ Breaking — strict plugin discovery crash loop (봇 다운 → 고침)**: 6.9의 "Gateway plugin discovery at startup"이 startup에서 plugin path를 **strict 검증** → 죽은 `plugins.load.paths`(`.../pi-shell-acp/plugins/openclaw`, 존재 X)를 **hard-fail**로 거부하며 게이트웨이 crash loop(가족봇 다운). 6.8까지는 경고였던 게 6.9에서 치명. `doctor --fix` 없이 죽은 path만 surgical 제거(`plugins.load.paths: []`, 엔트리는 disabled 유지) → restart 복구. **업글 전 `plugins.load.paths` 죽은 경로 선제 점검**이 교훈.
+
+**Provider 외부화 정리 (Standalone official provider plugins)**: 6.9가 perplexity/discord/deepseek를 **번들 → 외부 npm 패키지**로 분리 → 미설치 "not installed" 경고. **perplexity 웹검색은 설치 안 함** — 우리 6봇은 전부 spawned-CLI 런타임이라 검색은 런타임 내장(codex=Codex Hosted Search, claude-cli=Claude WebSearch)으로 충당, OpenClaw perplexity 도구는 redundant(7일 무호출 실측). 따라서 죽은 config를 surgical 제거: `tools.web.search`(perplexity sonar) + `plugins.entries.{discord,perplexity,deepseek}` + `plugins.allow.{deepseek,perplexity}` → **config warnings 0**. deepseek 부활 시 `openclaw plugins install @openclaw/deepseek-provider` + entry/allow 재추가 필요(외부화로 절차 변경).
+
+**gemini 드리프트 0 — `doctor --fix` 미사용의 효과**: 6.6/6.8에서 매 업글마다 `doctor --fix`가 gemini를 `google/`로 재작성하던 드리프트가, 이번엔 `doctor --fix`를 안 돌려서 **발생 안 함**. gemini는 `google-gemini-cli/gemini-3.1-pro-preview` 그대로 유지(403 DOWN, agy 이관 대기 — 안 쫓음).
+
+**검증**: `OpenClaw 2026.6.9`, healthy(t+15s), **config warnings 0**, 13 plugins(active-memory/anthropic/browser/canvas/codex/device-pair/file-transfer/google/memory-core/openai/phone-control/talk-voice/telegram). 모델 6봇 전부 보존(drift 0): main/bbot `claude-opus-4-8`, mini `sonnet-4-6`, glg/gpt `gpt-5.5`, gemini `google-gemini-cli/...`(403 DOWN). probe: `anthropic:claude-cli=OAuth ok·3s`, `openai/gpt-5.5 ok·5.4s`(codex usage 5h 99%/Week 72%) — **claude+codex 서빙 라이브 확인**. telegram→agent end-to-end는 oracle에 libtdjson 부재로 GUI 측 GLG ping으로 확인. 롤백: Dockerfile FROM 6.8 환원(주석 보존) + rebuild·recreate.
 
 ### 2026.6.8 (2026-06-17, GREEN)
 

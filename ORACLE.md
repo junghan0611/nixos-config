@@ -72,7 +72,7 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (현재: OpenClaw 2026.6.8 baseline)
+### Model routing (현재: OpenClaw 2026.6.9 baseline)
 
 > 버전 업그레이드 이력 / 운영 결정 연혁 (5.2→5.28, claude-cli 전환, 정공법들, 6.1 codex auth canonical migration)은 [ROADMAP.md](ROADMAP.md)로 이관. 이 섹션은 *현재 라우팅 상태*만 답한다.
 
@@ -120,7 +120,7 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로�
 보조 모델 (`/model <id>`로 in-thread 전환):
 
 - `openai/gpt-5.5-pro` (977k 컨텍스트, pro tier — quota/속도 미검증)
-- `deepseek/deepseek-v4-pro` / `deepseek-v4-flash` (`DEEPSEEK_API_KEY` 회사 quota, 2026-04-27~)
+- `deepseek/deepseek-v4-pro` / `deepseek-v4-flash` (`DEEPSEEK_API_KEY` 회사 quota, 2026-04-27~). **2026-06-22(6.9) provider 외부화로 deepseek 플러그인 번들에서 빠짐 → entry/allow 제거. 부활 시 `openclaw plugins install @openclaw/deepseek-provider` + entry/allow 재추가 필요.**
 
 > 운영 컨텍스트 메모: catalog 표기가 `266k/1025k` 같은 "이론치/확장치"로 보여도 라이브 `/status`는 보통 200k로 잡힌다. 5.4 vs 5.5 컨텍스트 트레이드오프는 사실상 없음.
 
@@ -230,7 +230,7 @@ Implication: if `docker compose up` runs from a shell that never sourced `.env.l
 
 | Var | Use | Source |
 |---|---|---|
-| `OPENROUTER_API_KEY` | memorySearch embedding (Qwen3-Embedding-8B 4096d, all agents), web search (perplexity) | `~/.env.local` SSOT → `~/openclaw/.env` (sync values, not just names) |
+| `OPENROUTER_API_KEY` | memorySearch embedding (Qwen3-Embedding-8B 4096d, all agents). ~~web search (perplexity)~~ — 2026-06-22(6.9) perplexity 외부화·제거, 웹검색은 런타임 내장(codex=Codex Hosted Search, claude-cli=Claude WebSearch)으로 전환 | `~/.env.local` SSOT → `~/openclaw/.env` (sync values, not just names) |
 | `GEMINI_API_KEY` | image generation only (banana / `gemini-3-flash-preview-image`). **Not** memorySearch since 2026-05-08 (replaced by OpenRouter Qwen3) | `~/.env.local` SSOT |
 | `GROQ_API_KEY` | active-memory primary (currently disabled) | `~/.env.local` SSOT |
 | `TELEGRAM_BOT_TOKEN_*` | per-bot Telegram | `~/openclaw/.env` (gitignore) |
