@@ -73,6 +73,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [ ] **bbot turn soak GREEN** (canonical `anthropic/claude-opus-4-8` + claude-cli runtime 텔레그램 실사용 관찰)
 - [ ] **gemini Pro 쿼터 soak** — `usage: Pro/Flash 100% left`에서 실사용 시 소진 곡선 관찰. fallback 없으니 쿼터 소진=무응답, `Week % left` 주시.
 - [ ] **이미지생성(나노바나나) `GEMINI_API_KEY` 경로 미재검증** — gemini 챗봇이 `google-gemini-cli/` OAuth로 전환된 뒤, `GEMINI_API_KEY`(`google` api-key provider) 기반 이미지생성이 여전히 동작하는지 확인. 두 provider가 분리돼 무관할 가능성 큼(추정). **실제 이미지 호출 1회로 검증 전까지 단정 금지.** (`auth.order.google` 핀은 cross-provider라 안 먹어 제거됨 — 자세한 건 ROADMAP 2026-06-10 함정 항목)
+- [ ] **telega 리치 지원 매트릭스 확정 (T01~T15)** — 2026-06-22 `channels.telegram.richMessages` **전 6봇 글로벌 ON**(top-level 스위치). main 봇이 T01~T15(헤딩/표/details/풀쿼트/divider/sup·sub/mark/spoiler/list/task-list/code/footnote/formula/link) 격리 테스트 발사 완료. GLG가 telega에서 **정상/폴백(텍스트는 읽힘)/unsupported(통째 가림)** 3분류 → 결과를 **TOOLS.md "telega 리치 지원 매트릭스"** + doomemacs-config telega 패치 타깃으로 기록. 그게 rich 유지/조정 근거. (telega=TDLib third-party라 Bot API 10.1 전용 블록은 클라가 못 따라가면 unsupported 가능 — 호환모드 영역인 굵게/링크/코드/스포일러/블록인용은 무조건 정상.)
 
 ---
 

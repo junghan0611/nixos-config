@@ -128,7 +128,9 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로�
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`). gemini 챗봇은 `google-gemini-cli/` provider prefix로 **OAuth(Pro 쿼터)만 탄다**(`/status` `🔑 oauth` 검증). `GEMINI_API_KEY`(=`google` api-key provider)는 **어떤 챗 모델도 안 가리키고** 이미지(나노바나나) 전용으로만 env 유지 — 단 이미지 경로 동작은 **미재검증**([NEXT.md §1](NEXT.md)).
 
-ACPX + pi-shell-acp 둘 다 disabled (`plugins.entries.{acpx,pi-shell-acp}.enabled=false` + `acp.enabled=false`). pi-shell-acp는 **엔트리 지우면 기본 로드로 복귀**하니 반드시 present + `enabled:false` 유지. 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
+텔레그램 렌더링: `channels.telegram.richMessages=true` **글로벌 ON (2026-06-22, top-level 스위치 → 전 6봇 상속)** — Bot API 10.1 rich HTML(헤딩·표·`<details>` 접기·수식·통화/숫자 sigil 보호·리치 한도 자동분할). 호환 모드 영역(굵게/기울임/링크/`코드`/스포일러/블록인용)은 어느 클라이언트에서나 정상. ⚠️ **rich 전용 블록은 호환 클라이언트 필요** — Desktop/Web/Android/**third-party(telega=TDLib)** 가 10.1을 못 따라가면 "unsupported message"로 가려질 수 있다. GLG 주력이 telega라 **telega 리치 지원 매트릭스(T01~T15: 헤딩/표/details/수식/sup·sub/mark/task-list/footnote …)는 doomemacs-config + TOOLS.md에서 추적** — 거기서 되는/안되는 블록 확정 후 telega 측 패치. 끄려면 top-level `richMessages` 제거 또는 `false` + restart.
+
+ACP는 top-level `acp.enabled=false`로 차단(backend `acpx`). **acpx·pi-shell-acp 엔트리는 둘 다 `plugins.entries`에 없음** — pi-shell-acp는 2026-06-22(6.9) provider 외부화로 완전 제거(entry+allow+load.paths). ~~엔트리 지우면 기본 로드로 복귀~~ 함정은 6.9에서 무효 — 외부화로 default-load 대상 자체가 사라짐(제거 후 clean boot·warnings 0 확인). 재활성 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md).
 
 라이브 값 확인:
 
