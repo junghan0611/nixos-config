@@ -69,6 +69,7 @@ in {
     gdu
     procs
     psmisc       # killall, fuser (ElleNajit)
+    just
 
     # Essential UNIX utilities (agent-friendly)
     bubblewrap     # sandbox (codex 등에서 필요)
