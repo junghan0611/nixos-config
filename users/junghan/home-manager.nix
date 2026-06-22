@@ -107,6 +107,7 @@ in {
     clojure
     clojure-lsp
     mitscheme
+    janet
 
     google-clasp     # Google Apps Script CLI
 
