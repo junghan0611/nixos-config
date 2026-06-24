@@ -146,7 +146,6 @@ in {
     gifski        # High-quality GIF encoder
 
     hugo
-    netlify-cli
   ] ++ (lib.optionals isLinux [
     # Linux-common CLI (headless 포함)
     xclip
