@@ -113,11 +113,11 @@ in {
     google-clasp     # Google Apps Script CLI
 
     # AI CLI tools (from unstable)
-    gemini-cli
+    # gemini-cli
     codex
     # opencode
     # claude-code
-    claude-monitor
+    # claude-monitor
     # claude-code-acp
     # claude-code-router
     zmx              # terminal session persistence (live agent sessions)
@@ -144,6 +144,9 @@ in {
     asciinema     # Terminal session recorder
     asciinema-agg # asciicast → animated GIF (agg)
     gifski        # High-quality GIF encoder
+
+    hugo
+    netlify-cli
   ] ++ (lib.optionals isLinux [
     # Linux-common CLI (headless 포함)
     xclip
