@@ -45,6 +45,7 @@ in {
     (aspellWithDicts (dicts: with dicts; [ en en-computers ]))
     ispell
 
+    enchant
     hunspell
     hunspellDicts.ko_KR
 
