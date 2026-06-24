@@ -78,8 +78,22 @@
 # 승인/exec 동작 변화, 라이브 reply+exec 테스트 필수. GPT-5.3 Spark OAuth 라우팅은 우리 5.5/5.4 라 무관. 비해당:
 # SQLite WAL on NFS(로컬 fs)/iOS Watch·Android/Dashboard session rail/OpenTelemetry export/StepFun. codex plugin
 # stock(번들)이라 base bump 와 함께 자동 6.9.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.8
-FROM ghcr.io/openclaw/openclaw:2026.6.9
+# 6.9 → 6.10 (2026-06-24): 유지보수·견고화 patch (250 commits, 대부분 CI/test/chore(deadcode)/crabbox·parallels
+# 빌드 격리 — 운영 영향 4그룹뿐). 방침(GLG) 동일: gemini-cli 안 쫓음(403 DOWN 유지), claude-cli+codex 서빙 유지가
+# 목표, doctor --fix 미사용(read-only `doctor`만, surgical config set/unset). 직접 이득/주의: ① Fast mode for
+# conversations — 짧은 대화 턴은 fast mode, 긴 런은 normal 복귀(codex/claude-cli/ACP 전반, retries·fallback·progress
+# 에 fast-mode state 유지 + Codex service-tier clear & auto fast status 렌더). 유일한 사용자 가시 신기능 → 동작
+# 변화라 라이브 reply 검증 필수(깨질 위험은 낮음). ② hook registry trusted-policy 보존(#94545 — before_tool_call이
+# composed registry 일관 사용, approval workflow용. 우리 approval 비활성이라 영향 적음) + codex projected-context-
+# after-hooks 견고화 다수. ③ provider plugin registry refresh after setup installs(#95792 — onboarding에서 외부
+# provider(deepseek/groq/cerebras) 설치 후 stale registry로 auth 끊기던 것 fix. 우리 onboarding 안 함 → 직접 무관,
+# 단 deepseek 부활 시 plugins install 흐름에 도움). ④ cron delivery awareness for target sessions(#93580) + 채널
+# 전환 시 stale channel-origin 누수 차단. 비해당: Zai GLM-5.2 reasoning levels / StepFun ClawHub / Gemini schema
+# deadcode 제거. Breaking 없음(릴리즈 노트 명시 + compare에 schema/migration breaking commit 부재). codex plugin
+# stock(번들)이라 base bump 와 함께 자동 6.10. gemini 는 google-gemini-cli/gemini-3.1-pro-preview 유지(403 DOWN,
+# agy 이관 대기) — doctor --fix 미사용으로 드리프트 0 예상, 단 업글 후 `agents list` 로 gemini prefix 전수 재확인.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.9
+FROM ghcr.io/openclaw/openclaw:2026.6.10
 
 USER root
 

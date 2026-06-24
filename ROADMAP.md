@@ -31,7 +31,7 @@
 - **NixOS 채널**: `nixos-25.11` + home-manager 25.11 (stateVersion 25.05 고정). **26.05 업그레이드 대기** — 25.11 EOL 2026-06-30, → [NEXT.md §8](NEXT.md).
 
 **봇 런타임 요약**
-- OpenClaw **2026.6.9**, ready ~1.6s, 13 plugins, healthy (provider 외부화로 perplexity/discord/deepseek 제거, config warnings 0).
+- OpenClaw **2026.6.10**, healthy t+20s, config warnings 0 (provider 외부화 baseline 유지, fast-mode 신기능 디폴트 수용).
 - main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
 - 전 봇 OpenClaw 네이티브 provider/runtime — **ACP 제거 완료**(2026-06-10, gemini→`google` google-gemini-cli OAuth). third-party ACP 의존 0.
 
@@ -44,6 +44,21 @@
 ## OpenClaw 업그레이드 이력
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
+
+### 2026.6.10 (2026-06-24, GREEN)
+
+6.9 다음 stable **한 칸** — 유지보수·견고화 patch (250 commits, 대부분 CI/test/`chore(deadcode)`/crabbox·parallels 빌드 격리, 운영 영향 4그룹뿐). 방침(GLG) 동일: **gemini-cli 안 쫓음**(403 DOWN 유지), **claude-cli + codex 서빙 유지가 목표**, **`doctor --fix` 미사용**(read-only `doctor`만, surgical `config set/unset`). Docker 절차: `~/openclaw/Dockerfile` `FROM ...:2026.6.9 → :2026.6.10`(runtime SSOT = openclaw-config repo, nixos-config `docker/openclaw/Dockerfile` 미러 동기) + `docker compose build --pull && up -d --force-recreate`. codex plugin stock 자동 6.10. 빌드 전 디스크 85%(15G) → builder prune로 build cache 3.4G 회수 **80%(20G)**.
+
+**무엇이 바뀌나 — 운영 영향 4그룹** (Breaking 없음, 릴리즈 노트 명시 + compare에 schema/migration breaking commit 부재):
+- ① **Fast mode for conversations** (유일한 사용자 가시 신기능): 짧은 대화 턴은 fast mode, 긴 런은 normal 복귀. codex/claude-cli/ACP 전반에서 retries·fallback·progress event에 fast-mode state 유지 + Codex service-tier clear & auto fast status 렌더. **config 키 0** — 6.10 디폴트 수용(런타임 자동 발현, 드리프트 없음).
+- ② **hook registry trusted-policy 보존** (#94545): `before_tool_call`이 composed live plugin registry를 일관 사용 — approval workflow용. 우리 approval 비활성이라 영향 적음. + codex projected-context-after-hooks 견고화 다수.
+- ③ **provider plugin registry refresh after setup installs** (#95792): first-time onboarding에서 외부 provider(deepseek/groq/cerebras) 설치 후 stale registry로 auth가 끊기던 것 fix. 우리 onboarding 안 함 → 직접 무관, deepseek 부활 시 `plugins install` 흐름에 도움.
+- ④ **cron delivery awareness for target sessions** (#93580) + 채널 전환 시 stale channel-origin 누수 차단. cron 쓰면 순이득.
+- 비해당: Zai GLM-5.2 reasoning levels / StepFun ClawHub / Gemini schema deadcode 제거.
+
+**gemini 드리프트 0 — `doctor --fix` 미사용 효과 (6.9 패턴 유지)**: read-only doctor가 gemini 마이그레이션을 *제안*만 하고 미적용. 단 이번 6.10 doctor 제안은 6.6/6.8의 `google/`(api-key 금지경로) 재작성과 **달리** "canonical provider refs + **google-gemini-cli runtime 선택**" 방향 — 우리 baseline(`google-gemini-cli/`)과 정합. 그래도 `--fix` 안 했으므로 현 상태 그대로 유지(403 DOWN, agy 이관 대기).
+
+**검증**: `OpenClaw 2026.6.10`, healthy(t+20s), **config warnings 0**(non-loopback bind 경고만 — LAN bind 의도·상시·무해). 모델 6봇 drift 0: main/bbot `claude-opus-4-8`, mini `sonnet-4-6`, glg/gpt `gpt-5.5`, gemini `google-gemini-cli/gemini-3.1-pro-preview`(403 DOWN). probe: `anthropic/claude-opus-4-8`(claude-cli OAuth) **ok·6s** / `claude-cli/claude-opus-4-6 ok·2.7s` / codex `openai via codex status=usable`(anthropic usage 5h 81%·Week 77% 여유) / gemini `google-gemini-cli/...` auth→**403 insufficient scopes**(예상된 DOWN) — **claude+codex 서빙 라이브 확인**. telegram→agent end-to-end는 oracle libtdjson 부재로 GUI 측 GLG ping으로 확인. 백업: `config/openclaw.json.bak-pre610-20260624T151838`. 롤백: Dockerfile FROM 6.9 환원(주석 보존) + rebuild·recreate.
 
 ### 2026.6.9 (2026-06-22, GREEN)
 

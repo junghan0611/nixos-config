@@ -72,7 +72,7 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 
 Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
 
-### Model routing (현재: OpenClaw 2026.6.9 baseline)
+### Model routing (현재: OpenClaw 2026.6.10 baseline)
 
 > 버전 업그레이드 이력 / 운영 결정 연혁 (5.2→5.28, claude-cli 전환, 정공법들, 6.1 codex auth canonical migration)은 [ROADMAP.md](ROADMAP.md)로 이관. 이 섹션은 *현재 라우팅 상태*만 답한다.
 
