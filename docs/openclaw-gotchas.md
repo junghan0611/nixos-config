@@ -12,6 +12,36 @@
 
 ## 활성
 
+### Telegram isolated polling ingress — 유령 connected / inbound 무응답 (2026-06-29)
+
+증상: 채널 status는 `running, connected, transport:just now, mode:polling`인데, 해당 봇 토큰에 직접 `getUpdates(offset=-1)`를 호출해도 `409 Conflict`가 안 뜬다. 즉 OpenClaw status는 connected로 보이나 실제 long-poll request가 없어서 inbound를 소비하지 못하는 **유령 connected** 상태다. `sendMessage`는 정상이라 bot token / outbound 권한 문제로 오판하기 쉽다.
+
+2026-06-29 bbot 사건 관찰:
+
+- bbot `models status --probe --agent bbot` = `claude-cli usable`, OAuth refresh 정상(`expires in 8h`).
+- `openclaw agent --agent bbot --session-key agent:bbot:telegram:bbot:direct:123861330 ...` = 기존 Telegram direct session도 3.5s 내 `ok`. 즉 claude-cli runtime/session 자체가 root cause가 아니었다.
+- Bot API 직접 `sendMessage`도 성공(`message_id=1388`). outbound 정상.
+- 문제는 isolated ingress worker가 실제 long-poll을 유지하지 못한 것. bbot만 standard polling으로 돌리자 `/start`/`/new` 후 inbound가 다시 살아났다.
+
+임시 복구(컨테이너 런타임 핫패치 — **recreate/image rebuild 시 사라짐**):
+
+```bash
+cd ~/openclaw
+# /app/dist/probe-*.js 의 monitorTelegramProvider isolatedIngress 설정부에서 bbot만 false
+# enabled: account.accountId === "bbot" ? false : opts.isolatedIngress?.enabled ?? true,
+docker compose restart openclaw-gateway
+```
+
+검증 순서:
+
+1. `getWebhookInfo`에서 webhook 비어 있고 pending 수 확인.
+2. 직접 `sendMessage`로 outbound 정상 확인.
+3. `models status --probe --agent <id>`와 `openclaw agent --session-key agent:<id>:telegram:<account>:direct:<chatId>`로 runtime/session 정상 확인.
+4. status가 connected인데 직접 `getUpdates(offset=-1)`가 409를 못 받으면 유령 connected. 단 이 진단 호출 자체가 실제 poller와 충돌을 만들 수 있으니 짧게 1회만.
+5. standard polling 전환/핫패치 후 사용자가 실제 DM(`/start`, `/new`, `테스트`)을 보내 inbound→claude turn→sendMessage 로그가 이어지는지 확인.
+
+후속: 이 핫패치를 Dockerfile/entrypoint patch 또는 upstream config toggle로 영구화할지 결정해야 한다. 지금 상태는 컨테이너 내부 수정이라 `up -d --force-recreate`나 이미지 재빌드로 되돌아간다.
+
 ### claude-cli provider — `claude` binary not on PATH → EPIPE on every turn (2026-05-26)
 
 OpenClaw 5.20 (`dist/cli-backend-CO2SZJAY.js`)이 `claude-cli` provider를 자동 등록하면서 spawn args를 `command: "claude"`로 박는다. PATH에서 `claude`를 찾는데, image는 `@anthropic-ai/claude-agent-sdk` (+ `@anthropic-ai/claude-agent-sdk-linux-arm64/claude` 번들 binary)만 install 하고 `node_modules/.bin/claude` symlink는 만들지 않음 (SDK package.json에 `bin` field 없음). 결과:
