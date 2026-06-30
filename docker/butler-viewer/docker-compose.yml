@@ -1,0 +1,46 @@
+# butlercli estate viewer — A2UI estate surface (map.junghanacs.com)
+# 봇이 IR을 POST, 아내가 모바일로 GET. geworfen 패턴(범용 이미지 + 볼륨 마운트, proxy 네트워크).
+#
+#   POST  http://butler-viewer:8765/api/surfaces/:id   ← 힣봇(openclaw, 같은 proxy 네트워크) 내부
+#   GET   https://map.junghanacs.com/v/:shareToken     ← 아내, caddy → butler-viewer:8765
+#
+# 실행: docker compose up -d        로그: docker compose logs -f
+# 의존성:
+#   1. butlercli repo (app.py + viewer/web/dist 빌드본) — read-only 마운트
+#   2. caddy proxy 네트워크 (external)
+#   3. viewer.env (gitignore) — VIEWER_PUSH_TOKEN / VIEWER_SHARE_TOKEN
+# 메모: jsonschema는 기동 시 pip install(런타임). 매번 받는 게 거슬리면 Dockerfile로 베이킹.
+
+services:
+  butler-viewer:
+    image: python:3.12-slim
+    container_name: butler-viewer
+    restart: unless-stopped
+    working_dir: /app
+    command: ["sh", "-c", "pip install --no-cache-dir -q jsonschema && exec python viewer/server/app.py"]
+
+    environment:
+      - HOST=0.0.0.0          # 컨테이너 안 → proxy bridge 한정(공개 노출 아님)
+      - PORT=8765
+      - VIEWER_SURFACE_ID=demo-2026q3
+      - VIEWER_DB=/data/estate_viewer.db
+      - VIEWER_DIST_DIR=/app/viewer/web/dist
+      - TZ=Asia/Seoul
+
+    env_file:
+      - ./viewer.env          # 토큰 — gitignore, 절대 커밋 안 됨
+
+    # 호스트 디버그 접근용(caddy/봇은 proxy 네트워크로 닿으니 필수는 아님)
+    ports:
+      - "127.0.0.1:8765:8765"
+
+    volumes:
+      - /home/junghan/repos/gh/butlercli:/app:ro
+      - /home/junghan/docker-data/butler-viewer:/data
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

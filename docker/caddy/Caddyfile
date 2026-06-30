@@ -1,3 +1,11 @@
+# ⚠️ 이 Caddyfile은 단일 파일 bind-mount(`./Caddyfile:/etc/caddy/Caddyfile:ro`)다.
+#    에디터가 atomic rename(새 inode)으로 저장하면 컨테이너는 옛 inode를 붙들어
+#    호스트 편집을 못 본다 → `docker exec caddy caddy reload`가 "config is unchanged"로
+#    무시한다(무해해 보이지만 새 vhost가 안 먹음).
+#    수정 후 반영: `caddy reload`가 아니라 `docker restart caddy` (현재 inode로 재바인딩).
+#    검증: `docker exec caddy grep <new-domain> /etc/caddy/Caddyfile` 로 컨테이너가
+#    실제로 새 내용을 보는지 먼저 확인. (2026-06-30 map.junghanacs.com 추가 때 겪음)
+
 # Remark42 댓글 서버
 comments.junghanacs.com {
     # Dev auth는 외부 접근 차단 (봇멘트 내부 전용)
@@ -27,6 +35,13 @@ ha.junghanacs.com {
 # 노트: 20260527T073823
 forge.junghanacs.com {
     reverse_proxy forge:3000
+}
+
+# butlercli estate viewer — A2UI 부동산 surface
+# 힣봇이 IR을 POST(내부 proxy 네트워크), 아내가 모바일로 GET(/v/:shareToken).
+# 서버: docker/butler-viewer/ (geworfen 패턴, proxy 네트워크).
+map.junghanacs.com {
+    reverse_proxy butler-viewer:8765
 }
 
 # # Mattermost 채팅 서버 (비활성)
