@@ -1,0 +1,40 @@
+# Authelia — map.junghanacs.com 단일 서브도메인 forward-auth 가드 (Oracle)
+#
+# 목적: map.junghanacs.com(butler-viewer, 가족 부동산 데이터) 앞단에만 인증창을 세운다.
+#       butler-viewer 내부 로직은 수정 0. 봇 push(POST /api/surfaces/:id)는 내부 proxy
+#       네트워크 직결이라 Caddy를 안 거침 → 이 가드에 영향 0.
+#
+# 포터블 원본: openglg-config/authelia/ (path 기반, 다른 호스트용). 이건 Oracle 라이브
+#            서브도메인 모델로 각색한 host-tied 사본 (companion boundary: 호스트 묶임 = nixos-config).
+#
+# 배포 (아내 공지된 window에서만 — Caddy restart 시 *.junghanacs.com 1~2초 blip):
+#   1. cp configuration.yml.template configuration.yml  → GENERATE 3개 채움
+#   2. cp users.yml.template users.yml                  → argon2 해시 채움 (아래 README)
+#   3. docker compose up -d          (새 컨테이너, 기존 서비스 무중단)
+#   4. Caddyfile map 블록 교체 + docker restart caddy   (README 참조)
+#
+# 상세 런북: ./README.md
+
+services:
+  authelia:
+    image: authelia/authelia:latest   # 배포 시점 stable로 핀 권장 (예: authelia/authelia:4.39)
+    container_name: authelia
+    restart: unless-stopped
+
+    volumes:
+      - ./configuration.yml:/config/configuration.yml:ro
+      - ./users.yml:/config/users.yml:ro
+      - /home/junghan/docker-data/authelia:/data
+
+    environment:
+      - TZ=Asia/Seoul
+
+    expose:
+      - "9091"
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

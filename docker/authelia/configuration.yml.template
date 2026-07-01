@@ -1,0 +1,55 @@
+---
+# Authelia — map.junghanacs.com 단일 서브도메인 가드
+# cp configuration.yml.template configuration.yml  후 GENERATE 3개 채우기
+#   각각:  head -c32 /dev/urandom | base64
+
+server:
+  address: 'tcp://:9091/authelia'
+
+log:
+  level: info
+
+identity_validation:
+  reset_password:
+    jwt_secret: 'GENERATE: head -c32 /dev/urandom | base64'
+
+authentication_backend:
+  file:
+    path: /config/users.yml
+
+session:
+  secret: 'GENERATE: head -c32 /dev/urandom | base64'
+  cookies:
+    # 단일 서브도메인 모델: 쿠키를 map.junghanacs.com 에만 스코프.
+    # 나중에 다른 *.junghanacs.com 도 한 로그인으로 묶고 싶으면 domain 을
+    # 'junghanacs.com' 으로 올리고 authelia_url 을 'https://auth.junghanacs.com' 로
+    # 바꾼 뒤 auth.junghanacs.com A레코드 + Caddy 블록을 추가한다 (B안).
+    - domain: 'map.junghanacs.com'
+      authelia_url: 'https://map.junghanacs.com/authelia'
+      default_redirection_url: 'https://map.junghanacs.com'
+      inactivity: '2 hours'
+      expiration: '8 hours'
+      remember_me: '1 month'
+
+storage:
+  encryption_key: 'GENERATE: head -c32 /dev/urandom | base64'
+  local:
+    path: /data/db.sqlite3
+
+notifier:
+  # 파일 알림자 (비밀번호 리셋 메일 대신 파일로). 유저는 users.yml 로 수동 관리하므로
+  # 실사용 없음 — authelia 가 notifier 를 요구해서 최소 구성만 둔다.
+  filesystem:
+    filename: /data/notification.txt
+
+access_control:
+  default_policy: one_factor
+  rules:
+    # authelia 포털 자체는 bypass (로그인창은 미인증 상태에서 열려야 함)
+    - domain: 'map.junghanacs.com'
+      resources: ['^/authelia([/?].*)?$']
+      policy: bypass
+
+    # 나머지 map.junghanacs.com 전부 인증 필요 (default 와 같지만 명시)
+    - domain: 'map.junghanacs.com'
+      policy: one_factor

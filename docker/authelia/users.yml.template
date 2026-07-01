@@ -1,0 +1,24 @@
+---
+# Authelia 유저 DB — map.junghanacs.com 접근 가족 계정
+# cp users.yml.template users.yml  후 password 해시 채우기
+#
+# 해시 생성 (컨테이너로 1회):
+#   docker run --rm authelia/authelia:latest \
+#     authelia crypto hash generate argon2 --password 'YOUR_PASSWORD'
+#
+# 계정은 최소로 — 아내 + GLG 둘이면 충분. 필요 시 추가.
+
+users:
+  glg:
+    displayname: "GLG"
+    password: "GENERATE_HASH_WITH_COMMAND_ABOVE"
+    email: glg@example.com
+    groups:
+      - family
+
+  wife:
+    displayname: "Wife"
+    password: "GENERATE_HASH_WITH_COMMAND_ABOVE"
+    email: wife@example.com
+    groups:
+      - family

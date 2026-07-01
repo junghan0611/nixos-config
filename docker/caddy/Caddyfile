@@ -37,11 +37,23 @@ forge.junghanacs.com {
     reverse_proxy forge:3000
 }
 
-# butlercli estate viewer — A2UI 부동산 surface
-# 힣봇이 IR을 POST(내부 proxy 네트워크), 아내가 모바일로 GET(/v/:shareToken).
-# 서버: docker/butler-viewer/ (geworfen 패턴, proxy 네트워크).
+# butlercli estate viewer — A2UI 부동산 surface (가족 데이터 → authelia 가드)
+# 힣봇이 IR을 POST(내부 proxy 네트워크 직결, Caddy 안 거침 → 가드 영향 0),
+# 아내가 모바일로 GET(/v/:shareToken) → authelia 로그인 후 통과.
+# 서버: docker/butler-viewer/. 가드: docker/authelia/ (README 런북).
 map.junghanacs.com {
-    reverse_proxy butler-viewer:8765
+    # authelia 포털 (bypass — 로그인창은 미인증 상태에서 열려야 함)
+    handle /authelia/* {
+        reverse_proxy authelia:9091
+    }
+    # 나머지 전부: 인증 게이트 통과해야 butler-viewer 도달
+    handle {
+        forward_auth authelia:9091 {
+            uri /authelia/api/authz/forward-auth
+            copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+        }
+        reverse_proxy butler-viewer:8765
+    }
 }
 
 # # Mattermost 채팅 서버 (비활성)

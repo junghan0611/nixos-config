@@ -1,0 +1,3 @@
+# 실파일(시크릿/해시 포함)은 커밋 금지 — .template 만 추적
+configuration.yml
+users.yml
