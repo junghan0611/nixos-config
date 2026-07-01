@@ -22,7 +22,7 @@ services:
     environment:
       - HOST=0.0.0.0          # 컨테이너 안 → proxy bridge 한정(공개 노출 아님)
       - PORT=8765
-      - VIEWER_SURFACE_ID=demo-2026q3
+      - VIEWER_SURFACE_ID=demo          # id=url 체계(butlercli 7fa664a): 공개 데모 surface = demo (기존 demo-2026q3 stale 정리)
       - VIEWER_DB=/data/estate_viewer.db
       - VIEWER_DIST_DIR=/app/viewer/web/dist
       - TZ=Asia/Seoul
