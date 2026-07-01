@@ -92,13 +92,13 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 
 ## 2. 버전 hop 후속 측정 (다음 세션)
 
-### ★ 실행 대기 — 6.10 → 6.11 업그레이드 (검토 완료 2026-07-01, 아내 공지 후 진행)
+### ✅ 6.10 → 6.11 업그레이드 완료 (2026-07-01)
 
-릴리즈 [v2026.6.11](https://github.com/openclaw/openclaw/releases/tag/v2026.6.11) (2026-06-30) = **순수 신뢰성/버그픽스 patch**. 신규 provider 0, breaking 0, 필수 마이그레이션은 세션키 자동 정규화뿐 — 우리에겐 가장 순한 hop. **큰 문제 없을 일**(GLG). 라이브 = 6.10, 이미지 `openclaw-custom:latest`(6일 전 빌드), 디스크 82%(18G 여유).
+릴리즈 [v2026.6.11](https://github.com/openclaw/openclaw/releases/tag/v2026.6.11)(2026-06-30) = 순수 신뢰성/버그픽스. **idle 창(턴 0) 확인 후 `docker compose down` → Dockerfile bump → 재빌드 → up.** 검증: 버전 2026.6.11, claude-cli(main/bbot/mini) GREEN(bbot 라이브 턴), codex(glg/gpt) OK(openai expires 10d·usable), gemini 403 DOWN(예상), memory 4096d, 6봇 prefix 유지(gemini `google-gemini-cli/`·**google/ 드리프트 0** — read-only doctor만), fallbacks 전부 `[]`. 디스크 82%→77%(캐시 3.3GB 회수), 이미지 2.68→2.05GB.
 
-- 우리에게 닿는 개선: ① Telegram 채널 전달 신뢰성(DM 라우팅·재접속 컨텍스트 보존·세션 변경 후 맥락) — 주 채널 ② **QMD memory search가 설정 임베딩 차원 존중** — 우리 4096d(qwen3-8b) 정합 픽스 ③ Codex 구독 한도 처리 개선(fallback 지원, 단 우리 `fallbacks:[]` 유지 확인) ④ 세션/메모리 재접속 연속성 + 플러그인 채널 바인딩 → 공유 상태 DB 이전(6.5 SQLite 계열, 저위험).
-- 비해당(안심): "Gemini 3.5 Flash 1M"은 `google/` API 경로 — 우리 gemini(`google-gemini-cli/` OAuth, 403 DOWN)와 무관. **agy/antigravity provider 여전히 미등장**(6.11 릴리즈 노트 확인) → gemini 안 쫓고 DOWN 유지. DeepSeek V4 ID 픽스도 6.9에 allowlist에서 뺐으니 무관.
-- 절차: ① 두 Dockerfile(`~/openclaw/Dockerfile` + `docker/openclaw/Dockerfile`) `FROM ...:2026.6.10 → :2026.6.11` + 업글 로그 주석 블록 ② 재빌드 → `up -d --force-recreate` ③ **post: read-only `doctor`만 (`--fix` 금지 — #69 확정: --fix가 gemini `google/` 드리프트 원인)** ④ 6봇 모델 prefix 전수 재확인(gemini `google-gemini-cli/` 유지), claude-cli 3봇(main/bbot/mini) Anthropic auth GREEN, memory 4096d, glg/gpt `fallbacks` 빈 상태 ⑤ 재빌드 후 `run.sh C)` prune(82% 사용) ⑥ 스모크: main+Codex봇 라이브 Telegram reply, emacs-agent 소켓(6.6 boundary 교훈). ⚠️ recreate = 도커 재시작이므로 아내 공지된 window에서만.
+- **⚠️ node-gyp hang 규명(신규 함정, gotchas 기록됨)**: 재빌드가 `npm install -g` node-gyp에서 9분+ hang. 범인 = **`@google/gemini-cli` 0.49.0**(transitive `@github/keytar`+`node-pty` native, aarch64 buildkit). → **Dockerfile npm 줄에서 3개 제거**: pi-coding-agent+codex-acp(ACP 폐기로 unused) + gemini-cli(gemini DOWN·안 쫓음+범인). `@anthropic-ai/claude-code`만 남김(native 0). 양쪽 Dockerfile 동기.
+- [ ] **gemini 부활(agy) 시 `@google/gemini-cli` 복원** — 그땐 `libsecret-dev` 등 build deps 추가 필요할 수 있음(keytar/node-pty 컴파일). 위 [⏸] agy 추적 항목과 연동.
+- [ ] **6.11 텔레그램 실사용 soak** — headless 검증 GREEN, 실 가족봇 turn 5~7d 관찰(codex glg/gpt·claude main/bbot).
 
 ### ★ Sonnet 5 — 6.11과 독립, 억지로 안 넣음 (대기, 2026-07-01)
 

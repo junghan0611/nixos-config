@@ -12,6 +12,16 @@
 
 ## 활성
 
+### 이미지 재빌드 node-gyp hang — @google/gemini-cli(keytar+node-pty) (2026-07-01, 6.11)
+
+증상: 6.10→6.11 재빌드 시 `RUN npm install -g` 스텝에서 **node-gyp가 9분+ hang**. CPU 0.2%(컴파일 아님, cc1plus/g++ child 0) + SYN-SENT 0(네트워크 아님) — 그냥 멈춤. 6일 전 빌드엔 없던 새 비용.
+
+근인: **`@google/gemini-cli` 0.49.0**이 transitive로 `@github/keytar`+`node-pty`(native addon)를 끌어와 aarch64 buildkit sandbox에서 node-gyp가 hang. `@anthropic-ai/claude-code`는 native 0(무관), ACP 2개(pi-coding-agent/codex-acp)도 무관.
+
+진단 반사신경: RUN 스텝이 오래면 → `ps -eo pid,etime,args`로 컨테이너/executor 프로세스 확인 → `node-gyp` 보이고 CPU~0 + cc1plus 없으면 **hang** → temp dir에서 `npm install --ignore-scripts <pkg>` 후 `find node_modules -name binding.gyp`로 native 유발 패키지 특정.
+
+조치: Dockerfile `npm install -g` 줄에서 **3개 제거** — `@earendil-works/pi-coding-agent`+`@zed-industries/codex-acp`(ACP 폐기로 unused, config 미참조) + `@google/gemini-cli`(gemini 403 DOWN·agy 대기라 "안 쫓음" + hang 범인). 남긴 건 `@anthropic-ai/claude-code`만(claude-cli runtime, native 0). 결과 빌드 몇 초. gemini 부활(agy) 시 복원 — 그땐 `libsecret-dev` 등 build deps 필요할 수 있음. 양쪽 Dockerfile(`~/openclaw/` + `docker/openclaw/`) 동기 유지.
+
 ### caddy 변경 = 6-세트 검수 필수 + agenda 000 ≠ caddy (geworfen은 emacs 데몬 의존) (2026-07-01)
 
 **규칙 (GLG 지시)**: `docker/caddy/Caddyfile`을 건드리면(특히 `docker restart caddy`) **caddy-fronted 전체를 세트로 검수**한다. 하나만 보고 넘기지 말 것. 현재 세트:

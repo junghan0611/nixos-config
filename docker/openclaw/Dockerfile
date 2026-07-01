@@ -92,8 +92,21 @@
 # deadcode 제거. Breaking 없음(릴리즈 노트 명시 + compare에 schema/migration breaking commit 부재). codex plugin
 # stock(번들)이라 base bump 와 함께 자동 6.10. gemini 는 google-gemini-cli/gemini-3.1-pro-preview 유지(403 DOWN,
 # agy 이관 대기) — doctor --fix 미사용으로 드리프트 0 예상, 단 업글 후 `agents list` 로 gemini prefix 전수 재확인.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.9
-FROM ghcr.io/openclaw/openclaw:2026.6.10
+# 6.10 → 6.11 (2026-06-30 릴리즈, 2026-07-01 적용): 순수 신뢰성/버그픽스 patch. 신규 provider 0, breaking 0,
+# 필수 마이그레이션은 세션키 자동 정규화뿐 — 가장 순한 hop. 방침(GLG) 동일: gemini-cli 안 쫓음(403 DOWN),
+# claude-cli+codex 서빙 유지, doctor --fix 미사용(read-only `doctor`만, surgical config set/unset). 직접 이득:
+# ① Telegram 채널 전달 신뢰성(DM 라우팅 교정·재접속 컨텍스트 보존·세션 변경 후 대화 맥락 유지 — 주 채널, 전
+# 가족봇) ② QMD memory search 가 설정 임베딩 차원 존중 → 우리 4096d(qwen3-8b) 정합 픽스 ③ Codex 구독 한도
+# 처리 개선(fallback 지원 — 단 우리 fallbacks:[] 정공법 유지, 업글 후 glg/gpt fallbacks 빈 상태 확인) ④ 세션/
+# 메모리 재접속 연속성 + 플러그인 채널 대화 바인딩 → 공유 상태 DB 이전(6.5 SQLite 계열, 저위험). 비해당(안심):
+# "Gemini 3.5 Flash 1M" 은 google/ API 경로(우리 google-gemini-cli OAuth 403 DOWN 과 무관) + agy/antigravity
+# provider 여전히 미등장(gemini 안 쫓음) + DeepSeek V4 ID 픽스(6.9 에 allowlist 제거, 무관). Sonnet 5
+# (claude-sonnet-5, 07-01 출시)는 6.11 미포함(6/30 릴리즈)이나 claude-cli 봇은 구독 API 동적 해결이라 카탈로그
+# 등록만으로 태움(재빌드 무관, opus-4-8 5.28 방식). codex plugin stock(번들)이라 base bump 와 함께 자동 6.11.
+# 업글 후 `agents list` 로 6봇 모델 prefix 전수 재확인(gemini google-gemini-cli/ 유지), main/bbot/mini Anthropic
+# auth GREEN, memory 4096d, glg/gpt fallbacks 빈 상태.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.10
+FROM ghcr.io/openclaw/openclaw:2026.6.11
 
 USER root
 
@@ -135,16 +148,15 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 # 현재 미사용 (plugins.entries.matrix.enabled=false)
 # 추후 필요 시 새 SDK 방식으로 재설치
 
-# pi-shell-acp 런타임 (Phase 1.8 β host passthrough 경로)
-# - pi: child process 호출 entrypoint
-# - codex-acp / gemini: backend ACP executables
-# - claude-code: 5.22 base가 더 이상 binary 번들하지 않음 (5.20까지 @anthropic-ai/claude-agent-sdk 번들,
-#   5.22는 raw @anthropic-ai/sdk만) → claude-cli provider가 spawn할 `claude` binary를 별도 install.
-# pi-shell-acp 자체는 host ~/.pi/agent bind-mount로 노출 (compose 참조)
+# claude-code: 5.22 base가 더 이상 binary 번들하지 않음 (5.20까지 @anthropic-ai/claude-agent-sdk 번들,
+#   5.22는 raw @anthropic-ai/sdk만) → claude-cli provider가 spawn할 `claude` binary를 별도 install. native 0.
+# ※ 6.11 (2026-07-01) 제거 3건 (unused + aarch64 node-gyp hang 회피):
+#   - @earendil-works/pi-coding-agent(pi ACP entrypoint), @zed-industries/codex-acp(codex ACP backend):
+#     ACP 완전 폐기(pi-shell-acp 6.9 제거, 봇 전부 OpenClaw native)로 unused. config 미참조 + GLG "안 씀".
+#   - @google/gemini-cli: gemini 403 DOWN(agy 이관 대기, 안 쫓음) + node-gyp hang 진짜 범인 — 0.49.0이
+#     @github/keytar + node-pty(native) 를 끌어와 buildkit에서 컴파일 hang. 부활(agy) 시 복원(libsecret-dev
+#     등 build deps 필요할 수 있음).
 RUN npm install -g \
-      @earendil-works/pi-coding-agent \
-      @zed-industries/codex-acp \
-      @google/gemini-cli \
       @anthropic-ai/claude-code
 
 USER node
