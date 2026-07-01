@@ -12,6 +12,25 @@
 
 ## 활성
 
+### caddy 변경 = 6-세트 검수 필수 + agenda 000 ≠ caddy (geworfen은 emacs 데몬 의존) (2026-07-01)
+
+**규칙 (GLG 지시)**: `docker/caddy/Caddyfile`을 건드리면(특히 `docker restart caddy`) **caddy-fronted 전체를 세트로 검수**한다. 하나만 보고 넘기지 말 것. 현재 세트:
+
+```bash
+for d in comments.junghanacs.com analytics.junghanacs.com agenda.junghanacs.com \
+         ha.junghanacs.com forge.junghanacs.com map.junghanacs.com; do
+  printf '%-28s → %s\n' "$d" "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 https://$d/)"
+done
+```
+정상 기대치: analytics/ha/forge=200, comments=404(remark42 루트 정상), map=302(authelia 게이트), agenda=200.
+
+**함정 — agenda 000은 caddy 탓처럼 보이지만 아니다**: `agenda.junghanacs.com`(geworfen:3333)은 **호스트 emacs `server` 데몬**(`agent-emacs.service`, socket `/run/user/1000/emacs/server`, ro 마운트)에 의존한다. 그 데몬이 hang하면 geworfen HTTP 핸들러가 블록 → agenda **HTTP 000**(caddy는 502 아니라 dial 타임아웃). caddy를 방금 재시작했어도 **인과 아님** — 진단으로 갈라라:
+- `emacsclient -s server --eval '(+ 1 1)'` (호스트) → 타임아웃(exit 124)이면 **데몬 hang**이 근인, caddy 무관.
+- 소켓 inode 호스트 vs `docker exec geworfen ls -lai /run/user/1000/emacs/` **일치**면 마운트 stale 아님(compose 주석의 "emacs 재시작 후 stale" 회복 경로 해당 없음) → 데몬 자체 문제.
+- autoheal이 geworfen을 4분마다 재시작 루프(`docker logs autoheal`)면 **컨테이너가 아니라 데몬이 원인** — geworfen restart로는 안 풀린다.
+
+**복구**(geworfen 담당자 소관 — nixos-config에서 직접 데몬 만지지 말고 entwurf로 핸드오프): `systemctl --user restart agent-emacs.service` + 고아 `--daemon=server` 프로세스(parent=init) 청소 + `docker restart geworfen`. 2026-07-01 사건 = map authelia 배포 caddy restart(11:35)와 무관, 데몬 hang이 11:11부터 선재.
+
 ### Telegram isolated polling ingress — 유령 connected / inbound 무응답 (2026-06-29)
 
 증상: 채널 status는 `running, connected, transport:just now, mode:polling`인데, 해당 봇 토큰에 직접 `getUpdates(offset=-1)`를 호출해도 `409 Conflict`가 안 뜬다. 즉 OpenClaw status는 connected로 보이나 실제 long-poll request가 없어서 inbound를 소비하지 못하는 **유령 connected** 상태다. `sendMessage`는 정상이라 bot token / outbound 권한 문제로 오판하기 쉽다.
