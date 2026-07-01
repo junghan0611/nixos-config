@@ -57,6 +57,19 @@ Forge 가동 검증 완료분(인스턴스 + Caddy 30초 인증서, work alskdjf
 
 ---
 
+## 0.5 authelia — map.junghanacs.com 가드 (✅ 배포 완료 2026-07-01)
+
+`map.junghanacs.com`(butler-viewer, 가족 부동산 데이터) **앞단에만** authelia forward-auth 인증창. butler-viewer 내부 수정 0, 다른 서브도메인 규칙 0. 설계 = **A안(서브패스 포털 `map.junghanacs.com/authelia`, 쿠키 domain=map, 새 DNS 불필요)**. 봇 push는 내부 proxy 네트워크 직결이라 Caddy 안 거침 → 가드 영향 0.
+
+- **라이브 (authelia v4.39.20, 단일 공용 계정 `family`)**. 검증(curl): 미인증 `/`·`/v/*`·`/api/surfaces/*` → 302 authelia 리다이렉트(share_token만으론 데이터 못 뚫음), 포털 `/authelia/` 200, 봇 내부 `butler-viewer:8765/` → 200 무영향.
+- **파일**: `docker/authelia/{docker-compose.yml, configuration.yml.template, users.yml.template, .gitignore, README.md}` (공개 추적) + `configuration.yml`·`users.yml` (실파일, **gitignore — 시크릿/해시 미커밋**). Caddyfile map 블록 = forward_auth 버전으로 교체됨.
+- [ ] **아내가 실브라우저로 로그인 1회 확인** — curl로 리다이렉트/포털/봇경로는 검증했으나 실제 로그인 submit+쿠키+뷰어 도달은 사람 1회 필요. 계정 `family` / 비번은 GLG가 아내에게 전달.
+- [ ] **커밋 대기 (GLG)** — 신규 `docker/authelia/*`(템플릿/compose/README/.gitignore) + Caddyfile 수정. 실파일 2개는 gitignore라 안 올라감.
+- [ ] (나중, 불필요) 다른 서브도메인 SSO 필요 시 B안(`auth.junghanacs.com` + 쿠키 domain=junghanacs.com)으로 승격 — README "확장" 참조.
+- 롤백: Caddyfile map 블록 원복 + `docker restart caddy`, authelia는 `docker compose down`.
+
+---
+
 ## 1. pi-shell-acp 정리 — 완료, 잔재 청소만 (2026-06-10 ACP 제거)
 
 claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `google-gemini-cli` OAuth 전환(2026-06-10)** 으로 pi-shell-acp 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거. **이 배포에 third-party ACP 없음.** 정리 사이클의 본체는 끝났고 mount 잔재 청소만 남음.
@@ -78,6 +91,22 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 ---
 
 ## 2. 버전 hop 후속 측정 (다음 세션)
+
+### ★ 실행 대기 — 6.10 → 6.11 업그레이드 (검토 완료 2026-07-01, 아내 공지 후 진행)
+
+릴리즈 [v2026.6.11](https://github.com/openclaw/openclaw/releases/tag/v2026.6.11) (2026-06-30) = **순수 신뢰성/버그픽스 patch**. 신규 provider 0, breaking 0, 필수 마이그레이션은 세션키 자동 정규화뿐 — 우리에겐 가장 순한 hop. **큰 문제 없을 일**(GLG). 라이브 = 6.10, 이미지 `openclaw-custom:latest`(6일 전 빌드), 디스크 82%(18G 여유).
+
+- 우리에게 닿는 개선: ① Telegram 채널 전달 신뢰성(DM 라우팅·재접속 컨텍스트 보존·세션 변경 후 맥락) — 주 채널 ② **QMD memory search가 설정 임베딩 차원 존중** — 우리 4096d(qwen3-8b) 정합 픽스 ③ Codex 구독 한도 처리 개선(fallback 지원, 단 우리 `fallbacks:[]` 유지 확인) ④ 세션/메모리 재접속 연속성 + 플러그인 채널 바인딩 → 공유 상태 DB 이전(6.5 SQLite 계열, 저위험).
+- 비해당(안심): "Gemini 3.5 Flash 1M"은 `google/` API 경로 — 우리 gemini(`google-gemini-cli/` OAuth, 403 DOWN)와 무관. **agy/antigravity provider 여전히 미등장**(6.11 릴리즈 노트 확인) → gemini 안 쫓고 DOWN 유지. DeepSeek V4 ID 픽스도 6.9에 allowlist에서 뺐으니 무관.
+- 절차: ① 두 Dockerfile(`~/openclaw/Dockerfile` + `docker/openclaw/Dockerfile`) `FROM ...:2026.6.10 → :2026.6.11` + 업글 로그 주석 블록 ② 재빌드 → `up -d --force-recreate` ③ **post: read-only `doctor`만 (`--fix` 금지 — #69 확정: --fix가 gemini `google/` 드리프트 원인)** ④ 6봇 모델 prefix 전수 재확인(gemini `google-gemini-cli/` 유지), claude-cli 3봇(main/bbot/mini) Anthropic auth GREEN, memory 4096d, glg/gpt `fallbacks` 빈 상태 ⑤ 재빌드 후 `run.sh C)` prune(82% 사용) ⑥ 스모크: main+Codex봇 라이브 Telegram reply, emacs-agent 소켓(6.6 boundary 교훈). ⚠️ recreate = 도커 재시작이므로 아내 공지된 window에서만.
+
+### ★ Sonnet 5 — 6.11과 독립, 억지로 안 넣음 (대기, 2026-07-01)
+
+Sonnet 5(`claude-sonnet-5`, 2026-07-01 출시)는 **v2026.6.11에 미포함**(릴리즈 6/30, 하루 늦음. 노트 "신규 provider 0"). **단 우리 claude-cli 봇은 OpenClaw가 담아줄 필요 없음** — main/bbot는 `agentRuntime claude-cli` → `@anthropic-ai/claude-code` CLI(2.1.187, 컨테이너 확인: 모델 ID 하드코딩 0 → **서버/구독 API에서 동적 해결**) → 구독이 서빙하는 순간 사용 가능. 태우는 법 = opus-4-8을 5.28에 넣은 canonical 방식(카탈로그/allowlist에 `anthropic/claude-sonnet-5` + primary + agentRuntime claude-cli), **이미지 재빌드 불필요**.
+
+- **방침(GLG): 안 되면 넣지 말고 기다린다 — 패치로 정식 카탈로그에 담길 것.** 서빙 미보장 모델을 primary로 박지 말 것(auto-fallback catch-all 함정, fable-5 사건 교훈). 시험할 때만 mini(직접 대화 안 하는 검증 lane, 현재 `anthropic/claude-sonnet-4-6`)에서 `/model anthropic/claude-sonnet-5`로 서빙 확인 → 되면 그때 promote. 안 되면 대기.
+
+---
 
 6.1 hop 완료 (2026-06-04, headless 5봇 GREEN, [ROADMAP](ROADMAP.md) "2026.6.1"). 운영은 안정이나 다음 자리 측정:
 
