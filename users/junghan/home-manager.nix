@@ -113,9 +113,7 @@ in {
     google-clasp     # Google Apps Script CLI
 
     # AI CLI tools (from unstable)
-    # gemini-cli
-    codex
-    # opencode
+    # codex
     # claude-code
     # claude-monitor
     # claude-code-acp
