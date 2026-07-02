@@ -21,13 +21,14 @@
 #   netlify-cli                               netlify / ntl
 #   clawhub                                   OpenClaw hub CLI
 #   @steipete/summarize                       URL/미디어 요약 (summarize)
+#   @openai/codex                             codex — curl 인스톨러가 GitHub API rate limit
+#                                             (무인증 60/시간)에 걸려 403 나므로 pnpm으로 안전하게.
 #   typescript-language-server + typescript   TS LSP (Claude Code typescript-lsp 플러그인)
 #   @earendil-works/pi-coding-agent           pi — 최초 1회만. 이후 `pi update` 로 self-update.
 #
 # [curl harness]  벤더 인스톨러 → 설치 후 self-update (우리가 버전에 관여하지 않음).
 #   claude        https://claude.ai/install.sh            → ~/.local/bin/claude
-#   codex         https://chatgpt.com/codex/install.sh    (pnpm @openai/codex 아님)
-#   antigravity   https://antigravity.google/cli/install.sh
+#   antigravity   https://antigravity.google/cli/install.sh → ~/.local/bin/agy (바이너리 이름 agy)
 #
 # [go install]
 #   gog (gogcli)  go install github.com/steipete/gogcli/cmd/gog@latest
@@ -52,6 +53,7 @@ PNPM_PACKAGES=(
     netlify-cli
     clawhub
     @steipete/summarize
+    @openai/codex
     typescript-language-server typescript
     @earendil-works/pi-coding-agent
 )
@@ -61,6 +63,7 @@ declare -A PNPM_CHECK=(
     [netlify-cli]="netlify-cli"
     [clawhub]="clawhub"
     [summarize]="@steipete/summarize"
+    [codex]="@openai/codex"
     [typescript-language-server]="typescript-language-server"
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
 )
@@ -73,12 +76,25 @@ install_pnpm() {
 }
 
 install_harness() {
-    # 벤더 curl 인스톨러 (설치 후 self-update, 무조건 이 버전)
-    info "harness(curl): claude / codex / antigravity 설치·업데이트..."
-    curl -fsSL https://claude.ai/install.sh | bash
-    curl -fsSL https://chatgpt.com/codex/install.sh | sh
-    curl -fsSL https://antigravity.google/cli/install.sh | bash
-    success "harness (claude/codex/antigravity) updated"
+    # 벤더 curl 인스톨러 (설치 후 self-update). 벤더별 독립 실행 —
+    # 하나가 실패(네트워크/일시적 오류)해도 나머지는 계속 진행한다.
+    # (다운로드→실행 2단계로 나눠 `curl|sh` 의 pipe 성공 마스킹도 방지.)
+    info "harness(curl): claude / antigravity — 벤더별 독립 설치·업데이트..."
+    local fails=""
+    _harness_one() {
+        local name="$1" url="$2" runner="${3:-bash}" tmp
+        tmp=$(mktemp)
+        if curl -fsSL "$url" -o "$tmp" && [[ -s "$tmp" ]]; then
+            if "$runner" "$tmp"; then success "$name updated"; else warn "$name 인스톨러 실행 실패"; fails+=" $name"; fi
+        else
+            warn "$name 다운로드 실패 (건너뜀)"; fails+=" $name"
+        fi
+        rm -f "$tmp"
+    }
+    _harness_one claude      https://claude.ai/install.sh              bash
+    _harness_one antigravity https://antigravity.google/cli/install.sh bash
+    echo ""
+    if [[ -z "$fails" ]]; then success "harness 전체 완료"; else warn "harness 실패:$fails (일시적일 수 있음 — 재시도 가능)"; fi
 }
 
 install_gog() {
@@ -110,7 +126,7 @@ check() {
 
     echo ""
     echo -e "${YELLOW}[pnpm global]${NC}"
-    for label in netlify-cli clawhub summarize typescript-language-server pi-coding-agent; do
+    for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent; do
         local pkg="${PNPM_CHECK[$label]}" cur lat
         cur=$(pnpm list -g 2>/dev/null | grep "$label" | grep -oP '[\d.]+$' || true)
         lat=$(npm view "$pkg" version 2>/dev/null || true)
@@ -126,11 +142,14 @@ check() {
 
     echo ""
     echo -e "${YELLOW}[curl harness] (self-update — 버전만 표시)${NC}"
-    for c in claude codex antigravity; do
-        if command -v "$c" >/dev/null 2>&1; then
-            echo -e "  ${GREEN}✓${NC} $c: $("$c" --version 2>/dev/null | head -1)"
+    # 라벨 → 실제 바이너리명 (antigravity 의 바이너리는 agy)
+    declare -A HARNESS_BIN=( [claude]="claude" [antigravity]="agy" )
+    for label in claude antigravity; do
+        local bin="${HARNESS_BIN[$label]}"
+        if command -v "$bin" >/dev/null 2>&1; then
+            echo -e "  ${GREEN}✓${NC} $label ($bin): $("$bin" --version 2>/dev/null | head -1)"
         else
-            echo -e "  ${RED}✗${NC} $c: not installed"
+            echo -e "  ${RED}✗${NC} $label ($bin): not installed"
         fi
     done
 
