@@ -206,19 +206,22 @@ pi-shell-acp 코어 0.7.0 npm publish 라운드 완료 + Phase 3 진입 stamp �
 
 ---
 
-## 8. NixOS 26.05 업그레이드 (디바이스 베이스, 데드라인 있음)
+## 8. NixOS 26.05 이관 — 완료(v2026.7.2), 후속만
 
-25.11 "Xantusia" EOL = **2026-06-30** (보안 업데이트 중단). 26.05 "Yarara"는 2026년 5월 말 릴리즈됨. 한 달 안에 올려야 한다. OpenClaw 축과 별개의 디바이스 베이스 작업.
+**25.11 → 26.05 "Yarara" 이관 완료** (2026-07-02): thinkpad(x86 canary) switch+재부팅 → oracle `build .#oracle` 게이트 → switch → 재부팅 콜드부팅 GREEN(gen #59·#58 롤백 보존, failed 유닛 0, 12컨테이너 자동복구, caddy 6-세트·openclaw 6봇 healthy). 상세는 [CHANGELOG.md](CHANGELOG.md) `v2026.7.2` / [ROADMAP.md](ROADMAP.md). 남은 후속:
 
-> **⚠️ flake.lock 공유 = 단일 결합점 (2026-06-02 확인)**. repo 하나의 `flake.lock`을 모든 디바이스가 공유한다. nixpkgs/home-manager를 26.05로 bump + `nix flake update` → lock에 26.05 rev가 박힌다. **이 lock을 push하는 순간**, oracle이 pull 후 `switch`하면 바로 26.05로 올라간다. 따라서 **thinkpad 검증 전엔 26.05 lock을 절대 push하지 않는다**. thinkpad `test` 통과 ≠ oracle 통과 — oracle은 hosts/oracle·OpenClaw 때문에 26.05 breaking이 따로 터질 수 있어, oracle에서도 `nixos-rebuild build .#oracle`로 먼저 빌드 확인 후 switch.
-
-- [x] **디스크 선결조건 해소 (2026-06-02)** — thinkpad 90%→75% (46G→107G). build-opi5 52G 삭제 + nix GC 3일/optimise 4.2G/journal 2.2G. 26.05 빌드는 새 클로저(~36G)를 store에 추가하므로 여유 필수였음. → 이제 안전
-- [ ] **타이밍** — `.0` 초기 안정화 1~2주 후, 6월 중순~25일 권장 (EOL 전 여유)
-- [ ] **flake bump** — `nixpkgs` `nixos-25.11` → `nixos-26.05`, home-manager `release-25.11` → `release-26.05`. `nixpkgs-pinned`(rev 고정)는 무관. **stateVersion 25.05는 그대로 둔다**(최초 설치 마커, 올리지 않음)
-- [ ] **thinkpad 선검증 (필수 게이트)** — bump + `nix flake update` 후 **로컬에서** `sudo nixos-rebuild test --flake .#thinkpad` (재부팅 없이, 실패 시 자동 원복). 정상 확인 전엔 lock push 금지. test → switch → 며칠 안정화까지가 게이트
-- [ ] **breaking 검토** — 26.05는 systemd initrd default → 부팅 경로 변화. release notes 확인 후 디바이스별 부팅 검증. `nixpkgs-pinned`(Edge URL 우회) 26.05에서 재확인
-- [ ] **순서 (리스크 차등)** — thinkpad(검증 게이트) → laptop → nuc(home server) → **oracle 마지막**(봇 런타임 서비스-크리티컬, `build .#oracle` 선확인 후 switch)
-- [ ] **태그** — 업그레이드 검증 완료 커밋에 `v2026.6.xx` (tag-release 스킬). 26.05 전환은 CHANGELOG `Changed` 한 줄
+- [ ] **#58 GC (25.11 closure 회수)** — 콜드부팅 GREEN 확인됨 → 이제 안전. `sudo nix-collect-garbage --delete-older-than 3d`(또는 run.sh C))로 gen #58 삭제 + 25.11 closure 대량 회수. (부팅 검증 전엔 금지였으나 검증 완료로 해제.)
+- [ ] **task B — gog(gogcli) 봇 컨테이너 설치** — switch가 해결 못 하는 별개 작업. oracle 봇 컨테이너에 gog 부재(과거 amd64 번들이 aarch64 실행 불가 → 가족봇 캘린더 조용히 실패, 실측 `GOG MISSING` 확인). upstream arm64 tarball로 Dockerfile 한 줄:
+  ```dockerfile
+  ARG GOG_VERSION=0.31.1
+  RUN curl -fsSL "https://github.com/steipete/gogcli/releases/download/v${GOG_VERSION}/gogcli_${GOG_VERSION}_linux_arm64.tar.gz" \
+        | tar -xz -C /usr/local/bin gog && gog --version
+  ```
+  - **동기 Dockerfile 2개**: `~/openclaw/Dockerfile` + `docker/openclaw/Dockerfile`(현재 byte-identical). summarize `npm install -g` 자리 근처(L133), **`USER node`(L162) 앞 root 구간**에 삽입(`/usr/local/bin` 쓰기 권한). `TARGETARCH` 대신 `arm64` 하드코드(레거시 빌더 빈값 함정 회피).
+  - **OAuth creds 마운트**(이미지에 굽지 말 것): 봇 계정 `~/.config/gogcli` → `/home/node/.config/gogcli`(ro). 봇 계정 선택 = **GLG 결정 대기**.
+  - 재빌드 후: `docker exec openclaw-gateway gog --version` + `gog calendar` 1회 + 봇 라이브 turn 캘린더 응답. `run.sh k)` SKILL_EXCLUDE에 gogcli 넣지 말 것(봇이 씀).
+- [ ] **zmx 재도입** — 이번 제외(zmx flake zig15 ↔ 26.05 zig16). zig16 빌드 확인 후 재추가.
+- [ ] **문서 정정 (라이브마운트)** — caddy·authelia가 repo 워킹트리를 라이브 마운트(`docker/caddy/Caddyfile` · `docker/authelia/{users,configuration}.yml`)함을 `docs/openclaw-gotchas.md`에 박고, nixos-config 스킬의 "docker/*=백업/레퍼런스" 문구 정정(oracle에선 부정확). git checkout/stash가 이 파일 바꾸면 라이브 인증/프록시 영향 — 이번 이관 중 실측 확인(브랜치는 안 건드려 무영향이었음).
 
 ---
 

@@ -9,9 +9,24 @@
 
 ## Unreleased
 
+## v2026.7.2 — NixOS 25.11 → 26.05 이관
+
 ### Changed
-- **글로벌 모델 allowlist에서 deepseek 제거 — auto-fallback 정체성 훼손 차단**: configured primary 실패 시 auto-fallback이 allowlist 첫 작동모델로 떨어지는데 `deepseek/deepseek-v4-pro`가 1번이라, bbot이 fable-5(서빙 실패) primary로 올라갔을 때 **deepseek로 응답하는 정체성 훼손** 발생. deepseek pro/flash를 `agents.defaults.models`에서 제거(참조 봇 0) → `openai/gpt-5.5`가 catch-all 1번. ORACLE.md에 "auto-fallback catch-all 함정" 박음.
-- **bbot fable-5 시도 → opus-4-8 환원**: 6.6 + 번들 claude CLI 2.1.175가 `claude-fable-5`를 인지하나 **구독/CLI 서빙은 아직 불가**(응답 실패). opus-4-8로 환원, 서빙되면 GLG가 세션 `/model`로 수동 승격 예정.
+- **NixOS 25.11(EOL 2026-06-30) → 26.05 "Yarara" 이관** — `nixpkgs`·home-manager `release-26.05` bump. 안전 순서로 진행: thinkpad switch+재부팅 선검증(x86 canary) → oracle `nixos-rebuild build .#oracle`(aarch64 게이트, closure `26.05.20260630.95ca1e2`) → switch → **재부팅 콜드부팅 GREEN**(gen #59 current·#58 롤백 보존, `systemctl --failed` 0, 12컨테이너 자동복구, caddy 6-세트 서빙, openclaw 6봇 healthy·auth pre-warmed). switch-to-configuration exit 4는 dbus-broker/syncthing-init/vconsole live-reload 레이스로 양성(콜드부팅 clean 확증). laptop/nuc는 thinkpad 동일구성 + 부재라 별도 switch 불요.
+- **오버레이 전면 제거 + 버전핀 이름 정리** — `overlays=[ ]`, input=nixpkgs/disko/home-manager만. `nodejs_24`/`python312` → unversioned `nodejs`/`python3`. 26.05 회귀 일괄 대응: ollama acceleration→package, neofetch→fastfetch, xorg·xfce top-level, nixfmt-classic→nixfmt, gnome/gdm 옵션 rename, neovim withRuby/withPython3/gtk4.theme legacy 고정.
+- **pnpm 전역 단일화** — NixOS 소유 단일 pnpm 11.x(`manage-package-manager-versions=false` + `~/.config/pnpm/rc` global-bin-dir 고정). 흩어진 글로벌(pnpm10 global/5·.tools·orphan shim) 회수 → 정확히 SSOT 6개. `package.json` `packageManager:` 핀과의 전역 싸움 종식(반-nixos 규율).
+- **패키지 통제 3층 모델 문서화**(AGENTS.md §2.5) — ① nix store(담을 수 있는 전부) ② `external-packages.sh`(nix 못 담는 것 SSOT) ③ per-repo devShell. 원칙: 복제 없음·한 창고·중앙 통제.
+- **bbot fable-5 시도 → opus-4-8 환원** — 번들 claude CLI가 `claude-fable-5`를 인지하나 구독/CLI 서빙 아직 불가(응답 실패). opus-4-8로 환원, 서빙되면 GLG가 세션 `/model`로 수동 승격.
+
+### Added
+- **`scripts/external-packages.sh` — 외부 패키지 설치/버전체크 SSOT** — 목록을 run.sh에서 분리해 코드 옆 주석으로 산다. `run.sh e)/E)`는 이 스크립트만 호출. 대상: pnpm 글로벌(netlify-cli·clawhub·@steipete/summarize·@openai/codex·ts-lsp·pi) + curl harness(claude·agy) + `go install`(gog). codex는 curl 인스톨러 GitHub API rate-limit(403) 회피로 pnpm 이관.
+
+### Removed
+- **`EXTERNAL_PACKAGES.md` / `~/update-claude.sh` 폐기** — 문서→스크립트 SSOT로 일원화(문서는 썩는다). 미사용 CLI 정리: gt/bd/bv/br·CLIProxyAPI·gemini·ccr·copilot·cline·gccli/gdcli/gmcli·grammy.
+- **글로벌 모델 allowlist에서 deepseek 제거 — auto-fallback 정체성 훼손 차단** — configured primary 실패 시 auto-fallback이 allowlist 첫 작동모델로 떨어지는데 `deepseek/deepseek-v4-pro`가 1번이라, bbot이 fable-5(서빙 실패) primary로 올라갔을 때 **deepseek로 응답하는 정체성 훼손** 발생. deepseek pro/flash를 `agents.defaults.models`에서 제거(참조 봇 0) → `openai/gpt-5.5`가 catch-all 1번. ORACLE.md에 "auto-fallback catch-all 함정" 박음.
+
+### Fixed
+- **picom v13 deprecated 옵션 6개 + flameshot checkForUpdates + ghostty confirm-close-surface** 26.05 정리.
 
 ## v2026.6.13
 

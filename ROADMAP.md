@@ -21,14 +21,14 @@
 
 ---
 
-## 현재 위치 — `v2026.6.13`
+## 현재 위치 — `v2026.7.2`
 
-`v2026.5.31`(첫 CalVer) 이후 `v2026.6.2`·`v2026.6.4`·`v2026.6.10`을 거쳐 현재. 이번 스냅샷의 큰 줄기: **OpenClaw 6.5→6.6 업그레이드(보안 경계 강화) + glg 가족봇 5.5 재승격 + gemini agy 이관 드리프트 방어 체계화**. gemini는 `google-gemini-cli` OAuth(Pro 쿼터)를 기준선으로 유지하되, `doctor --fix`/업글이 `google/`(api-key 금지경로)로 자동 재작성하는 드리프트가 당분간 구조적 — "이관 사안"으로 인지·검토하는 운영 원칙을 ORACLE.md에 박았다. 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 상세는 아래 업그레이드/결정 이력.
+`v2026.5.31`(첫 CalVer) 이후 `v2026.6.2`·`v2026.6.4`·`v2026.6.10`·`v2026.6.13`을 거쳐 현재. 이번 스냅샷의 큰 줄기: **NixOS 25.11(EOL 2026-06-30) → 26.05 "Yarara" 디바이스 베이스 이관** — 오버레이 대청소 + pnpm 전역 단일화 + 외부패키지 `scripts/external-packages.sh` SSOT화 + 패키지 통제 3층 모델(AGENTS.md §2.5). 안전 순서로 완료: thinkpad(x86 canary) switch+재부팅 → oracle `nixos-rebuild build .#oracle`(aarch64 게이트, closure 선실체화) → switch → **재부팅 콜드부팅 GREEN**(gen #59 current·#58 25.11 롤백 보존, `systemctl --failed` 0, 12컨테이너 자동복구, caddy 6-세트 서빙, openclaw 6봇 healthy). 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 이력은 아래.
 
 **인프라 형상**
 - **디바이스 4종**: `oracle`(aarch64 클라우드 VM, headless, 봇 런타임) / `nuc`(home server) / `laptop`(Samsung NT930SBE) / `thinkpad`(work GUI). i3는 oracle 제외 GUI 디바이스에만, oracle은 headless 프로파일.
 - **Docker 스택 (Oracle, 설정값까지 공개)**: openclaw · forge · caddy · remark42 · homeassistant · geworfen · umami · autoheal (+ 비활성 mattermost/synapse). nixos-config 커스텀만으로 이 oracle 형상을 재현 가능 — 반년+ 담금질한 공개 인프라.
-- **NixOS 채널**: `nixos-25.11` + home-manager 25.11 (stateVersion 25.05 고정). **26.05 업그레이드 대기** — 25.11 EOL 2026-06-30, → [NEXT.md §8](NEXT.md).
+- **NixOS 채널**: `nixos-26.05` "Yarara" + home-manager 26.05 (stateVersion 25.05 고정 — 최초 설치 마커, 올리지 않음). **v2026.7.2에서 25.11→26.05 이관 완료**(25.11 EOL 2026-06-30 전). 오버레이 제거로 input = nixpkgs/disko/home-manager만. oracle은 `build .#oracle` 게이트 후 switch·재부팅까지 검증.
 
 **봇 런타임 요약**
 - OpenClaw **2026.6.10**, healthy t+20s, config warnings 0 (provider 외부화 baseline 유지, fast-mode 신기능 디폴트 수용).
