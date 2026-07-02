@@ -1,59 +1,67 @@
 # NEXT — upgrade/nixos-2605
 
 > 브랜치 전용 핸드오프. main 병합 전 이 파일 삭제(내용은 ROADMAP.md로 승격).
-> 목표: **25.11(deprecated) → 26.05** 릴리즈 이관 + **pnpm 단일화** + **오버레이 대청소**.
+> 목표: **25.11(deprecated) → 26.05** 이관 + **pnpm 단일화** + **오버레이 대청소** + **외부패키지 SSOT화**.
 
-## 왜 이 브랜치
+## NOW — 다음 세션 첫 걸음 (디스크 정리, 원래 목표)
 
-- 25.11은 deprecated. pnpm_11은 25.11 채널엔 있으나 우리 lock(5/5 rev)엔 없어 `pnpm_11` 참조가 깨졌다.
-- rev 추가/25.11 내부 bump는 곧 버려질 작업 → **26.05 직행**으로 확 잡는다.
-- 철학: `_xx` 버전 핀 지양(그냥 `nodejs`/`python3`/`pnpm`), 26.05 미지원/미사용은 아예 제외,
-  버전 변동 큰 툴(codex/claude-code 등)은 nix에 안 넣고 pnpm global로.
+thinkpad 디스크 **92% / 여유 38G**. Phase A(재설치)로 CLI는 복구됨. **공간 회수가 남음.**
+Phase A는 끝났으니 **B → C → D 순서로 실행**:
 
-## 완료 (config, eval GREEN)
+```bash
+# B) 옛 pnpm 서랍 purge (~2GB + pnpm 단일화 완결)
+pnpm remove -g @openai/codex @google/gemini-cli          # bin/에 남은 stale shim 제거
+rm -rf ~/.local/share/pnpm/global/5 ~/.local/share/pnpm/.tools   # 옛 pnpm10 글로벌 + self pnpm(79M)
+rm -f ~/.local/share/pnpm/{acorn,anthropic-ai-sdk,ccr,claude,clawdhub,cline,codex,copilot,gccli,gdcli,gmcli,gemini,pn,pnpm,pnpx,pnx,summarize,summarizer}  # parent orphan shim (PATH 밖)
+#   ↑ clawhub/summarize/pi/netlify는 bin/에 재설치됐으니 parent 것 지워도 됨. claude/codex는 ~/.local/bin(curl)이라 무관.
 
-- `flake.nix`: nixpkgs `nixos-26.05`, home-manager `release-26.05`. **오버레이 전부 삭제 → `overlays = [ ]`**.
-  input은 `nixpkgs`/`disko`/`home-manager`만. (unstable·pinned·claude-desktop·zmx 입력 삭제)
-  - 26.05 네이티브가 종전 오버레이 이상 커버: ghostty 1.3.1 · chrome 148 · bun 1.3.13 · scrcpy 4.0 ·
-    edge 145.0.3800.70(URL 수정됨) · tdlib 1.8.65 · pnpm 11.9.0.
-- fallout 수리: `services.ollama.acceleration` → `package = pkgs.ollama-vulkan` (thinkpad.nix);
-  `neofetch` → `fastfetch`; `nodePackages.asar`는 claude-desktop 삭제로 해소;
-  `xfce.thunar-volman` → `pkgs.thunar-volman` (top-level 이동).
-- 버전 언핀: `nodejs_24`/`nodejs_22` → `nodejs`(7파일), `python312*` → `python3*`(6파일).
-- pnpm 단일화(nix 쪽): `shell.nix` sessionPath에서 부모 `$PNPM_HOME` 제거(‘/bin’만),
-  `.bashrc`의 부모 PATH 주입 블록 제거, **`~/.config/pnpm/rc`** home-manager 관리로 신설
-  (`manage-package-manager-versions=false` + `global-bin-dir=$PNPM_HOME/bin`).
-  ※ npm auth 토큰이 든 `~/.npmrc`는 건드리지 않음(pnpm 전용 rc로 분리).
-- `nixos-rebuild dry-build .#thinkpad` **exit 0**. 규모: 614 로컬 빌드 + 3399 fetch(10.1 GiB↓/31.4 GiB).
+# C) content store prune (참조 안 되는 CAS 회수 — store 20G 중)
+pnpm store prune
 
-## 다음 (실행 순서 — 단계적, oracle 최후)
+# D) nix GC (25.11 잔재 + 옛 세대). run.sh C) 또는 직접.
+#   ⚠️ 오래된 세대 삭제 = 25.11 롤백 표면 사라짐. thinkpad는 26.05 검증·재부팅 완료라 OK 판단이면 진행.
+sudo nix-collect-garbage --delete-older-than 7d && nix-store --optimise && sudo journalctl --vacuum-size=200M
+```
 
-1. **thinkpad 실빌드**: `nixos-rebuild build --flake .#thinkpad` (switch 아님) — build-time 실패 surface + 캐시 prime.
-2. **thinkpad switch → 검증**: 재부팅/재로그인 후 `which -a pnpm`이 **1개**(nix, 11.9.0)인지,
-   GUI(chrome/edge/ghostty/scrcpy), telega(tdlib), ollama-vulkan 동작.
-3. **entwurf 런타임 청소(thinkpad, nix로 안 지워짐)**: switch 뒤 entwurf 담당이 수행 —
-   `~/.local/share/pnpm/.tools`(self 11.5.0)·self-shim(pnpm/pnpx/pn/pnx)·`global/5` 서랍 삭제,
-   글로벌 재설치(pnpm add -g …)를 `$PNPM_HOME/bin`으로 수렴. `pnpm setup`/`self-update` 금지.
-4. **laptop → nuc** 순차 switch + 검증.
-5. **oracle 최후**: 디스크 여유 먼저(`run.sh C)` prune) → switch →
-   **OpenClaw 6봇 모델 prefix + caddy 6세트 전수 검증**(nixos-config 스킬/ORACLE.md 규약).
+검증: `df -h /` 여유 늘었나, `which -a pnpm` = 1개(11.9.0), `pi`/`clawhub`/`summarize`/`netlify` 실행되나.
 
-## 후속/미결 (별도)
+## DONE — 이번 세션 (전부 커밋됨)
 
-- **zmx 재도입**: 이번에 제외(zmx flake의 zig15 ↔ 26.05 zig16 충돌 우려). 26.05 zig16으로 빌드되는지
-  별도 확인 후 재추가. 그때까지 `zmx` CLI 부재.
-- **eval 경고(비차단, stateVersion<26.05라 legacy 유지)**: `neovim.withRuby`/`withPython3` 기본 true→false,
-  `gtk.gtk4.theme` 기본 변경. silence하려면 명시값 설정 — 지금은 legacy 유지로 무해.
-- Edge 관련 `flake.nix` 상단 "nixpkgs-pinned" 주석은 이미 입력과 함께 삭제됨(확인용).
+| 커밋 | 내용 | push |
+|---|---|---|
+| fa52acf | 26.05 이관 + 오버레이 전면 삭제 + pnpm 단일화 | ✅ |
+| 938b513 | picom v13 / flameshot deprecated 정리 | ✅ |
+| 291cf4c | EXTERNAL_PACKAGES SSOT 일원화 + ghostty confirm-close false | ⬜ **push 필요** |
+| 7d9af7e | run.sh e)/E) 외부패키지 SSOT 배선 | ⬜ **push 필요** |
 
-## 검증 기준
+- **thinkpad 26.05 switch + 재부팅 완료.** eval/picom 경고 0. pnpm 단일 **11.9.0**.
+- 오버레이 전부 삭제(`overlays=[ ]`), input=nixpkgs/disko/home-manager만. nodejs_/python312 → 그냥 이름.
+- pnpm 설정: `~/.config/pnpm/rc`(manage-package-manager-versions=false + global-bin-dir), sessionPath 부모 제거.
+- **EXTERNAL_PACKAGES.md = pnpm 글로벌 SSOT** (`~/update-claude.sh` 폐기).
+  - pnpm 유지: netlify-cli / clawhub / @steipete/summarize / typescript(+lsp) / (pi 최초 1회)
+  - curl self-updater(무조건 이 버전): claude / codex / antigravity — URL 3종 문서에 기록
+  - gog = 포크 로컬빌드(`~/repos/gh/gogcli`, go.mod=upstream이라 go install 불가)
+  - 제거: gemini / ccr / copilot / cline / @mariozechner gccli·gdcli·gmcli / grammy
+- **Phase A 재설치 완료**: netlify 26.1.0 / clawhub 0.23.1 / summarize 0.20.1 / ts+tsls / pi 0.80.3 → v11+bin/.
 
-- `which -a pnpm` = 1줄, `pnpm --version` = 11.9.0.
-- `nix eval .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath` 각 host GREEN.
-- oracle: 봇 6대 GREEN + caddy 6세트 정상.
+## PENDING 결정 (사용자 답 필요)
+
+1. **문서 쓰레기 정리**: `EXTERNAL_PACKAGES.md`의 **gt/bd/bv/br(gastown+beads, 2026-02)** · **CLIProxyAPI(2026-02, ToS경고)** 아직 쓰나? 안 쓰면 **doc + run.sh e)/E) 핸들러 양쪽서 제거**.
+2. **Mod+m (Emacs scratchpad) 회귀**: 데몬·`emacsclient -s user`·scratchpad-toggle 스크립트 다 정상 확인됨(버전 불일치 아님, emacs 30.2). **정확한 증상 필요**(무반응? 프레임은 뜨는데 scratchpad로 안 가나? 에러?). 바인딩: `users/junghan/modules/i3.nix:488`.
+
+## 이후 (fleet 확산)
+
+- **laptop → nuc → oracle(최후, 봇/caddy 검증)** 순차 switch. 4개 host 모두 26.05 eval GREEN 이미 확인.
+  oracle: 디스크 prune 먼저(`run.sh C)`), switch 후 OpenClaw 6봇 + caddy 6세트 검수(스킬/ORACLE.md).
+- **zmx 재도입**: 이번 제외(zmx flake zig15 ↔ 26.05 zig16). zig16 빌드 확인 후 재추가. 현재 `zmx` 부재.
+- **push**: 로컬 커밋 2개(291cf4c, 7d9af7e) push (GLG). 이후 agenda 스탬프.
+
+## 이미 해결된 26.05 회귀 (참고)
+
+ollama acceleration→package / neofetch→fastfetch / xorg·xfce→top-level / nixfmt-classic→nixfmt /
+gnome·gdm 옵션 rename / neovim withRuby·withPython3·gtk4.theme legacy 고정 / picom v13 6개 / flameshot checkForUpdates / ghostty confirm-close-surface.
 
 ## 금지
 
-- oracle를 먼저 switch하지 말 것(검증된 x86 기기 통과 후 최후).
-- `~/.npmrc`(auth 토큰)를 home-manager로 덮지 말 것.
-- 커밋/푸시는 GLG. push 전 git-hooks 통과 확인.
+- oracle 먼저 switch 금지(검증된 x86 통과 후 최후). `~/.npmrc`(auth 토큰) home-manager로 덮지 말 것.
+- Phase B `rm -rf`는 되돌릴 수 없음 — global/5·.tools만, store/·bin/·global/v11 건드리지 말 것.
