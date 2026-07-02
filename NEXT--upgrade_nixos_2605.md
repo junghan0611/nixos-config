@@ -3,22 +3,16 @@
 > 브랜치 전용 핸드오프. main 병합 전 이 파일 삭제(내용은 ROADMAP.md로 승격).
 > 목표: **25.11(deprecated) → 26.05** 이관 + **pnpm 단일화** + **오버레이 대청소** + **외부패키지 SSOT화**.
 
-## NOW — oracle switch만 남음 (새벽 재개)
+## NOW — oracle 26.05 switch 완료, 리부팅 검증 중 (2026-07-02 밤 23시)
 
-thinkpad 완료. laptop/nuc = thinkpad 동일구성 + 현재 부재 → **x86 canary는 thinkpad로 충족**(별도 switch 불필요). 남은 건 **oracle switch 하나**.
+**switch DONE** — 라이브 `26.05.20260630.95ca1e2 (Yarara)`, **gen #59 current, #58(25.11) 롤백 보존**. switch-to-configuration exit 4는 양성(dbus-broker/syncthing-init/vconsole live-reload 레이스 — 지금 전부 `active`, `systemctl --failed` 비어있음). 컨테이너 12개 자동복구 + caddy 6-세트 GREEN(comments 루트 404는 정상, `/ping`=pong·`/web/`=200) + openclaw 6봇(main/bbot/glg/gemini/mini/gpt) 재기동 healthy.
 
-### oracle build 게이트 통과 (2026-07-02, aarch64 — switch 아님)
-- **`nixos-rebuild build .#oracle` GREEN** — closure `26.05.20260630.95ca1e2` 실체화(exit 0). dry-run eval + 실빌드 무사통과 = **aarch64 전용 회귀 없음**. 로컬 컴파일 407개는 전부 config/텍스트 파생물 + 무거운 건 nodejs 하나뿐(host dev, `nice -n19 ionice -c3`로 라이브 봇 무영향).
-- built closure는 워킹트리 `result` 심볼릭이 **GC-root로 고정** → 프룬해도 안 날아가고 switch 시 **재빌드 0**.
-- **라이브는 아직 25.11** (`25.11...Xantusia`, gen #58). 6봇·caddy·authelia 그대로 healthy. `build`는 generation/docker 안 건드림(실측 확인).
+### 리부팅 후 (다음 세션에서) 확인/할 일 — 순서 중요
+1. **콜드부팅 검증**: `nixos-version`=26.05 · `systemctl --failed` 비어야 · 컨테이너 12개(openclaw 포함) 자동 Up · caddy 6-세트(agenda/analytics/comments/forge/ha/map) 200/302 · 봇 라이브 turn 1회.
+2. **그다음에야 #58 삭제**: 부팅 GREEN 확인 후 `sudo nix-collect-garbage --delete-older-than 3d`(또는 run.sh C))로 25.11 closure 대량 회수. ⚠️ **부팅 검증 전엔 절대 #58 지우지 말 것**(원격 VM의 유일 롤백 표면 — 금지 섹션 참조).
+3. **task B — gog 봇 컨테이너 설치**(아래 §0.7): switch가 해결 안 함. Dockerfile **2개** + arm64 tarball. 별도 사이클.
 
-### 새벽에 할 switch (docker 잠깐 내려감 → 여유 생길 때)
-1. `git checkout upgrade/nixos-2605` (built closure는 `result`가 보존 중).
-2. `run.sh C)` prune 먼저 — 디스크 여유 9.2G(91%)라 확보 필요. **switch 전 1회만**(금지 섹션 참조).
-3. `sudo nixos-rebuild switch --flake .#oracle` — closure 재사용, 재빌드 0.
-4. 직후 OpenClaw 6봇 model prefix + caddy 6세트 검수(ORACLE.md). 롤백 표면 = gen #58(25.11).
-5. ⚠️ switch 중 `run.sh E)`(외부패키지) 금지 — oracle 호스트에 codex/gog 깔려 봇과 무관하게 26.05 검증 오염.
-- (참고) 각 host 외부 CLI 복구 필요 시 `run.sh E) → a`(ALL) 또는 개별.
+> GC 이력(2026-07-02 밤, #58 보존 안전 GC): docker builder 1.0G + dangling 122M → 9.2G→**12G(88%)**. journal vacuum은 `sudo journalctl`이 NOPASSWD 밖이라 skip. 대량 회수(#58 25.11 closure)는 부팅 검증 후로 유보.
 
 ## DONE — 이번 세션 (전부 커밋됨)
 
