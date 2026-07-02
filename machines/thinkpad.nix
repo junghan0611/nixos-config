@@ -188,7 +188,8 @@
   # OLLAMA_KEEP_ALIVE=10m → idle 10분 후 VRAM 언로드 (배터리 보호)
   services.ollama = {
     enable = true;
-    acceleration = "vulkan";
+    # 26.05: `acceleration` 제거됨 → 가속 backend는 package로 선택
+    package = pkgs.ollama-vulkan;
     host = "127.0.0.1";
     environmentVariables = {
       OLLAMA_KEEP_ALIVE = "10m";

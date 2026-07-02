@@ -589,8 +589,8 @@ in {
       #---------------------------------------------------------------------
       startup = [
         # Power management
-        { command = "${pkgs.xorg.xset}/bin/xset s 10800 10800"; notification = false; }
-        { command = "${pkgs.xorg.xset}/bin/xset dpms 0 0 18000"; notification = false; }
+        { command = "${pkgs.xset}/bin/xset s 10800 10800"; notification = false; }
+        { command = "${pkgs.xset}/bin/xset dpms 0 0 18000"; notification = false; }
 
         # Lock screen setup
         { command = "${pkgs.xss-lock}/bin/xss-lock --transfer-sleep-lock -- ${pkgs.i3lock}/bin/i3lock --nofork"; notification = false; }
@@ -599,8 +599,8 @@ in {
         { command = "${pkgs.feh}/bin/feh --bg-scale ~/.config/nixos-wallpaper.png"; notification = false; }
 
         # Keyboard layout
-        # { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }  # For English-only
-        { command = "${pkgs.xorg.setxkbmap}/bin/setxkbmap -layout kr -variant kr104 -option korean:ralt_hangul -option caps:menu"; notification = false; }
+        # { command = "${pkgs.setxkbmap}/bin/setxkbmap -layout us"; notification = false; }  # For English-only
+        { command = "${pkgs.setxkbmap}/bin/setxkbmap -layout kr -variant kr104 -option korean:ralt_hangul -option caps:menu"; notification = false; }
 
         # SNI to XEmbed proxy (required for fcitx5 indicator in i3bar)
         { command = "${pkgs.snixembed}/bin/snixembed --fork"; notification = false; }

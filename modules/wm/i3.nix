@@ -148,7 +148,7 @@
     displayManager = {
       lightdm.enable = lib.mkDefault true;  # Can be overridden by specialisations
       # sessionCommands = ''
-      #   ${pkgs.xorg.xset}/bin/xset r rate 200 40
+      #   ${pkgs.xset}/bin/xset r rate 200 40
       # '';
     };
 
@@ -163,7 +163,7 @@
           i3blocks
           ghostty  # Primary terminal
           kitty    # Backup terminal
-          xfce.xfce4-terminal  # Alternative terminal
+          xfce4-terminal  # Alternative terminal (26.05: xfce → top-level)
           mpv
         ];
       };
@@ -179,10 +179,10 @@
   # Additional packages for i3 environment
   environment.systemPackages = with pkgs; [
     # X11 utilities
-    xorg.xrandr
-    xorg.xset
-    xorg.xsetroot
-    xorg.xmodmap
+    xrandr
+    xset
+    xsetroot
+    xmodmap
     arandr
     autorandr
 
@@ -221,7 +221,7 @@
   # systemPackages 에 thunar 를 직접 넣지 않는다 (모듈이 책임).
   programs.thunar = {
     enable = true;
-    plugins = with pkgs.xfce; [
+    plugins = with pkgs; [   # 26.05: 둘 다 xfce → top-level 이동
       thunar-archive-plugin   # 압축파일 우클릭 풀기/묶기
       thunar-volman           # 착탈식 매체 자동 관리
     ];

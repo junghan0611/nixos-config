@@ -49,15 +49,25 @@ in {
   };
 
   # Session PATH — ~/.profile에 기록되어 SSH 비인터랙티브에서도 유효
-  # pnpm v11 uses $PNPM_HOME/bin for global command shims; keep the
-  # parent path for older v10-era shims until they are migrated.
+  # pnpm 11 단일 버전(26.05 네이티브). 글로벌 command shim은 $PNPM_HOME/bin에만
+  # 생성된다(~/.config/pnpm/rc의 global-bin-dir로 고정). 부모 경로($PNPM_HOME)는
+  # v10 시절 잔재라 제거 — 서랍이 둘로 갈리던 원인.
   home.sessionPath = [
     "/home/${vars.username}/.local/share/pnpm/bin"
-    "/home/${vars.username}/.local/share/pnpm"
     "/home/${vars.username}/.local/bin"
     "/home/${vars.username}/go/bin"
     "/home/${vars.username}/bin"
   ];
+
+  # pnpm 전역 설정 — 단일 버전 SSOT 고정. npm auth 토큰이 든 ~/.npmrc를 덮지 않도록
+  # pnpm 전용 rc를 쓴다.
+  #  - manage-package-manager-versions=false: packageManager 필드 기반 self-download/
+  #    재위임을 끈다(디렉토리마다 pnpm 버전 갈아끼우며 .tools/ 서랍 늘리던 원인).
+  #  - global-bin-dir: 글로벌 shim 위치를 $PNPM_HOME/bin에 못박는다.
+  home.file.".config/pnpm/rc".text = ''
+    manage-package-manager-versions=false
+    global-bin-dir=/home/${vars.username}/.local/share/pnpm/bin
+  '';
 
   #---------------------------------------------------------------------
   # Git
@@ -184,10 +194,6 @@ in {
       case ":$PATH:" in
         *":$PNPM_HOME/bin:"*) ;;
         *) export PATH="$PNPM_HOME/bin:$PATH" ;;
-      esac
-      case ":$PATH:" in
-        *":$PNPM_HOME:"*) ;;
-        *) export PATH="$PNPM_HOME:$PATH" ;;
       esac
 
       # User specific paths
@@ -319,6 +325,9 @@ in {
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
+    # 26.05: 기본값 true→false로 변경됨. ruby/python3 provider 유지(기존 동작 보존).
+    withRuby = true;
+    withPython3 = true;
 
     extraConfig = ''
       set number

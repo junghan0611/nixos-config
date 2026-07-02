@@ -2,7 +2,7 @@
   description = "Junghan's NixOS configurations";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
     # Disk management
     disko = {
@@ -12,94 +12,20 @@
 
     # Home Manager for user environment management
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # Unstable nixpkgs for newer packages
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-
-    # Pinned nixpkgs for packages with broken upstream URLs
-    # Edge 145.0.3800.70 — update this rev when nixpkgs fixes Edge URL
-    nixpkgs-pinned.url = "github:NixOS/nixpkgs/372b99478f80";
-
-    # Claude Desktop for Linux (unofficial)
-    claude-desktop = {
-      url = "github:k3d3/claude-desktop-linux-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # zmx - terminal session persistence (not in nixpkgs; upstream flake)
-    # Upstream flake uses zig2nix (musl static build), no nixpkgs input to follow.
-    zmx.url = "github:neurosnap/zmx";
   };
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
   let
-    # Create unstable pkgs with allowUnfree for each system
-    mkUnstablePkgs = system: import inputs.nixpkgs-unstable {
-      inherit system;
-      config.allowUnfree = true;
-    };
-
-    # Pinned pkgs for packages with broken upstream URLs
-    mkPinnedPkgs = system: import inputs.nixpkgs-pinned {
-      inherit system;
-      config.allowUnfree = true;
-    };
-
-    # Overlays to apply custom packages
-    overlays = [
-      (final: prev: let
-        unstable = mkUnstablePkgs prev.stdenv.hostPlatform.system;
-        pinned = mkPinnedPkgs prev.stdenv.hostPlatform.system;
-      in {
-        # Use unstable packages where needed
-        ghostty = unstable.ghostty;
-        # Claude Desktop with MCP support
-        claude-desktop = inputs.claude-desktop.packages.${prev.stdenv.hostPlatform.system}.claude-desktop-with-fhs;
-
-        # Chrome 146 from unstable (145.0.7632.116 crashpad SIGTRAP crash)
-        google-chrome = unstable.google-chrome;
-
-        # Bun from unstable (25.11 has 1.3.3, unstable has 1.3.10)
-        bun = unstable.bun;
-
-        # scrcpy from unstable (25.11 has 3.3.4, unstable has 4.0)
-        scrcpy = unstable.scrcpy;
-
-        # Pinned: Edge 144 (nixpkgs 145 URL is 404, upstream removed)
-        microsoft-edge = pinned.microsoft-edge;
-
-        # TDLib pinned to 1.8.65 (telega.el master 0.8.640 requires >= 1.8.64;
-        # nixpkgs unstable only ships 1.8.63). 1.8.64 itself fails to link the
-        # tg_cli/benchmark binaries (upstream AiComposeTone::store bug), so we
-        # use 1.8.65 which fixes it and still satisfies telega (max-version nil).
-        # tdlib doesn't tag minor versions; we pin the "Update version to X.Y.Z."
-        # commit. Bump rev+hash when telega's telega-tdlib-min-version advances.
-        tdlib = unstable.tdlib.overrideAttrs (old: {
-          version = "1.8.65";
-          src = prev.fetchFromGitHub {
-            owner = "tdlib";
-            repo = "td";
-            rev = "a8f21f5230172634becc1739050ef23ecd6ea291";
-            hash = "sha256-cCNXRyeu6ZMf/0oxipPPUyniGuLzvWFLWCvklPIYvzk=";
-          };
-        });
-
-        # AI CLI tools from unstable
-        gemini-cli = unstable.gemini-cli;
-        codex = unstable.codex;
-        opencode = unstable.opencode;
-        claude-code = unstable.claude-code;
-        claude-monitor = unstable.claude-monitor;
-        claude-code-acp = unstable.claude-code-acp;
-        claude-code-router = unstable.claude-code-router;
-
-        # zmx from upstream flake (musl static build, no nix-store glibc dep)
-        zmx = inputs.zmx.packages.${prev.stdenv.hostPlatform.system}.zmx;
-      })
-    ];
+    # 26.05 이관: 모든 커스텀 오버레이 제거.
+    # ghostty/google-chrome/bun/scrcpy/microsoft-edge/tdlib/pnpm 전부 26.05
+    # 네이티브가 종전 unstable/pinned 이상으로 커버(tdlib 1.8.65, edge 145 URL
+    # 수정, chrome 148). 죽은 AI CLI 오버레이(codex/claude-code 등, 소비처는
+    # 이미 pnpm global로 이전)와 claude-desktop(미사용) 삭제. zmx는 zig15↔26.05
+    # zig16 충돌 우려로 이 브랜치에서 제외 — 별도 후속(NEXT). 이력은 ROADMAP.md.
+    overlays = [ ];
 
     # Helper function to create system configurations with home-manager
     mkSystem = import ./lib/mksystem.nix {

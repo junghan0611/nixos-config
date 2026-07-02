@@ -100,7 +100,7 @@ in {
     tokei
 
     # programming Languages & Tools (CLI)
-    bun             # JavaScript runtime (from unstable)
+    bun             # JavaScript runtime
     zig
     zls
     go
@@ -112,17 +112,13 @@ in {
 
     google-clasp     # Google Apps Script CLI
 
-    # AI CLI tools (from unstable)
-    # codex
-    # claude-code
-    # claude-monitor
-    # claude-code-acp
-    # claude-code-router
-    zmx              # terminal session persistence (live agent sessions)
+    # AI CLI tools — pnpm global로 설치 (버전 변동 큰 툴은 nix에 넣지 않음)
+    # codex / claude-code / claude-monitor / claude-code-acp / claude-code-router
+    # zmx: zig15 ↔ 26.05 zig16 충돌 우려로 제외 — 별도 후속 (NEXT.md)
 
     # System tools
     fortune
-    neofetch
+    fastfetch  # 26.05: neofetch 제거됨(upstream unmaintained) → fastfetch로 대체
 
     # Editors (moved to modules/emacs.nix)
 
@@ -136,7 +132,7 @@ in {
 
     # Media
     sox          # Sample Rate Converter for audio
-    python312Packages.edge-tts  # Text-to-Speech (Microsoft Edge TTS)
+    python3Packages.edge-tts  # Text-to-Speech (Microsoft Edge TTS)
     yt-dlp       # YouTube downloader (ElleNajit)
     ffmpeg       # Video processing (ElleNajit)
     asciinema     # Terminal session recorder
@@ -158,7 +154,6 @@ in {
     # Desktop GUI / 주변장치 / 무거운 런타임 — Oracle headless 제외
     firefox
     microsoft-edge
-    claude-desktop  # Claude Desktop with MCP support
     # telegram-desktop  # 제외. Emacs telega가 봇 메시지까지 커버하므로 불필요.
                        # 데스크톱 앱은 봇 메시지 복원도 안 되고, unstable은
                        # 한글 입력(Qt 불일치)·stable은 소스 빌드 비용까지 걸린다.
@@ -170,7 +165,7 @@ in {
     usbutils        # USB tools
     minicom         # Serial port terminal
     gdmap           # Disk usage visualizer (GUI)
-    scrcpy          # Android screen mirroring (4.0 from unstable)
+    scrcpy          # Android screen mirroring
 
     # Security (ElleNajit)
     keybase         # Encrypted communication
@@ -180,10 +175,10 @@ in {
     wezterm        # Rust-based, excellent Korean input support
 
     # X11 utilities (ElleNajit)
-    xorg.xev        # X event viewer
-    xorg.libxcvt    # cvt replacement
-    xorg.xprop      # X window property inspector (emacs-everywhere dependency)
-    xorg.xwininfo   # X window info (emacs-everywhere dependency)
+    xev        # X event viewer
+    libxcvt    # cvt replacement
+    xprop      # X window property inspector (emacs-everywhere dependency)
+    xwininfo   # X window info (emacs-everywhere dependency)
     xdotool         # X automation (for edit-input)
 
     # Display management (ElleNajit)

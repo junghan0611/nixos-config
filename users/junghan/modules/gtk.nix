@@ -21,6 +21,9 @@ in {
     gtk4.extraConfig = {
       gtk-application-prefer-dark-theme = true;
     };
+
+    # 26.05: gtk4.theme 기본값 config.gtk.theme→null 변경. legacy 유지로 silence.
+    gtk4.theme = config.gtk.theme;
   };
 
   # dconf는 i3wm에서 D-Bus 서비스가 없을 수 있으므로 사용하지 않음

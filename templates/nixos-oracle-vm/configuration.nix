@@ -155,8 +155,8 @@ in
       ncdu
 
       # 개발 도구
-      python312
-      nodejs_22
+      python3
+      nodejs
       pam
       gcc
       gh  # github

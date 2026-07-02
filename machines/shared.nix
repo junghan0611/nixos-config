@@ -250,8 +250,8 @@ in
     fzf
     delta
     git-lfs
-    python312
-    nodejs_24
+    python3
+    nodejs
     pnpm
     uv
     gh  # GitHub CLI
@@ -339,7 +339,7 @@ in
     # Oracle(헤드리스, 저장공간 민감)에서는 제외
     quarto         # ~2.6 GB (문서 빌드)
     android-tools  # adb/fastboot (Oracle 불필요)
-    mermaid-cli    # nodejs_22 transitive (다이어그램 렌더)
+    mermaid-cli    # nodejs transitive (다이어그램 렌더)
     jira-cli-go    # CLI (Oracle 호스트에서 쓰지 않음)
     remmina        # GUI RDP/VNC/SSH client
     freerdp        # Command-line RDP client

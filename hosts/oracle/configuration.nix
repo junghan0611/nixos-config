@@ -156,8 +156,8 @@ in
       cloud-utils    # growpart (Oracle Volume 확장)
 
       # 개발 도구
-      python312
-      nodejs_24
+      python3
+      nodejs
       pam
       gcc
       gh  # github

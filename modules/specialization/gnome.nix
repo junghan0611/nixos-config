@@ -19,12 +19,12 @@
         variant = "kr104";  # Korean (101/104-key compatible) - maps Right Alt to Hangul, Right Ctrl to Hanja
       };
 
-      desktopManager.gnome.enable = true;
-      displayManager = {
-        lightdm.enable = false;  # Disable i3's lightdm
-        gdm.enable = true;       # Use GDM for GNOME
-      };
+      displayManager.lightdm.enable = false;  # Disable i3's lightdm
     };
+
+    # 26.05: xserver 밖으로 이동됨
+    services.desktopManager.gnome.enable = true;
+    services.displayManager.gdm.enable = true;   # Use GDM for GNOME
 
     # GNOME-specific packages
     environment.systemPackages = with pkgs; [
