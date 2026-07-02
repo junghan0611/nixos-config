@@ -61,6 +61,24 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 ---
 
+## 2.5 패키지 통제 모델 (3층) — JS/TS 개발 포함
+
+**nix가 전체 통제권을 갖는다.** 버전이 나뉘어도 한 창고에 모으고, 흩어진 복제본을 만들지 않는다.
+
+| 층 | 무엇 | 어디 |
+|---|---|---|
+| **1 nix store** | nix가 담을 수 있는 전부 (pnpm/node/go/cli…) | system/home-manager 선언 → `/nix/store` (버전 공존·hardlink dedup·GC 중앙 회수) |
+| **2 external-packages.sh** | nix가 못 담는 것 (npm 글로벌, 벤더 self-updater, `go install`) | 단일 목록 SSOT → `run.sh E)`. 물리적으론 `~/.local/share/pnpm/bin`·`~/.local/bin`이지만 **선언은 한 곳** |
+| **3 per-repo devShell** | 특정 repo가 원하는 특정 버전 | flake + direnv → 그 버전도 **nix store에서** 꺼내씀 |
+
+원칙: **복제 없음 · 한 목록/한 창고 · 중앙 통제.**
+
+**JS/pnpm 개발 규율 (중요)**: `package.json`의 `packageManager:` 핀으로 전역과 싸우지 않는다 — 그건 반(反)-nixos다. 전역 pnpm은 nix 단일(11.x, `manage-package-manager-versions=false` — `users/junghan/modules/shell.nix`). repo가 특정 pnpm을 꼭 원하면 **3층 devShell로 격리**, 아니면 **전역으로 이관**(핀 제거 + CI pnpm 버전 lockstep + lockfile 재생성을 한 커밋으로).
+
+정직한 이음새 둘: (a) 2층은 물리적으로 nix store 밖 — 스크립트 규율로만 강제. (b) CI 버전은 Nix와 별도 SSOT라 수동 lockstep bump 필요.
+
+---
+
 ## 3. Commands (공통)
 
 ```bash
