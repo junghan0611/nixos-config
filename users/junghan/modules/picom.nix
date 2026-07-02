@@ -30,8 +30,8 @@
       "class_g = 'Synapse'"
       "class_g ?= 'Notify-osd'"
       "class_g ?= 'Cairo-dock'"
-      "_GTK_FRAME_EXTENTS@:c"
-      "_NET_WM_STATE@:32a *= '_NET_WM_STATE_HIDDEN'"
+      "_GTK_FRAME_EXTENTS@"
+      "_NET_WM_STATE@ *= '_NET_WM_STATE_HIDDEN'"
     ];
 
     # Fading
@@ -48,10 +48,8 @@
     ];
 
     settings = {
-      # GLX backend settings
-      glx-no-stencil = true;
+      # GLX backend settings (picom v13: glx-no-stencil/glx-no-rebind-pixmap 제거됨)
       glx-copy-from-front = false;
-      glx-no-rebind-pixmap = true;
       use-damage = true;
       xrender-sync-fence = true;
 
@@ -84,7 +82,7 @@
       detect-client-opacity = true;
       detect-transient = true;
       detect-client-leader = true;
-      xinerama-shadow-crop = true;
+      crop-shadow-to-monitor = true;  # picom v13: xinerama-shadow-crop 후신
 
       # Performance
       unredir-if-possible = true;  # Unredirect fullscreen windows

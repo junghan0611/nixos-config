@@ -313,7 +313,6 @@ in {
     # Flameshot configuration with Denote timestamp pattern
     ".config/flameshot/flameshot.ini".text = ''
       [General]
-      checkForUpdates=true
       contrastOpacity=188
       copyOnDoubleClick=true
       copyPathAfterSave=true
