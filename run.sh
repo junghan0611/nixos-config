@@ -729,12 +729,16 @@ main() {
                 echo ""
                 echo -e "${YELLOW}[pnpm global]${NC}"
 
+                # SSOT: EXTERNAL_PACKAGES.md의 pnpm add -g 목록과 일치
                 declare -A _ext_npm=(
-                    [claude-agent-acp]="@zed-industries/claude-agent-acp"
-                    [pi-acp]="pi-acp"
+                    [netlify-cli]="netlify-cli"
+                    [clawhub]="clawhub"
+                    [summarize]="@steipete/summarize"
+                    [pi-coding-agent]="@earendil-works/pi-coding-agent"
+                    [typescript-language-server]="typescript-language-server"
                 )
 
-                for label in claude-agent-acp pi-acp; do
+                for label in netlify-cli clawhub summarize pi-coding-agent typescript-language-server; do
                     pkg="${_ext_npm[$label]}"
                     cur=$(pnpm list -g 2>/dev/null | grep "$label" | grep -oP '[\d.]+$')
                     lat=$(npm view "$pkg" version 2>/dev/null)
@@ -780,8 +784,10 @@ main() {
                 echo "  2) bd  - curl installer"
                 echo "  3) bv  - bv --update (self-update)"
                 echo "  4) br  - curl installer"
-                echo "  5) pnpm global (claude-agent-acp, pi-acp)"
+                echo "  5) pnpm global (SSOT: netlify/clawhub/summarize/ts/pi)"
                 echo "  6) uv tools"
+                echo "  7) harness (curl: claude/codex/antigravity)"
+                echo "  8) gog (gogcli fork build)"
                 echo "  a) ALL (전부 업그레이드)"
                 echo "  0) 취소"
                 echo ""
@@ -815,9 +821,32 @@ main() {
                     success "br $(br version 2>/dev/null | awk '{print $3}')"
                 }
                 _do_pnpm() {
-                    info "pnpm global 업그레이드 중..."
-                    pnpm add -g @zed-industries/claude-agent-acp@latest pi-acp@latest
+                    # SSOT: EXTERNAL_PACKAGES.md의 pnpm add -g 목록
+                    info "pnpm global (SSOT) 설치/업그레이드 중..."
+                    pnpm add -g \
+                        netlify-cli \
+                        clawhub \
+                        @steipete/summarize \
+                        typescript-language-server typescript \
+                        @earendil-works/pi-coding-agent
                     success "pnpm global updated"
+                }
+                _do_harness() {
+                    # SSOT: 벤더 curl 인스톨러 (설치 후 self-update, 무조건 이 버전)
+                    info "harness(curl) 설치/업데이트: claude / codex / antigravity..."
+                    curl -fsSL https://claude.ai/install.sh | bash
+                    curl -fsSL https://chatgpt.com/codex/install.sh | sh
+                    curl -fsSL https://antigravity.google/cli/install.sh | bash
+                    success "harness (claude/codex/agy) updated"
+                }
+                _do_gog() {
+                    # gogcli 포크 로컬 빌드 (go.mod module path=upstream이라 go install 불가)
+                    info "gog (gogcli fork) 빌드 중..."
+                    if (cd ~/repos/gh/gogcli && go build -o ~/.local/bin/gog ./cmd/gog); then
+                        success "gog $(gog --version 2>/dev/null | head -1)"
+                    else
+                        warn "gog 빌드 실패 (~/repos/gh/gogcli 확인)"
+                    fi
                 }
                 _do_uv() {
                     info "uv tools 업그레이드 중..."
@@ -832,8 +861,10 @@ main() {
                     4) _do_br ;;
                     5) _do_pnpm ;;
                     6) _do_uv ;;
+                    7) _do_harness ;;
+                    8) _do_gog ;;
                     a)
-                        _do_gt; _do_bd; _do_bv; _do_br; _do_pnpm; _do_uv
+                        _do_gt; _do_bd; _do_bv; _do_br; _do_pnpm; _do_uv; _do_harness; _do_gog
                         echo ""
                         success "전체 업그레이드 완료!"
                         ;;
@@ -841,7 +872,7 @@ main() {
                     *) error "잘못된 선택" ;;
                 esac
 
-                unset -f _do_gt _do_bd _do_bv _do_br _do_pnpm _do_uv
+                unset -f _do_gt _do_bd _do_bv _do_br _do_pnpm _do_uv _do_harness _do_gog
                 ;;
             0)
                 info "종료합니다."
