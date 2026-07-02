@@ -285,7 +285,7 @@ nixos-config provides:
 
 - [CHANGELOG.md](./CHANGELOG.md) - NixOS 시스템 구성 변경 이력 (패키지·모듈·키바인딩, Keep a Changelog 형식) — OpenClaw 운영 이력은 ROADMAP.md로 분리
 - [Package Installation Guide](./docs/PACKAGE_GUIDE.md) - How to add packages (for AI agents and users)
-- [External Packages](./docs/EXTERNAL_PACKAGES.md) - Non-NixOS packages (uv, pnpm, Docker)
+- [External Packages](./scripts/external-packages.sh) - Non-NixOS 패키지 SSOT (pnpm/harness/gog/uv) — 설치·버전체크 스크립트 (`run.sh` e)/E)에서 호출)
 - [Keybindings Reference](./docs/KEYBINDINGS.md) - i3 keybindings
 
 ### Docker Service Guides
