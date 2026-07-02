@@ -107,6 +107,18 @@ Go CLI tools installed via go install.
 | Package     | Version | Description                                                 | Installed  |
 |-------------|---------|-------------------------------------------------------------|------------|
 | CLIProxyAPI | latest  | Claude/Gemini 구독을 OpenAI 호환 API로 노출하는 로컬 프록시 | 2026-02-25 |
+| gog (gogcli) | latest | Google Workspace all-in-one CLI (Calendar/Gmail/Drive/Tasks/Docs/Sheets/Search Console) | 2026-07-02 |
+
+### gog (gogcli) 설치
+
+`junghan0611/gogcli` 포크(fork of steipete/gogcli). go.mod module path가 upstream
+(`github.com/steipete/gogcli`)이라 `go install github.com/junghan0611/...`은 실패 →
+**로컬 클론에서 빌드**해 `~/.local/bin`에 둔다.
+
+```bash
+cd ~/repos/gh/gogcli && go build -o ~/.local/bin/gog ./cmd/gog
+gog --version
+```
 
 ### CLIProxyAPI 설치 및 설정
 
@@ -143,15 +155,49 @@ Emacs 설정은 `doomemacs-config/lisp/ai-gptel-local-proxy.el` (로컬 전용, 
 
 ## pnpm add -g
 
-Node.js CLI tools installed via [pnpm](https://pnpm.io/).
-Installed to `~/.local/share/pnpm/global/`.
+Node.js CLI tools installed via [pnpm](https://pnpm.io/). **이 목록이 SSOT다** —
+`~/update-claude.sh`는 폐기(2026-07-02). 새 기기/정리 후 재설치는 아래 "일괄 설치"
+한 블록으로 일원화한다.
 
-| Package | Version | Description | Installed |
-|---------|---------|-------------|-----------|
-| @zed-industries/claude-agent-acp | 0.18.0 | ACP-compatible coding agent (Claude Agent SDK) | 2026-02-26 |
-| pi-acp | 0.0.20 | ACP adapter for pi coding agent | 2026-02-26 |
-| cline | 2.0.5 | Autonomous coding agent CLI (terminal) | 2025-02-11 |
-| openclaw | latest | AI Gateway (Telegram + Claude Code) | 2025-02-12 → Docker로 이전 |
+pnpm은 **NixOS가 소유한 단일 버전**(26.05 네이티브, 11.x). 글로벌 shim은
+`~/.local/share/pnpm/bin`에만 생성된다(`~/.config/pnpm/rc`의 `global-bin-dir`로 고정,
+`manage-package-manager-versions=false`로 버전 스위칭 차단).
+
+| Command | Package | Description |
+|---------|---------|-------------|
+| netlify / ntl | netlify-cli | Netlify CLI |
+| clawhub | clawhub | OpenClaw hub CLI |
+| summarize | @steipete/summarize | URL/미디어 요약 |
+| tsc / tsserver / typescript-language-server | typescript + typescript-language-server | TS LSP (Claude Code typescript-lsp 플러그인) |
+
+### 일괄 설치 (SSOT — 정리 후 이 한 블록으로 복구)
+
+```bash
+pnpm add -g \
+  netlify-cli \
+  clawhub \
+  @steipete/summarize \
+  typescript-language-server typescript
+```
+
+### 하네스: curl 인스톨러 (pnpm 아님 — 설치 후 자체 버전관리)
+
+claude/codex/antigravity는 벤더 인스톨러로 설치하며, 이후 **스스로 업데이트**한다
+(우리가 관여할 필요 없음). 링크는 안정적.
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash              # claude (Claude Code)
+curl -fsSL https://chatgpt.com/codex/install.sh | sh         # codex (OpenAI Codex)
+curl -fsSL https://antigravity.google/cli/install.sh | bash  # antigravity (Google)
+```
+
+| Command | 관리 방식 |
+|---------|----------|
+| claude | claude.ai 인스톨러 → `~/.local/bin/claude` (self-update) |
+| codex | chatgpt.com/codex 인스톨러 (self-update) — pnpm @openai/codex 아님 |
+| antigravity | antigravity.google 인스톨러 (self-update) |
+| pi | pi 자체 업데이터 `pi update` (최초만 `pnpm add -g @earendil-works/pi-coding-agent`) |
+| grammy | 라이브러리(실행 bin 없음) — 글로벌 제외 |
 
 ### Commands
 
