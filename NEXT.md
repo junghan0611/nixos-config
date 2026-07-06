@@ -220,7 +220,7 @@ pi-shell-acp 코어 0.7.0 npm publish 라운드 완료 + Phase 3 진입 stamp �
   - **동기 Dockerfile 2개**: `~/openclaw/Dockerfile` + `docker/openclaw/Dockerfile`(현재 byte-identical). summarize `npm install -g` 자리 근처(L133), **`USER node`(L162) 앞 root 구간**에 삽입(`/usr/local/bin` 쓰기 권한). `TARGETARCH` 대신 `arm64` 하드코드(레거시 빌더 빈값 함정 회피).
   - **OAuth creds 마운트**(이미지에 굽지 말 것): 봇 계정 `~/.config/gogcli` → `/home/node/.config/gogcli`(ro). 봇 계정 선택 = **GLG 결정 대기**.
   - 재빌드 후: `docker exec openclaw-gateway gog --version` + `gog calendar` 1회 + 봇 라이브 turn 캘린더 응답. `run.sh k)` SKILL_EXCLUDE에 gogcli 넣지 말 것(봇이 씀).
-- [ ] **zmx 재도입** — 이번 제외(zmx flake zig15 ↔ 26.05 zig16). zig16 빌드 확인 후 재추가.
+- [ ] **zmx — entwurf 설치면 계약 우선, 재도입 보류** — 제외 사유 "zig15 ↔ 26.05 zig16 충돌"은 **실측 결과 기우로 확인**(zmx flake는 zig2nix로 자기 zig 툴체인 격리 → 시스템 zig 무관, 26.05에서 깨끗이 빌드됨). 재도입 자체는 보류: zmx 확보 책임은 **entwurf 설치면(하네스-중립)**에 있고, nixos-config가 먼저 깔면 entwurf가 "zmx는 PATH에 있다"를 우연히 만족된 채 개발 → 자립성 미검증 결합. 계약은 [entwurf #47](https://github.com/junghan0611/entwurf/issues/47#issuecomment-4888633470)로 넘김(probe/optional + upstream prebuilt self-fetch). nixos-config의 zmx 설치는 그 뒤 **순수 개인 편의**(택하면 B 방식 = home-manager 한 줄, 오버레이 자리 재개방 불필요).
 - [ ] **문서 정정 (라이브마운트)** — caddy·authelia가 repo 워킹트리를 라이브 마운트(`docker/caddy/Caddyfile` · `docker/authelia/{users,configuration}.yml`)함을 `docs/openclaw-gotchas.md`에 박고, nixos-config 스킬의 "docker/*=백업/레퍼런스" 문구 정정(oracle에선 부정확). git checkout/stash가 이 파일 바꾸면 라이브 인증/프록시 영향 — 이번 이관 중 실측 확인(브랜치는 안 건드려 무영향이었음).
 
 ---
