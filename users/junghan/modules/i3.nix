@@ -125,9 +125,11 @@ let
       ${pkgs.i3}/bin/i3-msg "[con_mark=$I3_MARK]" scratchpad show
     }
 
-    # Get current focused window ID
-    get_focused_id() {
-      ${pkgs.i3}/bin/i3-msg -t get_tree | ${pkgs.jq}/bin/jq -r '.. | select(.focused? == true) | .id' 2>/dev/null | head -1
+    # List all managed X11 window con-ids (leaf windows have non-null .window).
+    # focus-independent: 새 창 감지를 focus 변화가 아니라 window-id diff 로 한다
+    # → emacsclient 뜨는 찰나 focus 가 다른 창에 있어도 엉뚱한 창을 마킹하지 않음.
+    list_window_ids() {
+      ${pkgs.i3}/bin/i3-msg -t get_tree | ${pkgs.jq}/bin/jq -r '.. | objects | select(.window? != null) | .id'
     }
 
     # If mark exists, just toggle scratchpad visibility
@@ -136,24 +138,22 @@ let
       exit 0
     fi
 
-    # Save current window ID before launching
-    OLD_WINDOW_ID=$(get_focused_id)
+    # Snapshot window ids before launching
+    BEFORE=$(list_window_ids)
 
     # Launch the command
     eval "$LAUNCH_CMD" &
-    LAUNCH_PID=$!
 
-    # Wait for new window with polling (more reliable than subscribe)
+    # Wait for a NEW window to appear, then target it explicitly by con id
     MAX_WAIT=50  # 5 seconds (50 * 100ms)
     for i in $(seq 1 $MAX_WAIT); do
       sleep 0.1
-      NEW_WINDOW_ID=$(get_focused_id)
+      NEW_WINDOW_ID=$(list_window_ids | ${pkgs.gnugrep}/bin/grep -vxF "$BEFORE" | head -1)
 
-      # Check if we have a NEW focused window (different from before)
-      if [ -n "$NEW_WINDOW_ID" ] && [ "$NEW_WINDOW_ID" != "$OLD_WINDOW_ID" ]; then
-        # Mark and move to scratchpad
-        ${pkgs.i3}/bin/i3-msg mark "$I3_MARK"
-        ${pkgs.i3}/bin/i3-msg move scratchpad
+      if [ -n "$NEW_WINDOW_ID" ]; then
+        # Mark/move by con id (focus 가 그새 다른 창으로 튀어도 정확히 그 창을 겨냥)
+        ${pkgs.i3}/bin/i3-msg "[con_id=$NEW_WINDOW_ID]" mark "$I3_MARK"
+        ${pkgs.i3}/bin/i3-msg "[con_id=$NEW_WINDOW_ID]" move scratchpad
         scratchpad_show
         exit 0
       fi
