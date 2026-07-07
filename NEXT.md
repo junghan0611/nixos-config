@@ -101,6 +101,17 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [ ] **6.11 텔레그램 실사용 soak** — headless 검증 GREEN, 실 가족봇 turn 5~7d 관찰(codex glg/gpt·claude main/bbot).
 - [ ] **jsonschema 컨테이너 baked-in 검증 (다음 recreate 때)** — glg 봇 집사 스킬(butlercli `estate_surface.py`)이 viewer(map.junghanacs.com)로 IR post 전 fail-closed 검증에 Python `jsonschema` 필요(fallback 없음). 6.11 재빌드 때 **라이브 `~/openclaw/Dockerfile`에서만 이 레이어가 누락**(공개 백업 `docker/openclaw/Dockerfile`엔 `9ed9afe`로 이미 존재)되어 실행 컨테이너 Python 3.11에 없었음. **무중단 조치(2026-07-01): 실행 중 openclaw-gateway에 `pip install jsonschema` 런타임 설치(4.26.0, node 유저 `import` OK 확인) + 라이브 Dockerfile을 백업과 동기(byte-identical).** ⚠️ 런타임 설치는 recreate/rebuild 시 사라짐 → **다음 재시작(force-recreate) 후 `docker exec openclaw-gateway python3 -c "import jsonschema"` 검증**으로 Dockerfile 레이어 영구 반영 확인. (라이브 `~/openclaw/Dockerfile` 커밋은 GLG.)
 
+### ⚠️ telegram 채널 stop-timeout 데드락 — 업그레이드마다 upstream 수정 확인 (2026-07-07 발견)
+
+**증상**: gpt 봇(`@glg_gpt_bot`) 텔레그램 반나절 무응답(2026-07-07 ~10:10→22:53 KST 수동복구). **근인**: 매일 ~10:10 KST(**01:10 UTC**) oracle→`api.telegram.org` 경로의 1분짜리 blip(`Too Many Requests: retry after 5` → `deleteWebhook 502 Bad Gateway` → `DNS-resolved IP unreachable`)에 텔레그램 채널이 죽음. 대부분 auto-restart(10회)로 자가복구되나, `[gpt] channel stop exceeded 5000ms after abort`(stop 5s 타임아웃) **데드락**에 걸린 채널은 health-monitor의 15분 주기 restart로도 stop 단계를 못 뚫어 **영구 정지** → 게이트웨이 전체 restart로만 복구.
+
+- **트리거는 우리 것이 아님(끌 대상 없음 — 전수 확인)**: 드리밍 `memory-core.dreaming.enabled:false`, 호스트 systemd 타이머 4개 전부 다른 시각(tmpfiles 23:24 / logrotate 00:00 / nix-gc·fstrim 주간), crontab 비어있음, 저널 10:08~10:13 KST 공백. **oracle 내 흔적 0** → telegram API DC daily maintenance 또는 외부 네트워크 구간의 매일 1분 blip. 매일 01:10~01:11 UTC로 규칙적(07-02~07-07 default/gemini/mini/gpt가 돌아가며 걸림).
+- **시스템 영향 없음**: 게이트웨이 `healthy`·`RestartCount=0`·CPU 5%·MEM 3%, spin 아님. 걸린 봇 1개만 무응답이 유일 증상. 유일 리스크 = 관측성(사람이 "답 안 온다"로 뒤늦게 발견).
+- **워크어라운드(복구)**: Tasks `0 active` 확인 후 `cd ~/openclaw && docker compose restart openclaw-gateway`(env 변경 없으니 restart 충분·recreate 불요). 채널 레벨/개별 restart는 stop-timeout이라 안 풀림 — 반드시 게이트웨이 프로세스 전체 리셋.
+- [ ] **업그레이드 사이클마다 확인 (이 항목의 핵심)** — 릴리즈 노트/이슈에서 **telegram channel stop-timeout / auto-restart 데드락 / health-monitor의 stuck-channel force-recreate** 관련 수정 검색. 고쳐지면 위 수동 게이트웨이 restart 워크어라운드 제거 가능.
+- [ ] **gotchas 박제** — `docs/openclaw-gotchas.md`에 이 패턴 영속화(현 gotcha는 bonjour/task-registry 루프뿐, 이 telegram blip 데드락은 미기록).
+- [ ] **(선택) 관측성** — stopped/disconnected 채널을 조기 알림(health-monitor 로그 감시 또는 `channels status` 주기 체크). 지금은 사람이 발견하는 구조.
+
 ### ★ Sonnet 5 — 6.11과 독립, 억지로 안 넣음 (대기, 2026-07-01)
 
 Sonnet 5(`claude-sonnet-5`, 2026-07-01 출시)는 **v2026.6.11에 미포함**(릴리즈 6/30, 하루 늦음. 노트 "신규 provider 0"). **단 우리 claude-cli 봇은 OpenClaw가 담아줄 필요 없음** — main/bbot는 `agentRuntime claude-cli` → `@anthropic-ai/claude-code` CLI(2.1.187, 컨테이너 확인: 모델 ID 하드코딩 0 → **서버/구독 API에서 동적 해결**) → 구독이 서빙하는 순간 사용 가능. 태우는 법 = opus-4-8을 5.28에 넣은 canonical 방식(카탈로그/allowlist에 `anthropic/claude-sonnet-5` + primary + agentRuntime claude-cli), **이미지 재빌드 불필요**.
