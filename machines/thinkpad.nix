@@ -13,8 +13,10 @@
   networking.hostName = "thinkpad";
 
   # thinkpad 전용 방화벽 포트 (shared.nix 공통 목록에 머지됨)
-  # 8883: SK 테스트베드 MQTT/TLS broker (sks-smoke). thinkpad에서만 개방.
-  networking.firewall.allowedTCPPorts = [ 8883 ];
+  # SK 테스트베드용, thinkpad에서만 개방:
+  #   8883  : 허브 MQTT/TLS broker (sks-smoke, mTLS)
+  #   18080 : 앱↔서버 REST (sks-server, 폰이 WiFi로 직결)
+  networking.firewall.allowedTCPPorts = [ 8883 18080 ];
 
   # Boot configuration
   boot = {
