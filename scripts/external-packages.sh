@@ -69,10 +69,58 @@ declare -A PNPM_CHECK=(
 )
 
 # ── install ──────────────────────────────────────────────────────────────────
+# pnpm 메타데이터 캐시만 삭제한다. 패키지 tarball(store)은 건드리지 않으므로
+# 잃는 것은 재다운로드 수십 초뿐이다. pnpm 에는 npm 의 --prefer-online 에 해당하는
+# 플래그가 없어서(11.x 기준 add 는 이를 거부한다) 캐시를 직접 비우는 게 유일한 수단.
+purge_pnpm_metadata() {
+    local cache_dir
+    cache_dir=$(pnpm config get cache-dir 2>/dev/null || true)
+    [[ -z "$cache_dir" || "$cache_dir" == "undefined" ]] && cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/pnpm"
+    if [[ ! -d "$cache_dir" ]]; then
+        warn "pnpm 캐시 디렉토리를 못 찾음: $cache_dir"
+        return 1
+    fi
+    # v11/metadata, v11/metadata-full — major 버전 디렉토리는 pnpm 이 바뀌면 달라진다.
+    find "$cache_dir" -mindepth 2 -maxdepth 2 -type d -name 'metadata*' -exec rm -rf {} + 2>/dev/null || true
+    info "pnpm 메타데이터 캐시 삭제 (store 는 무사): $cache_dir"
+}
+
 install_pnpm() {
     info "pnpm global (SSOT ${#PNPM_PACKAGES[@]}개) 설치/업그레이드..."
-    pnpm add -g "${PNPM_PACKAGES[@]}"
-    success "pnpm global updated"
+    if pnpm add -g "${PNPM_PACKAGES[@]}"; then
+        success "pnpm global updated"
+        return 0
+    fi
+
+    # 1차 폴백 — 묵은 메타데이터 캐시. pnpm 이 실제로 존재하는 하위 의존성 버전을
+    #   "없는 버전"(ERR_PNPM_NO_MATCHING_VERSION)으로 오판해 설치 전체를 세우는 일이 있다.
+    echo ""
+    warn "일괄 설치 실패 — 메타데이터 캐시가 묵었을 수 있다. 캐시 비우고 1회 재시도."
+    if purge_pnpm_metadata && pnpm add -g "${PNPM_PACKAGES[@]}"; then
+        success "pnpm global updated (메타데이터 갱신 후)"
+        return 0
+    fi
+
+    # 2차 폴백 — pnpm 은 패키지마다 별도 디렉토리에 설치하지만 `add -g A B C` 는 한 프로세스라
+    #   첫 실패에서 뒤 패키지는 시작조차 못 한다. harness 와 같은 원칙으로 개별로 돌려
+    #   한 놈의 upstream 사정이 나머지(codex 등)를 막지 않게 한다.
+    echo ""
+    warn "여전히 실패 — 패키지별 개별 설치로 폴백 (나머지는 계속 진행)"
+    local fails=""
+    for pkg in "${PNPM_PACKAGES[@]}"; do
+        if pnpm add -g "$pkg"; then
+            success "$pkg"
+        else
+            warn "$pkg 실패"; fails+=" $pkg"
+        fi
+    done
+
+    echo ""
+    if [[ -z "$fails" ]]; then
+        success "pnpm global updated (개별 폴백)"
+    else
+        warn "pnpm 실패:$fails — upstream 레지스트리의 일시적 상태일 수 있다(재시도 가능)"
+    fi
 }
 
 install_harness() {
