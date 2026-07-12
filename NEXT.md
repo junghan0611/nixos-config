@@ -6,6 +6,21 @@
 
 ---
 
+## ★ pnpm 화석 트리 정리 — GLG 결정 필요 (2026-07-13)
+
+`run.sh E` 실패 원인(= `~/.env.local`의 PATH 스냅샷이 `$PNPM_HOME/bin`을 가림)은 해결됨. SSOT 7개는 `global/v11`에 정상 설치(codex 0.144.1, netlify/clawhub는 최초 설치). 그 과정에서 드러난 잔재:
+
+- **`global/5` (pnpm10 화석) 3.3G + pnpm store 18G.** pnpm 11은 `global/5`를 아예 못 본다. 그런데 `bin/`의 shim 19개가 아직 거길 가리키고 PATH에 살아있다: `openclaw opencode qmd qwen ccr gemini copilot gccli gdcli gmcli claude(shadowed) claude-agent-acp claude-code-acp codex-acp pi-acp nlc node-llama-cpp anthropic-ai-sdk tsserver`.
+- 이 중 `ccr/gemini/copilot/gccli/gdcli/gmcli`는 external-packages.sh 헤더가 "제거됨(2026-07-02)"이라 선언했지만 **실제로는 지워진 적이 없다** — `pnpm add -g`가 PATH 때문에 계속 죽어서 목록만 바뀌고 창고는 그대로였다.
+
+**결정거리**: 아직 쓰는 CLI(`openclaw`, `qmd`, acp 계열…)를 골라 SSOT에 재선언 → `global/v11`로 재설치하고, 나머지 shim + `global/5` + store GC를 한 번에 회수. 오라클 디스크 기준 수 GB 회수 가능.
+
+- [ ] 살릴 CLI 확정 (`openclaw`/`qmd`/`*-acp`/`node-llama-cpp`/`nlc` — 실사용 여부는 GLG만 안다)
+- [ ] `entwurf` CLI 복구 여부 — 부모 dir의 고아 shim(0.12.4)이 PATH에 살아있었으나 글로벌 manifest엔 없었고, 이번 정리로 사라짐. MCP 브리지는 repo 클론에서 뜨므로 **무관**(영향 없음). 필요하면 `@junghanacs/entwurf`(npm 0.12.6)를 `PNPM_PACKAGES`에 추가하면 복구.
+- [ ] 확정 후 `global/5` 삭제 + `pnpm store prune`
+
+---
+
 ## ★ 스킬 심볼릭 배포 전환 (트라이얼 성공, 2026-06-09)
 
 워크스페이스 스킬을 **복사 → 심볼릭(repo SSOT 직결)**로 전환 중. butlercli 1개로 트라이얼 → 성공. 되면 **전체 스킬 심볼릭 전환** 예정.

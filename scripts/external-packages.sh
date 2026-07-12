@@ -68,6 +68,28 @@ declare -A PNPM_CHECK=(
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
 )
 
+# ── preflight ────────────────────────────────────────────────────────────────
+# pnpm 은 global-bin-dir(~/.config/pnpm/rc) 이 PATH 에 없으면 `add -g`/`list -g` 를
+# 전부 거부한다: "The configured global bin directory ... is not in PATH".
+# 이게 설치 실패처럼 보여서 레지스트리·캐시를 의심하게 만드는데, 원인은 PATH 다.
+# (2026-07-13: ~/.env.local 이 v10 시절 PATH 스냅샷을 통째로 export 해서
+#  $PNPM_HOME/bin 을 부모 $PNPM_HOME 으로 밀어내고 있었다. 시크릿 파일에 PATH 를
+#  박지 않는다 — PATH SSOT 는 shell.nix 의 home.sessionPath.)
+# 여기서는 진단만 하고 이 스크립트 실행 동안만 교정한다. 쉘 자체는 사용자가 고친다.
+ensure_pnpm_bin_on_path() {
+    local pnpm_bin="${PNPM_HOME:-$HOME/.local/share/pnpm}/bin"
+    case ":$PATH:" in
+        *":$pnpm_bin:"*) return 0 ;;
+    esac
+    warn "PATH 에 pnpm global-bin-dir 이 없다: $pnpm_bin"
+    warn "  이 상태면 pnpm 은 모든 -g 명령을 거부한다. 이 스크립트 실행 동안만 PATH 에 붙인다."
+    warn "  항구 수정: 로그인 쉘 PATH 를 통째로 덮어쓰는 곳이 없는지 확인(예: ~/.env.local 의 export PATH=)."
+    # 뒤에 붙인다 — pnpm 은 "PATH 안에 있기만" 하면 된다. 앞에 붙이면 pnpm 글로벌의
+    # 묵은 shim(예: @anthropic-ai/claude-code)이 curl 하네스(~/.local/bin/claude)를
+    # 가려서, check 가 엉뚱한 바이너리의 버전을 보고한다.
+    export PATH="$PATH:$pnpm_bin"
+}
+
 # ── install ──────────────────────────────────────────────────────────────────
 # pnpm 메타데이터 캐시만 삭제한다. 패키지 tarball(store)은 건드리지 않으므로
 # 잃는 것은 재다운로드 수십 초뿐이다. pnpm 에는 npm 의 --prefer-online 에 해당하는
@@ -86,6 +108,7 @@ purge_pnpm_metadata() {
 }
 
 install_pnpm() {
+    ensure_pnpm_bin_on_path
     info "pnpm global (SSOT ${#PNPM_PACKAGES[@]}개) 설치/업그레이드..."
     if pnpm add -g "${PNPM_PACKAGES[@]}"; then
         success "pnpm global updated"
@@ -174,12 +197,24 @@ check() {
 
     echo ""
     echo -e "${YELLOW}[pnpm global]${NC}"
+    ensure_pnpm_bin_on_path
+    # `pnpm list -g` 는 한 번만 부른다. 실패하면 그 사실을 삼키지 않는다 —
+    # 예전엔 실패 출력이 비면서 전 패키지가 "not installed" 로 오탐되고,
+    # 그 분기가 has_update 를 세우지 않아 마지막에 "패키지 최신" 이라는
+    # 거짓 성공까지 찍혔다.
+    local glist
+    if ! glist=$(pnpm list -g 2>&1); then
+        error "pnpm list -g 실패 — 아래가 진짜 원인이다(레지스트리 문제가 아니다):"
+        echo "$glist" | sed 's/^/      /'
+        has_update=1
+    fi
     for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent; do
         local pkg="${PNPM_CHECK[$label]}" cur lat
-        cur=$(pnpm list -g 2>/dev/null | grep "$label" | grep -oP '[\d.]+$' || true)
+        cur=$(grep "$label" <<< "$glist" | grep -oP '[\d.]+$' || true)
         lat=$(npm view "$pkg" version 2>/dev/null || true)
         if [[ -z "$cur" ]]; then
             echo -e "  ${RED}✗${NC} $label: not installed (latest: ${lat:-?})"
+            has_update=1
         elif [[ "$cur" == "$lat" ]]; then
             echo -e "  ${GREEN}✓${NC} $label: $cur (up to date)"
         else

@@ -77,6 +77,10 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 정직한 이음새 둘: (a) 2층은 물리적으로 nix store 밖 — 스크립트 규율로만 강제. (b) CI 버전은 Nix와 별도 SSOT라 수동 lockstep bump 필요.
 
+**PATH 불변식 — 2층이 동작하기 위한 전제**: pnpm은 `global-bin-dir`(`~/.local/share/pnpm/bin`)이 PATH에 없으면 `add -g`·`list -g`를 **전부 거부**한다. 레지스트리/캐시 문제처럼 보이지만 원인은 PATH다. PATH SSOT는 `users/junghan/modules/shell.nix`의 `home.sessionPath` **하나뿐** — **`~/.env.local`(API 키 SSOT)에 `export PATH=`를 박지 않는다.** 거기 박힌 PATH는 화석이 되어 sessionPath를 통째로 덮는다. `scripts/external-packages.sh`가 이 조건을 preflight로 진단한다.
+
+pnpm 11의 글로벌 루트는 `~/.local/share/pnpm/global/v11`이다. pnpm 10 시절의 `global/5`는 pnpm 11에서 보이지 않는다 — 거기 있는 것은 설치된 게 아니라 **화석**이다(`pnpm list -g`가 "No global packages found"라고 하면 이 상황).
+
 ---
 
 ## 3. Commands (공통)
