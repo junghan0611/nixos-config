@@ -112,11 +112,14 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [ ] **gotchas 박제** — `docs/openclaw-gotchas.md`에 이 패턴 영속화(현 gotcha는 bonjour/task-registry 루프뿐, 이 telegram blip 데드락은 미기록).
 - [ ] **(선택) 관측성** — stopped/disconnected 채널을 조기 알림(health-monitor 로그 감시 또는 `channels status` 주기 체크). 지금은 사람이 발견하는 구조.
 
-### ★ Sonnet 5 — 6.11과 독립, 억지로 안 넣음 (대기, 2026-07-01)
+### ✅ Sonnet 5 → mini 승격 + bbot fable-5 재승격 (완료, 2026-07-12)
 
-Sonnet 5(`claude-sonnet-5`, 2026-07-01 출시)는 **v2026.6.11에 미포함**(릴리즈 6/30, 하루 늦음. 노트 "신규 provider 0"). **단 우리 claude-cli 봇은 OpenClaw가 담아줄 필요 없음** — main/bbot는 `agentRuntime claude-cli` → `@anthropic-ai/claude-code` CLI(2.1.187, 컨테이너 확인: 모델 ID 하드코딩 0 → **서버/구독 API에서 동적 해결**) → 구독이 서빙하는 순간 사용 가능. 태우는 법 = opus-4-8을 5.28에 넣은 canonical 방식(카탈로그/allowlist에 `anthropic/claude-sonnet-5` + primary + agentRuntime claude-cli), **이미지 재빌드 불필요**.
+**mini `sonnet-4-6` → `anthropic/claude-sonnet-5`**, **bbot `opus-4-8` → `anthropic/claude-fable-5`** 라이브 승격 완료(6.11). 둘 다 claude-cli 구독 API 동적 해결 — 이미지 재빌드 불필요. 서빙 검증: primary 경로 `winnerModel` 일치 · **`fallbackUsed=false`**(catch-all 안 탐) · runner=cli. 옛 모델(sonnet-4-6/opus-4-8)은 각 봇 카탈로그 보존(GLG `/model` 복귀 가능).
 
-- **방침(GLG): 안 되면 넣지 말고 기다린다 — 패치로 정식 카탈로그에 담길 것.** 서빙 미보장 모델을 primary로 박지 말 것(auto-fallback catch-all 함정, fable-5 사건 교훈). 시험할 때만 mini(직접 대화 안 하는 검증 lane, 현재 `anthropic/claude-sonnet-4-6`)에서 `/model anthropic/claude-sonnet-5`로 서빙 확인 → 되면 그때 promote. 안 되면 대기.
+- **fable-5 서빙 재개** — 2026-06-13 "구독/CLI 서빙 실패"(auto-fallback deepseek 정체성 훼손)로 환원했던 게, upstream v2026.6.6 adaptive-thinking 어댑터 fix([issue #91805](https://github.com/openclaw/openclaw/issues/91805)/[PR #91882](https://github.com/openclaw/openclaw/pull/91882)) + 6.11에서 해소. 승격 전 primary=opus 유지 채 `agent --agent bbot --model anthropic/claude-fable-5` 오버라이드 격리 probe(isolated session, no deliver)로 서빙 확인 후 promote — 실사용자 노출 0.
+- **오버라이드 게이트 = `agents.defaults.models` 글로벌 카탈로그**(per-agent `models` 아님, ROADMAP 2026-05-26 "override allow-list가 primary 기준" 함정과 정합). fable을 defaults.models 끝(catch-all #1=gpt-5.5 불변)에 등록해 probe 개방 + `/model fable` 전 봇 개방.
+- **6.11 hot-reload는 부분적** — `config set`이 `agents.list`를 파일엔 hot-reload하나 gateway 인메모리 serving/override-allowlist는 진짜 restart라야 rebuild. idle 확인 후 `docker compose restart`로 적용(ORACLE.md line 307 유효).
+- [ ] 실 텔레그램 turn soak — bbot(fable)/mini(sonnet-5) 5~7d 관찰. 특히 fable adaptive-thinking(항상 high) latency·쿼터 체감.
 
 ---
 

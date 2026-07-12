@@ -31,8 +31,8 @@
 - **NixOS 채널**: `nixos-26.05` "Yarara" + home-manager 26.05 (stateVersion 25.05 고정 — 최초 설치 마커, 올리지 않음). **v2026.7.2에서 25.11→26.05 이관 완료**(25.11 EOL 2026-06-30 전). 오버레이 제거로 input = nixpkgs/disko/home-manager만. oracle은 `build .#oracle` 게이트 후 switch·재부팅까지 검증.
 
 **봇 런타임 요약**
-- OpenClaw **2026.6.10**, healthy t+20s, config warnings 0 (provider 외부화 baseline 유지, fast-mode 신기능 디폴트 수용).
-- main/bbot `anthropic/claude-opus-4-8`, mini `sonnet-4-6` — claude-cli runtime canonical, per-agent auth inherit.
+- OpenClaw **2026.6.11**, healthy t+20s, config warnings 0 (provider 외부화 baseline 유지, fast-mode 신기능 디폴트 수용).
+- main `anthropic/claude-opus-4-8`, **bbot `claude-fable-5`(2026-07-12 재승격), mini `claude-sonnet-5`(2026-07-12)** — claude-cli runtime canonical, per-agent auth inherit.
 - 전 봇 OpenClaw 네이티브 provider/runtime — **ACP 제거 완료**(2026-06-10, gemini→`google` google-gemini-cli OAuth). third-party ACP 의존 0.
 
 **문서·릴리즈 체계**
@@ -169,6 +169,15 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 ---
 
 ## 운영 결정 이력
+
+### bbot fable-5 재승격 + mini sonnet-5 승격 (2026-07-12)
+
+6.11 라이브에서 **bbot `opus-4-8` → `claude-fable-5`**, **mini `sonnet-4-6` → `claude-sonnet-5`** 승격. 둘 다 claude-cli 구독 동적 해결(재빌드 불필요), primary 경로 서빙 검증 `fallbackUsed=false`.
+
+- **fable-5 서빙 재개**: 2026-06-13엔 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek 정체성 훼손)로 opus-4-8 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix([issue #91805](https://github.com/openclaw/openclaw/issues/91805) / [PR #91882](https://github.com/openclaw/openclaw/pull/91882)) + 현재 6.11에서 서빙 재개 확인(claude-cli, thinking=high 강제, Opus 4.8 안전 폴백).
+- **안전 승격 절차**: primary=opus 유지한 채 `agent --agent bbot --model anthropic/claude-fable-5`를 isolated session·no-deliver로 돌려 `winnerModel=claude-fable-5 fallbackUsed=false success` 확인 → 그 뒤에만 primary=fable로 promote. 정체성 훼손을 실사용자에 노출하지 않는 gate.
+- **오버라이드 게이트 재확인**: `--model` override 허용 = `agents.defaults.models` 글로벌 카탈로그(per-agent `models`는 runtime 바인딩 전용). fable을 defaults.models 끝(catch-all #1=gpt-5.5 불변)에 등록해 probe 개방 + `/model fable` 전 봇 개방 — 2026-05-26 "override allow-list가 primary 기준" 함정과 정합.
+- **6.11 hot-reload 부분성**: `config set`이 agents.list를 파일에 hot-reload하나 gateway serving/override-allowlist 인메모리는 restart라야 rebuild. idle 확인 후 `docker compose restart`.
 
 ### gemini 네이티브 부활 + ACP 완전 제거 (2026-06-10)
 
