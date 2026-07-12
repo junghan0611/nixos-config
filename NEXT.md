@@ -6,23 +6,19 @@
 
 ---
 
-## ★ oracle `/home` 98% — 남은 회수 결정거리 (2026-07-13)
+## oracle `/home` 회수 — 1차 완료, 근본은 남음 (2026-07-13)
 
-pnpm 축은 끝났다. `run.sh E → a)` 전체가 정상 동작하고 SSOT 7개 + harness + gog 모두 최신(codex 0.144.1, gog v0.34.0). `global/5`(pnpm10 화석) + 화석 shim 19개 + `.tools` 제거 완료. **다만 회수는 ~1G뿐** — `global/5`의 패키지 대부분이 store와 하드링크를 공유해서(8개 등록 프로젝트가 같은 내용 참조) `pnpm store prune`은 37.7MB만 반환했다. `/home` 여유는 1.7G → 2.7G (98%).
+`run.sh E → a)` 전체 정상. SSOT 7개 + harness + gog 모두 최신(codex 0.144.1, gog v0.34.0). `/home` 여유 **1.7G → 11G (99% → 90%)**.
 
-남은 큰 덩어리 — **GLG 판단 필요**:
+회수한 것: `global/5`(pnpm10 화석) + 화석 shim 19개 + `.tools`, `uv cache clean`(4.7G), `go clean -modcache`, `~/.npm/_cacache`(npm은 `npm view` 전용이라 orphan), openclaw-backups의 raw 기억 스냅샷 2개(pre-5.18/5.20, 2.3G).
 
-| 대상 | 크기 | 성격 |
-|---|---:|---|
-| `~/.cache/uv` | 4.8G | uv 캐시. 설치된 uv tool 0개 → `uv cache clean` |
-| `~/go` | 3.3G | go 모듈 캐시 → `go clean -modcache` (gog 재빌드만 느려짐) |
-| `~/.npm/_cacache` | 2.6G | **npm 캐시 — pnpm 단일 정책이라 orphan.** npm은 `npm view`(버전 조회)로만 쓴다 |
-| `~/openclaw-backups` | 2.5G | pre-5.18/5.20/5.22 (5월). 현재 6.11 |
+배운 것 둘:
 
-nix store는 `/`(별도 fs, 78%, 22G 여유) — `/home` 문제와 무관하다.
+- **pnpm store는 하드링크로 공유된다.** `global/5`가 `du`상 3.3G여도 store와 링크를 공유해서 `pnpm store prune`은 37.7MB만 반환했다. pnpm 트리 크기를 회수량으로 착각하지 마라.
+- **openclaw-backups는 config 백업이 아니라 봇 기억(sqlite) 스냅샷이다.** pre-5.22(281M)가 그 기억의 압축본을 이미 품고 있어서 raw 2개만 지우고 압축본은 남겼다. 라이브 기억은 `~/openclaw/config/memory/`(1.4G, glg 608M).
 
-- [ ] 위 4건 중 지울 것 확정 → 지우고 `df -h /home` 재확인
-- [ ] 근본: `~/repos` 32G + `~/sync` 19G 가 진짜 축. 별도 세션에서 `diskspace` 스킬로.
+- [ ] 근본은 `~/repos` 32G + `~/sync` 19G + `~/openclaw/config/agents` 3.6G. 별도 세션에서 `diskspace` 스킬로.
+- [ ] `openclaw-backups/pre-5.22`(281M, 5월 기억 압축본) — 언제 버릴지는 GLG 판단.
 - [ ] `entwurf` CLI 복구 여부 — 부모 dir 고아 shim(0.12.4)이 PATH에 살아있었으나 글로벌 manifest엔 없었고 이번 정리로 사라짐. MCP 브리지는 repo 클론에서 `require.resolve`로 뜨므로 **영향 없음**. 필요하면 `@junghanacs/entwurf`(npm 0.12.6)를 `PNPM_PACKAGES`에 한 줄 추가하면 복구.
 
 ---
