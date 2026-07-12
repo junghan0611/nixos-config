@@ -6,18 +6,24 @@
 
 ---
 
-## ★ pnpm 화석 트리 정리 — GLG 결정 필요 (2026-07-13)
+## ★ oracle `/home` 98% — 남은 회수 결정거리 (2026-07-13)
 
-`run.sh E` 실패 원인(= `~/.env.local`의 PATH 스냅샷이 `$PNPM_HOME/bin`을 가림)은 해결됨. SSOT 7개는 `global/v11`에 정상 설치(codex 0.144.1, netlify/clawhub는 최초 설치). 그 과정에서 드러난 잔재:
+pnpm 축은 끝났다. `run.sh E → a)` 전체가 정상 동작하고 SSOT 7개 + harness + gog 모두 최신(codex 0.144.1, gog v0.34.0). `global/5`(pnpm10 화석) + 화석 shim 19개 + `.tools` 제거 완료. **다만 회수는 ~1G뿐** — `global/5`의 패키지 대부분이 store와 하드링크를 공유해서(8개 등록 프로젝트가 같은 내용 참조) `pnpm store prune`은 37.7MB만 반환했다. `/home` 여유는 1.7G → 2.7G (98%).
 
-- **`global/5` (pnpm10 화석) 3.3G + pnpm store 18G.** pnpm 11은 `global/5`를 아예 못 본다. 그런데 `bin/`의 shim 19개가 아직 거길 가리키고 PATH에 살아있다: `openclaw opencode qmd qwen ccr gemini copilot gccli gdcli gmcli claude(shadowed) claude-agent-acp claude-code-acp codex-acp pi-acp nlc node-llama-cpp anthropic-ai-sdk tsserver`.
-- 이 중 `ccr/gemini/copilot/gccli/gdcli/gmcli`는 external-packages.sh 헤더가 "제거됨(2026-07-02)"이라 선언했지만 **실제로는 지워진 적이 없다** — `pnpm add -g`가 PATH 때문에 계속 죽어서 목록만 바뀌고 창고는 그대로였다.
+남은 큰 덩어리 — **GLG 판단 필요**:
 
-**결정거리**: 아직 쓰는 CLI(`openclaw`, `qmd`, acp 계열…)를 골라 SSOT에 재선언 → `global/v11`로 재설치하고, 나머지 shim + `global/5` + store GC를 한 번에 회수. 오라클 디스크 기준 수 GB 회수 가능.
+| 대상 | 크기 | 성격 |
+|---|---:|---|
+| `~/.cache/uv` | 4.8G | uv 캐시. 설치된 uv tool 0개 → `uv cache clean` |
+| `~/go` | 3.3G | go 모듈 캐시 → `go clean -modcache` (gog 재빌드만 느려짐) |
+| `~/.npm/_cacache` | 2.6G | **npm 캐시 — pnpm 단일 정책이라 orphan.** npm은 `npm view`(버전 조회)로만 쓴다 |
+| `~/openclaw-backups` | 2.5G | pre-5.18/5.20/5.22 (5월). 현재 6.11 |
 
-- [ ] 살릴 CLI 확정 (`openclaw`/`qmd`/`*-acp`/`node-llama-cpp`/`nlc` — 실사용 여부는 GLG만 안다)
-- [ ] `entwurf` CLI 복구 여부 — 부모 dir의 고아 shim(0.12.4)이 PATH에 살아있었으나 글로벌 manifest엔 없었고, 이번 정리로 사라짐. MCP 브리지는 repo 클론에서 뜨므로 **무관**(영향 없음). 필요하면 `@junghanacs/entwurf`(npm 0.12.6)를 `PNPM_PACKAGES`에 추가하면 복구.
-- [ ] 확정 후 `global/5` 삭제 + `pnpm store prune`
+nix store는 `/`(별도 fs, 78%, 22G 여유) — `/home` 문제와 무관하다.
+
+- [ ] 위 4건 중 지울 것 확정 → 지우고 `df -h /home` 재확인
+- [ ] 근본: `~/repos` 32G + `~/sync` 19G 가 진짜 축. 별도 세션에서 `diskspace` 스킬로.
+- [ ] `entwurf` CLI 복구 여부 — 부모 dir 고아 shim(0.12.4)이 PATH에 살아있었으나 글로벌 manifest엔 없었고 이번 정리로 사라짐. MCP 브리지는 repo 클론에서 `require.resolve`로 뜨므로 **영향 없음**. 필요하면 `@junghanacs/entwurf`(npm 0.12.6)를 `PNPM_PACKAGES`에 한 줄 추가하면 복구.
 
 ---
 
