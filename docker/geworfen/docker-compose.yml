@@ -14,6 +14,23 @@
 #   호스트 emacs daemon 재시작 시 tmpfs `/run/user/1000/emacs/`가 새 inode로
 #   재생성되면서 컨테이너 안의 마운트가 stale 상태가 된다. healthcheck가
 #   ping 실패 → autoheal이 컨테이너 재시작 → 마운트 재바인딩으로 회복.
+#
+# NixOS 업그레이드 절차 (필수 — 25.11 → 26.05에서 실제로 겪음):
+#   아래 store path들은 하드코딩이다. 시스템을 업그레이드하면 glibc·emacs가
+#   새 store path로 옮겨가고, 옛 path는 시스템 어디에서도 참조되지 않아
+#   `nix-collect-garbage` 대상이 된다. 그때 유일한 GC root는 실행 중인
+#   geworfen 프로세스 자신뿐이라, 컨테이너가 한 번 멈추면 다시 못 뜬다.
+#   업그레이드 후엔 geworfen 바이너리를 재빌드하고 아래 3곳을 함께 갱신할 것:
+#     ldd ~/repos/gh/geworfen/target/geworfen-aarch64 | grep -o '/nix/store/[^/]*'
+#     readlink -f /run/current-system/sw/bin/emacsclient
+#   → PATH env, glibc 볼륨, emacs 볼륨. 그 다음 --force-recreate.
+#
+#   같은 stale mount가 데이터 볼륨에도 생긴다 (2026-07-13, 가든 재클론).
+#   호스트에서 레포를 지웠다 다시 받으면 디렉토리 inode가 바뀌는데,
+#   컨테이너는 삭제된 옛 inode를 계속 본다. emacs ping은 멀쩡하니
+#   healthcheck를 통과하고 autoheal도 안 돌아 — /api/stats 의 해당 항목만
+#   조용히 0이 된다. 데이터 레포를 재클론했으면 반드시 직접 재생성할 것:
+#     docker compose up -d --force-recreate
 
 services:
   geworfen:
@@ -30,8 +47,8 @@ services:
       - PORT=3333
       - HOME=/home/junghan
       - TZ=Asia/Seoul
-      # emacsclient PATH — Nix store 바이너리 직접 참조
-      - PATH=/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2/bin:/usr/bin:/bin
+      # emacsclient PATH — Nix store 바이너리 직접 참조 (NixOS 26.05 세대)
+      - PATH=/nix/store/s2j8ix6iy5rbzikgd0zg75pchizv78jb-emacs-nox-30.2/bin:/usr/bin:/bin
       # emacsclient -s server 소켓 탐색 경로
       - XDG_RUNTIME_DIR=/run/user/1000
 
@@ -59,20 +76,20 @@ services:
       # --- 데이터 (stats용, read-only) ---
       # Java user.home = /root (Docker root user, /etc/passwd 기준)
       - ~/sync/org:/root/sync/org:ro
+      # 가든 — 로컬 디렉토리는 notes, GitHub 원격은 junghan0611/garden
       - ~/repos/gh/notes/content:/root/repos/gh/notes/content:ro
       # lifetract.db — WAL 모드라 ro 마운트 + JDBC ?immutable=1 조합으로 안전.
       # 호스트의 lifetract write 에 영향 없음, 매 connection 새로 읽어 갱신 반영.
       - ~/repos/gh/self-tracking-data/lifetract.db:/root/repos/gh/self-tracking-data/lifetract.db:ro
 
-      # --- Nix store (바이너리 런타임) ---
-      # geworfen native-image가 링크된 glibc
-      - /nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:/nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:ro
+      # --- Nix store (런타임 의존, NixOS 26.05 세대) ---
+      # geworfen 바이너리와 emacsclient가 공유하는 glibc.
+      # NixOS를 업그레이드하면 이 store path가 바뀐다 → 아래 "업그레이드 절차" 참고.
+      - /nix/store/jp8avbmpfcdnm0axwrzyk072nmq9cr0d-glibc-2.42-67:/nix/store/jp8avbmpfcdnm0axwrzyk072nmq9cr0d-glibc-2.42-67:ro
 
       # --- Emacs agent daemon 연결 ---
-      # emacsclient 바이너리
-      - /nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:/nix/store/hs9vi37k7ikrjv72w6mampipxrlr34ya-emacs-nox-30.2:ro
-      # emacsclient가 링크된 glibc
-      - /nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:/nix/store/86wgxj5p9yry03cg7czian66bvz1r1bj-glibc-2.40-218:ro
+      # emacsclient 바이너리 (시스템 프로파일이 참조하는 세대라 GC 안전)
+      - /nix/store/s2j8ix6iy5rbzikgd0zg75pchizv78jb-emacs-nox-30.2:/nix/store/s2j8ix6iy5rbzikgd0zg75pchizv78jb-emacs-nox-30.2:ro
       # Emacs 소켓 (호스트의 --daemon=server)
       - /run/user/1000/emacs:/run/user/1000/emacs:ro
 
