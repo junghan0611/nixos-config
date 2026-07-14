@@ -12,6 +12,38 @@
 
 ## 활성
 
+### 모델 승격이 특정 대화에만 안 먹는다 — `/reset`·`/new`는 user 핀을 못 푼다 (2026-07-14)
+
+**증상**: `agents.list[].model.primary`를 올렸는데 **어떤 DM만** 옛 모델로 답한다. 세션을 `/new`·`/reset` 해도 그대로다. (2026-07-14: glg를 `gpt-5.6-terra`로 승격했는데 GLG 본인 DM만 계속 `gpt-5.5`.)
+
+**근인**: 그 세션에 **사용자가 명시한 모델 핀**이 저장돼 있다. `config/agents/<id>/sessions/sessions.json`:
+
+```json
+"modelOverride": "gpt-5.5",
+"providerOverride": "openai",
+"modelOverrideSource": "user"     ← 과거 /model <id> 실행의 흔적
+```
+
+**`/reset`·`/new`는 전사(transcript)만 비우고 이 핀은 유지한다** — 사용자의 명시적 선택을 존중하는 설계다. 그래서 config 기본값을 아무리 바꿔도 그 대화만 안 따라온다.
+
+**처방**: 해당 대화에서 **`/model default`**. config primary로 복귀한다(코드의 상태 문구도 `pinned session; config primary <X> · clear /model default`). `/model gpt-5.6-terra`처럼 새 모델을 직접 지정해도 당장은 되지만 **또 user 핀이 박혀 다음 승격 때 같은 일이 반복된다** — `default`가 정답.
+
+**진단 (어느 세션이 핀을 물고 있나)**:
+
+```bash
+python3 - <<'PY'
+import json, pathlib
+for a in ('main','glg','gpt','bbot','mini','gemini'):
+    p = pathlib.Path(f'~/openclaw/config/agents/{a}/sessions/sessions.json').expanduser()
+    if not p.exists(): continue
+    for k, v in json.loads(p.read_text()).items():
+        if isinstance(v, dict) and v.get('modelOverrideSource') == 'user':
+            print(f"{a:7} {k:50} {v.get('modelOverride')}")
+PY
+```
+
+> 승격 작업의 마지막 단계로 이걸 돌려라. **config만 보고 "승격 완료"라 하면 안 된다** — 실사용 대화가 안 따라올 수 있다. 핀 없는 세션(cron·타인 DM)은 다음 턴에 자동으로 새 기본값을 탄다.
+
 ### 봇의 "지금"이 UTC — 컨테이너 TZ 미설정 (2026-07-14, 7.1에서 발견)
 
 **증상**: `/status`가 `Current time: … (UTC)`로 뜬다. 봇에게 "몇 시야?" 물으면 UTC로 답한다.
