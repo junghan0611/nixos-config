@@ -31,7 +31,8 @@
 - **NixOS 채널**: `nixos-26.05` "Yarara" + home-manager 26.05 (stateVersion 25.05 고정 — 최초 설치 마커, 올리지 않음). **v2026.7.2에서 25.11→26.05 이관 완료**(25.11 EOL 2026-06-30 전). 오버레이 제거로 input = nixpkgs/disko/home-manager만. oracle은 `build .#oracle` 게이트 후 switch·재부팅까지 검증.
 
 **봇 런타임 요약**
-- OpenClaw **2026.6.11**, healthy t+20s, config warnings 0 (provider 외부화 baseline 유지, fast-mode 신기능 디폴트 수용).
+- OpenClaw **2026.7.1**(2026-07-14), healthy, boot config warnings 0, plugins 14/errors 0 (mattermost 번들 외부화 → 죽은 엔트리 제거).
+- **Codex lane: gpt `openai/gpt-5.6-sol`, glg(가족) `openai/gpt-5.6-terra`** (2026-07-14 7.1 업글에서 5.5→5.6 승격, 2단 probe 검증). 5.5는 롤백용 카탈로그 + allowlist catch-all 1번.
 - main `anthropic/claude-opus-4-8`, **bbot `claude-fable-5`(2026-07-12 재승격), mini `claude-sonnet-5`(2026-07-12)** — claude-cli runtime canonical, per-agent auth inherit.
 - 전 봇 OpenClaw 네이티브 provider/runtime — **ACP 제거 완료**(2026-06-10, gemini→`google` google-gemini-cli OAuth). third-party ACP 의존 0.
 
@@ -44,6 +45,22 @@
 ## OpenClaw 업그레이드 이력
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
+
+### 2026.7.1 (2026-07-14, GREEN) — **GPT-5.6 진입 + 봇 모델 재배치**
+
+6.11 다음 stable. **월간 대형 롤업**(2,018 PR / 3,063 기여 / 532 contributors) — 6.x 계열의 유지보수 patch들과 성격이 다르다. breaking 섹션 없음, 릴리즈 기조 자체가 "안전한 업그레이드"(마이그레이션·플러그인 수리를 gateway ready 보고 *전에* 끝내고, 읽을 수 없는 `openclaw.json`은 교체 거부). 절차 동일: `Dockerfile` `FROM ...:2026.6.11 → :2026.7.1`(두 사본 동기) + `docker compose build` + `up -d --force-recreate`. 봇 유휴 확인 후 gateway 정지하고 진입(GLG 지시).
+
+**핵심 — GPT-5.6 세 티어**: `openai/gpt-5.6-{sol,terra,luna}` (sol=flagship·bare `openai/gpt-5.6` 별칭 / terra=균형 / luna=저가·고속). 전부 272k·text+image·`xhigh`/`max` reasoning. **limited preview**지만 우리 Codex OAuth 워크스페이스는 세 티어 전부 카탈로그 등재 + 서빙 확인. 명시적 모델 핀은 릴리즈가 건드리지 않는다(fresh 설정만 5.6 기본값 픽업) — 업글 직후 glg/gpt는 `gpt-5.5` 그대로였다.
+
+**모델 재배치 (GLG 결정)**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra`. main(`opus-4-8`)·bbot(`fable-5`)·mini(`sonnet-5`) 현행 유지. **승격 절차는 5.28/fable-5 원칙 그대로 2단**: ① primary 유지한 채 `--model` 오버라이드 격리 probe(`--deliver` 없이 → 실사용자 노출 0)로 서빙 선검증 → sol/terra 둘 다 `fallbackUsed=false` ② promote 후 오버라이드 없는 라이브 턴으로 재확인(`winnerModel=gpt-5.6-{sol,terra}`, fallback 0). 5.5는 per-agent 카탈로그에 롤백용 보존, **allowlist catch-all 1번 자리도 `gpt-5.5` 유지**(정체성 훼손 최소 catch-all 원칙). 배치 철학: **개인(gpt) lane이 최상위 티어 비용을 흡수하고, 가족(glg) lane은 그 아래 균형 티어**. 크레딧 sol:terra:luna = 125:62.5:25 (1M input) — luna는 기존 5.5(14/msg)보다도 싸서 경량 lane 후보로 남겨둠([NEXT.md](NEXT.md)).
+
+**gemini 함정 — 모양이 바뀌었다**: 컨테이너 자동 마이그레이션은 gemini를 **안 건드렸다(드리프트 0)**. 대신 read-only `doctor`의 **changes-preview에 재작성이 "대기"로 찍힌다** — *"Moved agents.list.gemini.model legacy runtime primary refs to canonical provider refs"*. 즉 7.1의 위험은 업글이 아니라 **`--fix` 버튼 자체**다. `--fix` 금지 원칙 유효(추가로 이번 릴리즈의 doctor는 "retired 모델명 병합"도 수행 — 우리 롤백용 카탈로그 `sonnet-4-6`/`opus-4-8`/`gpt-5.5`가 병합 대상이 될 수 있다). agy/antigravity provider는 7.1에도 미등장 → OAuth prefix 기준선 유지.
+
+**메모리 마이그레이션 (이번 사이클의 유일한 실질 리스크)**: legacy `~/openclaw/config/memory/*.sqlite` → per-agent SQLite 통합. main/glg/gpt/bbot은 이미 per-agent 저장소를 쓰고 있어 레거시 사이드카만 `.migrated` 아카이브됐고, **gemini(41 source/670 chunk)·mini(36/125)만 실제 이관**. 검증: 4096d(qwen3-embedding-8b) 유지, main 316 / glg 3,650 / gpt 862 chunk 인덱스 정상, `memory search` 실검색 통과. `.migrated` 원본 ~1.4G는 롤백 대비 보존.
+
+**번들 외부화 — mattermost** (pi-shell-acp·deepseek 6.9에 이은 세 번째): boot `Config warnings`에 "plugin not installed: mattermost". 우리 엔트리는 `enabled:false` 죽은 설정이라 `config unset plugins.entries.mattermost`로 제거 → **WARN 0 복귀**. `channels.mattermost`(botToken 보유)는 dead 설정으로 남음 → NEXT.md.
+
+**검증**: `OpenClaw 2026.7.1` healthy, **boot config warnings 0**, plugins 14 loaded/errors 0, skills 42 eligible/missing 0. 6봇 drift 0. claude-cli 3봇(main/mini/bbot) headless auth OK(oauth) + bbot 라이브 `claude-fable-5 fallbackUsed=false`. 전 봇 `fallbacks: []` 유지. 백업 `config/openclaw.json.bak-pre-7.1-20260714`. 롤백: Dockerfile FROM 6.11 환원(주석 보존) + rebuild·recreate.
 
 ### 2026.6.10 (2026-06-24, GREEN)
 

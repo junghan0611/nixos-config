@@ -105,8 +105,42 @@
 # 등록만으로 태움(재빌드 무관, opus-4-8 5.28 방식). codex plugin stock(번들)이라 base bump 와 함께 자동 6.11.
 # 업글 후 `agents list` 로 6봇 모델 prefix 전수 재확인(gemini google-gemini-cli/ 유지), main/bbot/mini Anthropic
 # auth GREEN, memory 4096d, glg/gpt fallbacks 빈 상태.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.10
-FROM ghcr.io/openclaw/openclaw:2026.6.11
+# 6.11 → 7.1 (2026-07-14): 월간 대형 롤업(2,018 PR / 3,063 기여). breaking 섹션 없음, 릴리즈 자체가 "안전한
+# 업그레이드" 기조. 핵심: GPT-5.6 세 티어 진입 — `openai/gpt-5.6-{sol,terra,luna}` (sol=flagship 이자 bare
+# `openai/gpt-5.6` 별칭, terra=균형, luna=저가·고속, 셋 다 xhigh/max reasoning). **limited preview** 라 우리
+# Codex OAuth 워크스페이스 접근권은 업글 후 `models list --provider openai` 로 확인해야 안다 → **우리 워크스페이스는
+# 세 티어 전부 카탈로그 등재 + 서빙 확인**(272k, text+image). 명시적 모델 핀은 대체되지 않음(fresh 설정만 5.6 기본값
+# 픽업) — 업글 직후 glg/gpt `openai/gpt-5.5` 그대로였다. 비용축: Codex 크레딧 sol:terra:luna = 125:62.5:25
+# (1M input), 메시지당 평균 5~40 크레딧 (기존 5.5 = 14 크레딧/msg).
+# **GLG 결정(2026-07-14) — 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra`.
+# main=opus-4-8 / bbot=fable-5 / mini=sonnet-5 현행 유지. 5.28/fable-5 원칙대로 primary 유지한 채 `--model`
+# 오버라이드 격리 probe(`--deliver` 없이, 실사용자 노출 0)로 선검증 — sol/terra 둘 다 `fallbackUsed=false`
+# 확인 후 promote, 승격 뒤 오버라이드 없는 라이브 턴으로 재확인(winnerModel=gpt-5.6-{sol,terra}, fallback 0).
+# 5.5 는 per-agent 카탈로그에 롤백용으로 보존, allowlist catch-all 1번 자리도 `openai/gpt-5.5` 유지(정체성
+# 훼손 최소 catch-all 원칙). ⚠️ **기존 DM 세션은 저장된 model(5.5)을 유지** — 신규 세션부터 5.6 픽업,
+# 즉시 전환하려면 세션에서 `/model` 또는 세션 리셋.
+# 주의 자리 셋: ① **컨테이너 업그레이드가 마이그레이션+플러그인 수리를 ready 보고 전에 자동 수행** → gemini
+# `google-gemini-cli/` prefix 전수 재확인 필수(6.6·6.8 에서 `google/` 드리프트 2회 전력). 7.1 실측: **자동
+# 마이그레이션은 gemini 를 건드리지 않았다(드리프트 0)**. 단 `doctor` changes-preview 에는 "Moved
+# agents.list.gemini.model legacy runtime primary refs to canonical provider refs" 가 여전히 대기 중 —
+# 즉 **`--fix` 를 돌리는 순간 `google/` 로 재작성된다. 7.1 에서도 --fix 금지 유효.** agy/antigravity provider
+# 는 7.1 에도 미등장 — 기준선은 여전히 OAuth prefix, 안 쫓음. ② doctor --fix 가 "retired 모델명 병합"도 수행
+# (alias/파라미터/streaming/runtime 보존은 개선됨) — 우리 롤백용 카탈로그(sonnet-4-6, opus-4-8, gpt-5.5)가
+# 병합 대상이 될 수 있어 **--fix 여전히 금지**, read-only `doctor` + surgical config set/unset 만.
+# ③ **mattermost 번들 externalize** (deepseek 6.9 패턴 반복) → boot Config warning "plugin not installed".
+# 우리 엔트리는 `enabled:false` 죽은 설정이라 `config unset plugins.entries.mattermost` 로 제거(WARN 0 복귀).
+# `channels.mattermost` 는 botToken 을 든 dead 설정으로 라이브 config 에 남아있음 — 정리는 NEXT.md.
+# 메모리 마이그레이션(실측): legacy `~/.openclaw/memory/*.sqlite` → per-agent SQLite 로 통합. main/glg/gpt/bbot
+# 은 이미 per-agent 저장소를 쓰고 있어 레거시 사이드카만 `.migrated` 아카이브, gemini(670 chunk)/mini(125 chunk)
+# 만 실제 이관. 업글 후 검증: 4096d(qwen3-embedding-8b) 유지, main 316 / glg 3650 / gpt 862 chunk 인덱스 정상,
+# `memory search` 실검색 통과. `.migrated` 아카이브(총 ~1.4G)는 롤백 대비 보존 — 회수는 NEXT.md.
+# 직접 이득: ① Gateway 크래시 무한 재시작 루프 제거 — 반복 실패 시 재시작 루프 대신 검사·수리 가능한 control
+# process 로 정지(우리가 autoheal 로 감싸던 실패 모드) ② 세션 pin/archive(전사 보존)/rename + active goal 이
+# compaction·큐·인터럽트 넘어 생존 ③ Dashboard 재접속 메모리 급증(false rss_growth 경고) 완화 ④ 채널 메타데이터
+# 캐시 bounded(장기 실행 채널 메모리 누수 차단). 비해당(안심): Bun 런타임 SQLite 차단은 우리 Node 라 무관,
+# deepseek 는 6.9 에 이미 정리, Copilot/ClawRouter/LongCat/Hy3/Muse Spark 는 미사용 provider.
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.11
+FROM ghcr.io/openclaw/openclaw:2026.7.1
 
 USER root
 

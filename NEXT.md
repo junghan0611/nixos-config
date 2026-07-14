@@ -6,6 +6,18 @@
 
 ---
 
+## OpenClaw 7.1 업글 완료 — soak 남음 (2026-07-14)
+
+6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
+
+- [ ] **5.6 soak — 가족봇 우선.** glg(terra)/gpt(sol) 실사용 턴에서 응답 품질·지연·크레딧 소모 관찰. **기존 DM 세션은 저장된 5.5를 유지**하므로 신규 세션이나 `/model`·세션 리셋 전까지 5.6이 안 걸린다 — 가족 대화가 언제 실제로 5.6으로 넘어가는지부터 확인할 것. 크레딧이 예상보다 타면 terra→luna(25/1M, 5.5보다 쌈) 강등이 첫 손잡이.
+- [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5(14 크레딧/msg)보다 싼데 더 새 모델 → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. 옮기면 quota 여유가 커진다.
+- [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
+- [ ] **메모리 `.migrated` 아카이브 회수 (~1.4G).** 7.1이 legacy `~/openclaw/config/memory/*.sqlite`를 per-agent SQLite로 통합하고 원본을 `.migrated`로 남겼다(glg 637M, gpt 471M, gemini 139M, bbot 112M, main 83M, mini 38M). 라이브 인덱스는 `config/agents/<id>/agent/openclaw-agent.sqlite`에서 정상 동작 확인 — **롤백 안 할 게 확실해지면 삭제 가능. 디스크 90% 상황에서 가장 싼 1.4G.**
+- [ ] **orphan transcript 103건** — `~/.openclaw/agents/main/sessions`에 sessions.json이 더 이상 참조 안 하는 `.jsonl` 103개. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
+
+---
+
 ## oracle `/home` 회수 — 1차 완료, 근본은 남음 (2026-07-13)
 
 `run.sh E → a)` 전체 정상. SSOT 7개 + harness + gog 모두 최신(codex 0.144.1, gog v0.34.0). `/home` 여유 **1.7G → 11G (99% → 90%)**.
