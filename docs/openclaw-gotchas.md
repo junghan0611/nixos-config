@@ -12,6 +12,34 @@
 
 ## 활성
 
+### 봇의 "지금"이 UTC — 컨테이너 TZ 미설정 (2026-07-14, 7.1에서 발견)
+
+**증상**: `/status`가 `Current time: … (UTC)`로 뜬다. 봇에게 "몇 시야?" 물으면 UTC로 답한다.
+
+**근인**: 컨테이너에 `TZ`가 없어 `/etc/localtime → Etc/UTC`. OpenClaw `resolveUserTimezone()`은
+
+```js
+// agents.defaults.userTimezone 이 비어있으면 → 프로세스 TZ 로 폴백
+return Intl.DateTimeFormat().resolvedOptions().timeZone?.trim() || "UTC";
+```
+
+즉 **config를 안 박으면 봇의 시간 감각이 컨테이너 TZ를 그대로 물려받는다.**
+
+**왜 표시 문제가 아니라 버그인가**: ① 봇이 새로 만드는 cron이 UTC 기준으로 적힌다(실제로 `morning-family-schedule`이 `0 23 * * * @ UTC`로 박혀 있었다 — 08:00 KST에 *맞아떨어지긴* 하나 의도가 아니라 사고다). ② **봇이 실행하는 스킬/스크립트의 `date`도 UTC** — 자정 근처에 저널·메모리 파일 날짜가 하루 어긋난다.
+
+**처방 (둘 다)**:
+
+1. `docker-compose.yml` 두 서비스(gateway, cli) `environment`에 `TZ=Asia/Seoul`. **env는 restart가 아니라 `up -d --force-recreate`로만 반영된다.**
+2. config에도 명시 (컨테이너 TZ에 기대지 않는 SSOT):
+   ```bash
+   openclaw config set agents.defaults.userTimezone "Asia/Seoul"
+   openclaw config set agents.defaults.envelopeTimezone "user"
+   ```
+
+⚠️ **config만으론 안 고쳐진다** — 2026-07-14 실측에서 `userTimezone`을 박아도 봇은 계속 UTC로 답했고, 컨테이너 `TZ`를 박고 recreate한 뒤에야 KST가 됐다. 근인은 컨테이너 쪽이다.
+
+**TZ 변경이 안전한 이유(검증됨)**: 기존 cron이 전부 타임존을 **명시**하고 있으면(`@ Asia/Seoul` / `@ UTC` / `at …Z`) 하나도 안 밀린다. 우리 케이스에서 변경 전후 `cron list`의 next 시각 전부 동일했다. **바꾸기 전에 `cron list`로 타임존 미명시 작업이 있는지 반드시 확인할 것** — 있으면 그건 밀린다.
+
 ### 이미지 재빌드 node-gyp hang — @google/gemini-cli(keytar+node-pty) (2026-07-01, 6.11)
 
 증상: 6.10→6.11 재빌드 시 `RUN npm install -g` 스텝에서 **node-gyp가 9분+ hang**. CPU 0.2%(컴파일 아님, cc1plus/g++ child 0) + SYN-SENT 0(네트워크 아님) — 그냥 멈춤. 6일 전 빌드엔 없던 새 비용.

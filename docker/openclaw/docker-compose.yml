@@ -30,6 +30,10 @@ services:
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
+      # 컨테이너 기본 TZ는 Etc/UTC — 안 박으면 봇의 "지금"이 통째로 UTC가 된다.
+      # openclaw resolveUserTimezone()은 agents.defaults.userTimezone 이 비면 프로세스 TZ로 폴백하고,
+      # 봇이 실행하는 스킬/스크립트의 `date` 도 UTC라 자정 근처에 날짜가 하루 어긋난다. (2026-07-14)
+      - TZ=Asia/Seoul
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1  # 서브에이전트 ws:// Docker bridge 허용
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -128,6 +132,7 @@ services:
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
+      - TZ=Asia/Seoul  # gateway service와 동일 — 컨테이너 기본 Etc/UTC 방지
       - BROWSER=echo
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       # ACP route child spawn 보강 — gateway service와 동일 (pi-shell-acp #21 consumer-side workaround)
