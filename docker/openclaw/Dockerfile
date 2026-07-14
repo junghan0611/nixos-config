@@ -110,8 +110,10 @@
 # `openai/gpt-5.6` 별칭, terra=균형, luna=저가·고속, 셋 다 xhigh/max reasoning). **limited preview** 라 우리
 # Codex OAuth 워크스페이스 접근권은 업글 후 `models list --provider openai` 로 확인해야 안다 → **우리 워크스페이스는
 # 세 티어 전부 카탈로그 등재 + 서빙 확인**(272k, text+image). 명시적 모델 핀은 대체되지 않음(fresh 설정만 5.6 기본값
-# 픽업) — 업글 직후 glg/gpt `openai/gpt-5.5` 그대로였다. 비용축: Codex 크레딧 sol:terra:luna = 125:62.5:25
-# (1M input), 메시지당 평균 5~40 크레딧 (기존 5.5 = 14 크레딧/msg).
+# 픽업) — 업글 직후 glg/gpt `openai/gpt-5.5` 그대로였다. **비용축(토큰 단가로 비교할 것 — 메시지당 크레딧과
+# 1M당 크레딧을 섞으면 방향을 거꾸로 읽는다)**: API $/1M(in/out) 기준 5.5 = $5/$30, sol = $5/$30(**동일 단가,
+# 상위 모델**), terra = $2.50/$15(**절반**, 5.5와 경쟁 가능한 성능), luna = $1/$6(1/5, **성능 우위는 미보장**).
+# → 이번 승격은 **비용 인상이 아니다**. gpt는 같은 값에 상위 모델, 가족봇 glg는 오히려 싸졌다.
 # **GLG 결정(2026-07-14) — 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra`.
 # main=opus-4-8 / bbot=fable-5 / mini=sonnet-5 현행 유지. 5.28/fable-5 원칙대로 primary 유지한 채 `--model`
 # 오버라이드 격리 probe(`--deliver` 없이, 실사용자 노출 0)로 선검증 — sol/terra 둘 다 `fallbackUsed=false`

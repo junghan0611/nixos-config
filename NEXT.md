@@ -10,8 +10,9 @@
 
 6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
 
-- [ ] **5.6 soak — 가족봇 우선.** glg(terra)/gpt(sol) 실사용 턴에서 응답 품질·지연·크레딧 소모 관찰. **기존 DM 세션은 저장된 5.5를 유지**하므로 신규 세션이나 `/model`·세션 리셋 전까지 5.6이 안 걸린다 — 가족 대화가 언제 실제로 5.6으로 넘어가는지부터 확인할 것. 크레딧이 예상보다 타면 terra→luna(25/1M, 5.5보다 쌈) 강등이 첫 손잡이.
-- [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5(14 크레딧/msg)보다 싼데 더 새 모델 → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. 옮기면 quota 여유가 커진다.
+- [ ] **glg DM의 user 핀 해제** — GLG 본인 DM(`telegram:glg:direct:123861330`)에 `/model gpt-5.5` user 핀이 박혀 있어 승격이 안 걸린다. 그 대화에서 **`/model default`**. (`/reset`·`/new`로는 안 풀린다 — [gotchas](docs/openclaw-gotchas.md) 참조. 다른 세션은 핀 없어 다음 턴에 자동 적용.)
+- [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델, **가족봇은 오히려 싸졌다**. 그러니 볼 것은 크레딧이 아니라 **응답 품질·지연**이다 — 특히 terra가 가족 실무 답변(일정·부동산·육아)에서 5.5만큼 하는지. 품질이 처지면 되돌릴 곳은 luna가 아니라 **sol 또는 5.5**다.
+- [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
 - [ ] **메모리 `.migrated` 아카이브 회수 (~1.4G).** 7.1이 legacy `~/openclaw/config/memory/*.sqlite`를 per-agent SQLite로 통합하고 원본을 `.migrated`로 남겼다(glg 637M, gpt 471M, gemini 139M, bbot 112M, main 83M, mini 38M). 라이브 인덱스는 `config/agents/<id>/agent/openclaw-agent.sqlite`에서 정상 동작 확인 — **롤백 안 할 게 확실해지면 삭제 가능. 디스크 90% 상황에서 가장 싼 1.4G.**
 - [ ] **orphan transcript 103건** — `~/.openclaw/agents/main/sessions`에 sessions.json이 더 이상 참조 안 하는 `.jsonl` 103개. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.

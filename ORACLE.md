@@ -119,16 +119,25 @@ Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로�
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
-- `openai/gpt-5.6-luna` (5.6 저가·고속 티어 — 카탈로그 등재됨, 우리 primary엔 미배치. 크레딧 25/1M in으로 **5.5보다 싸다** → 경량 lane 후보)
+- `openai/gpt-5.6-luna` (5.6 저가·고속 티어 — 카탈로그 등재됨, 우리 primary엔 미배치. **5.5 대비 토큰 단가 1/5** → 경량 lane 후보. 단 **성능이 5.5보다 항상 낫다고 볼 순 없다** — 비용/속도 최적화 티어라 "싸니까 무조건 위"가 아니다)
 - `openai/gpt-5.5` (glg/gpt의 5.6 승격 전 모델 — per-agent 카탈로그에 롤백용 보존, allowlist **catch-all 1번** 자리)
 - `openai/gpt-5.5-pro` (977k 컨텍스트, pro tier — quota/속도 미검증)
 - `deepseek/deepseek-v4-pro` / `deepseek-v4-flash` (`DEEPSEEK_API_KEY` 회사 quota, 2026-04-27~). **2026-06-22(6.9) provider 외부화로 deepseek 플러그인 번들에서 빠짐 → entry/allow 제거. 부활 시 `openclaw plugins install @openclaw/deepseek-provider` + entry/allow 재추가 필요.**
 
 > 운영 컨텍스트 메모: catalog 표기가 `266k/1025k` 같은 "이론치/확장치"로 보여도 라이브 `/status`는 보통 200k로 잡힌다. 5.4 vs 5.5 컨텍스트 트레이드오프는 사실상 없음. GPT-5.6 세 티어는 카탈로그상 전부 272k / text+image / `xhigh`·`max` reasoning 노출.
 
-> **GPT-5.6 티어 = 같은 모델의 가격·속도 등급** (2026-07-14, 7.1 진입). `sol`(flagship, bare `openai/gpt-5.6` 별칭) / `terra`(균형) / `luna`(저가·고속). Codex 크레딧(1M input 기준): **sol 125 / terra 62.5 / luna 25** (출력은 각 750/375/150, 캐시 read는 1/10). 메시지당 평균 5~40 크레딧이라 프롬프트 길이만으론 예측이 안 된다. **limited preview** — 접근권은 워크스페이스마다 다르므로 `models list --provider openai`로 확인하고, 없으면 OpenClaw가 조용히 강등하지 않고 upstream 접근 오류를 그대로 노출한다.
+> **GPT-5.6 티어 = 같은 모델의 가격·성능 등급** (2026-07-14, 7.1 진입). **비교는 반드시 토큰 단가로 하라** — 메시지당 크레딧(5~40, 프롬프트 길이 의존)과 1M당 크레딧을 섞으면 비용 방향을 거꾸로 읽는다(2026-07-14 실제로 그렇게 헛짚었다).
+>
+> | 모델 | API $/1M (in/out) | Codex 크레딧 /1M in | 5.5 대비 |
+> |---|---|---|---|
+> | `gpt-5.5` | $5 / $30 | 125 | 기준 |
+> | **`gpt-5.6-sol`** (flagship, bare `gpt-5.6` 별칭) | $5 / $30 | 125 | **동일 단가, 상위 모델** |
+> | **`gpt-5.6-terra`** (균형) | $2.50 / $15 | 62.5 | **절반 단가, 5.5와 경쟁 가능한 성능** |
+> | `gpt-5.6-luna` (저가·고속) | $1 / $6 | 25 | 1/5 단가, **성능 우위는 보장 안 됨** |
+>
+> 캐시 read는 각 1/10. **핵심**: sol은 5.5와 같은 값에 더 좋은 모델이고, terra는 5.5급을 절반 값에 준다 — **5.6 승격은 비용 인상이 아니다.** luna만 성능 트레이드오프가 실재한다. **limited preview** — 접근권은 워크스페이스마다 다르므로 `models list --provider openai`로 확인하고, 없으면 OpenClaw가 조용히 강등하지 않고 upstream 접근 오류를 그대로 노출한다.
 
-> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. 즉 **5.4-mini=0.29x, 5.5=2.0x** of 5.4. **배치 원칙 (2026-07-14 갱신)**: 가벼운 turn은 5.4-mini, **개인(gpt)은 최상위 티어(5.6-sol), 가족(glg)은 그 아래 균형 티어(5.6-terra)** — 개인 lane이 비용을 흡수하고 가족 lane은 품질/비용 균형점에 둔다. active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호. ※ 이전 배치(개인 5.5 / 가족 5.4)의 후계 — glg의 2026-06-10 강등 사유(cross-DM 판단 과잉)는 가드 완료로 해소됐다.
+> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. **배치 원칙 (2026-07-14 갱신)**: 가벼운 turn은 5.4-mini, **개인(gpt)은 `5.6-sol`, 가족(glg)은 `5.6-terra`**. 근거는 "개인이 비용을 흡수한다"가 아니라 **단가 그 자체다** — sol은 5.5와 동일 단가라 gpt는 값을 더 안 내고 상위 모델을 얻고, terra는 5.5의 절반이라 **가족봇은 오히려 싸졌다**. active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호. ※ 이전 배치(개인 5.5 / 가족 5.4)의 후계 — glg의 2026-06-10 강등 사유(cross-DM 판단 과잉)는 가드 완료로 해소됐다.
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`). gemini 챗봇은 `google-gemini-cli/` provider prefix로 **OAuth(Pro 쿼터)만 탄다**(`/status` `🔑 oauth` 검증). `GEMINI_API_KEY`(=`google` api-key provider)는 **어떤 챗 모델도 안 가리키고** 이미지(나노바나나) 전용으로만 env 유지 — 단 이미지 경로 동작은 **미재검증**([NEXT.md §1](NEXT.md)).
 
