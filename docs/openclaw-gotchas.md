@@ -82,17 +82,24 @@ return Intl.DateTimeFormat().resolvedOptions().timeZone?.trim() || "UTC";
 
 조치: Dockerfile `npm install -g` 줄에서 **3개 제거** — `@earendil-works/pi-coding-agent`+`@zed-industries/codex-acp`(ACP 폐기로 unused, config 미참조) + `@google/gemini-cli`(gemini 403 DOWN·agy 대기라 "안 쫓음" + hang 범인). 남긴 건 `@anthropic-ai/claude-code`만(claude-cli runtime, native 0). 결과 빌드 몇 초. gemini 부활(agy) 시 복원 — 그땐 `libsecret-dev` 등 build deps 필요할 수 있음. 양쪽 Dockerfile(`~/openclaw/` + `docker/openclaw/`) 동기 유지.
 
-### caddy 변경 = 6-세트 검수 필수 + agenda 000 ≠ caddy (geworfen은 emacs 데몬 의존) (2026-07-01)
+### caddy 변경 = 7-세트 검수 필수 + agenda 000 ≠ caddy (geworfen은 emacs 데몬 의존) (2026-07-01, ax 추가 2026-07-15)
 
 **규칙 (GLG 지시)**: `docker/caddy/Caddyfile`을 건드리면(특히 `docker restart caddy`) **caddy-fronted 전체를 세트로 검수**한다. 하나만 보고 넘기지 말 것. 현재 세트:
 
 ```bash
 for d in comments.junghanacs.com analytics.junghanacs.com agenda.junghanacs.com \
-         ha.junghanacs.com forge.junghanacs.com map.junghanacs.com; do
+         ha.junghanacs.com forge.junghanacs.com map.junghanacs.com ax.junghanacs.com; do
   printf '%-28s → %s\n' "$d" "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 https://$d/)"
 done
 ```
-정상 기대치: analytics/ha/forge=200, comments=404(remark42 루트 정상), map=302(authelia 게이트), agenda=200.
+정상 기대치: analytics/ha/forge/ax=200, comments=404(remark42 루트 정상), map=302(authelia 게이트), agenda=200.
+
+**ax.junghanacs.com은 이 호스트의 첫 static vhost다** (2026-07-15 추가, 관리 대상). 기존 6개는 전부 `reverse_proxy`(백엔드 컨테이너)지만 ax는 백엔드가 없다 — caddy가 `file_server`로 `/srv/ax`(= 호스트 `/home/junghan/docker-data/ax` ro 마운트, caddy compose 볼륨)를 직접 서빙한다. geworfen 패턴(컨테이너)을 쓰지 않은 이유: geworfen은 실행 바이너리라 컨테이너가 필요했고 ax는 정적 파일뿐이다.
+
+- **web root 채우는 주체 = junghan0611 repo의 `apply/ax` `make publish`** (leak gate 통과분만 들어옴). `make publish`는 파일만 갈아끼우므로 **caddy 재시작 없이 즉시 라이브**. 이 디렉터리에 publish 경로 밖으로 파일을 떨구면 그대로 공개된다 — leak gate가 유일한 관문이다.
+- `.md`는 `header @md Content-Type "text/plain; charset=utf-8"`로 브라우저 표시 강제(기본 `text/markdown`은 다운로드됨). `browse` 없음(리스팅 off), authelia 없음(공개면).
+- **볼륨을 새로 붙이거나 뺄 땐 `docker restart caddy`로 안 먹는다** — compose 볼륨 변경은 `up -d --force-recreate` 필요(이게 ax 추가 때 6개 blip의 원인). Caddyfile 텍스트만 고치는 평시 변경은 여전히 `docker restart caddy`.
+- **향후**: umami + remark42를 ax에 붙일 예정. 단 스니펫은 **정본(apply/ax 소스)에 넣어 publish**로 흘린다 — **caddy에서 주입 금지**(정본과 라이브가 갈라짐). ax 관련 요청은 이 오퍼레이터 레인이 대응한다.
 
 **함정 — agenda 000은 caddy 탓처럼 보이지만 아니다**: `agenda.junghanacs.com`(geworfen:3333)은 **호스트 emacs `server` 데몬**(`agent-emacs.service`, socket `/run/user/1000/emacs/server`, ro 마운트)에 의존한다. 그 데몬이 hang하면 geworfen HTTP 핸들러가 블록 → agenda **HTTP 000**(caddy는 502 아니라 dial 타임아웃). caddy를 방금 재시작했어도 **인과 아님** — 진단으로 갈라라:
 - `emacsclient -s server --eval '(+ 1 1)'` (호스트) → 타임아웃(exit 124)이면 **데몬 hang**이 근인, caddy 무관.

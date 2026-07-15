@@ -19,7 +19,7 @@ Caddy를 안 거치므로 이 가드에 **영향 0**.
 ## 배포 런북 (아내 공지된 window에서만)
 
 > ⚠️ 4단계 `docker restart caddy` 시 **모든 `*.junghanacs.com`이 1~2초 blip**
-> (comments/analytics/agenda/ha/forge/map + geworfen). 가든 홈페이지는 Netlify라 무관.
+> (comments/analytics/agenda/ha/forge/map/ax + geworfen). 가든 홈페이지는 Netlify라 무관.
 
 **1. 시크릿 채우기**
 ```bash

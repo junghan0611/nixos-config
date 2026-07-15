@@ -16,6 +16,9 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /home/junghan/docker-data/caddy/data:/data
       - /home/junghan/docker-data/caddy/config:/config
+      # ax.junghanacs.com 정적 web root (apply/ax `make publish` 산출물)
+      # 볼륨을 새로 붙이거나 뺄 땐 restart로 안 먹는다 → up -d --force-recreate
+      - /home/junghan/docker-data/ax:/srv/ax:ro
 
     networks:
       - proxy

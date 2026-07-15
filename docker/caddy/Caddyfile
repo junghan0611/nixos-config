@@ -56,6 +56,19 @@ map.junghanacs.com {
     }
 }
 
+# AX 지원 문서 — 정적 공개면 (caddy가 직접 서빙, 백엔드 컨테이너 없음)
+# web root는 apply/ax 의 `make publish` 산출물만 담는다 — leak gate를 통과한 파일들.
+# ⚠️ apply/ax/build/ 를 root로 잡지 말 것: LaTeX 중간산물(.tex/.log/.xdv)이 섞여 있어
+#    파일명만 맞히면 전부 열린다. root는 아래 마운트(docker-data/ax)뿐이다.
+# 리스팅 없음(browse 금지), 인증 없음(공개면), 애널리틱스 주입 없음(정본이 SSOT).
+ax.junghanacs.com {
+    root * /srv/ax
+    # .md는 기본 text/markdown이라 브라우저가 다운로드로 받는다 → 화면에서 읽히게 강제
+    @md path *.md
+    header @md Content-Type "text/plain; charset=utf-8"
+    file_server
+}
+
 # # Mattermost 채팅 서버 (비활성)
 # chat.junghanacs.com {
 #     reverse_proxy mattermost:8065
