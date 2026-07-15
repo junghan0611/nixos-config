@@ -30,10 +30,13 @@
 #   claude        https://claude.ai/install.sh            → ~/.local/bin/claude
 #   antigravity   https://antigravity.google/cli/install.sh → ~/.local/bin/agy (바이너리 이름 agy)
 #
-# [go install]
-#   gog (gogcli)  go install github.com/steipete/gogcli/cmd/gog@latest
-#     upstream(steipete/gogcli)에 내 구현이 모두 반영됨 → 포크 로컬빌드 불필요.
-#     GOBIN=~/.local/bin 으로 고정해 다른 바이너리와 같은 자리에 둔다.
+# [release binary]
+#   gog (gogcli)  openclaw/gogcli 릴리즈의 정적 linux_<arch> tarball 다운로드.
+#     repo가 steipete → openclaw org로 이관됨(2026-07). 공개 prebuilt라 go 빌드 불필요.
+#     ⚠️ 정적 링크가 핵심: 봇 컨테이너(Debian, nix store 없음)에서도 그대로 돈다.
+#        `go install`(호스트 CGO=1)은 nix glibc에 동적 링크돼 컨테이너에선 loader 부재로
+#        실행 실패한다(2026-07-15 확정 — 봇 배포가 이래서 막혔다). 릴리즈 정적본은 양쪽 OK.
+#     → ~/.local/bin/gog. 봇도 이 정적본을 공유(스킬 번들, agent-config/skills/gogcli/gog).
 #
 # 제거됨(2026-07-02, 쓰레기 정리 — 이제 안 씀):
 #   gt/bd/bv/br (gastown+beads, 멀티에이전트/이슈트래킹) — plane/incidentcli 로 대체
@@ -169,13 +172,38 @@ install_harness() {
 }
 
 install_gog() {
-    # gogcli upstream (포크 불필요 — 내 구현 upstream 반영 완료)
-    info "gog (gogcli upstream) 설치..."
-    if GOBIN="$HOME/.local/bin" go install github.com/steipete/gogcli/cmd/gog@latest; then
-        success "gog $(gog --version 2>/dev/null | head -1)"
+    # gogcli 공개 릴리즈 정적 바이너리 (go 빌드 아님 — 정적본이라 봇 컨테이너와 공유 가능)
+    info "gog (gogcli 공개 릴리즈) 설치..."
+    local repo="openclaw/gogcli" arch json tag ver url tmp
+    case "$(uname -m)" in
+        aarch64|arm64) arch="linux_arm64" ;;
+        x86_64|amd64)  arch="linux_amd64" ;;
+        *) warn "gog: 미지원 arch $(uname -m)"; return 0 ;;
+    esac
+    # 응답을 변수에 받는다: `curl | grep -m1`은 grep이 파이프를 조기에 닫아
+    # curl이 SIGPIPE로 죽고 pipefail+set -e가 스크립트를 중단시킨다(2026-07-15 실측).
+    json=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest") \
+        || { warn "gog: 릴리즈 조회 실패 (네트워크/rate limit)"; return 0; }
+    tag=$(printf '%s' "$json" | grep -m1 '"tag_name"' | cut -d'"' -f4)
+    if [[ -z "$tag" ]]; then warn "gog: 릴리즈 태그 파싱 실패"; return 0; fi
+    ver="${tag#v}"
+    url="https://github.com/$repo/releases/download/$tag/gogcli_${ver}_${arch}.tar.gz"
+    tmp=$(mktemp -d)
+    if curl -fsSL "$url" -o "$tmp/g.tgz" && tar xzf "$tmp/g.tgz" -C "$tmp" gog 2>/dev/null \
+         && [[ -f "$tmp/gog" ]]; then
+        install -Dm755 "$tmp/gog" "$HOME/.local/bin/gog"
+        # 정적 링크 확인 — 동적이면 봇 컨테이너에서 못 돈다(릴리즈본은 항상 정적이어야)
+        if file "$HOME/.local/bin/gog" | grep -q 'statically linked'; then
+            success "gog $("$HOME/.local/bin/gog" --version 2>/dev/null | head -1) → ~/.local/bin/gog (정적)"
+        else
+            warn "gog 설치됨이나 정적 링크 아님 — 봇 컨테이너 비호환일 수 있음"
+        fi
     else
-        warn "gog 설치 실패 (go / 네트워크 확인)"
+        warn "gog 설치 실패 (URL: $url)"
     fi
+    rm -rf "$tmp"
+    # 옛 화석 정리: ~/go/bin/gog (구 go install 산물, PATH에서 ~/.local/bin 앞을 가림)
+    [[ -f "$HOME/go/bin/gog" ]] && { rm -f "$HOME/go/bin/gog"; info "gog: ~/go/bin 화석 제거"; }
 }
 
 install_uv() {

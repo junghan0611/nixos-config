@@ -6,6 +6,16 @@
 
 ---
 
+## ax.junghanacs.com — umami/remark 지원 (2026-07-15 서빙 시작)
+
+`ax.junghanacs.com` 정적 사이트 라이브(caddy `file_server`, `/srv/ax` ← `~/docker-data/ax` ro 마운트). web root는 담당자 junghan0611(`apply/ax` `make publish`, leak gate 통과분)이 채운다 — caddy 재시작 불요. 배포/함정 상세 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "caddy 변경 = 7-세트 검수".
+
+- [ ] **umami 붙이기** — `analytics.junghanacs.com`(umami) 이미 가동. ax용 website를 umami에 등록(tracking id 발급). **스니펫은 담당자가 정본(`apply/ax`)에 넣어 publish** — caddy 주입 금지(정본·라이브 갈림 방지, 담당자 명시 요청). caddy 측 작업은 사실상 없음(같은 호스트라 도메인 허용만 확인).
+- [ ] **remark 붙이기** — `comments.junghanacs.com`(remark42) 가동. ax `record.html`에 댓글 위젯. 역시 스니펫은 정본. remark42 site-id/allowed-domain에 ax 추가 필요할 수 있음(remark42 env 확인 → `docker/remark42/`).
+- [ ] ax 관련 요청은 이 레인(caddy = nixos-config)이 대응. GET-only 공개면이라 authelia 없음.
+
+---
+
 ## OpenClaw 7.1 업글 완료 — soak 남음 (2026-07-14)
 
 6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
@@ -54,6 +64,7 @@
 - [ ] **pi-skills SSOT 루트 화이트리스트** — 전체 전환 시 `~/.pi/agent/skills/pi-skills`(컨테이너 경로 확인) 도 allowSymlinkTargets에 추가 필요.
 - [ ] **glg 외 봇 확장** — 트라이얼은 glg만. 전체 봇(workspace*) 일괄 전환 시 run.sh AGENTS_FULL 루프를 심볼릭 생성으로.
 - [ ] butlercli 트라이얼 soak: glg 실사용에서 부동산 질문 시 스킬 정상 트리거·실데이터 응답 확인(라이브 turn).
+- [x] **gogcli(gog) 심볼릭 단일화 — 완료 (2026-07-15, 300M→75M)**. 마스터 2벌(`~/.local/bin/gog` 호스트 + `~/openclaw/config/claude-skills/gogcli/gog` 봇 SSOT), 나머지 6개(agent-config + workspace×5) SSOT 절대경로 심볼릭. 봇/호스트 전 경로 v0.34.0 resolve + 캘린더 조회 검증. 상세·이유(오버레이 밖 SSOT, 두 마스터) → [ORACLE.md](ORACLE.md) §5 gogcli. **남은 티끌**: SKILL.md는 아직 각 디렉토리별 실파일(agent-config Jul5 upstream 15KB vs workspace/claude-skills Apr13 옛 10KB) — 작아서 공간 무관하나 내용이 갈린다. 통일하려면 SKILL.md도 SSOT 심볼릭(단 openclaw workspace 스킬 등록이 심볼릭 SKILL.md를 읽는지 확인 필요).
 
 ---
 

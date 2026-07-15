@@ -12,6 +12,28 @@
 
 ## 활성
 
+### gogcli(gog) 봇 배포 — 정적 링크 필수 + 배포 체인 3중 + 버전업 시 ro→rw·account (2026-07-15)
+
+**한 줄**: 봇 `gog` = openclaw/gogcli 공개 **정적** v0.34.0. 옛 `junghan0611` 포크 0.12는 폐기. 배포 체인이 심볼릭+오버레이로 3중이라 "호스트를 고쳤는데 봇은 옛것"이 나기 쉽다.
+
+**봇 bare `gog`가 실제 도달하는 곳 (배포 체인)**:
+
+```
+봇 PATH: ~/.pi/agent/claude-plugin/skills/gogcli      (심볼릭)
+  └→ ~/repos/gh/agent-config/skills/gogcli            (심볼릭 타겟)
+     ⇒ 컨테이너에서 agent-config/skills 는
+       ~/openclaw/config/claude-skills 로 bind mount 오버레이 (~/openclaw → openclaw-config)
+       └→ 실소스: ~/openclaw/config/claude-skills/gogcli/gog
+```
+
+∴ **봇 bare gog를 갈려면 `~/openclaw/config/claude-skills/gogcli/gog`를 교체**한다. `agent-config/skills/gogcli/gog`(호스트 에이전트가 보는 것)를 최신화해도 봇은 안 본다 — 오버레이가 openclaw-config를 덮는다. 게다가 `claude-skills/gogcli`는 **실복사본**(run.sh k) sync 산물, 심볼릭 아님)이라 소스가 새로 바뀌어도 자동 반영 0 — 이게 stale의 근인. **force-recreate로도 안 풀린다**(마운트가 stale이 아니라 복사본이 옛것).
+
+**정적 링크 필수**: 봇 컨테이너 = Debian bookworm aarch64, **nix store 없음**. gog는 `statically linked`여야 컨테이너에서 돈다. openclaw/gogcli 릴리즈 `linux_arm64`는 정적. `go install`(호스트 CGO=1)은 **nix glibc에 동적 링크**돼 컨테이너에서 loader(`/nix/store/…ld-linux`) 부재로 실행 실패(`not found`처럼 보인다). → `external-packages.sh`는 릴리즈 tarball 다운로드로 정적본을 앉힌다(`go install` 아님, 2026-07-15).
+
+**인증 = 호스트 `~/.config/gogcli` 단일 SSOT (rw 공유)**: 봇에 마운트(docker-compose). gog 0.34+는 keyring lock **write**를 요구하므로 마운트 **rw** 필수(2026-07-15 ro→rw). 옛 0.12는 lock 미사용이라 ro로도 됐다. 호스트 `gog login` 1회 = 봇도 반영(개인+회사 both), refresh token 갱신도 호스트 파일에 써진다. `GOG_ACCOUNT`=개인 gmail(default) env — 계정 둘이라 미지정 시 0.34는 `--account` 요구. 회사는 `--account <work-email>` 명시(실제 값은 agent-config SKILL.md).
+
+**"옛 버전은 됐는데 새 버전이 안 된다"의 정체** (0.12→0.34 회귀 둘): (a) keyring lock write → ro 마운트에서 실패(→rw), (b) 계정 여럿 → account 미지정 실패(→GOG_ACCOUNT). 둘 다 옛 버전엔 없던 요구라, 업그레이드가 조용히 봇 캘린더를 깬다.
+
 ### 모델 승격이 특정 대화에만 안 먹는다 — `/reset`·`/new`는 user 핀을 못 푼다 (2026-07-14)
 
 **증상**: `agents.list[].model.primary`를 올렸는데 **어떤 DM만** 옛 모델로 답한다. 세션을 `/new`·`/reset` 해도 그대로다. (2026-07-14: glg를 `gpt-5.6-terra`로 승격했는데 GLG 본인 DM만 계속 `gpt-5.5`.)

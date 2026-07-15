@@ -402,6 +402,14 @@ Two separate systems that do not auto-sync.
 
 Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/.claude/skills` for ACP sessions. `claude-skills/` is a union of `agent-config/skills` and `workspace-bbot/skills`. `~/.claude` must be **rw** (Claude writes `session-env/` and `projects/`). Long-term path: MCP bridge exposing workspace skills as tools so the overlay becomes unnecessary.
 
+### gogcli(gog) — 특수 배포 + 심볼릭 단일화 대상 (2026-07-15)
+
+봇 `gog`는 이 파이프라인의 **예외이자 함정 집합소**다. 상세·진단은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "gogcli 봇 배포".
+
+- **봇 bare `gog`의 실소스 = `~/openclaw/config/claude-skills/gogcli/gog`** (= `openclaw-config`, `~/openclaw`는 심볼릭). `agent-config/skills/gogcli/gog`(호스트 에이전트가 보는 것)가 **아니다** — 컨테이너에서 `agent-config/skills`가 `claude-skills`로 bind mount 오버레이되기 때문(위 workaround의 그 오버레이). claude-skills/gogcli는 **실복사본**(심볼릭 아님)이라 소스 갱신이 자동 반영 안 됨 → stale 주의(force-recreate로도 안 풀린다).
+- **정적 링크 필수**(컨테이너 = Debian, nix store 없음), **인증은 호스트 `~/.config/gogcli` rw 마운트 단일 SSOT 공유**(`GOG_ACCOUNT`=개인 gmail default, 회사는 `--account <work-email>` 명시 — 실제 값은 agent-config SKILL.md). 공개 정적 v0.34.0, 옛 `junghan0611` 포크 0.12 폐기. 호스트 설치는 `external-packages.sh`(릴리즈 tarball, `go install` 아님).
+- **공간/버전관리 — 심볼릭 단일화 (완료 2026-07-15, 300M→75M)**: gog 실파일 **마스터 2벌만** 남긴다 — ① `~/.local/bin/gog`(호스트, `external-packages.sh` 설치) ② `~/openclaw/config/claude-skills/gogcli/gog`(**봇 SSOT**, 컨테이너 접근). 나머지 6개(`agent-config/skills` + `workspace×5`)는 ②로 **절대경로 심볼릭**(`/home/junghan/repos/gh/openclaw-config/config/claude-skills/gogcli/gog`) — butlercli의 이중 마운트 덕에 컨테이너에서 resolve. **SSOT를 claude-skills로 둔 이유**: `agent-config/skills`는 컨테이너에서 claude-skills로 오버레이되므로 심볼릭 타깃으로 쓰면 순환. 봇 심볼릭 타깃은 반드시 **오버레이 밖 실체**(= claude-skills 자기 자신)여야 한다. **두 마스터인 이유**: 컨테이너가 `~/.local/bin`을 마운트하지 않는다(claude·agy·goose 등 호스트 도구 노출 회피) → 봇용 실파일이 별도로 필요. gog 업그레이드 시 이 2벌만 갱신(external-packages.sh가 ①, 봇 SSOT ②는 별도 교체).
+
 ---
 
 ## 6. Gotchas
