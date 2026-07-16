@@ -65,3 +65,6 @@ docker/openclaw/openclaw.json
 # Secrets — never commit. .env.example만 commit.
 .env
 **/.env
+
+# family-turns 스킬 — 가족 텔레그램 ID/실명이 박혀 공개 리포에 커밋 금지 (로컬 전용 툴)
+.claude/skills/family-turns/
