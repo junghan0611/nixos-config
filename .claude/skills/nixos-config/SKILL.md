@@ -95,8 +95,10 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
   `/home/junghan/...` 절대경로가 host·container 양쪽 resolve. (`NEXT.md` "스킬 심볼릭 배포")
 - **디스크 보수적으로** — oracle storage 빠듯. 업글 사이클마다 dangling image + build cache
   누적 → `run.sh C)` 정기 prune (`docker system df` 명목치 ≠ 실 회수량, builder prune이 본 회수원).
-- **env 반영은 restart 아니라 recreate** — `docker compose restart`는 기존 env 재사용,
-  `up -d --force-recreate`만 새 env 픽업.
+- **restart vs recreate — "무엇을 바꿨느냐"로 가른다** (매번 까먹는 지점):
+  - **env/mount 변경 → `up -d --force-recreate`**. `docker compose restart`는 기존 env 재사용, recreate만 새 env·볼륨 픽업.
+  - **config 파일(`~/openclaw/config/openclaw.json`) 변경 → `docker compose restart openclaw-gateway`로 충분.** restart도 gateway 프로세스·manager cache·Node compile state를 콜드 리셋한다. config-only에 recreate는 과하다(느리고 불필요하게 더 깊은 콜드). recreate는 env/mount일 때만.
+- **restart/recreate 후 memory prewarm** — 콜드 첫 `memory_search`는 세션 전수 스캔(glg 808 files/211MB, ARM)으로 15s 하드타임아웃(`memory-core` tools.ts 하드코딩, config로 못 늘림)에 걸릴 수 있다. gateway healthy 뒤 각 봇에 `openclaw agent --agent <id> --session-key "agent:<id>:prewarm-$(date +%s)" --message '기억 검색' --timeout 60`을 (텔레그램 발송 없이) 한 번 돌려 **봇이 콜드를 대신 맞게** 하면 실제 유저는 웜만 만난다. 1차 방어는 인덱스 정비(dirty:no 유지 — family-turns 스킬 memory 섹션): 정비돼 있으면 콜드도 15s를 버틴다(2026-07-16 실측, 정비 후 콜드 3연속 성공). upstream PR로 timeout 늘리는 건 안 한다 — 운영으로 커버(GLG 결정).
 
 ## 6. 커밋 / 릴리즈 규율
 
