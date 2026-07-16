@@ -6,6 +6,20 @@
 
 ---
 
+## glg 가족봇 = Sonnet 5 + 대칭 "정직한 거울" 규칙 (2026-07-16, soak 남음)
+
+glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude-cli). 정한(123861330)·미례(8960149052) **동일 모델**(정한 세션 `gpt-5.6-sol` user 핀 제거). 배경: terra가 각 DM에서 화자 프레임을 승인(사이코팬시)해 양쪽을 각자 옳다고 세워주던 **"두 에코챔버"** 문제 — 모델 스왑만으론 안 풀려 **USER.md 대칭 규칙이 핵심 방어**. 사건 분석 = `~/org/llmlog/20260610T094022...`의 [2026-07-16] H1(2026-06-10 #4317 cross-DM 계보 위). 커밋 openclaw-config `e4bb3ed` / org private `4464149e`.
+
+- **USER.md 재정렬** (`workspace-glg/USER.md`): 역할=**집사봇**(정한·미례·아버지 모두 같은 봇에 말함→에코챔버 위험 명시), 운영 에스컬레이션을 접근/공개정보 한정으로 축소(**미례님 갈등 질문 정한 보고 금지** = DM 격리·대칭 보호), 가족봇 절대규칙 A(DM 안 대칭·반사이코팬시 7조)/B(Cross-DM 전달) 통합.
+- **compact 양쪽 실행** (`sessions compact "agent:glg:telegram:glg:direct:{123861330,8960149052}" --agent glg`) — terra 편파 원문 제거, 진행 스레드는 요약 보존. 실측: 압축 후 "대화 가능?"에 부모님댁 스레드로 직행하던 동문서답 사라짐, 역할 질문에 새 USER.md 그대로 응답.
+- [ ] **진짜 soak = 감정 있는 실제 턴.** 지금까지 검증은 메타 문답(모델명/역할)뿐. 남은 확인: 정한/미례가 **venting**할 때도 화자 프레임 승인 대신 대칭·맹점짚기(규칙5) 지키는지. 첫 감정 턴 응답 같이 검수.
+- [ ] **watch: 역할 낭독 반복** — 묻지 않았는데 면책 낭독을 대화 중 또 꺼내면 잔소리. 재발 시 USER.md에 "묻지 않으면 역할설명 반복 금지" 한 줄 추가.
+- [ ] **thinking = claude-cli adaptive (dial 불가).** thinkingLevel(off/min/low/med/high/max)은 **claude-cli 백엔드에 안 물림**(코드 확인: `extensions/anthropic/cli-backend.ts`·`cli-backends.runtime.js`에 thinking 매핑 0). Sonnet 5 네이티브 thinking으로 돎. dial이 꼭 필요하면 sonnet-5의 `agentRuntime.id=claude-cli` 제거 → anthropic **API 런타임**이면 thinkingLevel=high(extended-thinking) 적용 — 단 구독(정액) 아닌 **종량제 비용**.
+- [ ] **compact 요약에 별거/법적 프레임 잔존** — 첫 응답이 "전문가(변호사·상담)" 언급. 집사봇이 상황 기억하는 정도라 문제는 아니나 관찰.
+- 롤백: `~/openclaw/config/openclaw.json.bak-glg-sonnet5-20260716T152903` + `agents/glg/sessions/sessions.json.bak-sonnet5-*`. USER.md는 git diff(`e4bb3ed`).
+
+---
+
 ## ax.junghanacs.com — umami/remark 지원 (2026-07-15 서빙 시작)
 
 `ax.junghanacs.com` 정적 사이트 라이브(caddy `file_server`, `/srv/ax` ← `~/docker-data/ax` ro 마운트). web root는 담당자 junghan0611(`apply/ax` `make publish`, leak gate 통과분)이 채운다 — caddy 재시작 불요. 배포/함정 상세 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "caddy 변경 = 7-세트 검수".
@@ -20,8 +34,8 @@
 
 6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
 
-- [ ] **glg DM의 user 핀 해제** — GLG 본인 DM(`telegram:glg:direct:123861330`)에 `/model gpt-5.5` user 핀이 박혀 있어 승격이 안 걸린다. 그 대화에서 **`/model default`**. (`/reset`·`/new`로는 안 풀린다 — [gotchas](docs/openclaw-gotchas.md) 참조. 다른 세션은 핀 없어 다음 턴에 자동 적용.)
-- [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델, **가족봇은 오히려 싸졌다**. 그러니 볼 것은 크레딧이 아니라 **응답 품질·지연**이다 — 특히 terra가 가족 실무 답변(일정·부동산·육아)에서 5.5만큼 하는지. 품질이 처지면 되돌릴 곳은 luna가 아니라 **sol 또는 5.5**다.
+- [x] **glg DM의 user 핀 해제 — 완료 (2026-07-16).** 핀은 실제로 `gpt-5.6-sol`이었고, glg를 Sonnet 5로 옮기며 `sessions.json`에서 직접 제거(정한·미례 동일 primary로 낙하). 위 "glg 가족봇 = Sonnet 5" 항목 참조. (`/reset`·`/new`로는 핀이 안 풀린다는 gotcha는 유효.)
+- [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **sol 또는 5.5**다. **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
 - [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
 - [ ] **메모리 `.migrated` 아카이브 회수 (~1.4G).** 7.1이 legacy `~/openclaw/config/memory/*.sqlite`를 per-agent SQLite로 통합하고 원본을 `.migrated`로 남겼다(glg 637M, gpt 471M, gemini 139M, bbot 112M, main 83M, mini 38M). 라이브 인덱스는 `config/agents/<id>/agent/openclaw-agent.sqlite`에서 정상 동작 확인 — **롤백 안 할 게 확실해지면 삭제 가능. 디스크 90% 상황에서 가장 싼 1.4G.**
