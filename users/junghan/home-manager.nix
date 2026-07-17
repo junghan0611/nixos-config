@@ -190,6 +190,7 @@ in {
     # 문서: PDF 뷰어 zathura는 programs.zathura(modules/zathura.nix)로 관리 (apvlv 대체)
     readest         # EPUB 리더 (Tauri)
     foliate         # EPUB 리더 대안 (GTK)
+    obsidian        # 마크다운 지식베이스 (GUI 전용, laptop/thinkpad — Oracle headless 제외)
     mupdf           # 빠른 렌더링 + mutool CLI (PDF 조작/추출)
     # OCR: tesseract/ocrmypdf/gImageReader 제거 (2026-06-02). 한글 스캔 OCR 경로는
     # marker(surya, memex-kb flake의 uv venv)로 일원화됨. tesseract 한글 품질 사용 불가.
