@@ -67,6 +67,17 @@ ax.junghanacs.com {
     @md path *.md
     header @md Content-Type "text/plain; charset=utf-8"
     file_server
+
+    # 액세스 로그 — "누가 읽었나"가 이 dossier의 정체성인데 기본값(off)이면 증거가 없다.
+    # Umami는 JS라 크롤러/에이전트를 못 잡는다 → 서버 로그가 유일한 관측면.
+    # 출력은 stderr → 컨테이너 log driver가 journald라 회전/보존은 journald가 맡는다
+    # (별도 파일/마운트 없음 = compose 변경 없음 = restart만으로 반영).
+    # JSON 기본 필드에 request.headers(User-Agent 포함, Cookie/Authorization은 자동 REDACTED)가
+    # 들어간다 → 크롤러 판별 가능. 조회: docker logs caddy | grep ax.junghanacs.com
+    log {
+        output stderr
+        format json
+    }
 }
 
 # # Mattermost 채팅 서버 (비활성)

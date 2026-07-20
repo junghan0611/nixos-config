@@ -26,7 +26,10 @@ glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude
 
 - [ ] **umami 붙이기** — `analytics.junghanacs.com`(umami) 이미 가동. ax용 website를 umami에 등록(tracking id 발급). **스니펫은 담당자가 정본(`apply/ax`)에 넣어 publish** — caddy 주입 금지(정본·라이브 갈림 방지, 담당자 명시 요청). caddy 측 작업은 사실상 없음(같은 호스트라 도메인 허용만 확인).
 - [ ] **remark 붙이기** — `comments.junghanacs.com`(remark42) 가동. ax `record.html`에 댓글 위젯. 역시 스니펫은 정본. remark42 site-id/allowed-domain에 ax 추가 필요할 수 있음(remark42 env 확인 → `docker/remark42/`).
+- [x] **액세스 로그 ON — 완료 (2026-07-20).** ax vhost에 `log { output stderr; format json }`. dossier 정체성이 "검증 가능한 증거"인데 정작 방문 기록이 없던 상태(caddy 기본값 off) 해소. Umami는 JS라 크롤러/에이전트를 못 잡으므로 서버 로그가 유일한 관측면. 출력이 stderr → 컨테이너 log driver가 **journald**라 회전/보존은 journald가 맡는다(파일/마운트 추가 없음 = compose 무변경 = `docker restart caddy`만으로 반영). JSON 기본 필드에 `request.headers`(User-Agent 포함, Cookie/Authorization 자동 REDACTED)가 들어가 크롤러 판별 가능. 7-세트 검수 통과. 조회: `docker logs caddy | grep ax.junghanacs.com`.
+- [ ] **크롤러 실측 (SC 사이트맵 제출 후속).** 며칠 뒤 로그에서 Googlebot / GPTBot / ClaudeBot / PerplexityBot 실제 방문 여부와 `/llms.txt` 히트를 확인해 담당자(junghan0611)에게 회신. 0건이면 그것도 결과 — robots.txt·사이트맵 쪽을 되짚을 신호.
 - [ ] ax 관련 요청은 이 레인(caddy = nixos-config)이 대응. GET-only 공개면이라 authelia 없음.
+- **`/llms.txt` Content-Type은 `text/plain` 유지 (2026-07-20 판단).** 어떤 SEO 감사 도구가 `text/markdown`을 요구했으나 llmstxt.org 스펙은 media type을 규정하지 않는다. 오히려 `text/markdown`으로 내보내면 브라우저가 렌더 대신 **다운로드**한다 — ax 블록에 `@md → text/plain` 규칙이 이미 있는 이유가 그거다. 사람이 읽는 공개면을 검증기 경고 하나 때문에 깨지 않는다. notes/junghanacs.com도 같은 상태 유지.
 
 ---
 
