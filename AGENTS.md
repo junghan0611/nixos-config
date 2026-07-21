@@ -83,6 +83,23 @@ pnpm 11의 글로벌 루트는 `~/.local/share/pnpm/global/v11`이다. pnpm 10 �
 
 ---
 
+## 2.6 디스크 정리 — `nix.gc`만으로는 안 줄어든다
+
+정리 로직 SSOT는 **`scripts/diskclean.sh`** (진입점 `run.sh` `c)` safe / `C)` deep). 디바이스 프로파일은 `~/.current-device`로 결정된다 — oracle은 headless + OpenClaw 런타임이라 GC 보존 14일에 휴지통·브라우저·repo 캐시 단계를 건너뛰고, nuc/laptop/thinkpad는 그 반대다.
+
+**자동 GC가 돌고 있어도 store는 줄지 않는다.** 두 가지 이유가 겹친다:
+
+1. **`.direnv`/`result`가 GC root다.** flake input을 붙들고 있으면 `nix.gc`는 그 경로를 영원히 죽은 것으로 못 본다. 그래서 `diskclean.sh deep`은 **repo 빌드 캐시를 0단계로, GC보다 먼저** 지운다 — 순서를 뒤집으면 회수량이 통째로 사라진다.
+2. **용량의 대부분이 nix 밖이다.** uv/zig/go-build/브라우저 캐시, 휴지통, `/tmp`, repo `.zig-cache`. `nix.gc`는 이들을 전혀 건드리지 않는다.
+
+**기본 제외 두 가지 (opt-in인 이유)**:
+- `--with-pnpm` — pnpm store는 repo `node_modules`와 **하드링크를 공유**한다. 라이브 node/pi 세션 중에는 건드리지 않는다.
+- `--with-docker` — oracle에서는 OpenClaw 런타임이다. 스크립트가 실행 중 컨테이너를 보여주고 한 번 더 묻는다.
+
+측정부터 하려면 `scripts/diskclean.sh deep --dry-run` (삭제 없음). 분석만 필요하면 `run.sh d)`.
+
+---
+
 ## 3. Commands (공통)
 
 ```bash
@@ -95,6 +112,11 @@ sudo nixos-rebuild switch --flake .#<profile>
 
 # operator menu
 ./run.sh
+
+# 디스크 정리 (디바이스 프로파일 자동 인식)
+./scripts/diskclean.sh deep --dry-run    # 측정만
+./scripts/diskclean.sh safe              # 작업 손실 없음
+./scripts/diskclean.sh deep --with-docker
 ```
 
 > oracle/openclaw 명령(live models, restart/recreate, 업그레이드)은 [ORACLE.md](ORACLE.md) §7 Commands.

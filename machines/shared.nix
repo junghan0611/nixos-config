@@ -41,12 +41,21 @@ in
     };
 
     # Automatic garbage collection
+    #
+    # 주의: 이것만으로는 store가 줄지 않는다. .direnv/result가 flake input을 GC root로
+    # 붙들고 있으면 자동 GC는 그 경로를 영원히 죽은 것으로 보지 못한다. 그리고 실제
+    # 용량의 대부분(uv/zig/브라우저 캐시, 휴지통, /tmp)은 애초에 nix 관리 밖이다.
+    # 주기적으로 ./run.sh C) → scripts/diskclean.sh deep 을 돌려야 하는 이유.
     gc = {
       automatic = true;
       dates = "weekly";
       options = "--delete-older-than 30d";
     };
   };
+
+  # /tmp는 루트 파티션에 있고 tmpfs가 아니다. 정리하지 않으면 nix-develop-*, acp-*,
+  # 빌드 잔해가 수천 개 단위로 영구 누적된다(2026-07 실측: 3,722개 / 3.8G).
+  boot.tmp.cleanOnBoot = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;

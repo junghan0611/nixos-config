@@ -6,6 +6,20 @@
 
 ---
 
+## 디스크 정리 루틴 = `scripts/diskclean.sh` (2026-07-21, thinkpad 실측 91G 회수)
+
+thinkpad가 96%(여유 19G)까지 찼던 건을 계기로 정리 로직을 스크립트 SSOT로 뽑고 `run.sh` `c)`/`C)`에 연결. 디바이스 프로파일은 `~/.current-device`. 개념·순서 근거는 [AGENTS.md](AGENTS.md) §2.6.
+
+실측(thinkpad): 396G → 305G. nix GC 28G + uv prune 16.7G + zig-cache 11G + Trash 6.3G + 브라우저/툴 캐시 5G + `/tmp` 3.8G. **`.direnv`를 GC보다 먼저 지운 것만으로 뒤이은 GC가 19.9GiB 추가 회수** — 자동 GC가 이미 돈 직후였는데도.
+
+- [ ] **다른 디바이스 실측 — 미검증.** `deep --dry-run`은 thinkpad에서만 돌려봤다. **oracle에서 먼저 `--dry-run`으로 확인할 것** — headless라 `GUI_CACHE=false`, `REPO_CACHE=false` 경로가 실제로 잘 빠지는지, docker 프롬프트가 OpenClaw 컨테이너를 제대로 보여주는지. nuc/laptop도 동일.
+- [ ] **`boot.tmp.cleanOnBoot = true` 적용 안 됨.** `machines/shared.nix`에 넣고 `nix flake check`·eval만 통과시킨 상태 — **rebuild 안 했다.** 다음 switch 때 반영되며, 그 이후 재부팅부터 `/tmp` 잔해가 안 쌓인다. 전 디바이스 공통이라 oracle도 영향 받는다(재부팅 시 `/tmp` 비워짐 — OpenClaw가 `/tmp`에 영속 상태를 두지 않는지 switch 전에 확인).
+- [ ] **pnpm store 20G는 손 안 댔다.** 라이브 pi 세션이 하드링크를 공유하고 있어 이번엔 제외(`--with-pnpm` opt-in). 세션 없을 때 `pnpm store prune` 실측 필요 — store 20G 중 실제 고아가 얼마인지 아직 모른다.
+- [ ] **docker 15.8G reclaimable (thinkpad).** `--with-docker`를 안 걸어서 미실행. `docker image prune -a --filter until=24h`는 **실행 중이 아닌 이미지를 전부** 지우므로, 작업용으로 쟁여둔 이미지가 있는지 보고 나서 돌릴 것.
+- 남은 큰 덩어리는 정리 대상이 아니라 **실데이터**다: `~/repos` 76G(work 51G — 최상위 펌웨어 repo 하나가 33G, 3rd 44G — SBC SDK 하나가 29G), `~/sync` 32G. 아카이빙 판단이 필요하면 별건.
+
+---
+
 ## glg 가족봇 = Sonnet 5 + 대칭 "정직한 거울" 규칙 (2026-07-16, soak 남음)
 
 glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude-cli). 정한(123861330)·미례(8960149052) **동일 모델**(정한 세션 `gpt-5.6-sol` user 핀 제거). 배경: terra가 각 DM에서 화자 프레임을 승인(사이코팬시)해 양쪽을 각자 옳다고 세워주던 **"두 에코챔버"** 문제 — 모델 스왑만으론 안 풀려 **USER.md 대칭 규칙이 핵심 방어**. 사건 분석 = `~/org/llmlog/20260610T094022...`의 [2026-07-16] H1(2026-06-10 #4317 cross-DM 계보 위). 커밋 openclaw-config `e4bb3ed` / org private `4464149e`.

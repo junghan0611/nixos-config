@@ -117,8 +117,8 @@ show_menu() {
     echo "    E) 외부 패키지 업그레이드"
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
-    echo "    c) Cleanup (7일 이상 오래된 세대 삭제 + GC)"
-    echo "    C) Cleanup ALL (공격적: 3일 GC + optimise + pnpm/journal/docker, 전 디바이스)"
+    echo "    c) Cleanup safe (GC + /tmp + 스크래치패드 + 캐시 — 작업 손실 없음)"
+    echo "    C) Cleanup deep (+ repo 빌드 캐시 + optimise + 브라우저/툴, docker·pnpm 선택)"
     echo "    d) Disk usage (디스크 사용량 확인)"
     echo ""
     echo "    0) Exit"
@@ -194,139 +194,36 @@ main() {
                 fi
                 ;;
             c)
-                echo ""
-                info "현재 디스크 사용량:"
-                df -h /
-                echo ""
-                info "세대 목록:"
-                sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
-                echo ""
-                warn "7일 이상 오래된 세대를 삭제하고 GC를 실행합니다. 계속하시겠습니까? (y/N)"
-                read -p "> " confirm
-                if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                    execute_cmd "sudo nix-collect-garbage --delete-older-than 7d"
-                    echo ""
-                    info "정리 후 디스크 사용량:"
-                    df -h /
-                else
-                    info "취소되었습니다."
-                fi
+                # 정리 로직 SSOT는 scripts/diskclean.sh — 디바이스별 프로파일이 거기 있다.
+                execute_cmd "DEVICE='$DEVICE' bash '$FLAKE_DIR/scripts/diskclean.sh' safe"
                 ;;
             C)
                 echo ""
-                # 공격적 정리 보존 기간(일). 기본 3일 — 더 강하게 비우려면 AGGRESSIVE_RETAIN=1 등으로 낮춘다.
-                AGGRESSIVE_RETAIN="${AGGRESSIVE_RETAIN:-3}"
-                info "현재 디스크 사용량:"
-                df -h /
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo -e "${GREEN}Disk Cleanup - Deep${NC} (${BLUE}${DEVICE^^}${NC})"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 echo ""
-                info "/nix 폴더 크기:"
-                du -sh /nix 2>/dev/null || echo "측정 중..."
+                echo "  deep = safe + repo 빌드 캐시 + store optimise + 브라우저/툴 캐시"
+                echo "  pnpm store는 repo node_modules와 하드링크를 공유한다."
+                echo "  라이브 node/pi 세션이 돌고 있으면 3번을 고르지 않는다."
                 echo ""
-                info "현재 시스템 클로저 크기:"
-                nix path-info -Sh /run/current-system 2>/dev/null || echo "측정 실패"
+                echo "  1) deep"
+                echo "  2) deep + docker prune (dangling 이미지 24h+ / 빌드 캐시)"
+                echo "  3) deep + docker + pnpm store prune"
+                echo "  4) dry-run (계산만, 삭제 없음)"
+                echo "  0) 취소"
                 echo ""
-                info "GC roots 개수:"
-                nix-store --gc --print-roots 2>/dev/null | grep -v '/proc/' | wc -l
-                echo ""
-                info "Home-manager 세대 수:"
-                ls ~/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | wc -l
-                echo ""
-                info "정리 대상 (공격적):"
-                echo "  - Nix 시스템/사용자 세대: ${AGGRESSIVE_RETAIN}일 이상 오래된 것"
-                echo "  - Home-manager: 최근 3개 세대만 유지"
-                echo "  - nix-store --optimise: 중복 파일 하드링크 (store 축소)"
-                echo "  - result 심볼릭 링크: ~/repos 하위"
-                echo "  - direnv 캐시: ~/repos 하위 .direnv/"
-                echo "  - 휴지통: ~/.local/share/Trash"
-                echo "  - 캐시: uv, pip, puppeteer, go-build, zig, nix, qmd, bun"
-                echo "  - npm 캐시 + pnpm store prune"
-                echo "  - systemd 저널: 200M로 vacuum"
-                echo "  - Docker: dangling 이미지 + 빌드 캐시 (디바이스 무관)"
-                echo ""
-                warn "공격적으로 정리합니다 (보존 ${AGGRESSIVE_RETAIN}일). 계속하시겠습니까? (y/N)"
-                read -p "> " confirm
-                if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                    info "1/11 휴지통 비우기..."
-                    rm -rf ~/.local/share/Trash/files/* ~/.local/share/Trash/info/* 2>/dev/null && success "휴지통 정리 완료" || warn "휴지통이 비어있음"
+                read -p "선택: " clean_choice
 
-                    info "2/11 일반 캐시 정리..."
-                    rm -rf ~/.cache/uv ~/.cache/pip ~/.cache/puppeteer ~/.cache/go-build ~/.cache/zig ~/.cache/nix ~/.cache/qmd ~/.cache/.bun 2>/dev/null
-                    success "캐시 정리 완료"
-
-                    info "3/11 npm 캐시 정리..."
-                    npm cache clean --force 2>/dev/null && success "npm 캐시 정리 완료" || warn "npm 없음"
-
-                    info "4/11 pnpm store prune..."
-                    if command -v pnpm >/dev/null 2>&1; then
-                        pnpm store prune 2>/dev/null && success "pnpm store 정리 완료" || warn "pnpm store prune 실패"
-                    else
-                        warn "pnpm 없음"
-                    fi
-
-                    info "5/11 result 심볼릭 링크 삭제..."
-                    find ~/repos -maxdepth 3 -name "result" -type l -delete 2>/dev/null
-                    success "result 링크 삭제 완료"
-
-                    info "6/11 direnv 캐시 정리..."
-                    find ~/repos -maxdepth 3 -type d -name ".direnv" -exec rm -rf {} + 2>/dev/null
-                    success "direnv 캐시 정리 완료"
-
-                    info "7/11 Home-manager 이전 세대 정리..."
-                    if [[ -d ~/.local/state/nix/profiles ]]; then
-                        # home-manager 프로파일에서 오래된 세대 삭제 (최근 3개만 유지)
-                        nix-env --delete-generations +3 -p ~/.local/state/nix/profiles/home-manager 2>/dev/null && success "Home-manager 세대 정리 완료 (최근 3개 유지)" || warn "Home-manager 프로파일 없음"
-                    else
-                        warn "Home-manager 프로파일 디렉토리 없음"
-                    fi
-
-                    info "8/11 사용자 Nix 프로파일 GC (${AGGRESSIVE_RETAIN}일)..."
-                    nix-collect-garbage --delete-older-than "${AGGRESSIVE_RETAIN}d" 2>/dev/null
-                    success "사용자 프로파일 GC 완료"
-
-                    info "9/11 시스템 Nix GC 실행 (${AGGRESSIVE_RETAIN}일)..."
-                    execute_cmd "sudo nix-collect-garbage --delete-older-than ${AGGRESSIVE_RETAIN}d"
-
-                    info "10/11 systemd 저널 vacuum (200M)..."
-                    sudo journalctl --vacuum-size=200M 2>/dev/null && success "저널 정리 완료" || warn "저널 정리 실패"
-
-                    info "11/11 nix-store 최적화 (중복 하드링크, 시간 소요)..."
-                    nix-store --optimise 2>/dev/null && success "store 최적화 완료" || warn "store 최적화 실패"
-
-                    # Docker 잔재(dangling 이미지 + build cache) 정리 — 디바이스 무관, docker 있으면 실행
-                    if command -v docker >/dev/null 2>&1; then
-                        echo ""
-                        info "Docker 감지 — 정리 단계"
-                        info "현재 Docker 사용량:"
-                        docker system df 2>/dev/null || warn "docker system df 실패"
-                        echo ""
-                        warn "Dangling 이미지(24h 이상) + 빌드 캐시를 정리합니다. (실행 중 컨테이너 이미지는 보존) 계속? (y/N)"
-                        read -p "> " docker_confirm
-                        if [[ "$docker_confirm" =~ ^[Yy]$ ]]; then
-                            info "Docker dangling 이미지 정리..."
-                            execute_cmd "docker image prune -a -f --filter \"until=24h\""
-
-                            info "Docker 빌드 캐시 정리..."
-                            execute_cmd "docker builder prune -a -f"
-
-                            echo ""
-                            info "정리 후 Docker 사용량:"
-                            docker system df 2>/dev/null
-                        else
-                            info "Docker 정리 건너뜀."
-                        fi
-                    fi
-
-                    echo ""
-                    info "정리 후 디스크 사용량:"
-                    df -h /
-                    echo ""
-                    info "정리 후 /nix 폴더 크기:"
-                    du -sh /nix 2>/dev/null || echo "측정 중..."
-                    echo ""
-                    info "오래된 부트 엔트리는 다음 'nixos-rebuild boot/switch'(메뉴 5/6) 때 정리됩니다."
-                else
-                    info "취소되었습니다."
-                fi
+                DISKCLEAN="DEVICE='$DEVICE' bash '$FLAKE_DIR/scripts/diskclean.sh'"
+                case $clean_choice in
+                    1) execute_cmd "$DISKCLEAN deep" ;;
+                    2) execute_cmd "$DISKCLEAN deep --with-docker" ;;
+                    3) execute_cmd "$DISKCLEAN deep --with-docker --with-pnpm" ;;
+                    4) execute_cmd "$DISKCLEAN deep --with-docker --with-pnpm --dry-run" ;;
+                    0) info "취소" ;;
+                    *) error "잘못된 선택" ;;
+                esac
                 ;;
             p)
                 echo ""
