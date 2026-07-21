@@ -47,5 +47,12 @@ theme = Dracula
 cursor-color = #ff4769
 cursor-text = #0d0e1c
 
-keybind = alt+u=scroll_page_fractional:-0.5
-keybind = alt+v=scroll_page_fractional:0.5
+# alt+u / alt+v 는 ghostty가 잡지 않고 tmux로 흘려보낸다.
+#
+# 예전에는 여기서 scroll_page_fractional 로 잡았는데, tmux를 켜면 두 키가
+# 통째로 죽었다. tmux는 alternate screen을 쓰므로 ghostty 스크롤백이 비어
+# 있어 ghostty 쪽 스크롤은 아무 일도 안 하고, 그러면서 키는 소비해버려
+# tmux의 copy-mode 바인딩까지 도달하지 못했다. 양쪽 다 죽는 구조였다.
+#
+# 스크롤 담당은 tmux copy-mode로 일원화한다 (configs/tmux.conf 참고).
+# tmux 없이 쓸 때의 스크롤은 ghostty 기본 shift+page_up/down 과 마우스 휠.
