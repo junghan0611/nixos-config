@@ -9,6 +9,35 @@
 
 ## Unreleased
 
+## v2026.7.22 — OpenClaw 7.1 + 디스크 정리 루틴 + tmux 작업면
+
+### Added
+- **`scripts/diskclean.sh` — 디바이스 인식 디스크 정리 루틴** — thinkpad 실측 396G → 305G(**91G 회수**). 프로파일은 `~/.current-device`로 갈린다: oracle은 headless + OpenClaw 런타임이라 GC 보존 14일에 휴지통·브라우저·repo 캐시 단계를 건너뛰고, nuc/laptop/thinkpad는 그 반대. **핵심은 순서** — `.direnv`/`result`가 GC root라 flake input을 붙들고 있으므로 repo 빌드 캐시를 **GC보다 먼저(0단계)** 지운다. 자동 GC가 이미 돈 직후였는데도 이 순서만으로 **19.9GiB가 추가 회수**됐다. 회수량의 대부분은 애초에 nix 밖이다(uv 16.7G·zig-cache 11G·Trash 6.3G·`/tmp` 3.8G). pnpm(repo `node_modules`와 하드링크 공유)·docker(oracle에선 OpenClaw 런타임)는 opt-in. `run.sh c)`(safe)/`C)`(deep) 연결, 개념·순서 근거는 AGENTS.md §2.6.
+- **tmux 작업면 — 디바이스 배지 + 창 이동 + 세션 fzf** — `status-left` 맨 왼쪽에 `~/.current-device` 배지를 두고 디바이스별로 색까지 가른다(oracle 주황 / nuc 파랑 / laptop 초록 / thinkpad 보라). hostname이 아니라 `.current-device`가 SSOT — `run.sh`·`diskclean.sh`가 프로파일을 고르는 그 값과 같아야 상태바와 실제 동작이 안 갈라진다. `status-left-length`가 tmux 기본 10이라 `#H`가 이미 잘려 있던 것도 함께 수정. `M-[`/`M-]`로 창 이동(ESC `[`=CSI, ESC `]`=OSC라 위험한 조합이지만 pty로 raw 바이트 실측: `\033[`만 오면 키로 처리되고 `\033[A`·`\033[1;5D`는 CSI 파싱이 먼저 이겨 방향키를 삼키지 않는다). `prefix + s`는 세션 fzf 팝업, 기본 `choose-tree`는 `prefix + S`로 보존. `KEYBINDINGS.md`에 tmux 면 신설 — 층위(세션/창/분할) 혼동 방지표를 맨 앞에 두고, 표의 키는 전부 `list-keys`로 대조한 것만.
+- **`ax.junghanacs.com` 정적 vhost + 액세스 로그** — caddy 첫 `file_server` 사이트(`/srv/ax` ← `~/docker-data/ax` ro). 이어서 `log { output stderr; format json }` 활성화 — dossier 정체성이 "검증 가능한 증거"인데 방문 기록이 없던 상태(caddy 기본값 off) 해소. Umami는 JS라 크롤러/에이전트를 못 잡으므로 서버 로그가 유일한 관측면. stderr → 컨테이너 log driver가 journald라 회전/보존을 journald가 맡아 compose 무변경(`docker restart caddy`만으로 반영). 7-세트 검수 통과.
+- **obsidian — GUI 디바이스 전용** (oracle headless 제외).
+- **thinkpad 방화벽 개방** — 8883(SK 테스트베드 MQTT/TLS), 18080(앱↔서버 REST).
+
+### Changed
+- **OpenClaw 6.11 → 2026.7.1 업그레이드 + GPT-5.6 승격** — 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0, 메모리 4096d 정상. gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra`(둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 단가상 인상이 아니다 — sol은 5.5와 동일($5/$30), terra는 절반($2.50/$15).
+- **glg 가족봇 → Sonnet 5 + 대칭 "정직한 거울" 규칙** — terra가 각 DM에서 화자 프레임을 승인(사이코팬시)해 양쪽을 각자 옳다고 세워주던 **"두 에코챔버"** 문제. 모델 스왑만으로는 안 풀려 **USER.md 대칭 규칙이 핵심 방어**. 정한·미례 동일 모델로 낙하(정한 세션의 `gpt-5.6-sol` user 핀을 `sessions.json`에서 직접 제거 — `/reset`·`/new`로는 안 풀린다).
+- **bbot → fable-5 재승격, mini → sonnet-5 승격** (6.11 서빙 재개).
+- **gog를 `openclaw/gogcli` 공개 정적 릴리즈로 전환** — `go install` 빌드에서 벗어남. 앞선 심볼릭 단일화(마스터 2벌 + SSOT 절대경로 심볼릭 6개)로 300M → 75M.
+- **openclaw memory 운영 노하우 문서화** — restart/recreate 구분 + prewarm.
+
+### Fixed
+- **OpenClaw 컨테이너 `TZ=Asia/Seoul` — 봇의 '지금'이 UTC였다.**
+- **pnpm `global-bin-dir` PATH 가드 + check 거짓 성공 제거** — pnpm은 `global-bin-dir`이 PATH에 없으면 `add -g`/`list -g`를 전부 거부한다. 레지스트리/캐시 문제로 보이지만 원인은 PATH다. `external-packages.sh`가 preflight로 진단하도록.
+- **pnpm 설치 실패 시 캐시 재시도 + 패키지별 폴백.**
+- **tmux `default-shell` 고정** — 지정하지 않으면 tmux는 서버가 처음 뜨는 순간의 `$SHELL`을 전역 옵션으로 굳힌다. nix devshell 안에서 서버가 태어나면 readline 없는 빌드용 bash가 박혀 그 서버의 모든 pane이 bind/complete 없는 셸을 받았다.
+- **tmux — ghostty가 삼키던 `M-u`/`M-v`를 copy-mode 반쪽 스크롤로 회수** (doom의 `evil-scroll-up`/`down` 방향에 맞춤).
+- **i3 scratchpad-toggle 새 창 감지를 focus → window-id diff로 전환.**
+- **geworfen docker-compose store path를 26.05 세대로 갱신.**
+- **문서 정정 2건** — GPT-5.6 승격은 비용 인상이 아니었다(비용축 정정), 모델 승격이 안 먹는 진짜 이유는 `/reset`이 user 핀을 못 푼다는 것.
+
+### Removed
+- **미사용 `.beads` 트래킹 제거.**
+
 ## v2026.7.2 — NixOS 25.11 → 26.05 이관
 
 ### Changed

@@ -38,9 +38,10 @@ glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude
 
 `ax.junghanacs.com` 정적 사이트 라이브(caddy `file_server`, `/srv/ax` ← `~/docker-data/ax` ro 마운트). web root는 담당자 junghan0611(`apply/ax` `make publish`, leak gate 통과분)이 채운다 — caddy 재시작 불요. 배포/함정 상세 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "caddy 변경 = 7-세트 검수".
 
+액세스 로그는 2026-07-20부터 켜져 있다(JSON → stderr → journald). 조회: `docker logs caddy | grep ax.junghanacs.com`. 경위는 CHANGELOG `v2026.7.22`.
+
 - [ ] **umami 붙이기** — `analytics.junghanacs.com`(umami) 이미 가동. ax용 website를 umami에 등록(tracking id 발급). **스니펫은 담당자가 정본(`apply/ax`)에 넣어 publish** — caddy 주입 금지(정본·라이브 갈림 방지, 담당자 명시 요청). caddy 측 작업은 사실상 없음(같은 호스트라 도메인 허용만 확인).
 - [ ] **remark 붙이기** — `comments.junghanacs.com`(remark42) 가동. ax `record.html`에 댓글 위젯. 역시 스니펫은 정본. remark42 site-id/allowed-domain에 ax 추가 필요할 수 있음(remark42 env 확인 → `docker/remark42/`).
-- [x] **액세스 로그 ON — 완료 (2026-07-20).** ax vhost에 `log { output stderr; format json }`. dossier 정체성이 "검증 가능한 증거"인데 정작 방문 기록이 없던 상태(caddy 기본값 off) 해소. Umami는 JS라 크롤러/에이전트를 못 잡으므로 서버 로그가 유일한 관측면. 출력이 stderr → 컨테이너 log driver가 **journald**라 회전/보존은 journald가 맡는다(파일/마운트 추가 없음 = compose 무변경 = `docker restart caddy`만으로 반영). JSON 기본 필드에 `request.headers`(User-Agent 포함, Cookie/Authorization 자동 REDACTED)가 들어가 크롤러 판별 가능. 7-세트 검수 통과. 조회: `docker logs caddy | grep ax.junghanacs.com`.
 - [ ] **크롤러 실측 (SC 사이트맵 제출 후속).** 며칠 뒤 로그에서 Googlebot / GPTBot / ClaudeBot / PerplexityBot 실제 방문 여부와 `/llms.txt` 히트를 확인해 담당자(junghan0611)에게 회신. 0건이면 그것도 결과 — robots.txt·사이트맵 쪽을 되짚을 신호.
 - [ ] ax 관련 요청은 이 레인(caddy = nixos-config)이 대응. GET-only 공개면이라 authelia 없음.
 - **`/llms.txt` Content-Type은 `text/plain` 유지 (2026-07-20 판단).** 어떤 SEO 감사 도구가 `text/markdown`을 요구했으나 llmstxt.org 스펙은 media type을 규정하지 않는다. 오히려 `text/markdown`으로 내보내면 브라우저가 렌더 대신 **다운로드**한다 — ax 블록에 `@md → text/plain` 규칙이 이미 있는 이유가 그거다. 사람이 읽는 공개면을 검증기 경고 하나 때문에 깨지 않는다. notes/junghanacs.com도 같은 상태 유지.
@@ -51,7 +52,6 @@ glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude
 
 6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
 
-- [x] **glg DM의 user 핀 해제 — 완료 (2026-07-16).** 핀은 실제로 `gpt-5.6-sol`이었고, glg를 Sonnet 5로 옮기며 `sessions.json`에서 직접 제거(정한·미례 동일 primary로 낙하). 위 "glg 가족봇 = Sonnet 5" 항목 참조. (`/reset`·`/new`로는 핀이 안 풀린다는 gotcha는 유효.)
 - [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **sol 또는 5.5**다. **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
 - [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
@@ -95,7 +95,7 @@ glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude
 - [ ] **pi-skills SSOT 루트 화이트리스트** — 전체 전환 시 `~/.pi/agent/skills/pi-skills`(컨테이너 경로 확인) 도 allowSymlinkTargets에 추가 필요.
 - [ ] **glg 외 봇 확장** — 트라이얼은 glg만. 전체 봇(workspace*) 일괄 전환 시 run.sh AGENTS_FULL 루프를 심볼릭 생성으로.
 - [ ] butlercli 트라이얼 soak: glg 실사용에서 부동산 질문 시 스킬 정상 트리거·실데이터 응답 확인(라이브 turn).
-- [x] **gogcli(gog) 심볼릭 단일화 — 완료 (2026-07-15, 300M→75M)**. 마스터 2벌(`~/.local/bin/gog` 호스트 + `~/openclaw/config/claude-skills/gogcli/gog` 봇 SSOT), 나머지 6개(agent-config + workspace×5) SSOT 절대경로 심볼릭. 봇/호스트 전 경로 v0.34.0 resolve + 캘린더 조회 검증. 상세·이유(오버레이 밖 SSOT, 두 마스터) → [ORACLE.md](ORACLE.md) §5 gogcli. **남은 티끌**: SKILL.md는 아직 각 디렉토리별 실파일(agent-config Jul5 upstream 15KB vs workspace/claude-skills Apr13 옛 10KB) — 작아서 공간 무관하나 내용이 갈린다. 통일하려면 SKILL.md도 SSOT 심볼릭(단 openclaw workspace 스킬 등록이 심볼릭 SKILL.md를 읽는지 확인 필요).
+- [ ] **gogcli SKILL.md 통일 — 심볼릭 단일화(완료, CHANGELOG `v2026.7.22`) 후 남은 티끌.** 바이너리는 SSOT 심볼릭으로 묶였으나 SKILL.md는 아직 각 디렉토리별 실파일이다(agent-config Jul5 upstream 15KB vs workspace/claude-skills Apr13 옛 10KB) — 작아서 공간은 무관하나 **내용이 갈린다**. 통일하려면 SKILL.md도 SSOT 심볼릭, 단 openclaw workspace 스킬 등록이 심볼릭 SKILL.md를 읽는지 먼저 확인.
 
 ---
 
