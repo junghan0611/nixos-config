@@ -225,6 +225,53 @@ in {
       alias ec='emacsclient -s user -n'
       alias ecn='emacsclient -s user -c -n'
 
+      # ── tmux — 세션 = 작업 디렉토리 ──────────────────────────────────
+      # 설정 본문은 users/junghan/configs/tmux.conf, 진입 함수는 여기.
+      # 원래 ~/.bashrc.local 에 있던 것을 repo 로 회수했다. .bashrc.local 은
+      # 이 initExtra *다음에* source 되므로, 거기 같은 이름이 남아 있으면 이걸
+      # 조용히 덮는다 — 옮길 때 저쪽에서 지워야 한다.
+
+      # tm — 현재 디렉토리 이름으로 세션을 열거나, 이미 있으면 그리로 간다.
+      #   tm          → basename "$PWD" 를 세션명으로
+      #   tm garden   → 이름을 직접 줄 때
+      tm() {
+        local name=''${1:-$(basename "$PWD")}
+        # tmux는 . 과 : 를 target 구분자로 파싱한다 (session:window.pane) → 치환
+        name=''${name//[.: ]/-}
+        if [ -n "$TMUX" ]; then
+          # 이미 tmux 안이면 attach가 거부된다("sessions should be nested with care")
+          # → 없으면 detached로 만들고 클라이언트를 그리로 옮긴다
+          tmux has-session -t "=$name" 2>/dev/null || tmux new-session -d -s "$name" -c "$PWD"
+          tmux switch-client -t "=$name"
+        else
+          # -A = 같은 이름이 이미 있으면 새로 만들지 않고 attach
+          tmux new-session -A -s "$name" -c "$PWD"
+        fi
+      }
+
+      # tml — 열려 있는 세션을 fzf 로 골라 들어간다. `tmux ls` 로 이름을 보고
+      # `tmux attach -t` 를 다시 치는 왕복을 없앤다.
+      #   tml         → 목록에서 선택
+      #   tml gar     → 그 쿼리로 시작. 하나만 남으면 (--select-1) 바로 들어간다.
+      # tmux 안에서 부르면 attach 가 중첩으로 거부되므로 switch-client — tm 과 같은 규칙.
+      tml() {
+        local tab=$'\t' list name
+        list=$(tmux ls -F "#{session_name}$tab#{session_windows}w #{?session_attached,●,}$tab#{session_path}" 2>/dev/null) || {
+          echo "tml: 실행 중인 tmux 세션이 없다 (tm 으로 하나 열어라)" >&2
+          return 1
+        }
+        # 세 칸(이름 / 창수 ● / 경로)을 탭으로 나눠 두면 cut -f1 이 이름만 집는다.
+        name=$(printf '%s\n' "$list" | sed "s|$HOME|~|" |
+          fzf --reverse --height=40% --prompt='session> ' \
+              --query="''${1:-}" --select-1 --exit-0 | cut -f1)
+        [ -n "$name" ] || return 0
+        if [ -n "$TMUX" ]; then
+          tmux switch-client -t "=$name"
+        else
+          tmux attach -t "=$name"
+        fi
+      }
+
       # peon-ping tab completions
       [ -f "$HOME/.claude/hooks/peon-ping/completions.bash" ] && source "$HOME/.claude/hooks/peon-ping/completions.bash"
 
