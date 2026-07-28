@@ -149,7 +149,10 @@ in {
     iproute2        # ip command
     nettools        # ifconfig, arp, etc.
     iftop           # Network monitoring
-    tdlib             # TDLib (telega.el 의존성, GUI Emacs에서만 필요)
+    tdlib             # TDLib (telega.el 의존성). 실사용은 GUI Emacs지만
+                      # 캐시 hit이라 oracle headless도 그냥 포함시킨다.
+                      # flake.nix 오버레이로 unstable에서 온다 — telega가
+                      # 요구하는 하한이 26.05보다 앞선다(현재 >= 1.8.66)
   ]) ++ (lib.optionals (isLinux && !isOracle) [
     # Desktop GUI / 주변장치 / 무거운 런타임 — Oracle headless 제외
     firefox
