@@ -105,7 +105,11 @@
 
       # ThinkPad + LG HDR 4K (HDMI 듀얼: 4K 위 + 노트북 아래) - 사무실
       # 실제 EDID fingerprint 사용 - HDMI connected 상태와 단독 사용 구분
-      # 4K 네이티브 유지 + scale 0.75 (논리 2880x1620, UI ~133%)
+      #
+      # 4K 네이티브 + scale 0.75 (논리 2880x1620, UI ~133%).
+      # autorandr 의 config.scale 은 --fb 를 모드 원본 폭(3840)으로 계산한 뒤
+      # 후속 `xrandr --fb 3840x...` 로 스케일을 깨뜨려 상·하 모니터가 겹친다.
+      # 그래서 config 는 겹침 없는 4K 스택만 두고, 배율은 profile postswitch 에서 고정.
       "thinkpad-dual-hdmi" = {
         fingerprint = {
           eDP-1 = "00ffffffffffff0030aeb541000000000f1f0104a5221678e73755965d58922920505400000001010101010101010101010101010101333f80dc70b03c403020360059d71000001a000000fd00283c4c4c10010a2020202020200000000f00d10a3cd10a281e0a0009e5310a000000fe004e5631363057554d2d4e34330a00a7";
@@ -114,20 +118,24 @@
         config = {
           HDMI-1 = {
             enable = true;
-            position = "0x0";  # 위쪽 (4K)
+            position = "0x0";  # 위쪽 (4K) — 배율 전 intermediate
             mode = "3840x2160";
             rate = "60.00";
-            scale = { method = "factor"; x = 0.75; y = 0.75; };
           };
           eDP-1 = {
             enable = true;
             primary = true;
-            # 아래, 가로 센터 — 논리폭 2880 기준 (2880-1920)/2 = 480
-            # y = 2160 * 0.75 = 1620
-            position = "480x1620";
+            position = "960x2160";  # 아래, 가로 센터 (3840-1920)/2 — 배율 전 intermediate
             mode = "1920x1200";
             rate = "60.00";
           };
+        };
+        hooks = {
+          postswitch = ''
+            ${pkgs.xrandr}/bin/xrandr --fb 2880x2820 \
+              --output HDMI-1 --mode 3840x2160 --rate 60.00 --scale 0.75x0.75 --pos 0x0 \
+              --output eDP-1 --primary --mode 1920x1200 --rate 60.00 --pos 480x1620
+          '';
         };
       };
     };
