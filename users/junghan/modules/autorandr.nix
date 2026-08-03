@@ -105,6 +105,7 @@
 
       # ThinkPad + LG HDR 4K (HDMI 듀얼: 4K 위 + 노트북 아래) - 사무실
       # 실제 EDID fingerprint 사용 - HDMI connected 상태와 단독 사용 구분
+      # 4K 네이티브 유지 + scale 0.75 (논리 2880x1620, UI ~133%)
       "thinkpad-dual-hdmi" = {
         fingerprint = {
           eDP-1 = "00ffffffffffff0030aeb541000000000f1f0104a5221678e73755965d58922920505400000001010101010101010101010101010101333f80dc70b03c403020360059d71000001a000000fd00283c4c4c10010a2020202020200000000f00d10a3cd10a281e0a0009e5310a000000fe004e5631363057554d2d4e34330a00a7";
@@ -116,11 +117,14 @@
             position = "0x0";  # 위쪽 (4K)
             mode = "3840x2160";
             rate = "60.00";
+            scale = { method = "factor"; x = 0.75; y = 0.75; };
           };
           eDP-1 = {
             enable = true;
             primary = true;
-            position = "960x2160";  # 아래, 가로 센터 (3840-1920)/2
+            # 아래, 가로 센터 — 논리폭 2880 기준 (2880-1920)/2 = 480
+            # y = 2160 * 0.75 = 1620
+            position = "480x1620";
             mode = "1920x1200";
             rate = "60.00";
           };
