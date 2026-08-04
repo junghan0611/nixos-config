@@ -151,9 +151,14 @@
 # 정확히 위 두 픽스가 가리키는 대상이다 — 지금 로그엔 관련 경고 0(72h)이지만, 잔해를 안고 재시작할 때의 최악
 # 시나리오가 "복구 가능한 정지"로 내려온다. **잔해 회수 판단보다 이 bump 를 먼저 하는 게 순서상 맞다.**
 # 나머지 -1 항목: ③ Codex progress replies — app-server 턴이 progress 메시지 뒤 mid-turn 정지하던 것 수정.
-# **우리 hot path 는 아니다**: gpt 봇 primary `openai/gpt-5.6-sol` 은 per-agent models 맵에서 `{}` = API 경로고,
-# `agentRuntime.id=codex` 가 붙은 건 `openai/gpt-5.5`(main/glg/gpt 롤백 카탈로그)와 `openai/gpt-5.4{,-mini}`(mini)
-# 뿐이다 → **롤백 lane / mini lane 보험**. ④ Managed plugin updates(stale npm lock metadata 복구) + -2 의 유일
+# **우리 hot path 에 걸린다. 이번 bump 의 최대 실이득이 이것이다.** (※ 2026-08-04 최초 작성분은 "hot path 아님"
+# 이라고 적었다 — per-agent models 맵의 빈 `{}` 를 "런타임 미지정 = API 경로"로 오독한 것. 정정한다: 빈 `{}` 는
+# provider 기본 런타임을 따른다는 뜻이고, gpt 봇 primary `openai/gpt-5.6-sol` 의 라이브 세션 런타임은
+# `sessions list` 에서 **OpenAI Codex** 로 찍힌다. `models auth list` 도 `openai:…[openai/oauth]` — 구독이다.
+# **과금 경로는 4개 provider 전부 OAuth 구독이고, 종량제 API 키로 도는 챗 모델은 하나도 없다.**)
+# 실제 수정 내용: `dynamic-tools.ts` 가 *전달된 응답 메시지*를 턴 종료 조건에서 빼냈다 — 붙은 주석 그대로
+# "delivered source message is progress; turn/completed owns finality". `run-attempt.ts` 는 message-tool 로만
+# 답한 턴을 실패로 분류하지 않게 고쳤다. ④ Managed plugin updates(stale npm lock metadata 복구) + -2 의 유일
 # 항목 npm singleton-array metadata 수용 — 둘 다 **tracked official plugin 의 install/update 경로**다. 우리
 # 플러그인은 telegram/anthropic/openai/codex/memory-core/active-memory/google/github-copilot 전부 stock 번들이라
 # 직접 해당 없음, 향후 managed 설치를 할 때의 보험. ⑤ WSL EROFS chmod — 비해당(Linux aarch64).

@@ -57,8 +57,11 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 - **`openai/gpt-5.5` 전면 제거**(잔존 0건) → catch-all 1번은 `openai/gpt-5.4`, `defaults.model.primary`는 `openai/gpt-5.6-terra`
 - **`anthropic/claude-sonnet-4-6` 제거** — sonnet은 5로 통일
 - 검증: config validate 통과, doctor Errors 0, 6봇 config↔DM 일치, main/bbot 라이브 정체성 응답 확인
+- **⚠️ 대가 — main/bbot DM 세션이 굴렀다.** main은 `/model` 첫 시도가 120s timeout → `CLI session cleared` → 새 세션(`d792e9cd`→`323b9a63`), bbot은 provider 전환(codex→claude-cli)으로 롤. **트랜스크립트는 보존**(main 117KB/94줄, bbot 29KB/15줄, `usageFamilySessionIds` 계보 유지)이나 **라이브 스레드 맥락은 리셋**됐다. mini는 같은 provider 내 교체라 세션 유지. 함정 전문은 [ORACLE.md](ORACLE.md) "🔴 `/model`은 DM 세션을 굴릴 수 있다".
+- **`Dirty: no`는 스냅샷이지 불변식이 아니다.** 턴을 돌면 새 세션 파일이 생겨 다시 dirty가 된다 — 정렬 직후 "6봇 전부 Dirty:no"라고 적었으나 그 뒤 턴들로 main/mini/bbot이 곧 dirty로 돌아갔다(16:23 재인덱싱으로 다시 정합). **의미 있는 불변식은 dirty 플래그가 아니라 ①`Indexed n/n` 정합 ②실검색 성공**이다.
 - 롤백: `~/openclaw/config/openclaw.json.bak-model-align-20260804T153304`
 
+- [ ] **main DM 맥락 회수 판단.** 위 롤로 라이브 스레드가 빈 맥락에서 시작한다. 옛 트랜스크립트(`agents/main/sessions/d792e9cd-….jsonl`)가 살아있으니 필요하면 `sessions compact`/수동 요약으로 회수 가능 — GLG가 실제로 아쉬운지 먼저 확인할 것.
 - [ ] **opus-5 soak (main).** 승격 당일 격리 probe + 라이브 정체성 응답만 확인했다. 볼 것: 실제 긴 턴에서의 품질·지연, Max 20x 쿼터 소진 속도가 opus-4-8 대비 달라지는지. 처지면 per-agent 카탈로그에 남긴 `anthropic/claude-opus-4-8`로 `/model` 복귀.
 - [ ] **fable-5 실사용 확인 (bbot).** 라이브 DM이 몇 주간 gpt-5.5로 돌던 걸 오늘 fable-5로 되돌렸다 — **봇 스스로 "그 사이 기억층에 빈 구간이 있을 수 있다"고 보고**했다. 다음 실대화에서 맥락 연속성 확인.
 - [ ] **`anthropic:default [anthropic/token]` 프로파일 정리 판단.** glg/gpt/gemini 3봇에만 붙어있는 **유일한 비-OAuth(종량제) 항목**. 현재 primary 경로로는 안 쓰이지만 claude-cli OAuth 실패 시 구독 밖 과금으로 흐를 수 있는 자리다. 안 쓸 거면 제거.
@@ -75,7 +78,7 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 - [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **terra**다(5.5는 2026-08-04 전면 제거 — GLG: 아예 안 씀). **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
 - [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
-- [ ] **orphan transcript 103건 — 인덱스 행은 정리됐고 파일은 그대로.** 2026-08-04 `memory index`가 *삭제된 트랜스크립트를 가리키던 인덱스 행*을 걷어냈다(glg 3250→2816, gpt 728→545, bbot 1299→889 chunk, 6봇 전부 `Indexed: n/n` + `Dirty: no`). 하지만 `sessions.json`이 참조 안 하는 **`.jsonl` 파일 자체는 디스크에 남아있다** — 이 항목은 그 파일 쪽이다. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
+- [ ] **orphan transcript 104건(doctor 기준) — 인덱스 행은 정리됐고 파일은 그대로.** 2026-08-04 `memory index`가 *삭제된 트랜스크립트를 가리키던 인덱스 행*을 걷어냈다(glg 3250→2816, gpt 728→545, bbot 1299→889 chunk, 6봇 전부 `Indexed: n/n` + `Dirty: no`). 하지만 `sessions.json`이 참조 안 하는 **`.jsonl` 파일 자체는 디스크에 남아있다** — 이 항목은 그 파일 쪽이다. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
 
 ---
 

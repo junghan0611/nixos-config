@@ -121,7 +121,21 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 - **순서가 중요하다**: `/model`은 세션의 pin을 *제거*해 config primary를 따라가게 만든다(mini 실측: `model`/`modelProvider` 필드가 사라짐). config를 먼저 안 고치면 옛 primary로 떨어진다.
 - **`/reset`·`/new`로는 안 풀린다** — pin은 세션 리셋과 별개 축이다. `/model`이 정공법.
-- **⏱ 큰 컨텍스트 DM은 `--timeout`을 넉넉히**. main(271k)은 120s로 안 끝나 적용 실패했다 — 540s로 재시도해야 붙었다. 타임아웃으로 끊기면 **pin이 그대로 남는데 성공처럼 보이지 않으니** ③으로 반드시 확인.
+- **⏱ 큰 컨텍스트 DM은 `--timeout`을 넉넉히**. main(271k)은 120s로 안 끝나 적용 실패했다 — 540s로 재시도해야 붙었다. ③으로 반드시 확인.
+
+> #### 🔴 `/model`은 DM 세션을 굴릴 수 있다 — 대가는 시간이 아니라 **라이브 맥락**이다 (2026-08-04 실측)
+>
+> 처음엔 timeout의 대가가 "적용 실패, 다시 하면 됨"인 줄 알았다. **아니다.** 세션이 새로 굴러 `sessionId`가 바뀌고 **라이브 대화가 빈 맥락에서 다시 시작**된다. 원인은 둘이고, 성격이 다르다:
+>
+> | 봇 | 명령 | 결과 | 원인 |
+> |---|---|---|---|
+> | mini | `/model` (claude-cli → claude-cli) | **세션 유지** | 같은 provider 내 모델 교체 |
+> | main | `/model` (claude-cli → claude-cli) | **ROLLED** | **timeout**. 히스토리 47k자를 새 CLI 세션에 재생(`historyPrompt=present`, `reuse=invalidated:message-policy`)하다 120s 초과 → `CLI session cleared after failed reused turn: reason=timeout` → 재시도는 `historyPrompt=none`으로 새 세션 |
+> | bbot | `/model` (openai/codex → claude-cli) | **ROLLED** | **provider 전환**. codex 세션은 claude-cli로 이어붙지 않는다 |
+>
+> - **트랜스크립트는 유실되지 않는다** — 옛 `.jsonl`은 디스크에 그대로 남고(main 117KB/94줄, bbot 29KB/15줄) `usageFamilySessionIds` 체인도 계보를 보존한다. 잃는 건 *라이브 스레드가 들고 있던 맥락*이다. 봇은 그 구간을 "기억층에 빈 구간"으로 느낀다(bbot이 실제로 그렇게 자가 보고했다).
+> - **`sessions list`의 Tokens 컬럼 분모가 같이 바뀐다** — main은 `271k/1049k` → `56k/264k`가 됐는데, 분모 변화(1049k→264k)는 **모델 컨텍스트 창 차이**(opus-4-8 vs opus-5)지 손실이 아니다. 분자만 보고 판단하지 말 것.
+> - **처방**: ① provider를 넘는 전환(codex↔claude-cli)은 롤을 **각오하고** 한다 — 피할 방법이 없다. ② 같은 provider 내 교체는 **timeout만 안 나면 세션이 산다** → 큰 컨텍스트일수록 넉넉히(main 기준 540s). ③ 실사용자 DM을 굴리기 전에 GLG에게 알린다. ④ 굴러간 뒤 맥락이 꼭 필요하면 옛 `.jsonl`이 살아있으니 `sessions compact`/수동 요약으로 회수 가능.
 - **`sessions list`의 Model 컬럼이 표와 다르면, 표가 아니라 세션이 진실이다.** 업그레이드·승격 후 이 표와 `sessions list`를 대조하는 것을 체크리스트에 넣는다.
 
 > **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native claude-cli runtime은 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. **canonical 등록(5.28)**: model.primary/카탈로그를 `anthropic/<id>`로 두고 `{ "agentRuntime": { "id": "claude-cli" } }`를 붙이면 끝 — provider prefix `anthropic/`는 카탈로그 식별자일 뿐, runtime이 `claude-cli`면 구독 경로. legacy `claude-cli/<id>` prefix는 폐기(doctor/update가 canonical로 auto-migrate — profile 먼저 등록 필수). EPIPE·streaming off·전환 타임라인은 [ROADMAP.md](ROADMAP.md).
