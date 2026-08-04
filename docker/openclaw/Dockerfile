@@ -141,8 +141,27 @@
 # compaction·큐·인터럽트 넘어 생존 ③ Dashboard 재접속 메모리 급증(false rss_growth 경고) 완화 ④ 채널 메타데이터
 # 캐시 bounded(장기 실행 채널 메모리 누수 차단). 비해당(안심): Bun 런타임 SQLite 차단은 우리 Node 라 무관,
 # deepseek 는 6.9 에 이미 정리, Copilot/ClawRouter/LongCat/Hy3/Muse Spark 는 미사용 provider.
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.6.11
-FROM ghcr.io/openclaw/openclaw:2026.7.1
+# 7.1 → 7.1-2 (2026-08-04): **correction release 2건 묶음**(-1/-2 가 같은 초 00:41Z 에 published). breaking 섹션
+# 없음, 기능 추가 0 — 전부 fix. 7.2 는 아직 beta(7.2-beta.7)라 안정선은 7.1 라인이다. 즉 이번 bump 는 모델·config·
+# 동작 축을 건드리지 않는 **버그픽스 흡수**다.
+# **우리에게 직접 걸리는 것(-1) 둘 — 둘 다 "마이그레이션 잔해" 클래스**: ① Memory Core startup repair — derived
+# legacy-index / cache-sidecar 충돌을 Gateway 를 fatal restart loop 에 가두지 않고 복구(구조적 vector-store 손상은
+# 여전히 retryable 유지). ② Legacy migration recovery — 검토된 migration residue 를 startup 에서 nonfatal 로 처리.
+# 우리는 7.1 이 만든 `config/memory/*.migrated` **1.4G 를 롤백 대비로 이고 있다**(NEXT.md 회수 항목). 그 잔해가
+# 정확히 위 두 픽스가 가리키는 대상이다 — 지금 로그엔 관련 경고 0(72h)이지만, 잔해를 안고 재시작할 때의 최악
+# 시나리오가 "복구 가능한 정지"로 내려온다. **잔해 회수 판단보다 이 bump 를 먼저 하는 게 순서상 맞다.**
+# 나머지 -1 항목: ③ Codex progress replies — app-server 턴이 progress 메시지 뒤 mid-turn 정지하던 것 수정.
+# **우리 hot path 는 아니다**: gpt 봇 primary `openai/gpt-5.6-sol` 은 per-agent models 맵에서 `{}` = API 경로고,
+# `agentRuntime.id=codex` 가 붙은 건 `openai/gpt-5.5`(main/glg/gpt 롤백 카탈로그)와 `openai/gpt-5.4{,-mini}`(mini)
+# 뿐이다 → **롤백 lane / mini lane 보험**. ④ Managed plugin updates(stale npm lock metadata 복구) + -2 의 유일
+# 항목 npm singleton-array metadata 수용 — 둘 다 **tracked official plugin 의 install/update 경로**다. 우리
+# 플러그인은 telegram/anthropic/openai/codex/memory-core/active-memory/google/github-copilot 전부 stock 번들이라
+# 직접 해당 없음, 향후 managed 설치를 할 때의 보험. ⑤ WSL EROFS chmod — 비해당(Linux aarch64).
+# 검증 축은 7.1 과 동일하되 짧다(모델 축 변화 0): 컨테이너 업글은 여전히 ready 보고 전에 마이그레이션을 자동
+# 수행하므로 **gemini `google-gemini-cli/` prefix 전수 재확인 유지**, `doctor` 는 read-only 만 — **`--fix` 금지는
+# 7.1-2 에서도 유효**(changes-preview 의 `google/` 재작성 + 롤백용 카탈로그 병합, 둘 다 그대로).
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.7.1
+FROM ghcr.io/openclaw/openclaw:2026.7.1-2
 
 USER root
 

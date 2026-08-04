@@ -48,15 +48,16 @@ glg(가족봇) 모델 **`gpt-5.6-terra` → `anthropic/claude-sonnet-5`**(claude
 
 ---
 
-## OpenClaw 7.1 업글 완료 — soak 남음 (2026-07-14)
+## OpenClaw 7.1 업글 완료 — soak 남음 (2026-07-14, 2026-08-04 7.1-2 적용)
 
 6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
+
+**2026-08-04: 7.1 → 7.1-2 correction release 적용.** 다운타임 16초, 모델 드리프트 0, doctor Errors 0. ⚠️ **`--version`으로는 7.1과 7.1-2를 구분할 수 없다** — correction release는 버전 문자열을 안 올려 둘 다 `OpenClaw 2026.7.1`로 보고한다. 구분은 이미지 digest로만(`7.1`=`6a31d44b…` / `-1`=`2f5ce884…` / `-2`=`8789721d…`). 소스 실diff 결과 7.1 대비 바뀐 파일은 **7개뿐**(codex 5 + memory-core 2) — 메모리 **엔진은 무변경**, `memory-core/doctor-contract-api.ts`의 legacy sidecar 임포트 경로만 바뀌었다.
 
 - [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **sol 또는 5.5**다. **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
 - [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
-- [ ] **메모리 `.migrated` 아카이브 회수 (~1.4G).** 7.1이 legacy `~/openclaw/config/memory/*.sqlite`를 per-agent SQLite로 통합하고 원본을 `.migrated`로 남겼다(glg 637M, gpt 471M, gemini 139M, bbot 112M, main 83M, mini 38M). 라이브 인덱스는 `config/agents/<id>/agent/openclaw-agent.sqlite`에서 정상 동작 확인 — **롤백 안 할 게 확실해지면 삭제 가능. 디스크 90% 상황에서 가장 싼 1.4G.**
-- [ ] **orphan transcript 103건** — `~/.openclaw/agents/main/sessions`에 sessions.json이 더 이상 참조 안 하는 `.jsonl` 103개. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
+- [ ] **orphan transcript 103건 — 인덱스 행은 정리됐고 파일은 그대로.** 2026-08-04 `memory index`가 *삭제된 트랜스크립트를 가리키던 인덱스 행*을 걷어냈다(glg 3250→2816, gpt 728→545, bbot 1299→889 chunk, 6봇 전부 `Indexed: n/n` + `Dirty: no`). 하지만 `sessions.json`이 참조 안 하는 **`.jsonl` 파일 자체는 디스크에 남아있다** — 이 항목은 그 파일 쪽이다. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
 
 ---
 
@@ -198,7 +199,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 6.1 hop 완료 (2026-06-04, headless 5봇 GREEN, [ROADMAP](ROADMAP.md) "2026.6.1"). 운영은 안정이나 다음 자리 측정:
 
 - [ ] **6.1 텔레그램 실사용 soak** — headless GREEN 확인됐으나 실 텔레그램 turn 관찰 필요. 특히 **codex lane glg(가족 봇)** — 6.1 codex auth canonical migration 후 실대화에서 401/empty 없는지. claude lane(main/bbot/mini)도 5-7d soak. codex thread compaction(긴 turn 후 `thread not found`) 회귀 여부도 같이.
-- [ ] **6.1 state SQLite 통합 안정성** — plugin/task/telegram state가 shared SQLite로 이관됨(legacy `.migrated` archive). 며칠 후 `.migrated` 잔재 정리 가능 여부 + sqlite 통합 후 telegram dedupe/offset 정상 동작 확인.
+- [ ] **6.1 state SQLite 통합 안정성** — plugin/task/telegram state가 shared SQLite로 이관됨. sqlite 통합 후 telegram dedupe/offset 정상 동작 확인. (`.migrated` 잔재 정리는 2026-08-04 완료 — `~/openclaw` 전체에 0건.)
 - [ ] **subagent bootstrap context 축소 (#85283)** — active-memory recall sub-agent (5.4-mini lane) `status=empty` 비율 변화. 14d soak baseline 비교
 - [ ] **`@anthropic-ai/claude-code` 버전 추적** — 5.27 image 재빌드 후 컨테이너 `claude` 2.1.156 (5.22 시점 2.1.150). `--help`에 `claude-opus-4-8` 명시 → opus 4.8 지원. Dockerfile pin 여부 검토
 - [ ] **OAuth refresh 자동 검증** — Anthropic `expiresAt` 8h마다 새로 받는지 24h 관찰
