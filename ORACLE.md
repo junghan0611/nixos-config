@@ -142,7 +142,9 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 > **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 Codex(`openai/gpt-5.4`)라 claude login은 main/bbot/mini 3봇만.
 
-> **gemini 무응답 = OAuth 스코프-403, 재로그인으로도 안 풀림 → DOWN 유지 (2026-06-13)**: gemini 봇이 조용하면 `google-gemini-cli` OAuth 문제다. `models status --probe`에서 `Google Generative AI API error (403): insufficient authentication scopes [PERMISSION_DENIED]`로 뜬다(프로필은 살아있는데 발급 스코프가 Generative AI API를 못 덮음). **재로그인 명령(올바른 인자 순서 — `--agent`는 `auth`와 `login` *사이*, GLG 확정)**:
+> **⚠️ 2026-08-06 실측 — 현재 gemini DOWN의 근인은 403이 아니라 `exec: gemini: not found`다.** prewarm 턴이 `GatewayClientRequestError: FailoverError: gemini: 1: exec: gemini: not found`로 떨어진다. 즉 OAuth 이전에 **CLI 바이너리 자체가 컨테이너에 없다** — 2026-07-01(6.11) node-gyp hang 대응으로 Dockerfile `npm install -g`에서 `@google/gemini-cli`를 뺀 것의 직접적 귀결이다(아래 "이미지 재빌드 node-gyp hang" 항목과 같은 사건). 결론(DOWN 유지)은 그대로지만 **사유는 바뀌었다**: 아래 403 서사는 *바이너리가 있던 시절*의 진단이다. agy 이관으로 부활시킬 땐 Dockerfile 복원이 첫 단계이고, 403이 여전한지는 그 다음에야 확인 가능하다.
+>
+> **gemini 무응답 = OAuth 스코프-403, 재로그인으로도 안 풀림 → DOWN 유지 (2026-06-13, 아래는 바이너리가 있던 시절의 진단)**: gemini 봇이 조용하면 `google-gemini-cli` OAuth 문제다. `models status --probe`에서 `Google Generative AI API error (403): insufficient authentication scopes [PERMISSION_DENIED]`로 뜬다(프로필은 살아있는데 발급 스코프가 Generative AI API를 못 덮음). **재로그인 명령(올바른 인자 순서 — `--agent`는 `auth`와 `login` *사이*, GLG 확정)**:
 > ```bash
 > docker exec -it openclaw-gateway node openclaw.mjs models auth --agent main login \
 >   --provider google-gemini-cli --force

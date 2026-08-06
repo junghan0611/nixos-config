@@ -1,24 +1,37 @@
 ---
-# Authelia 유저 DB — map.junghanacs.com 접근 가족 계정
+# Authelia 유저 DB — map(가족 데이터) + claw(OpenClaw Control UI) 접근 계정
 # cp users.yml.template users.yml  후 password 해시 채우기
 #
-# 해시 생성 (컨테이너로 1회):
-#   docker run --rm authelia/authelia:latest \
-#     authelia crypto hash generate argon2 --password 'YOUR_PASSWORD'
+# 해시 생성 — 비밀번호를 argv 에 두지 마라 (shell history / ps 노출).
+# 인터랙티브 프롬프트로만 입력한다:
+#   docker run --rm -it authelia/authelia:4.39.20 \
+#     authelia crypto hash generate argon2
+# 비밀번호를 직접 정하지 않아도 되면 authelia 가 생성하게 해도 된다:
+#   docker run --rm authelia/authelia:4.39.20 \
+#     authelia crypto hash generate argon2 --random --random.length 28
+#   → 출력된 Random Password 를 패스워드 매니저에, Digest 를 아래 password 에.
 #
-# 계정은 최소로 — 아내 + GLG 둘이면 충분. 필요 시 추가.
+# ⚠️ 그룹이 곧 권한 경계다 (2026-08-06 확립)
+#   family   → map.junghanacs.com (가족 부동산 뷰어)
+#   operator → claw.junghanacs.com (OpenClaw Control UI = 사실상 원격 셸)
+# 두 그룹을 섞지 마라. claw 규칙은 `subject: [['group:operator']]` + deny catch-all 이라
+# family 계정으로는 claw 에 못 들어간다 — 그게 의도다.
+# 계정은 최소로.
 
 users:
-  glg:
-    displayname: "GLG"
+  # 가족 공용 계정 (map 전용)
+  family:
+    displayname: "Family"
     password: "GENERATE_HASH_WITH_COMMAND_ABOVE"
-    email: glg@example.com
+    email: family@example.com
     groups:
       - family
 
-  wife:
-    displayname: "Wife"
+  # 운영자 계정 (claw 전용 — Control UI)
+  glg:
+    disabled: false
+    displayname: "GLG"
     password: "GENERATE_HASH_WITH_COMMAND_ABOVE"
-    email: wife@example.com
+    email: ""
     groups:
-      - family
+      - operator

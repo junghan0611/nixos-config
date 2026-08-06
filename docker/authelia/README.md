@@ -84,8 +84,48 @@ docker exec caddy grep -A2 'map.junghanacs.com' /etc/caddy/Caddyfile   # 컨테�
 Caddyfile map 블록을 원복(`reverse_proxy butler-viewer:8765` 한 줄)하고 `docker restart caddy`.
 authelia 컨테이너는 `docker compose down` 으로 내려도 다른 서비스 무관.
 
-## 확장 (나중에, 지금 불필요)
+## 확장 — 실제로 한 번 했다: claw.junghanacs.com (2026-08-06)
 
-다른 `*.junghanacs.com`(agenda/ha 등)도 한 로그인으로 묶고 싶어지면 **B안**:
-`auth.junghanacs.com` A레코드 + 쿠키 domain을 `junghanacs.com`으로 올리고
-각 서브도메인 블록에 `import authelia` 스니펫 추가. 그 전까진 map 하나만.
+두 번째 가드 도메인을 붙이는 표준 절차. **A안 반복**(쿠키 도메인마다 별도 엔트리, 새 DNS 불필요)이며
+map과는 **별도 로그인**이 된다(SSO 아님 — 그건 아래 B안).
+
+1. `session.cookies` 에 엔트리 추가 — `domain` / `authelia_url: https://<d>/authelia` / `default_redirection_url`.
+2. `access_control.rules` 에 **3단**으로 추가. 순서가 곧 정책이다:
+   `(a) resources ^/authelia(...)$ → bypass` → `(b) subject [['group:<g>']] → one_factor` → `(c) → deny`.
+   **(c) catch-all 을 빠뜨리면 안 된다** — `default_policy: one_factor` 이므로, (b)에 불일치한 다른 계정이
+   default 로 떨어져 **결국 통과한다**. map 블록에 (c)가 없는 이유는 map이 `family` 전원 허용이기 때문.
+3. `users.yml` 에 그 도메인 전용 그룹의 계정 추가 (그룹을 섞지 말 것).
+4. **적용 전 검증** — 라이브에 넣기 전에 stage 파일로 판정한다. mount 경로는 `/config/...` 그대로여야 한다
+   (`authentication_backend.file.path` 가 `/config/users.yml` 이라 다른 경로면 users DB 를 못 찾는다):
+
+   ```bash
+   STAGE=~/openclaw/backups/<name>          # repo 안에 두지 마라 — .gitignore 는 정확한 파일명 2개뿐이라
+                                            # configuration.yml.bak-* / users.yml.bak-* 는 추적된다(해시 유출)
+   MOUNTS="-v $STAGE/configuration.yml:/config/configuration.yml:ro
+           -v $STAGE/users.yml:/config/users.yml:ro
+           -v /home/junghan/docker-data/authelia:/data:ro"
+   docker run --rm $MOUNTS authelia/authelia:4.39.20 \
+     authelia config validate --config /config/configuration.yml
+   # 4.39 canonical 은 `config validate` (legacy `validate-config` 도 아직 동작)
+
+   # ACL 판정 — 통과해야 할 것과 막혀야 할 것을 둘 다 본다
+   docker run --rm $MOUNTS authelia/authelia:4.39.20 authelia access-control check-policy \
+     --config /config/configuration.yml --url https://claw.junghanacs.com/ --username glg --groups operator
+   #   → one_factor
+   docker run --rm $MOUNTS authelia/authelia:4.39.20 authelia access-control check-policy \
+     --config /config/configuration.yml --url https://claw.junghanacs.com/ --username family --groups family
+   #   → deny        ← 이게 안 나오면 catch-all 이 빠진 것
+   ```
+
+5. 라이브로 이동 후 **mode 600** 고정(`configuration.yml` 에는 session/storage/JWT secret 이 들어있다).
+   컨테이너는 root 로 돌므로 600 이어도 읽는다. 그 다음 `docker restart authelia`.
+6. **map 회귀 확인** — `curl -o /dev/null -w '%{http_code}' https://map.junghanacs.com/` 가 302,
+   포털 `/authelia/` 가 200. 그리고 Caddyfile 을 건드렸으면 8-세트 검수
+   (`docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수").
+
+## 확장 — B안 (SSO, 아직 안 함)
+
+여러 `*.junghanacs.com`을 **한 로그인**으로 묶고 싶어지면: `auth.junghanacs.com` A레코드 + 쿠키
+domain 을 `junghanacs.com` 으로 올리고 각 서브도메인에 forward_auth 블록 추가.
+대가: 기존 쿠키가 전부 무효화되어 **가족 전원 재로그인**이 필요하고, map 의 `authelia_url` 도 바꿔야 한다.
+도메인 두세 개까지는 A안 반복이 싸다.

@@ -61,6 +61,8 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 - **`Dirty: no`는 스냅샷이지 불변식이 아니다.** 턴을 돌면 새 세션 파일이 생겨 다시 dirty가 된다 — 정렬 직후 "6봇 전부 Dirty:no"라고 적었으나 그 뒤 턴들로 main/mini/bbot이 곧 dirty로 돌아갔다(16:23 재인덱싱으로 다시 정합). **의미 있는 불변식은 dirty 플래그가 아니라 ①`Indexed n/n` 정합 ②실검색 성공**이다.
 - 롤백: `~/openclaw/config/openclaw.json.bak-model-align-20260804T153304`
 
+**2026-08-06 후속 정렬 — main DM이 또 어긋나 있었다.** 8/4 정렬 뒤에도 main 텔레그램 DM(`agent:main:telegram:default:direct:123861330`)이 **`claude-opus-4-8`로 돌고 있었다**(config primary는 opus-5). 6봇 전수 확인 결과 어긋난 건 이 하나. `/model anthropic/claude-opus-5` + `--timeout 540`으로 정렬했고 **이번엔 세션이 안 굴렀다** — `sessionId` `323b9a63…` 그대로 유지, 라이브 맥락 보존. 같은 provider 내 교체 + 넉넉한 timeout이면 살아남는다는 게 실측으로 재확인됐다(8/4엔 120s로 죽었다). **교훈: "정렬했다"는 한 번 찍고 끝나는 게 아니다 — DM pin은 다시 어긋난다. 업그레이드·정렬 후 `sessions list` 전수 대조를 습관으로.**
+
 - [ ] **main DM 맥락 회수 판단.** 위 롤로 라이브 스레드가 빈 맥락에서 시작한다. 옛 트랜스크립트(`agents/main/sessions/d792e9cd-….jsonl`)가 살아있으니 필요하면 `sessions compact`/수동 요약으로 회수 가능 — GLG가 실제로 아쉬운지 먼저 확인할 것.
 - [ ] **opus-5 soak (main).** 승격 당일 격리 probe + 라이브 정체성 응답만 확인했다. 볼 것: 실제 긴 턴에서의 품질·지연, Max 20x 쿼터 소진 속도가 opus-4-8 대비 달라지는지. 처지면 per-agent 카탈로그에 남긴 `anthropic/claude-opus-4-8`로 `/model` 복귀.
 - [ ] **fable-5 실사용 확인 (bbot).** 라이브 DM이 몇 주간 gpt-5.5로 돌던 걸 오늘 fable-5로 되돌렸다 — **봇 스스로 "그 사이 기억층에 빈 구간이 있을 수 있다"고 보고**했다. 다음 실대화에서 맥락 연속성 확인.
@@ -74,6 +76,8 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
 
 **2026-08-04: 7.1 → 7.1-2 correction release 적용.** 다운타임 16초, 모델 드리프트 0, doctor Errors 0. ⚠️ **`--version`으로는 7.1과 7.1-2를 구분할 수 없다** — correction release는 버전 문자열을 안 올려 둘 다 `OpenClaw 2026.7.1`로 보고한다. 구분은 이미지 digest로만(`7.1`=`6a31d44b…` / `-1`=`2f5ce884…` / `-2`=`8789721d…`). 소스 실diff 결과 7.1 대비 바뀐 파일은 **7개뿐**(codex 5 + memory-core 2) — 메모리 **엔진은 무변경**, `memory-core/doctor-contract-api.ts`의 legacy sidecar 임포트 경로만 바뀌었다.
+
+**2026-08-06 재확인 — 라이브는 `-2`가 맞다.** Control UI가 `업데이트 사용 가능: v2026.7.1-2 (실행 중 v2026.7.1)`를 띄우지만 **상시 오탐**이다(UI가 릴리즈 태그와 package.json version 문자열을 비교 — 위 "버전 문자열을 안 올린다"의 직접적 귀결). `build --pull` 재실행이 전 레이어 CACHED + 이미지 ID 불변으로 끝났고, diff_ids 대조로 확정: 로컬 base 26개가 `-2`와 완전 일치, 7.1과는 index 5부터 갈린다. **이 알림은 앞으로도 계속 뜬다 — 무시한다.** 오진 경위와 진단 명령은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "correction release(`-N`)는 버전 문자열을 안 올린다".
 
 - [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **terra**다(5.5는 2026-08-04 전면 제거 — GLG: 아예 안 씀). **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
 - [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
@@ -155,12 +159,32 @@ Forge 가동 검증 완료분(인스턴스 + Caddy 30초 인증서, work alskdjf
 
 `map.junghanacs.com`(butler-viewer, 가족 부동산 데이터) **앞단에만** authelia forward-auth 인증창. butler-viewer 내부 수정 0, 다른 서브도메인 규칙 0. 설계 = **A안(서브패스 포털 `map.junghanacs.com/authelia`, 쿠키 domain=map, 새 DNS 불필요)**. 봇 push는 내부 proxy 네트워크 직결이라 Caddy 안 거침 → 가드 영향 0.
 
-- **라이브 (authelia v4.39.20, 단일 공용 계정 `family`)**. 검증(curl): 미인증 `/`·`/v/*`·`/api/surfaces/*` → 302 authelia 리다이렉트(share_token만으론 데이터 못 뚫음), 포털 `/authelia/` 200, 봇 내부 `butler-viewer:8765/` → 200 무영향.
+- **라이브 (authelia v4.39.20)**. 검증(curl): 미인증 `/`·`/v/*`·`/api/surfaces/*` → 302 authelia 리다이렉트(share_token만으론 데이터 못 뚫음), 포털 `/authelia/` 200, 봇 내부 `butler-viewer:8765/` → 200 무영향.
 - **파일**: `docker/authelia/{docker-compose.yml, configuration.yml.template, users.yml.template, .gitignore, README.md}` (공개 추적) + `configuration.yml`·`users.yml` (실파일, **gitignore — 시크릿/해시 미커밋**). Caddyfile map 블록 = forward_auth 버전으로 교체됨.
 - [ ] **아내가 실브라우저로 로그인 1회 확인** — curl로 리다이렉트/포털/봇경로는 검증했으나 실제 로그인 submit+쿠키+뷰어 도달은 사람 1회 필요. 계정 `family` / 비번은 GLG가 아내에게 전달.
-- [ ] **커밋 대기 (GLG)** — 신규 `docker/authelia/*`(템플릿/compose/README/.gitignore) + Caddyfile 수정. 실파일 2개는 gitignore라 안 올라감.
-- [ ] (나중, 불필요) 다른 서브도메인 SSO 필요 시 B안(`auth.junghanacs.com` + 쿠키 domain=junghanacs.com)으로 승격 — README "확장" 참조.
+- 2026-08-06: claw 추가로 계정이 **2개**가 됐다(`family`=map / `glg`=claw operator). 그룹이 곧 경계 — 아래 claw 항목.
 - 롤백: Caddyfile map 블록 원복 + `docker restart caddy`, authelia는 `docker compose down`.
+
+---
+
+## claw.junghanacs.com — OpenClaw Control UI 공개면 (✅ 배포 완료 2026-08-06)
+
+`claw.junghanacs.com`에 OpenClaw Control UI. **인증 통합은 안 했다** — 자물쇠 3겹을 그대로 쌓았다:
+`Internet → Caddy HTTPS → Authelia forward_auth(operator만) → OpenClaw gateway token → HTTPS device pairing → Control UI`.
+`gateway.auth.mode`는 **`token` 유지**(trusted-proxy 전환 금지), `dangerouslyDisableDeviceAuth` 금지.
+설계 검토는 gpt 봇(codex)과 4라운드 cross-review로 굳혔다 — 함정 전문은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) claw 항목.
+
+- **왜 3겹을 다 유지하나**: `openclaw-gateway`가 `proxy` 도커 네트에 붙어 있어 같은 네트 컨테이너가 Authelia를 건너뛰고 18789에 직결한다(실측: caddy→gateway `/` = **200 무인증 HTML**, `/control-ui-config.json` = 401). **진짜 경계는 token+pairing이지 forward_auth가 아니다.** 게다가 이 게이트웨이는 `security audit` 기준 전 봇 `exec security=full` · `sandbox=off` · `fs.workspaceOnly=false` — Control UI admin 세션은 사실상 **oracle 원격 셸**이다.
+- **Authelia**: 계정 `glg`(groups: `operator`) 신설, claw 규칙 3단(bypass → operator one_factor → **deny catch-all**). 적용 전 `check-policy` 4건 판정 — operator=one_factor / **family=deny** / 포털=bypass / map 회귀=one_factor.
+- **OpenClaw config 2건**(restart 반영): `controlUi.allowedOrigins`에 `https://claw.junghanacs.com` 추가 + 화석 `https://openclaw.junghanacs.com`(DNS 없음) 제거, `auth.rateLimit {10, 60000, 300000}` 신설(`security audit` WARN `auth_no_rate_limit` 해소).
+- **Caddy**: claw 블록 + HSTS `max-age=300`만(보안 헤더는 게이트웨이가 이미 실음 — 중복 주입 금지). 8-세트 검수 회귀 0.
+- **브라우저 실연결까지 확인**: `token_missing` → 토큰 입력 → pairing 승인 → RPC 정상 왕복(`cron.status`/`sessions.usage`/`models.authStatus` ✓). device는 GLG 모바일, `operator.admin` 포함 5스코프.
+- [ ] **🔴 gateway token 회전** — 배포 중 토큰 평문이 에이전트 세션 트랜스크립트에 남았다(GLG 요청). 회전 후 브라우저 Settings에 새 토큰 재입력 필요.
+- [ ] **HSTS `max-age` 상향 판단** — 24h 관찰 후 `31536000`으로 올릴지. **`includeSubDomains`·preload는 금지**(junghanacs.com 하위에 http-only가 생기면 통째로 잠긴다).
+- [ ] **family 계정 브라우저 negative test** — 정책 판정으로는 `deny` 증명됐으나 실제 로그인 화면에서의 거부 UX는 미확인.
+- [ ] **`~/openclaw/backups/claw-20260806T191048/` 정리** — `LOGIN.txt`·`operator-password.txt`(둘 다 600)에 평문 자격증명. 패스워드 매니저로 옮긴 뒤 삭제.
+- [ ] (P2) `gateway.trustedProxies`가 `172.18.0.0/16`(proxy 네트 전체)이다. token 모드에선 인증 우회가 아니라 client IP 판정용이지만, 같은 네트 컨테이너가 X-Forwarded-For를 위조해 per-IP rateLimit을 오염시킬 수 있다. 좁히려면 caddy 실IP인데 recreate마다 바뀌므로 compose static IP 고정이 정공법.
+- 롤백: Caddyfile claw 블록 제거 + `docker restart caddy` / authelia cookies·rules 원복 + `docker restart authelia` / openclaw config 원복 + restart. 백업 `~/openclaw/backups/claw-20260806T191048/`(700).
 
 ---
 

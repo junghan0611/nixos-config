@@ -80,6 +80,42 @@ ax.junghanacs.com {
     }
 }
 
+# OpenClaw Control UI — claw.junghanacs.com (2026-08-06)
+# 자물쇠 2겹: ① Authelia forward_auth(operator 그룹만) ② OpenClaw gateway token
+#             + HTTPS browser device pairing. gateway.auth.mode 는 token 유지 —
+#             trusted-proxy 로 바꾸면 안 된다: openclaw-gateway 가 proxy 도커 네트워크에
+#             붙어 있어 같은 네트의 다른 컨테이너가 18789 로 직결되고, 그 경로가 곧
+#             인증 우회가 된다. 지금은 그 우회로도 token 이 막는다.
+# 보안 헤더는 게이트웨이가 자기 응답에 이미 싣는다(CSP/X-Frame-Options/nosniff/…).
+# 여기서 중복 주입 금지 — Caddy 가 얹는 건 HSTS 하나뿐(TLS 종단은 한 곳).
+claw.junghanacs.com {
+    # authelia 포털 (bypass — 로그인창은 미인증 상태에서 열려야 함)
+    handle /authelia/* {
+        reverse_proxy authelia:9091
+    }
+    # 나머지 전부: 인증 게이트 통과해야 Control UI 도달
+    handle {
+        forward_auth authelia:9091 {
+            uri /authelia/api/authz/forward-auth
+            copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+        }
+        reverse_proxy openclaw-gateway:18789
+    }
+
+    # HSTS — 짧게 시작(24h 관찰 후 상향 판단).
+    # includeSubDomains / preload 금지: junghanacs.com 하위에 http-only 가 하나라도
+    # 생기면 통째로 잠기고 되돌리기 어렵다.
+    header Strict-Transport-Security "max-age=300"
+
+    # forward_auth 는 WS upgrade 시점에 1회만 평가된다 → 세션 만료 후 재연결은
+    # 로그인 HTML 에서 101 업그레이드를 완성할 수 없어 조용히 실패한다.
+    # 증상: UI 에 "disconnected" 만 뜨고 로그인창이 안 나옴. 처방: F5(top-level navigation).
+    log {
+        output stderr
+        format json
+    }
+}
+
 # # Mattermost 채팅 서버 (비활성)
 # chat.junghanacs.com {
 #     reverse_proxy mattermost:8065

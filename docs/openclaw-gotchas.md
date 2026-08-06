@@ -104,17 +104,36 @@ return Intl.DateTimeFormat().resolvedOptions().timeZone?.trim() || "UTC";
 
 조치: Dockerfile `npm install -g` 줄에서 **3개 제거** — `@earendil-works/pi-coding-agent`+`@zed-industries/codex-acp`(ACP 폐기로 unused, config 미참조) + `@google/gemini-cli`(gemini 403 DOWN·agy 대기라 "안 쫓음" + hang 범인). 남긴 건 `@anthropic-ai/claude-code`만(claude-cli runtime, native 0). 결과 빌드 몇 초. gemini 부활(agy) 시 복원 — 그땐 `libsecret-dev` 등 build deps 필요할 수 있음. 양쪽 Dockerfile(`~/openclaw/` + `docker/openclaw/`) 동기 유지.
 
-### caddy 변경 = 7-세트 검수 필수 + agenda 000 ≠ caddy (geworfen은 emacs 데몬 의존) (2026-07-01, ax 추가 2026-07-15)
+### correction release(`-N`)는 버전 문자열을 안 올린다 — Control UI "업데이트 사용 가능"은 상시 오탐 (2026-08-06)
+
+Control UI 상단에 **`업데이트 사용 가능: v2026.7.1-2 (실행 중 v2026.7.1)`** 이 뜬다. 이건 뒤처진 게 아니라 **영구 오탐**이다: correction release는 upstream 태그만 `-2`이고 이미지 안 `/app/package.json`의 `version`은 그대로 `2026.7.1`이다. UI는 릴리즈 태그와 자기 version 문자열을 비교하므로, `-2`를 이미 돌리고 있어도 계속 "업데이트 있음"으로 보인다.
+
+**이 알림을 근거로 업그레이드를 판단하지 마라.** 판단은 digest로만 한다:
+
+```bash
+# 원격 태그 digest (pull 없음)
+for t in 2026.7.1 2026.7.1-2; do
+  printf '%-12s ' "$t"; docker buildx imagetools inspect ghcr.io/openclaw/openclaw:$t | sed -n 's/^Digest:[[:space:]]*//p' | head -1
+done
+# 라이브 이미지의 base 확인 — 로컬 diff_ids 앞부분이 어느 태그와 일치하는가
+#   원격: docker buildx imagetools inspect <ref> --format '{{json .Image}}' → linux/arm64.rootfs.diff_ids
+#   로컬: docker inspect openclaw-custom:latest --format '{{json .RootFS.Layers}}'
+```
+
+**2026-08-06 실제 오진 사례**: Dockerfile FROM 커밋 시각(08-04 16:36)이 이미지 빌드 시각(08-04 15:00)보다 늦은 것을 보고 "FROM만 바뀌고 rebuild가 빠졌다 = 라이브는 7.1"이라고 진단했다. **틀렸다.** 커밋이 사후에 이뤄졌을 뿐 빌드는 이미 `-2` base를 썼다. `build --pull` 재실행이 전 레이어 CACHED로 끝나고 이미지 ID가 안 바뀐 것이 첫 신호였고, diff_ids 대조로 확정됐다(로컬 base 26개 = `-2`, 7.1과는 index 5부터 갈림). **타임스탬프 두 개로 인과를 세우지 마라 — 레이어를 봐라.** NEXT.md의 7.1 항목에 digest 3개(`7.1`/`-1`/`-2`)가 이미 적혀 있었다는 점도 함께 배울 것: 문서를 먼저 읽었으면 오진 자체가 없었다.
+
+### caddy 변경 = 8-세트 검수 필수 + agenda 000 ≠ caddy (geworfen은 emacs 데몬 의존) (2026-07-01, ax 추가 2026-07-15, claw 추가 2026-08-06)
 
 **규칙 (GLG 지시)**: `docker/caddy/Caddyfile`을 건드리면(특히 `docker restart caddy`) **caddy-fronted 전체를 세트로 검수**한다. 하나만 보고 넘기지 말 것. 현재 세트:
 
 ```bash
 for d in comments.junghanacs.com analytics.junghanacs.com agenda.junghanacs.com \
-         ha.junghanacs.com forge.junghanacs.com map.junghanacs.com ax.junghanacs.com; do
+         ha.junghanacs.com forge.junghanacs.com map.junghanacs.com ax.junghanacs.com \
+         claw.junghanacs.com; do
   printf '%-28s → %s\n' "$d" "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 https://$d/)"
 done
 ```
-정상 기대치: analytics/ha/forge/ax=200, comments=404(remark42 루트 정상), map=302(authelia 게이트), agenda=200.
+정상 기대치: analytics/ha/forge/ax=200, comments=404(remark42 루트 정상), map·claw=302(authelia 게이트), agenda=200.
 
 **ax.junghanacs.com은 이 호스트의 첫 static vhost다** (2026-07-15 추가, 관리 대상). 기존 6개는 전부 `reverse_proxy`(백엔드 컨테이너)지만 ax는 백엔드가 없다 — caddy가 `file_server`로 `/srv/ax`(= 호스트 `/home/junghan/docker-data/ax` ro 마운트, caddy compose 볼륨)를 직접 서빙한다. geworfen 패턴(컨테이너)을 쓰지 않은 이유: geworfen은 실행 바이너리라 컨테이너가 필요했고 ax는 정적 파일뿐이다.
 
@@ -122,6 +141,14 @@ done
 - `.md`는 `header @md Content-Type "text/plain; charset=utf-8"`로 브라우저 표시 강제(기본 `text/markdown`은 다운로드됨). `browse` 없음(리스팅 off), authelia 없음(공개면).
 - **볼륨을 새로 붙이거나 뺄 땐 `docker restart caddy`로 안 먹는다** — compose 볼륨 변경은 `up -d --force-recreate` 필요(이게 ax 추가 때 6개 blip의 원인). Caddyfile 텍스트만 고치는 평시 변경은 여전히 `docker restart caddy`.
 - **향후**: umami + remark42를 ax에 붙일 예정. 단 스니펫은 **정본(apply/ax 소스)에 넣어 publish**로 흘린다 — **caddy에서 주입 금지**(정본과 라이브가 갈라짐). ax 관련 요청은 이 오퍼레이터 레인이 대응한다.
+
+**claw.junghanacs.com은 유일하게 "인증 뒤에 원격 셸이 있는" vhost다** (2026-08-06 추가). OpenClaw Control UI를 공개면에 올린 자리 — 자물쇠 3겹(Authelia forward_auth → gateway token → HTTPS device pairing)을 **전부 유지**해야 한다. 세 가지가 이 vhost의 함정이다:
+
+- **바깥 자물쇠는 컨테이너 평면에서 우회된다.** `openclaw-gateway`가 `proxy` 도커 네트워크에 붙어 있어(172.18.0.10) 같은 네트의 다른 컨테이너(umami/remark42/forge/ha/butler-viewer/geworfen/authelia)는 Authelia를 건너뛰고 18789에 직결한다. 실측: caddy 컨테이너에서 `http://openclaw-gateway:18789/` → **200(Control UI HTML 무인증 서빙)**, `/control-ui-config.json` → 401. 즉 **진짜 경계는 token + device pairing이지 forward_auth가 아니다.** → `gateway.auth.mode`를 **`trusted-proxy`로 바꾸지 마라**. 바꾸는 순간 저 우회 경로가 곧 인증 우회가 된다. `dangerouslyDisableDeviceAuth`도 마찬가지.
+- **Authelia ACL은 first-match이고 no-match는 `default_policy`로 떨어진다.** `default_policy: one_factor`이므로 claw에 operator 규칙만 추가하면 `family` 계정이 그 규칙에 불일치한 뒤 default로 떨어져 **결국 통과한다.** 그래서 claw 규칙은 반드시 3단이다: (a) 포털 bypass → (b) `subject: [['group:operator']]` one_factor → (c) **deny catch-all**. 적용 전 검증은 `authelia access-control check-policy --url ... --username ... --groups ...`로 operator=one_factor / family=deny를 확인하고, `authelia config validate`(4.39 canonical; legacy `validate-config`도 아직 동작)로 파싱을 본다. **mount 경로는 `/config/configuration.yml`·`/config/users.yml` 그대로여야 한다** — `authentication_backend.file.path`가 `/config/users.yml`이라 다른 경로에 stage하면 users DB를 못 찾는다.
+- **forward_auth는 WS upgrade 시점에 1회만 평가된다.** 그래서 (a) 세션이 만료돼도 이미 열린 WebSocket은 안 끊기고, (b) **만료 후 재연결은 조용히 실패한다** — 브라우저는 로그인 HTML 응답으로 101 업그레이드를 완성할 수 없다. 증상은 UI의 "연결할 수 없음"뿐이고 로그인창이 안 뜬다. 처방: **F5(top-level navigation)** 로 로그인 화면을 받아라. Authelia 세션은 inactivity 2h / expiration 8h / remember_me 1month.
+
+보안 헤더는 **게이트웨이가 자기 응답에 이미 싣는다**(CSP / X-Frame-Options: DENY / nosniff / Referrer-Policy / Permissions-Policy — 실측). Caddy에서 중복 주입하지 마라. Caddy가 얹는 건 **HSTS 하나뿐**(TLS 종단은 한 곳). `includeSubDomains`·preload는 금지 — junghanacs.com 하위에 http-only가 하나라도 생기면 통째로 잠기고 되돌리기 어렵다.
 
 **함정 — agenda 000은 caddy 탓처럼 보이지만 아니다**: `agenda.junghanacs.com`(geworfen:3333)은 **호스트 emacs `server` 데몬**(`agent-emacs.service`, socket `/run/user/1000/emacs/server`, ro 마운트)에 의존한다. 그 데몬이 hang하면 geworfen HTTP 핸들러가 블록 → agenda **HTTP 000**(caddy는 502 아니라 dial 타임아웃). caddy를 방금 재시작했어도 **인과 아님** — 진단으로 갈라라:
 - `emacsclient -s server --eval '(+ 1 1)'` (호스트) → 타임아웃(exit 124)이면 **데몬 hang**이 근인, caddy 무관.

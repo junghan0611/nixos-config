@@ -31,6 +31,15 @@ session:
       expiration: '8 hours'
       remember_me: '1 month'
 
+    # claw.junghanacs.com — OpenClaw Control UI 바깥 자물쇠 (2026-08-06)
+    # 쿠키 도메인 분리 = map 과 별도 로그인(SSO 아님). 의도된 설계.
+    - domain: 'claw.junghanacs.com'
+      authelia_url: 'https://claw.junghanacs.com/authelia'
+      default_redirection_url: 'https://claw.junghanacs.com'
+      inactivity: '2 hours'
+      expiration: '8 hours'
+      remember_me: '1 month'
+
 storage:
   encryption_key: 'GENERATE: head -c32 /dev/urandom | base64'
   local:
@@ -53,3 +62,20 @@ access_control:
     # 나머지 map.junghanacs.com 전부 인증 필요 (default 와 같지만 명시)
     - domain: 'map.junghanacs.com'
       policy: one_factor
+
+    # ── claw.junghanacs.com — 순서가 곧 정책이다 (first-match, no-match→default) ──
+    # (a) 포털 bypass → (b) operator 만 통과 → (c) deny catch-all.
+    # (c)가 없으면 family 가 (b)에 불일치한 뒤 default_policy(one_factor)로
+    # 떨어져 결국 통과한다. 이 세 규칙의 순서를 바꾸지 말 것.
+    # 적용 전 검증: authelia access-control check-policy --url ... --username ... --groups ...
+    - domain: 'claw.junghanacs.com'
+      resources: ['^/authelia([/?].*)?$']
+      policy: bypass
+
+    - domain: 'claw.junghanacs.com'
+      subject:
+        - ['group:operator']
+      policy: one_factor
+
+    - domain: 'claw.junghanacs.com'
+      policy: deny

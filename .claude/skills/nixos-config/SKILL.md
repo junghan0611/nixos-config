@@ -1,6 +1,6 @@
 ---
 name: nixos-config
-description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드(Dockerfile FROM 한 줄 + doctor read-only), caddy 변경 시 7-세트 검수, 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리'."
+description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드(Dockerfile FROM 한 줄 + doctor read-only), caddy 변경 시 8-세트 검수, 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리'."
 user_invocable: true
 ---
 
@@ -75,9 +75,16 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
 
 ## 5. 반사신경 — 다시 당하지 말 것
 
-- **caddy 변경 = 7-세트 검수 필수**: `docker/caddy/Caddyfile` 건드리면(특히 `docker restart
-  caddy`) caddy-fronted 전부를 세트로 확인 — comments/analytics/agenda/ha/forge/map/ax. 하나만
-  보고 넘기지 마라. (`docs/openclaw-gotchas.md` "caddy 변경 = 7-세트 검수" 참조)
+- **caddy 변경 = 8-세트 검수 필수**: `docker/caddy/Caddyfile` 건드리면(특히 `docker restart
+  caddy`) caddy-fronted 전부를 세트로 확인 — comments/analytics/agenda/ha/forge/map/ax/claw.
+  하나만 보고 넘기지 마라. (`docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수" 참조)
+- **claw.junghanacs.com = 인증 뒤에 원격 셸이 있는 유일한 vhost**: OpenClaw Control UI 공개면.
+  자물쇠 3겹(Authelia forward_auth → gateway token → device pairing)을 전부 유지한다.
+  **`gateway.auth.mode`를 `trusted-proxy`로 바꾸지 마라** — gateway가 `proxy` 도커 네트에 붙어
+  있어 같은 네트 컨테이너가 18789로 직결(Authelia 우회)하므로, 그 순간 우회가 곧 인증 우회가
+  된다. Authelia claw 규칙은 **bypass → operator one_factor → deny catch-all 3단**(default가
+  one_factor라 catch-all 없으면 family가 통과). WS 재연결이 조용히 죽으면 F5.
+  (`docs/openclaw-gotchas.md` claw 항목)
 - **ax.junghanacs.com = 첫 static vhost(관리 대상)**: 기존 6개는 `reverse_proxy`지만 ax는
   백엔드 없이 caddy `file_server`가 `/srv/ax`(호스트 `docker-data/ax` ro 마운트)를 직접 서빙.
   web root는 junghan0611 repo `apply/ax make publish`가 채운다(재시작 불요, 즉시 라이브·leak
