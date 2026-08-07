@@ -83,6 +83,17 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 - **gpt**: Codex OAuth ($100 plan) — `openai/gpt-5.6-sol`
 - **gemini**: 네이티브 `google-gemini-cli` provider OAuth (Pro 쿼터, **API 아님** — `google/` api-key와 별개 provider). 2026-06-10 ACP→네이티브 전환
 
+> ⚠️ **`models auth list`의 `expires`를 자격증명 만료로 읽지 말 것 (2026-08-07 오독 정정)**. 거기 찍히는 건 **액세스 토큰**이고 자동 회전한다. 실제 기한은 **리프레시 토큰** 쪽이며 `models auth list`는 그걸 안 보여준다. 진짜 값은 호스트 자격증명 파일에 있다:
+>
+> ```bash
+> python3 -c "import json,datetime;d=json.load(open('$HOME/.claude/.credentials.json'))['claudeAiOauth'];\
+> [print(k, datetime.datetime.fromtimestamp(d[k]/1000).astimezone().isoformat()) for k in ('expiresAt','refreshTokenExpiresAt')]"
+> ```
+>
+> 2026-08-07 실측: `expiresAt` = 당일 15:00 KST(8h 창), `refreshTokenExpiresAt` = **2026-09-05**, `subscriptionType=max`, `rateLimitTier=default_claude_max_20x`. 파일 mtime이 같은 날 07:00 — **스스로 회전하고 있었다**. 게이트웨이 재시작 중 gemini 토큰 만료가 `00:42Z → 01:46Z`로 밀린 것도 같은 자동 회전이다.
+>
+> **판정 규칙**: `expires`가 오늘/내일이어도 **정상이다.** 손댈 때는 ① `.credentials.json` mtime이 회전 주기(~8h)보다 오래 멈춰 있거나, ② `refreshTokenExpiresAt`이 임박했거나, ③ 실제 서빙이 깨졌을 때다. 그 경우에만 수동 `models auth login`(TTY, GLG)이 필요하다. 매일 만료 알람으로 읽으면 있지도 않은 부채를 만든다.
+
 **과금 경로는 전부 구독(OAuth)이다. 종량제 API 키로 도는 챗 모델은 하나도 없다** — `models auth list`에서 anthropic/openai/google-gemini-cli 모두 `oauth`. Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로필은 잔재, 미사용). ⚠️ 단 glg/gpt/gemini 3봇에 `anthropic:default [anthropic/**token**]` 프로필이 남아있다 — 유일한 비-OAuth 항목이고, claude-cli OAuth가 실패하면 **구독 밖 종량 과금**으로 흐를 수 있는 자리다(현재 primary 경로로는 미사용).
 
 ### Thinking level — 기본 `medium`, 올리는 건 세션에서
