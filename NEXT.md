@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.8.7`.
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -67,7 +67,6 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 - [ ] **opus-5 soak (main).** 승격 당일 격리 probe + 라이브 정체성 응답만 확인했다. 볼 것: 실제 긴 턴에서의 품질·지연, Max 20x 쿼터 소진 속도가 opus-4-8 대비 달라지는지. 처지면 per-agent 카탈로그에 남긴 `anthropic/claude-opus-4-8`로 `/model` 복귀.
 - [ ] **fable-5 실사용 확인 (bbot).** 라이브 DM이 몇 주간 gpt-5.5로 돌던 걸 오늘 fable-5로 되돌렸다 — **봇 스스로 "그 사이 기억층에 빈 구간이 있을 수 있다"고 보고**했다. 다음 실대화에서 맥락 연속성 확인.
 - [ ] **`anthropic:default [anthropic/token]` 프로파일 정리 판단.** glg/gpt/gemini 3봇에만 붙어있는 **유일한 비-OAuth(종량제) 항목**. 현재 primary 경로로는 안 쓰이지만 claude-cli OAuth 실패 시 구독 밖 과금으로 흐를 수 있는 자리다. 안 쓸 거면 제거.
-- [x] ~~**catch-all 1번 자리 재고.**~~ **해결 (2026-08-07)** — codex 제거로 `openai/gpt-5.4`를 지우면서 allowlist를 직접 재정렬, catch-all을 `openai/gpt-5.6-terra`로 고정(= `defaults.model.primary`와 동일). **"`--replace`로 순서 지정 불가"는 정정된다**: `~/openclaw/config/openclaw.json` 직접 편집으로는 순서가 선다. 단 claude 봇이 실패하면 여전히 openai로 떨어지는 구조 자체는 그대로 — 이건 fallback 설계상 남는다.
 
 ---
 
@@ -80,7 +79,6 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 **2026-08-06 재확인 — 라이브는 `-2`가 맞다.** Control UI가 `업데이트 사용 가능: v2026.7.1-2 (실행 중 v2026.7.1)`를 띄우지만 **상시 오탐**이다(UI가 릴리즈 태그와 package.json version 문자열을 비교 — 위 "버전 문자열을 안 올린다"의 직접적 귀결). `build --pull` 재실행이 전 레이어 CACHED + 이미지 ID 불변으로 끝났고, diff_ids 대조로 확정: 로컬 base 26개가 `-2`와 완전 일치, 7.1과는 index 5부터 갈린다. **이 알림은 앞으로도 계속 뜬다 — 무시한다.** 오진 경위와 진단 명령은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "correction release(`-N`)는 버전 문자열을 안 올린다".
 
 - [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **terra**다(5.5는 2026-08-04 전면 제거 — GLG: 아예 안 씀). **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
-- [x] ~~**`openai/gpt-5.6-luna` 경량 lane 검토.**~~ **실행됨 (2026-08-07, GLG 결정)** — 판단 축이 단가가 아니라 **codex 의존성 제거**로 바뀌면서 결론이 났다. active-memory recall lane → `gpt-5.6-luna`, subagents → `gpt-5.6-terra`. 둘 다 codex 런타임을 벗고 openclaw 내장 런타임(ChatGPT OAuth)으로 이동. 상세는 [ORACLE.md](ORACLE.md) §"런타임 지형".
 - [ ] **bbot 세션 `think:xhigh` 처리 판단.** `thinkingDefault=medium`을 박았지만 **세션 sticky가 이긴다** — bbot 라이브 세션만 `xhigh`로 남아있다(main/mini는 이미 medium). fable-5 승격 때 "thinking=high 강제"의 잔재로 보이는데, **의도한 것이면 per-agent `agents.list.<bbot>.thinkingDefault`로 config에 정식 등록**하고, 잔재면 세션에서 내린다. 지금은 config와 라이브가 어긋난 상태 — 2026-08-04 'config ↔ DM 쌍' 사건과 같은 모양이다.
 - [ ] **gpt 봇 thinking 인상 여부 관찰.** `thinkingDefault=medium`은 sol에겐 **인하가 아니라 인상**이다(upstream 기본 `low` → `medium`). GLG의 목적이 "턴 속도"였으므로 gpt 봇이 되레 느려지면 목적에 반한다 — 느려지면 `agents.list.<gpt>.thinkingDefault="low"`로 되돌린다.
 - [ ] **luna/terra lane 품질 soak (위 항목의 미해결 잔여).** 옮기기 전 하려던 품질 확인을 **아직 안 했다** — 결정이 비용이 아닌 의존성 축에서 났기 때문이다. 볼 것: ① active-memory recall 품질이 5.4-mini 대비 처지지 않는지(요약 정확도, `stopReason=missing` 비율), ② recall latency — **5.4-mini의 31.5s Codex CLI 콜드스타트가 사라졌으니 오히려 개선돼야 정상이다**([docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) L288), ③ subagent 결과물 품질(terra), ④ ChatGPT 구독 quota 소진 속도 — Codex Plus 크레딧 표가 더 이상 이 두 lane에 안 맞으므로 재관측 필요.

@@ -9,6 +9,29 @@
 
 ## Unreleased
 
+## v2026.8.7 — Control UI 공개면 + codex 런타임 이탈
+
+### Added
+- **`claw.junghanacs.com` — OpenClaw Control UI 공개면** (2026-08-06). 자물쇠를 **통합하지 않고 3겹 그대로 쌓았다**: `Internet → Caddy HTTPS → Authelia forward_auth(operator만) → gateway token → device pairing → Control UI`. 통합을 안 한 이유가 핵심이다 — `openclaw-gateway`가 `proxy` 도커 네트에 붙어 있어 **같은 네트 컨테이너는 Authelia를 건너뛰고 18789에 직결한다**(실측: caddy→gateway `/` = 200 무인증 HTML). **진짜 경계는 token+pairing이지 forward_auth가 아니다.** 게다가 이 게이트웨이는 전 봇 `exec security=full`·`sandbox=off`라 Control UI admin 세션은 사실상 **oracle 원격 셸**이다. Authelia에 `glg`(groups: `operator`) 계정 신설 + claw 규칙 3단(bypass → operator one_factor → **deny catch-all**), 적용 전 `check-policy` 4건 판정(operator=one_factor / family=deny / 포털=bypass / map 회귀 무영향). OpenClaw 쪽은 `controlUi.allowedOrigins` 갱신(화석 `openclaw.junghanacs.com` 제거) + `auth.rateLimit` 신설로 `security audit` WARN 해소. caddy 8-세트 검수 회귀 0, 브라우저 실연결(pairing 승인 → RPC 왕복)까지 확인. 설계는 gpt 봇과 4라운드 cross-review로 굳혔다.
+- **tmux copy-mode Alt 레이어** — 한글 입력 상태에서도 도는 vi 이동. 이어서 Alt 층을 확장해 **Ctrl 없이 복사 한 사이클**이 닫힌다. `M-\` = 다음 분할(pane 이동)도 같은 문제의식 — 한글 입력 중 Ctrl 조합이 죽는 자리를 Alt로 우회.
+- **tdlib unstable 1.8.66 오버레이** — telega.el 하한 충족.
+
+### Changed
+- **codex 런타임 의존성 제거 — 내장 `openclaw`(구 `pi`) 런타임으로 일원화** (2026-08-07, GLG 결정). `agentRuntime` 미지정이 곧 OpenClaw 자체 에이전트 루프이고, **그 루프의 옛 이름이 `pi`다**(런타임 코드에 `"pi" → "openclaw"` 별칭 1줄로 잔존). 같은 파일에 whole-agent 런타임 선택이 `@deprecated`로 박혀 있다 — 런타임은 이제 모델별 정책이다. openai가 `openai/oauth`(ChatGPT 구독)로 내장 런타임에서 그대로 서빙되므로 codex CLI를 경유할 이유가 없었다. subagents `gpt-5.4`→`gpt-5.6-terra`, active-memory recall lane `gpt-5.4-mini`→`gpt-5.6-luna`, `gpt-5.4`/`-mini` 카탈로그 삭제, `plugins.entries.codex` disable. 부수 효과로 **31.5s Codex CLI 서브프로세스 콜드스타트**가 recall lane에서 사라졌다 — 오래 남아 있던 recall 23~35s 지연의 유력 원인.
+- **`thinkingDefault: "medium"` 신설** — 그동안 이 키는 **미설정**이었고 모델 카탈로그 기본값에 맡겨져 있었다. 기본을 medium으로 두고 필요할 때 올린다(GLG: 턴 속도). ⚠️ upstream 기본이 sol=`low`/terra=`medium`/luna=`medium`이라 **gpt 봇에겐 인하가 아니라 인상**이다. 세션 sticky가 이 값을 이기므로 이미 도는 세션은 안 바뀐다.
+- **`subagents.maxConcurrent` 8 → 4** — 에이전트 턴 상한과 동일하게. oracle은 aarch64 VM 한 대에 6봇 + caddy + authelia + forge + HA가 얹혀 있어 8 동시는 봇 턴과 자원을 다툰다.
+- **OpenClaw 7.1 → 7.1-2 correction release 적용** (2026-08-04). 다운타임 16초, 모델 드리프트 0, doctor Errors 0. 7.1 대비 실제로 바뀐 파일은 7개뿐(codex 5 + memory-core 2) — 메모리 엔진은 무변경.
+- **6봇 모델 전면 정렬** (2026-08-04). main `opus-4-8` → `claude-opus-5`, `gpt-5.5`/`sonnet-4-6` 전면 제거. **config primary ↔ 라이브 DM 세션 쌍 정렬**이 핵심 관리 단위라는 규칙이 여기서 나왔다.
+- **autorandr 4K** — LG 4K 사무실 프로파일 scale 0.75, 이어서 scale을 `postswitch`로 고정해 상하 겹침 제거.
+- `tm`/`tml`을 `.bashrc.local`에서 repo로 회수. Nix flake inputs 갱신.
+
+### Fixed
+- **auto-fallback catch-all 연쇄 함정 차단** — `openai/gpt-5.4`는 `defaults.models` **1번 = catch-all**이었다. codex 제거로 그냥 지웠으면 1번이 gemini(403 DOWN) → `claude-fable-5`(bbot 정체성 모델)로 밀려 **2026-06-13 deepseek 사건과 같은 정체성 훼손**이 재현될 뻔했다. allowlist를 재정렬해 catch-all을 `gpt-5.6-terra`로 고정. 부수 정정: "allowlist 키 순서는 지정 불가"는 **`config set` 경로에 한정**이고, JSON 파일 직접 편집으로는 순서가 선다.
+- **`models auth list`의 `expires` 오독 정정** — 거기 찍히는 건 8시간짜리 **액세스 토큰**이고 자동 회전한다. 실제 기한은 `~/.claude/.credentials.json`의 `refreshTokenExpiresAt`(2026-09-05)이며 `models auth list`는 그 값을 안 보여준다. **`expires`가 오늘/내일이어도 정상** — 매일 만료 알람으로 읽으면 있지도 않은 부채가 생긴다. 손댈 조건 3개(mtime 정체 / 리프레시 임박 / 실제 서빙 실패)를 판정 규칙으로 명시.
+- **`-2` Control UI 업데이트 알림은 상시 오탐** (2026-08-06 확정). correction release가 `package.json` version 문자열을 안 올려서, UI가 릴리즈 태그(`v2026.7.1-2`)와 실행 중 버전 문자열(`2026.7.1`)을 비교하면 영원히 어긋난다. diff_ids 대조로 라이브가 `-2`임을 확정 — 이 알림은 계속 뜨고, 무시한다.
+- **active-memory `agents` 문서 드리프트 정정** — 문서는 오래 `["main","gpt"]` 2개로 적혀 있었으나 라이브는 `["main"]` 단독이었다. gpt는 active-memory가 실질적으로 잘 동작하지 않아 GLG가 뺀 것. 현재 active-memory는 **main 한 봇에만 남은 실험 lane**이다.
+- tmux 안에서만 멈추던 커서 깜빡임 복구.
+
 ## v2026.7.22 — OpenClaw 7.1 + 디스크 정리 루틴 + tmux 작업면
 
 ### Added
