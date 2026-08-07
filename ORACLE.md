@@ -53,7 +53,8 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 
 마지막 ACP 사용처였던 gemini가 **네이티브 `google-gemini-cli` provider(OAuth, Pro 쿼터)로 전환**되면서, `pi-shell-acp` plugin은 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거(acpx와 동일 패턴, 런타임 plugin 목록에서 빠짐). main의 죽은 `pi-shell-acp/*` picker 엔트리도 제거. acpx도 여전히 disabled(`plugins.entries.acpx.enabled=false` + `acp.enabled=false`).
 
-- **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), codex(gpt), google-gemini-cli(gemini). third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
+- **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), openclaw 내장(gpt), google-gemini-cli(gemini). third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
+- **codex 런타임 의존성 제거 완료 (2026-08-07)** — `plugins.entries.codex.enabled=false`, `gpt-5.4`/`gpt-5.4-mini` 카탈로그 전면 제거, subagents·active-memory를 `openclaw` 내장 런타임으로 이관. 상세는 아래 §"런타임 지형".
 - 전환 서사 / 옛 pi-shell-acp stance(backend 자치권 등) / 빈응답 사건은 [ROADMAP.md](ROADMAP.md) 운영 결정 이력으로 이관.
 - pi-shell-acp 엔트리는 삭제하지 않고 `enabled:false`로 남긴다 — **엔트리를 지우면 기본 로드로 복귀**하기 때문(2026-06-10 확인). 끄려면 반드시 엔트리 present + `enabled:false`.
 
@@ -84,9 +85,76 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 
 **과금 경로는 전부 구독(OAuth)이다. 종량제 API 키로 도는 챗 모델은 하나도 없다** — `models auth list`에서 anthropic/openai/google-gemini-cli 모두 `oauth`. Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로필은 잔재, 미사용). ⚠️ 단 glg/gpt/gemini 3봇에 `anthropic:default [anthropic/**token**]` 프로필이 남아있다 — 유일한 비-OAuth 항목이고, claude-cli OAuth가 실패하면 **구독 밖 종량 과금**으로 흐를 수 있는 자리다(현재 primary 경로로는 미사용).
 
+### Thinking level — 기본 `medium`, 올리는 건 세션에서
+
+**`agents.defaults.thinkingDefault = "medium"` (2026-08-07 명시 고정, GLG: "기본은 medium이어야 턴이 빠르다. 필요할 때 올린다")**. 그 전까지 이 키는 **미설정**이었고 모델별 카탈로그 기본값에 맡겨져 있었다.
+
+해상도 순서 (`/app/dist/model-thinking-default-*.js`):
+
+```
+1. models["<provider/model>"].params.thinking   (per-model, 최우선)
+2. agents.<id>.thinkingDefault                  (per-agent — 현재 6봇 전부 미설정)
+3. agents.defaults.thinkingDefault              ← 여기에 medium 박음
+4. claude-opus-4.8 / 4.7 하드코딩 → "off"
+5. 모델 카탈로그 기본값 → 없으면 medium으로 클램프
+```
+
+**세션 sticky가 이 전부를 이긴다**: `sessionEntry.thinkingLevel ?? <위 해상도>`. 즉 **thinkingDefault는 새 세션에만 걸리고, 이미 도는 세션은 안 바뀐다.**
+
+2026-08-07 실측 (`openclaw sessions list --agent <id>`의 `think:` 플래그):
+
+| agent | 라이브 세션 think | 비고 |
+|---|---|---|
+| main | `medium` | 이미 원하는 값 |
+| mini | `medium` | 이미 원하는 값 |
+| **bbot** | **`xhigh`** | **유일한 이탈.** fable-5 승격 때 "thinking=high 강제"의 잔재로 보인다 — 세션에 붙어있어 config 변경으로 안 내려간다 |
+| glg / gpt / gemini | 플래그 없음 | 해상도 기본값을 그대로 탐 |
+
+upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORTS`): **sol = `low`, terra = `medium`, luna = `medium`**. ⚠️ 그래서 `thinkingDefault=medium`은 **gpt 봇(sol)에겐 인하가 아니라 인상이다**(low → medium). 턴이 느려지면 되돌릴 곳은 per-agent `agents.list.<gpt>.thinkingDefault = "low"`다.
+
+> ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
+
+### 동시성 상한
+
+- `agents.defaults.maxConcurrent: 4` — 에이전트 턴
+- `agents.defaults.subagents.maxConcurrent: 4` — **2026-08-07 8 → 4** (GLG: "시스템 불안요소"). oracle은 aarch64 클라우드 VM 한 대에 6봇 + caddy + authelia + forge + HA까지 얹혀 있다. 서브에이전트 8 동시는 봇 턴과 자원을 다툰다. 올릴 일이 생기면 그때 근거와 함께 올린다.
+
 **Fallback**: 모든 봇 `fallbacks: []`. 정공법은 **안 되면 안 되는 거 — 응답 막히면 자동 fallback이 아니라 모델 자체를 바꾼다**. 자동 fallback이 부르는 quota inflation / 다른 path 소진 연쇄를 차단. 근거·이력은 [ROADMAP.md](ROADMAP.md).
 
-**Live model IDs** (provider 접두사: `openai/*`+`agentRuntime.id=codex` = Codex OAuth, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), **`google-gemini-cli/*` = Gemini 구독 쿼터(OAuth, runner=cli)** — `google/*`(api-key env `GEMINI_API_KEY`)와 **별개 provider**, 챗봇은 `google/` 절대 안 씀). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix가 과금 경로를 결정(`google/`=api-key vs `google-gemini-cli/`=OAuth):
+### 런타임 지형 — `openclaw`(구 `pi`)가 기본, codex는 제거됨
+
+`agentRuntime`을 **명시하지 않으면 OpenClaw 자체 내장 에이전트 루프**가 돈다. 이 런타임의 옛 이름이 `pi`다 — 외부 pi 하네스를 부르는 게 아니라, **같은 루프의 개명 전 이름**이다. 근거는 런타임 코드 자체(`/app/dist/agent-runtime-id-*.js`):
+
+```js
+const OPENCLAW_AGENT_RUNTIME_ID = "openclaw";
+if (value === "openclaw" || value === "pi") return OPENCLAW_AGENT_RUNTIME_ID;  // pi = 별칭
+if (value === "codex-app-server") return "codex";
+```
+
+번들 전체에서 `"pi"`는 이 한 줄에만 등장한다. 같은 파일에 **`resolveEmbeddedAgentRuntime`이 `@deprecated`로 박혀 있다** — *"Whole-agent runtime environment selection is retired. Use provider/model runtime policy or a registered agent harness instead."* 즉 "봇 하나 = 런타임 하나"는 폐기됐고, **런타임은 모델별 정책**(`models["<id>"].agentRuntime`)으로 지정한다.
+
+| runtime id | 라벨 | 현재 쓰는 곳 |
+|---|---|---|
+| `openclaw` (구 `pi`) | OpenClaw Default | **agentRuntime 미지정 = 기본**. gpt(sol), gemini 제외 전 openai 모델, subagents, active-memory |
+| `claude-cli` | Claude CLI | main/glg/bbot/mini — Anthropic은 구독 API가 없어 `claude -p` spawn |
+| `google-gemini-cli` | Gemini CLI | gemini (deprecation 경로, §agy 이관 참조) |
+| ~~`codex`~~ | ~~OpenAI Codex~~ | **2026-08-07 제거** |
+
+**codex 제거 (2026-08-07, GLG 결정)**: openai는 `openai/oauth` 프로필(ChatGPT 구독)로 **내장 런타임에서 그대로 서빙된다** — codex CLI를 경유할 이유가 없다. 제거 내역:
+
+| 자리 | before | after |
+|---|---|---|
+| `agents.defaults.subagents.model` | `openai/gpt-5.4` (codex) | `openai/gpt-5.6-terra` (openclaw) |
+| `plugins.entries.active-memory.config.model` | `openai/gpt-5.4-mini` (codex) | `openai/gpt-5.6-luna` (openclaw) |
+| `agents.defaults.models["openai/gpt-5.4"]` | codex 런타임 등록 | **삭제** |
+| `agents.list.mini.models` gpt-5.4 / gpt-5.4-mini | codex 런타임 등록 | **삭제** (`openai/gpt-5.6-luna`로 교체) |
+| `plugins.entries.codex` | `enabled:true` + `appServer.sandbox: danger-full-access` | `enabled:false` |
+
+> `plugins.allow`에는 `codex`가 남아있다 — 비활성의 기준은 `entries.codex.enabled=false`다. 되살리려면 `enabled:true`만 되돌리면 되고, `@openai/codex` 바이너리는 upstream 이미지(`/app/node_modules/@openai/codex-linux-arm64`)에 그대로 있다. **PATH에 `codex`가 없다고 미설치로 오판하지 말 것.**
+>
+> ⚠️ **codex 제거가 catch-all을 옮긴다 (연쇄 함정)**: `openai/gpt-5.4`는 `defaults.models` **1번 = auto-fallback catch-all**이었다(아래 auto-fallback 함정 블록). 그걸 지우면 1번 자리가 다음 항목으로 밀리는데, 그 자리에 gemini(403 DOWN)나 fable-5(bbot 정체성 모델)가 오면 정체성 훼손 경로가 열린다. **그래서 제거와 동시에 allowlist를 재정렬해 `openai/gpt-5.6-terra`를 1번으로 박았다.** 모델을 지울 때는 항상 "1번이 누가 되는가"를 먼저 계산한다.
+
+**Live model IDs** (provider 접두사: `openai/*` = ChatGPT 구독 OAuth via **openclaw 내장 런타임**, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), **`google-gemini-cli/*` = Gemini 구독 쿼터(OAuth, runner=cli)** — `google/*`(api-key env `GEMINI_API_KEY`)와 **별개 provider**, 챗봇은 `google/` 절대 안 씀). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix가 과금 경로를 결정(`google/`=api-key vs `google-gemini-cli/`=OAuth):
 
 | Agent | Model | Workspace | Streaming | Active memory | 비고 |
 |---|---|---|---|---|---|
@@ -96,7 +164,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 | **bbot** | `anthropic/claude-fable-5` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
 | **gemini** | `google-gemini-cli/gemini-3.1-pro-preview` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. **네이티브** `google-gemini-cli` OAuth(`gtgkjh@gmail.com`, **Pro 쿼터**, runner=cli). **fallback 없음**. **provider prefix가 OAuth 결정** — `google/`(api-key) 아닌 `google-gemini-cli/` 必(`auth.order.google` 핀은 cross-provider라 안 먹음). `/status` `🔑 oauth` 검증. 2026-06-10 ACP 탈출 |
-| subagents | `openai/gpt-5.4` | — | — | — | active-memory recall lane은 `openai/gpt-5.4-mini`로 분리 (main lane quota 보호) |
+| subagents | `openai/gpt-5.6-terra` | — | — | — | **2026-08-07 codex 제거로 `gpt-5.4`에서 이동** (runtime=openclaw 내장). per-agent 오버라이드 0 — 6봇 전체가 이 하나를 공유한다. active-memory recall lane은 `openai/gpt-5.6-luna`로 분리 (main lane quota 보호) |
 
 #### ⚠️ 모델 세팅은 **config ↔ DM 쌍**으로 관리한다 (2026-08-04 확립)
 
@@ -140,7 +208,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 > **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native claude-cli runtime은 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. **canonical 등록(5.28)**: model.primary/카탈로그를 `anthropic/<id>`로 두고 `{ "agentRuntime": { "id": "claude-cli" } }`를 붙이면 끝 — provider prefix `anthropic/`는 카탈로그 식별자일 뿐, runtime이 `claude-cli`면 구독 경로. legacy `claude-cli/<id>` prefix는 폐기(doctor/update가 canonical로 auto-migrate — profile 먼저 등록 필수). EPIPE·streaming off·전환 타임라인은 [ROADMAP.md](ROADMAP.md).
 
-> **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 Codex(`openai/gpt-5.4`)라 claude login은 main/bbot/mini 3봇만.
+> **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 openclaw 내장 런타임(`openai/gpt-5.6-terra`, ChatGPT OAuth)이라 claude login은 main/bbot/mini 3봇만.
 
 > **⚠️ 2026-08-06 실측 — 현재 gemini DOWN의 근인은 403이 아니라 `exec: gemini: not found`다.** prewarm 턴이 `GatewayClientRequestError: FailoverError: gemini: 1: exec: gemini: not found`로 떨어진다. 즉 OAuth 이전에 **CLI 바이너리 자체가 컨테이너에 없다** — 2026-07-01(6.11) node-gyp hang 대응으로 Dockerfile `npm install -g`에서 `@google/gemini-cli`를 뺀 것의 직접적 귀결이다(아래 "이미지 재빌드 node-gyp hang" 항목과 같은 사건). 결론(DOWN 유지)은 그대로지만 **사유는 바뀌었다**: 아래 403 서사는 *바이너리가 있던 시절*의 진단이다. agy 이관으로 부활시킬 땐 Dockerfile 복원이 첫 단계이고, 403이 여전한지는 그 다음에야 확인 가능하다.
 >
@@ -158,6 +226,8 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 > **⚠️ gemini provider 이관 진행 중 — 당분간 드리프트 구조적 (2026-06-13~)**: `google-gemini-cli` provider는 **deprecation 경로**다 — gemini-cli가 사라지고 **agy(Antigravity) 기반으로 이관 예정**. 그래서 당분간 gemini 모델 prefix/provider는 **계속 흔들린다**. 구체적으로 `doctor --fix`(또는 6.6+ 업그레이드 시 자동 마이그레이션)가 gemini를 `google-gemini-cli/gemini-3.1-pro-preview` → `google/gemini-3.1-pro-preview` + `agentRuntime.id=google-gemini-cli`로 **자동 재작성하는 것을 2026-06-13 6.6 / 2026-06-17 6.8 업글에서 연속 확인**(매번 되돌림 — `config set agents.list.3.model.primary google-gemini-cli/...` + `config unset agents.list.3.models["google/..."]` + restart). **6.8 릴리즈에 agy/antigravity provider 미등장 확인** — 이관 미공식, 베이스라인은 여전히 `google-gemini-cli/`. **2026-07-14 7.1 업글 실측 — 함정의 모양이 바뀌었다**: 컨테이너 자동 마이그레이션은 gemini를 **건드리지 않았다(드리프트 0)**. 대신 read-only `doctor`의 **changes-preview에 그 재작성이 "대기 상태"로 찍혀 있다** — *"Moved agents.list.gemini.model legacy runtime primary refs to canonical provider refs and selected google-gemini-cli runtime"*. 즉 **7.1에서 위험은 업글이 아니라 `--fix` 버튼 자체다. 누르는 순간 `google/`로 넘어간다.** 7.1에도 agy/antigravity provider는 미등장. **운영 원칙**: ① 업글/`doctor --fix` 후 `agents list`로 gemini 모델 prefix를 **반드시 재확인**, `google/`로 바뀌어 있으면 위 "api-key 폴백 금지"대로 `google-gemini-cli/`로 되돌린다(config set primary + `config unset 'agents.list.<idx>.models["google/..."]'`). ② **단, 이건 한시적 방어다** — gemini 설정이 자꾸 바뀐다고 당황하지 말 것. "또 흔들리네"가 아니라 **"아, 그 agy 이관 사안이구나"** 하고 인지하고, 변경 내용을 이 함정 블록과 대조해 *의도된 이관인지 / 잘못된 드리프트인지* 검토한다. ③ agy 이관이 공식화되면(gemini-cli 완전 deprecate) 이 블록과 line 89/98/114/219의 `google-gemini-cli/` 전제 전체를 한 번에 재작성한다 — 그때가 진짜 이사. 그 전까지는 OAuth(`google-gemini-cli/`) 유지가 기준선.
 
 > **⚠️ auto-fallback catch-all 함정 — primary 실패 시 봇 정체성 훼손 (2026-06-13)**: OpenClaw 모델 해상도는 `primary → model.fallbacks(순서) → auto-fallback`. configured primary가 실패(서빙 불가/overload)하고 `fallbacks`가 비어있으면, auto-fallback이 **글로벌 allowlist(`agents.defaults.models`) 첫 작동모델**로 떨어진다(`modelOverrideSource: "auto"`). **user `/model` 선택만 fail-closed**(도달 불가 시 가시적 실패), configured primary는 항상 이 체인을 탄다. **2026-06-13 사건**: bbot을 fable-5로 올렸다가 Fable 5 서빙 실패 → allowlist 1번이던 `deepseek/deepseek-v4-pro`가 catch-all로 잡혀 **bbot이 deepseek로 응답**(정체성 훼손, "차라리 무응답이 낫다"). **조치**: allowlist에서 deepseek pro/flash **제거**(참조 봇 0) → `openai/gpt-5.5`(=default·1번)가 catch-all. **원칙**: ① allowlist 1번은 "정체성 훼손이 가장 덜한 catch-all"이어야 한다 — **2026-08-04 gpt-5.5 전면 제거로 catch-all은 `openai/gpt-5.4`, `defaults.model.primary`는 `openai/gpt-5.6-terra`로 이동**(둘 다 codex 구독, 5.5와 같은 훼손 프로파일). ⚠️ allowlist **키 순서는 `config set --replace`로 지정해도 안 먹는다** — OpenClaw가 기존 순서를 유지하며 정규화하므로, 1번 자리를 바꾸려면 순서가 아니라 *구성*을 바꿔야 한다. ② 서빙 미보장 모델(fable 등)을 **primary로 박지 말 것** — `/model`로 세션에서 시험하고, 살아나면 그때 primary 승격. ③ deepseek은 어떤 봇 정체성에도 안 맞아 allowlist에서 영구 제외(필요 시 `config set agents.defaults.models '{"deepseek/deepseek-v4-pro":{}}' --strict-json --merge`로 한시 추가, 단 catch-all 1번 자리는 피한다). **(2026-07-12 갱신)**: fable-5는 upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개**돼 bbot primary로 재승격됨 — "fable-5 서빙 실패" 전제는 이 버전에선 해소. 단 원칙 ②(서빙 미보장 모델을 primary로 박지 말 것)는 여전히 유효 — 이번에도 primary=opus 유지한 채 `agent --model` 오버라이드 격리 probe로 서빙(`fallbackUsed=false`)을 먼저 확인한 뒤에만 promote했다. fable을 `defaults.models` 끝(catch-all 아닌 자리)에 등록해 오버라이드 probe + `/model fable` 전 봇 개방.
+>
+> **(2026-08-07 갱신 — codex 제거로 catch-all 재배치)**: `openai/gpt-5.4` 삭제로 1번 자리가 비어 gemini(403 DOWN)→fable-5로 밀릴 뻔했다. allowlist를 **`terra, sol, luna, gemini, fable-5, opus-5, sonnet-5`** 순으로 재정렬해 catch-all을 `openai/gpt-5.6-terra`(= `defaults.model.primary`와 동일, ChatGPT 구독, 정체성 중립)로 고정. **순서 지정 방법 정정**: "`config set --replace`로 순서가 안 먹는다"는 여전히 맞지만, **`~/openclaw/config/openclaw.json`을 직접 편집하면 순서가 그대로 선다**(이번에 그렇게 했고 `config validate` 통과). 단 OpenClaw가 config를 스스로 재작성하는 경로(`doctor --fix`, 업그레이드 마이그레이션)를 타면 다시 정규화될 수 있으니, **그런 작업 뒤에는 1번 자리를 재확인**한다.
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
@@ -179,7 +249,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 >
 > 캐시 read는 각 1/10. **핵심**: sol은 5.5와 같은 값에 더 좋은 모델이고, terra는 5.5급을 절반 값에 준다 — **5.6 승격은 비용 인상이 아니다.** luna만 성능 트레이드오프가 실재한다. **limited preview** — 접근권은 워크스페이스마다 다르므로 `models list --provider openai`로 확인하고, 없으면 OpenClaw가 조용히 강등하지 않고 upstream 접근 오류를 그대로 노출한다.
 
-> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. **배치 원칙 (2026-07-14 갱신)**: 가벼운 turn은 5.4-mini, **개인(gpt)은 `5.6-sol`, 가족(glg)은 `5.6-terra`**. 근거는 "개인이 비용을 흡수한다"가 아니라 **단가 그 자체다** — sol은 5.5와 동일 단가라 gpt는 값을 더 안 내고 상위 모델을 얻고, terra는 5.5의 절반이라 **가족봇은 오히려 싸졌다**. active-memory recall lane은 항상 5.4-mini로 분리해 main lane quota 보호. ※ 이전 배치(개인 5.5 / 가족 5.4)의 후계 — glg의 2026-06-10 강등 사유(cross-DM 판단 과잉)는 가드 완료로 해소됐다.
+> Codex Plus ($100/mo) 메시지당 크레딧 (출처: developers.openai.com/codex/pricing): `5.4-mini` 2 / `5.4` 7 / `5.5` 14. **배치 원칙 (2026-07-14 갱신)**: 가벼운 turn은 5.4-mini, **개인(gpt)은 `5.6-sol`, 가족(glg)은 `5.6-terra`**. 근거는 "개인이 비용을 흡수한다"가 아니라 **단가 그 자체다** — sol은 5.5와 동일 단가라 gpt는 값을 더 안 내고 상위 모델을 얻고, terra는 5.5의 절반이라 **가족봇은 오히려 싸졌다**. active-memory recall lane은 분리해 main lane quota 보호 — **2026-08-07 codex 제거로 `5.4-mini` → `5.6-luna`**(subagents도 `5.4` → `5.6-terra`). ⚠️ **크레딧 표는 Codex Plus 기준이라 이 두 lane엔 더 이상 안 맞는다** — 둘 다 이제 codex가 아니라 openclaw 내장 런타임으로 ChatGPT 구독 OAuth를 직접 탄다. 실사용 후 quota 체감을 재관측할 것. ※ 이전 배치(개인 5.5 / 가족 5.4)의 후계 — glg의 2026-06-10 강등 사유(cross-DM 판단 과잉)는 가드 완료로 해소됐다.
 
 이미지 생성: `openai/gpt-image-2` via Codex OAuth (default since 2026-04-25). Google Imagen은 agent-directed 호출 시 사용 가능 (`GEMINI_API_KEY`로 banana/`gemini-3-flash-preview-image`). gemini 챗봇은 `google-gemini-cli/` provider prefix로 **OAuth(Pro 쿼터)만 탄다**(`/status` `🔑 oauth` 검증). `GEMINI_API_KEY`(=`google` api-key provider)는 **어떤 챗 모델도 안 가리키고** 이미지(나노바나나) 전용으로만 env 유지 — 단 이미지 경로 동작은 **미재검증**([NEXT.md §1](NEXT.md)).
 
@@ -203,8 +273,8 @@ PY
 ### Active memory — 현재 main/gpt 활성
 
 운영 config:
-- `agents: ["main", "gpt"]` — 2개 활성. glg 2026-06-09 제외(recall 훅이 가족 응답을 16~35s 지연). **bbot 2026-06-13 제외**(같은 mini-lane 증상: 매 direct 메시지마다 gpt-5.4-mini 2차 턴이 23~35s·절반 timeout으로 본 턴과 겹치고 `incomplete turn` 에러 노출 → 응답성 우선). mini/gemini 제외
-- `model: "openai/gpt-5.4-mini"` — recall lane을 mini로 분리, main lane과 OAuth quota 경합 회피
+- `agents: ["main"]` — **1개만 활성**. glg 2026-06-09 제외(recall 훅이 가족 응답을 16~35s 지연), **bbot 2026-06-13 제외**, **gpt도 제외 — active-memory가 실질적으로 잘 동작하지 않아 GLG가 뺐다**(2026-08-07 확인). mini/gemini 제외. ⚠️ 문서가 오래 `["main","gpt"]` 2개로 적혀 있었으나 라이브는 main 단독이었다(2026-08-07 실측 후 정정). **즉 현재 active-memory는 main 한 봇에만 남은 실험 lane이다** — 이 전제로 읽을 것. glg 2026-06-09 제외(recall 훅이 가족 응답을 16~35s 지연). **bbot 2026-06-13 제외**(같은 mini-lane 증상: 매 direct 메시지마다 recall lane 2차 턴이 23~35s·절반 timeout으로 본 턴과 겹치고 `incomplete turn` 에러 노출 → 응답성 우선). mini/gemini 제외
+- `model: "openai/gpt-5.6-luna"` — recall lane을 분리해 main lane과 OAuth quota 경합 회피. **2026-08-07 `gpt-5.4-mini`(codex)에서 이동** — luna는 openai provider 카탈로그 네이티브(105만 ctx, `thinkingLevelMap.off=none` → 플러그인의 `thinking:"off"`와 정합)라 codex CLI를 안 탄다
 - `queryMode: "message"` + `promptStyle: "strict"` — 응답성 우선, false-positive 최소화
 - `timeoutMs: 5000` + `setupGraceTimeoutMs: 30000` — Oracle ARM resource-tight cold-start 보호
 - `maxSummaryChars: 220` (docs default, 한국어→영어 요약 가능), `thinking: "off"`, `persistTranscripts: false`, `logging: true`

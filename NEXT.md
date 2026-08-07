@@ -67,7 +67,7 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 - [ ] **opus-5 soak (main).** 승격 당일 격리 probe + 라이브 정체성 응답만 확인했다. 볼 것: 실제 긴 턴에서의 품질·지연, Max 20x 쿼터 소진 속도가 opus-4-8 대비 달라지는지. 처지면 per-agent 카탈로그에 남긴 `anthropic/claude-opus-4-8`로 `/model` 복귀.
 - [ ] **fable-5 실사용 확인 (bbot).** 라이브 DM이 몇 주간 gpt-5.5로 돌던 걸 오늘 fable-5로 되돌렸다 — **봇 스스로 "그 사이 기억층에 빈 구간이 있을 수 있다"고 보고**했다. 다음 실대화에서 맥락 연속성 확인.
 - [ ] **`anthropic:default [anthropic/token]` 프로파일 정리 판단.** glg/gpt/gemini 3봇에만 붙어있는 **유일한 비-OAuth(종량제) 항목**. 현재 primary 경로로는 안 쓰이지만 claude-cli OAuth 실패 시 구독 밖 과금으로 흐를 수 있는 자리다. 안 쓸 거면 제거.
-- [ ] **catch-all 1번 자리 재고.** 5.5 제거로 `openai/gpt-5.4`가 catch-all이 됐다. claude 봇(main/glg/mini/bbot)이 실패하면 여전히 openai 모델로 떨어져 정체성이 훼손된다 — 5.5 때와 같은 구조라 *새* 문제는 아니지만, allowlist **키 순서는 `--replace`로도 지정이 안 되므로**(OpenClaw가 기존 순서 유지) 1번을 바꾸려면 구성 자체를 바꿔야 한다.
+- [x] ~~**catch-all 1번 자리 재고.**~~ **해결 (2026-08-07)** — codex 제거로 `openai/gpt-5.4`를 지우면서 allowlist를 직접 재정렬, catch-all을 `openai/gpt-5.6-terra`로 고정(= `defaults.model.primary`와 동일). **"`--replace`로 순서 지정 불가"는 정정된다**: `~/openclaw/config/openclaw.json` 직접 편집으로는 순서가 선다. 단 claude 봇이 실패하면 여전히 openai로 떨어지는 구조 자체는 그대로 — 이건 fallback 설계상 남는다.
 
 ---
 
@@ -80,7 +80,10 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 **2026-08-06 재확인 — 라이브는 `-2`가 맞다.** Control UI가 `업데이트 사용 가능: v2026.7.1-2 (실행 중 v2026.7.1)`를 띄우지만 **상시 오탐**이다(UI가 릴리즈 태그와 package.json version 문자열을 비교 — 위 "버전 문자열을 안 올린다"의 직접적 귀결). `build --pull` 재실행이 전 레이어 CACHED + 이미지 ID 불변으로 끝났고, diff_ids 대조로 확정: 로컬 base 26개가 `-2`와 완전 일치, 7.1과는 index 5부터 갈린다. **이 알림은 앞으로도 계속 뜬다 — 무시한다.** 오진 경위와 진단 명령은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "correction release(`-N`)는 버전 문자열을 안 올린다".
 
 - [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **terra**다(5.5는 2026-08-04 전면 제거 — GLG: 아예 안 씀). **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
-- [ ] **`openai/gpt-5.6-luna` 경량 lane 검토.** 5.5 대비 토큰 단가 **1/5**($1/$6) → subagents(`gpt-5.4`)·active-memory recall lane(`gpt-5.4-mini`)을 luna로 옮길지 판단. ⚠️ 단 **luna는 5.5보다 성능 우위가 보장되지 않는다**(비용/속도 최적화 티어) — "싸니까 위"가 아니므로, 옮기려면 해당 lane의 실제 작업(요약·recall)에서 품질을 먼저 확인할 것.
+- [x] ~~**`openai/gpt-5.6-luna` 경량 lane 검토.**~~ **실행됨 (2026-08-07, GLG 결정)** — 판단 축이 단가가 아니라 **codex 의존성 제거**로 바뀌면서 결론이 났다. active-memory recall lane → `gpt-5.6-luna`, subagents → `gpt-5.6-terra`. 둘 다 codex 런타임을 벗고 openclaw 내장 런타임(ChatGPT OAuth)으로 이동. 상세는 [ORACLE.md](ORACLE.md) §"런타임 지형".
+- [ ] **bbot 세션 `think:xhigh` 처리 판단.** `thinkingDefault=medium`을 박았지만 **세션 sticky가 이긴다** — bbot 라이브 세션만 `xhigh`로 남아있다(main/mini는 이미 medium). fable-5 승격 때 "thinking=high 강제"의 잔재로 보이는데, **의도한 것이면 per-agent `agents.list.<bbot>.thinkingDefault`로 config에 정식 등록**하고, 잔재면 세션에서 내린다. 지금은 config와 라이브가 어긋난 상태 — 2026-08-04 'config ↔ DM 쌍' 사건과 같은 모양이다.
+- [ ] **gpt 봇 thinking 인상 여부 관찰.** `thinkingDefault=medium`은 sol에겐 **인하가 아니라 인상**이다(upstream 기본 `low` → `medium`). GLG의 목적이 "턴 속도"였으므로 gpt 봇이 되레 느려지면 목적에 반한다 — 느려지면 `agents.list.<gpt>.thinkingDefault="low"`로 되돌린다.
+- [ ] **luna/terra lane 품질 soak (위 항목의 미해결 잔여).** 옮기기 전 하려던 품질 확인을 **아직 안 했다** — 결정이 비용이 아닌 의존성 축에서 났기 때문이다. 볼 것: ① active-memory recall 품질이 5.4-mini 대비 처지지 않는지(요약 정확도, `stopReason=missing` 비율), ② recall latency — **5.4-mini의 31.5s Codex CLI 콜드스타트가 사라졌으니 오히려 개선돼야 정상이다**([docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) L288), ③ subagent 결과물 품질(terra), ④ ChatGPT 구독 quota 소진 속도 — Codex Plus 크레딧 표가 더 이상 이 두 lane에 안 맞으므로 재관측 필요.
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
 - [ ] **orphan transcript 104건(doctor 기준) — 인덱스 행은 정리됐고 파일은 그대로.** 2026-08-04 `memory index`가 *삭제된 트랜스크립트를 가리키던 인덱스 행*을 걷어냈다(glg 3250→2816, gpt 728→545, bbot 1299→889 chunk, 6봇 전부 `Indexed: n/n` + `Dirty: no`). 하지만 `sessions.json`이 참조 안 하는 **`.jsonl` 파일 자체는 디스크에 남아있다** — 이 항목은 그 파일 쪽이다. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
 
@@ -248,7 +251,7 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [ ] **subagent bootstrap context 축소 (#85283)** — active-memory recall sub-agent (5.4-mini lane) `status=empty` 비율 변화. 14d soak baseline 비교
 - [ ] **`@anthropic-ai/claude-code` 버전 추적** — 5.27 image 재빌드 후 컨테이너 `claude` 2.1.156 (5.22 시점 2.1.150). `--help`에 `claude-opus-4-8` 명시 → opus 4.8 지원. Dockerfile pin 여부 검토
 - [ ] **OAuth refresh 자동 검증** — Anthropic `expiresAt` 8h마다 새로 받는지 24h 관찰
-- [ ] **active-memory 35s timeout 빈도** — claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능. **2026-06-13 bbot 제외**(24h 16회 중 timeout 8 / ok 8, ok도 23~30s — 본 턴과 겹쳐 응답성 저해)로 가족·bbot 라인은 닫음. **근본(gpt-5.4-mini lane이 23~35s·절반 `stopReason=missing`)은 main/gpt에 잔존** — 5.4-mini 퇴화/모델 교체 검토 필요
+- [ ] **active-memory 35s timeout 빈도** — claude-cli 환경에서 mini lane recall이 30~35s까지 늘어남 (직전 baseline 5-10s). subagent context 축소와 연관 가능. **2026-06-13 bbot 제외**(24h 16회 중 timeout 8 / ok 8, ok도 23~30s — 본 턴과 겹쳐 응답성 저해)로 가족·bbot 라인은 닫음. **근본(recall lane이 23~35s·절반 `stopReason=missing`)은 main/gpt에 잔존** — **2026-08-07 처방 시도: lane을 `gpt-5.4-mini`(codex) → `gpt-5.6-luna`(openclaw 내장)로 교체**. Codex CLI 서브프로세스 콜드스타트(31.5s)가 원인의 상당 부분이었다면 여기서 풀린다. 교체 후 재측정할 것
 
 ---
 

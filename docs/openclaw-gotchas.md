@@ -243,6 +243,9 @@ Since the 4.23 upgrade, `~/repos/gh:rw` and `~/org/{meta,bib,notes}:rw` are open
 
 ### Codex catalog — models.json drift on upgrade is expected (2026-04-25)
 
+> **⚠️ 2026-08-07 이후 이 절은 이력 문서다.** codex 런타임 의존성을 전부 제거했다(`plugins.entries.codex.enabled=false`, `gpt-5.4`/`gpt-5.4-mini` 카탈로그 삭제). 서빙 경로에 codex가 없으므로 이 drift는 더 이상 운영 이슈가 아니다 — `agents/*/agent/models.json`에 Codex provider 블록이 남아있어도 참조하는 모델이 0이다. codex를 되살리는 경우에만 다시 유효해진다. 배경은 [ORACLE.md](../ORACLE.md) §"런타임 지형".
+
+
 OpenClaw 2026.4.23 synthesizes the `openai-codex/gpt-5.5` OAuth row automatically. After the upgrade, `git diff config/agents/*/agent/models.json` shows `gpt-5.4 → gpt-5.5` in the Codex provider block. This is catalog-layer drift; the **serving model** is still `openai-codex/gpt-5.4` because `agents.list[].model` pins it explicitly. Verify with:
 
 ```bash
@@ -285,7 +288,7 @@ Upstream #70737 moves dreaming into an isolated lightweight agent turn. It now r
 
 운영 발견 (재활성 전 알아둘 것):
 
-- `openai-codex/gpt-5.4-mini` hits a 31.5s Codex CLI subprocess cold-start. Plugin `timeoutMs` is not honored across the subprocess boundary. Do not use Codex models in blocking hot-path plugins.
+- `openai-codex/gpt-5.4-mini` hits a 31.5s Codex CLI subprocess cold-start. Plugin `timeoutMs` is not honored across the subprocess boundary. **Do not use Codex models in blocking hot-path plugins.** → **2026-08-07 이 규칙을 따라 실제로 치웠다**: active-memory lane이 `gpt-5.4-mini`(codex) → `openai/gpt-5.6-luna`(openclaw 내장 런타임, 서브프로세스 없음). 오래 남아있던 recall 23~35s 지연의 유력 원인이 이 콜드스타트였으므로, 교체 후 latency 재측정이 [NEXT.md](../NEXT.md)에 걸려 있다.
 - `timeoutMs=8000` is too tight for groq — saw 9.7s boundary timeouts. Use 15000 (upstream default).
 - Upstream `3f90d9266` (v2026.4.21) graceful degrade keeps replies alive on timeout; active-memory is an assist layer, not a critical path.
 - **Groq free tier TPM=8K로 `gpt-oss-120b` 실사용 불가** (2026-04-23 관측). active-memory 프롬프트는 queryChars 1K라도 전체 input이 ~35K tok이라 매 호출 `413 Request too large`. 해결책: Groq Console에서 **paid tier 전환** ($10 선불, pay-per-use). 전환 후 호출당 ~7원, 응답 ~11s.
