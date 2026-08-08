@@ -1,5 +1,30 @@
 { config, lib, pkgs, ... }:
 
+let
+  # sudoers는 명령 인자를 안전하게 구조화하지 못한다. 이 wrapper가 허용 동작을
+  # 고정해 OpenClaw Android node 실험에 필요한 tailnet 조작만 root로 수행한다.
+  tailscaleOpenClawNode = pkgs.writeShellScriptBin "tailscale-openclaw-node" ''
+    set -eu
+
+    if [ "$#" -ne 1 ]; then
+      echo "usage: tailscale-openclaw-node {up|serve}" >&2
+      exit 64
+    fi
+
+    case "$1" in
+      up)
+        exec ${pkgs.tailscale}/bin/tailscale up
+        ;;
+      serve)
+        exec ${pkgs.tailscale}/bin/tailscale serve --bg --https=443 http://127.0.0.1:18789
+        ;;
+      *)
+        echo "allowed actions: up, serve" >&2
+        exit 64
+        ;;
+    esac
+  '';
+in
 {
   imports = [
     ./shared.nix
@@ -52,6 +77,7 @@
   environment.systemPackages = with pkgs; [
     # Cloud utilities
     cloud-utils
+    tailscaleOpenClawNode
 
     # Monitoring for cloud environment
     htop
@@ -151,6 +177,12 @@
         }
         {
           command = "/run/current-system/sw/bin/nix-store";
+          options = [ "NOPASSWD" ];
+        }
+        # OpenClaw Android node의 1차 tailnet 실험. wrapper 내부가 up과 이
+        # gateway loopback Serve 레인만 허용한다.
+        {
+          command = "/run/current-system/sw/bin/tailscale-openclaw-node";
           options = [ "NOPASSWD" ];
         }
       ];
