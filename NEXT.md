@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.8.7`.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.8.10`.
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -13,7 +13,8 @@ thinkpad가 96%(여유 19G)까지 찼던 건을 계기로 정리 로직을 스�
 실측(thinkpad): 396G → 305G. nix GC 28G + uv prune 16.7G + zig-cache 11G + Trash 6.3G + 브라우저/툴 캐시 5G + `/tmp` 3.8G. **`.direnv`를 GC보다 먼저 지운 것만으로 뒤이은 GC가 19.9GiB 추가 회수** — 자동 GC가 이미 돈 직후였는데도.
 
 - [ ] **다른 디바이스 실측 — 미검증.** `deep --dry-run`은 thinkpad에서만 돌려봤다. **oracle에서 먼저 `--dry-run`으로 확인할 것** — headless라 `GUI_CACHE=false`, `REPO_CACHE=false` 경로가 실제로 잘 빠지는지, docker 프롬프트가 OpenClaw 컨테이너를 제대로 보여주는지. nuc/laptop도 동일.
-- [ ] **`boot.tmp.cleanOnBoot = true` 적용 안 됨.** `machines/shared.nix`에 넣고 `nix flake check`·eval만 통과시킨 상태 — **rebuild 안 했다.** 다음 switch 때 반영되며, 그 이후 재부팅부터 `/tmp` 잔해가 안 쌓인다. 전 디바이스 공통이라 oracle도 영향 받는다(재부팅 시 `/tmp` 비워짐 — OpenClaw가 `/tmp`에 영속 상태를 두지 않는지 switch 전에 확인).
+- [ ] **⚠️ `deep`은 `.zig-cache`/`.direnv`를 통째로 지운다 — 담당자에게 먼저 물어라.** 0단계는 `find ~/repos -maxdepth 4 -name .zig-cache -o -name .direnv`로 **디렉토리 전체**를 밀기 때문에, 담당자가 남기려고 판정한 하위(해시 매니페스트 등)도 함께 날아간다. 소유권을 코드로 선언하는 `.diskclean-owned` 마커는 **GLG가 거절**했다(마커 자체가 관리 대상이 된다). 그래서 방어는 습관 하나뿐이다 — 깊은 정리 전에 그 리포 담당자를 부른다. 실사례·정본 지침은 `CHANGELOG.md` `v2026.8.10`과 봇로그 `20260227T031800`.
+- [ ] **회수량은 `df` 실측으로 보고할 것.** `du` apparent는 하드링크/sparse 때문에 실제 회수와 다르다(2026-08-10 사례: apparent 12,375,675,933 B vs `df` 9,720,197,120 B). 세 축(apparent / 할당 / `df` 델타)을 같이 남기면 과대보고가 안 생긴다.
 - [ ] **pnpm store 20G는 손 안 댔다.** 라이브 pi 세션이 하드링크를 공유하고 있어 이번엔 제외(`--with-pnpm` opt-in). 세션 없을 때 `pnpm store prune` 실측 필요 — store 20G 중 실제 고아가 얼마인지 아직 모른다.
 - [ ] **docker 15.8G reclaimable (thinkpad).** `--with-docker`를 안 걸어서 미실행. `docker image prune -a --filter until=24h`는 **실행 중이 아닌 이미지를 전부** 지우므로, 작업용으로 쟁여둔 이미지가 있는지 보고 나서 돌릴 것.
 - 남은 큰 덩어리는 정리 대상이 아니라 **실데이터**다: `~/repos` 76G(work 51G — 최상위 펌웨어 repo 하나가 33G, 3rd 44G — SBC SDK 하나가 29G), `~/sync` 32G. 아카이빙 판단이 필요하면 별건.

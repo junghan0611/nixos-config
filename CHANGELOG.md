@@ -9,6 +9,24 @@
 
 ## Unreleased
 
+## v2026.8.10 — 26.05.20260808 hop + 리포 자기 수선 협업
+
+### Added
+- **tailscale constrained node gateway wrapper** (`49280ba`).
+
+### Changed
+- **flake lock → nixpkgs `8b8c811`(26.05.20260808) / home-manager `d4fd246` / nixpkgs-unstable `70ce234`** (`9837ed1`). thinkpad `test` → `switch` 통과, **세대 148**, 실패 유닛 0(시스템·유저). 커널 **7.1.4 → 7.1.7** 은 부트 엔트리·`loader.conf` default가 148로 박혔으므로 다음 재부팅부터 탄다.
+- **rebuild 비용 실측 — 사전 추정이 3~4배 보수적이었다.** dry-run은 `3.5 GiB 다운로드 → 10.1 GiB unpacked` + 로컬 빌드 74개였고 여기서 store 순증 15~20 GiB를 추정했으나, **실제 순증은 약 5G**(46G→41G). unpacked 대부분이 기존 store path와 겹쳐 하드링크로 흡수되고, 로컬 빌드 74개는 대부분 작은 config derivation이었다(`texlive-combined`는 실체 복사가 아니라 심볼릭 링크 farm). **다음 hop에서도 dry-run의 unpacked 수치를 순증으로 읽지 말 것.**
+
+### 운영 결정 — 리포 자기 수선 handoff는 코드로 굳히지 않는다
+- **`.diskclean-owned` 마커 제안 거절** (GLG 결정). 리포에 표식 파일을 두면 `diskclean.sh` 0단계가 그것을 발견해 지우지 않고 담당 스킬 이름만 인쇄하고 넘어가는 방식을 제안했으나, **마커 자체가 관리 대상이 된다**(리포가 늘 때마다, 스킬 이름이 바뀔 때마다 손이 간다)는 이유로 채택하지 않았다. 코드 변경 0.
+- **따라서 `scripts/diskclean.sh:157-163`은 여전히 `.zig-cache`/`.direnv`를 통째로 지운다.** 담당자가 남기려고 판정한 하위 디렉토리도 함께 날아간다. **깊은 정리 전에 담당자에게 묻는 습관이 유일한 방어다** — 코드가 막아주지 않는다. §2.6의 정리 순서와 함께 기억할 자리.
+- 실사례: 다른 리포의 Zig object 캐시 9.1G를 중앙에서 밀지 않고 담당자에게 넘겨 **df 실측 9.05 GiB 회수**(apparent 12,375,675,933 B와 다르다 — 하드링크/sparse). 담당자는 남길 하위 60M을 판정해 보존했다. 중앙이 밀었으면 그 60M도 잃었다.
+- 그 협업에서 이 repo가 발신한 **repo-local 스킬 정본**(`<repo>/.claude/skills/<name>/SKILL.md` 실물 하나 + `<repo>/.pi/settings.json` = `{"skills":["../.claude/skills"]}`, 복제 없이 두 하네스가 같은 파일을 읽는 구조 — 2026-08-10 기준 16개 리포가 같은 문법)과 삭제 계약은 봇로그 `20260227T031800`으로 공개했다.
+
+### Fixed
+- **`boot.tmp.cleanOnBoot = true` — NEXT.md 기록이 19일간 stale이었다.** "`nix flake check`만 통과, rebuild 안 했다"고 적혀 있었으나 실제로는 **세대 143(2026-07-22)부터 적용돼 있었다**. 검증: `tmpfiles.d/00-nixos.conf`의 `D! /tmp 1777 root root`가 세대 141·142에는 없고 143~148에 있다. 항목은 NEXT.md에서 제거.
+
 ## v2026.8.7 — Control UI 공개면 + codex 런타임 이탈
 
 ### Added
