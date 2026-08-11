@@ -106,7 +106,7 @@ show_menu() {
     echo "    r) Oracle Docker 서비스 재시작"
     echo "    s) Oracle Docker 서비스 상태"
     echo "    a) OpenClaw 페어링 승인"
-    echo "    k) OpenClaw 스킬 설치/업데이트 (pi-skills → workspace)"
+    echo "    k) OpenClaw 스킬 심볼릭 배포 (agent-config SSOT → workspace/claude-skills)"
     echo ""
     echo -e "  ${YELLOW}Syncthing${NC}"
     echo "    i) stignore 배포 (~/sync/*/.stignore)"
@@ -420,18 +420,19 @@ main() {
                     error "이 기능은 Oracle VM에서만 사용 가능합니다."
                     break
                 fi
-                PI_SKILLS_DIR="$HOME/.pi/agent/skills/pi-skills"
+                # SSOT = agent-config/skills (pi-skills는 여기로 가는 심볼릭 모음)
+                # 배포 = workspace*/skills + claude-skills 에 절대경로 심볼릭 (복사 금지)
+                # gog 바이너리 SSOT = openclaw-config/bin/gog (스킬 트리 밖 — rsync 순환 방지)
+                AGENT_SKILLS_SSOT="$HOME/repos/gh/agent-config/skills"
                 OPENCLAW_DIR="$HOME/openclaw"
-                WORKSPACE_SKILLS="$OPENCLAW_DIR/config/workspace/skills"
+                CLAUDE_SKILLS="$OPENCLAW_DIR/config/claude-skills"
+                GOG_BIN_SSOT="$OPENCLAW_DIR/bin/gog"
 
-                if [[ ! -d "$PI_SKILLS_DIR" ]]; then
-                    error "pi-skills 디렉토리가 없습니다: $PI_SKILLS_DIR"
+                if [[ ! -d "$AGENT_SKILLS_SSOT" ]]; then
+                    error "agent-config skills SSOT 없음: $AGENT_SKILLS_SSOT"
                     break
                 fi
 
-                # 스킬 분류 — pi-skills SSOT 자동 스캔
-                #   npm: node_modules 있음 → 통째로 복사
-                #   cli: node_modules 없음 → --exclude=node_modules 복사
                 # 보안/대상 사용자상 봇에 배포하지 않을 스킬
                 #   telegram/slack-latest/jiracli: 사용자 계정 권한 위임 위험
                 #   memory-sync: oracle에서 임베딩 비용
@@ -439,93 +440,76 @@ main() {
                 #   browser-tools: 봇 컨테이너에 무거운 puppeteer 불필요
                 #   entwurf-peek: pi-shell-acp 분신 호출자 전용
                 SKILL_EXCLUDE=(telegram slack-latest jiracli memory-sync punchout browser-tools entwurf-peek)
-                SKILL_NPM=()
-                SKILL_CLI=()
-                for d in "$PI_SKILLS_DIR"/*/; do
-                    [[ -d "$d" ]] || continue
+                SKILL_DEPLOY=()
+                for d in "$AGENT_SKILLS_SSOT"/*/; do
+                    [[ -e "$d" ]] || continue
                     name=$(basename "$d")
                     skip=0
                     for ex in "${SKILL_EXCLUDE[@]}"; do
                         [[ "$name" == "$ex" ]] && { skip=1; break; }
                     done
                     [[ $skip -eq 1 ]] && continue
-                    if [[ -d "$d/node_modules" ]]; then
-                        SKILL_NPM+=("$name")
-                    else
-                        SKILL_CLI+=("$name")
-                    fi
+                    SKILL_DEPLOY+=("$name")
                 done
 
-                # 에이전트별 스킬 배포 정책 — 모든 봇 동일 스킬 (봇 직관 우선)
+                # 모든 봇 동일 스킬 + Claude ACP 오버레이(claude-skills)
                 AGENTS_FULL=(workspace workspace-glg workspace-gpt workspace-gemini workspace-mini workspace-bbot)
-                # Claude ACP 스킬 오버레이 (bbot ACP 세션이 ~/.claude/skills로 봄)
-                CLAUDE_SKILLS="$OPENCLAW_DIR/config/claude-skills"
 
-                info "=== OpenClaw 스킬 배포 (pi-skills → workspace) ==="
+                info "=== OpenClaw 스킬 배포 (심볼릭 → agent-config SSOT) ==="
                 echo ""
-                echo "  npm 스킬 (${#SKILL_NPM[@]}): ${SKILL_NPM[*]}"
-                echo "  CLI 스킬 (${#SKILL_CLI[@]}): ${SKILL_CLI[*]}"
+                echo "  SSOT: $AGENT_SKILLS_SSOT"
+                echo "  배포 (${#SKILL_DEPLOY[@]}): ${SKILL_DEPLOY[*]}"
                 echo "  제외 (${#SKILL_EXCLUDE[@]}): ${SKILL_EXCLUDE[*]}"
+                echo "  대상: ${AGENTS_FULL[*]} + claude-skills"
+                echo "  gog bin: $GOG_BIN_SSOT"
                 echo ""
-                echo "  전체 배포: ${AGENTS_FULL[*]}"
-                echo ""
-                warn "스킬을 설치/업데이트합니다. 계속하시겠습니까? (y/N)"
+                warn "workspace/claude-skills를 심볼릭으로 재작성합니다. 계속하시겠습니까? (y/N)"
                 read -p "> " confirm
                 if [[ "$confirm" =~ ^[Yy]$ ]]; then
-
-                    # 1. main workspace에 전체 스킬 설치
-                    info "1/3 main workspace에 스킬 설치..."
-                    mkdir -p "$WORKSPACE_SKILLS"
-                    for skill in "${SKILL_NPM[@]}"; do
-                        if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
-                            rsync -a --delete "$PI_SKILLS_DIR/$skill/" "$WORKSPACE_SKILLS/$skill/"
-                            success "$skill (npm)"
+                    # gog 바이너리 보존 (스킬 트리 밖). agent-config/gogcli/gog 가 여길 가리킴.
+                    mkdir -p "$OPENCLAW_DIR/bin"
+                    if [[ ! -f "$GOG_BIN_SSOT" || -L "$GOG_BIN_SSOT" ]]; then
+                        if [[ -x "$HOME/.local/bin/gog" ]]; then
+                            cp -a "$HOME/.local/bin/gog" "$GOG_BIN_SSOT"
+                            success "gog bin seeded from ~/.local/bin"
                         else
-                            warn "$skill: 소스 없음"
+                            warn "gog bin missing and no ~/.local/bin/gog — gogcli may break"
                         fi
-                    done
-                    for skill in "${SKILL_CLI[@]}"; do
-                        if [[ -d "$PI_SKILLS_DIR/$skill" ]]; then
-                            rsync -a --delete --exclude='node_modules' "$PI_SKILLS_DIR/$skill/" "$WORKSPACE_SKILLS/$skill/"
-                            success "$skill (cli)"
-                        else
-                            warn "$skill: 소스 없음"
-                        fi
-                    done
-
-                    # 2. full 에이전트들에 main → rsync (mini 포함, 모든 봇 동일)
-                    echo ""
-                    info "2/3 전체 스킬 동기화 → glg, gpt, gemini, mini, bbot..."
-                    for ws in "${AGENTS_FULL[@]}"; do
-                        [[ "$ws" == "workspace" ]] && continue  # main은 이미 설치됨
-                        WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
-                        mkdir -p "$WS_SKILLS"
-                        rsync -a --delete "$WORKSPACE_SKILLS/" "$WS_SKILLS/"
-                        success "$ws"
-                    done
-
-                    # 3. claude-skills 동기화 (ACP 세션이 ~/.claude/skills로 봄)
-                    echo ""
-                    info "3/3 Claude ACP 스킬 동기화 → claude-skills..."
-                    if [[ -d "$CLAUDE_SKILLS" ]]; then
-                        rsync -a --delete "$WORKSPACE_SKILLS/" "$CLAUDE_SKILLS/"
-                        success "claude-skills"
-                    else
-                        warn "claude-skills 디렉토리 없음: $CLAUDE_SKILLS"
+                    fi
+                    if [[ -e "$AGENT_SKILLS_SSOT/gogcli" ]]; then
+                        ln -sfn "$GOG_BIN_SSOT" "$AGENT_SKILLS_SSOT/gogcli/gog"
                     fi
 
-                    echo ""
-                    info "각 workspace 스킬 카운트:"
+                    deploy_skill_symlinks() {
+                        local dest="$1"
+                        mkdir -p "$dest"
+                        find "$dest" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+                        local n
+                        for n in "${SKILL_DEPLOY[@]}"; do
+                            ln -sfn "$AGENT_SKILLS_SSOT/$n" "$dest/$n"
+                        done
+                    }
+
+                    info "1/2 workspace* 심볼릭 배포..."
                     for ws in "${AGENTS_FULL[@]}"; do
-                        WS_SKILLS="$OPENCLAW_DIR/config/$ws/skills"
-                        count=$(ls -d "$WS_SKILLS"/*/ 2>/dev/null | wc -l)
-                        echo "  $ws: $count"
+                        deploy_skill_symlinks "$OPENCLAW_DIR/config/$ws/skills"
+                        success "$ws ($(ls -1 "$OPENCLAW_DIR/config/$ws/skills" | wc -l))"
                     done
+
                     echo ""
-                    info "claude-skills 스킬 목록:"
-                    ls "$CLAUDE_SKILLS/" 2>/dev/null || echo "  (없음)"
+                    info "2/2 claude-skills 심볼릭 배포 (ACP ~/.claude/skills 마운트)..."
+                    deploy_skill_symlinks "$CLAUDE_SKILLS"
+                    success "claude-skills ($(ls -1 "$CLAUDE_SKILLS" | wc -l))"
+
                     echo ""
-                    success "스킬 배포 완료! 스킬 디렉토리 추가/삭제 시 gateway 재시작 필요: r) 메뉴"
+                    info "샘플 resolve:"
+                    ls -la "$OPENCLAW_DIR/config/workspace-glg/skills/autholog-mend" 2>/dev/null || true
+                    if [[ -x "$OPENCLAW_DIR/config/workspace/skills/gogcli/gog" ]]; then
+                        echo -n "  gog: "
+                        "$OPENCLAW_DIR/config/workspace/skills/gogcli/gog" --version 2>/dev/null | head -1 || true
+                    fi
+                    echo ""
+                    success "스킬 심볼릭 배포 완료. 디렉터리 추가/삭제·allowSymlinkTargets 변경 시 gateway restart/recreate 필요: r) 메뉴"
                 else
                     info "취소되었습니다."
                 fi

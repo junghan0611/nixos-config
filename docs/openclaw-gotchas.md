@@ -12,21 +12,20 @@
 
 ## 활성
 
-### gogcli(gog) 봇 배포 — 정적 링크 필수 + 배포 체인 3중 + 버전업 시 ro→rw·account (2026-07-15)
+### gogcli(gog) 봇 배포 — 정적 링크 필수 + bin SSOT (2026-08-11 갱신)
 
-**한 줄**: 봇 `gog` = openclaw/gogcli 공개 **정적** v0.34.0. 옛 `junghan0611` 포크 0.12는 폐기. 배포 체인이 심볼릭+오버레이로 3중이라 "호스트를 고쳤는데 봇은 옛것"이 나기 쉽다.
+**한 줄**: 봇 `gog` = openclaw/gogcli 공개 **정적** v0.34.0. 옛 `junghan0611` 포크 0.12는 폐기. **실파일 SSOT = `~/openclaw/bin/gog`** (스킬 트리 밖).
 
-**봇 bare `gog`가 실제 도달하는 곳 (배포 체인)**:
+**도달 체인 (2026-08-11 심볼릭 전량 배포 이후)**:
 
 ```
-봇 PATH: ~/.pi/agent/claude-plugin/skills/gogcli      (심볼릭)
-  └→ ~/repos/gh/agent-config/skills/gogcli            (심볼릭 타겟)
-     ⇒ 컨테이너에서 agent-config/skills 는
-       ~/openclaw/config/claude-skills 로 bind mount 오버레이 (~/openclaw → openclaw-config)
-       └→ 실소스: ~/openclaw/config/claude-skills/gogcli/gog
+workspace*/skills/gogcli  →  agent-config/skills/gogcli  →  gog 심볼릭
+claude-skills/gogcli      ↗                                 └→ ~/openclaw/bin/gog  (실파일)
 ```
 
-∴ **봇 bare gog를 갈려면 `~/openclaw/config/claude-skills/gogcli/gog`를 교체**한다. `agent-config/skills/gogcli/gog`(호스트 에이전트가 보는 것)를 최신화해도 봇은 안 본다 — 오버레이가 openclaw-config를 덮는다. 게다가 `claude-skills/gogcli`는 **실복사본**(run.sh k) sync 산물, 심볼릭 아님)이라 소스가 새로 바뀌어도 자동 반영 0 — 이게 stale의 근인. **force-recreate로도 안 풀린다**(마운트가 stale이 아니라 복사본이 옛것).
+업그레이드: ① `external-packages.sh`로 `~/.local/bin/gog` ② `cp ~/.local/bin/gog ~/openclaw/bin/gog` ③ 끝.
+
+**옛 함정 (해결됨, 재발 금지)**: 호스트 `~/.claude/skills`가 agent-config/skills **디렉터리 심볼릭**이면 compose의 `claude-skills → ~/.claude/skills` 마운트가 agent-config를 통째로 오버레이했다. 고정 형태 = `~/.claude/skills` **실 디렉터리 + per-skill 심볼릭**. 또한 옛 `run.sh k)` rsync는 gog 실파일을 자기참조 심볼릭으로 덮어 파괴 — k)는 심볼릭 전용, 복사 금지.
 
 **정적 링크 필수**: 봇 컨테이너 = Debian bookworm aarch64, **nix store 없음**. gog는 `statically linked`여야 컨테이너에서 돈다. openclaw/gogcli 릴리즈 `linux_arm64`는 정적. `go install`(호스트 CGO=1)은 **nix glibc에 동적 링크**돼 컨테이너에서 loader(`/nix/store/…ld-linux`) 부재로 실행 실패(`not found`처럼 보인다). → `external-packages.sh`는 릴리즈 tarball 다운로드로 정적본을 앉힌다(`go install` 아님, 2026-07-15).
 

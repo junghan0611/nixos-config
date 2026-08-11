@@ -479,59 +479,68 @@ Stamp every commit with agenda and Google Chat notification per the convention i
 ## 5. Skills deployment
 
 ```
-agent-config (SSOT)
-  └── pi-skills/ (source + build)
-        ↓ git pull on Oracle
-~/pi-skills/ (Oracle local)
-        ↓ run.sh k)
-~/openclaw/config/workspace*/skills/ (per-bot deploy)
+agent-config/skills/          ← SSOT (git)
+  ↑ pi-skills/* 심볼릭 (호스트 하네스)
+  ↑ ~/.claude/skills/* 심볼릭 (호스트 Claude — per-skill, dir 심볼릭 금지)
+        ↓ run.sh k)  절대경로 심볼릭 (복사 금지)
+~/openclaw/config/workspace*/skills/*
+~/openclaw/config/claude-skills/*   ← 컨테이너 ~/.claude/skills 마운트
 ```
 
-Operator entrypoint: `run.sh k)` (Oracle only).
+Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전량 배포** (복사/`rsync` 폐기).
 
-### Inventory
+### Why symlink
 
-| Class | Skills | Notes |
-|---|---|---|
-| npm (bundled `node_modules`) | brave-search, youtube-transcript, medium-extractor, transcribe, summarize | copy whole tree |
-| CLI (binary / shell) | denotecli, ghcli, bibcli, gogcli, gitcli, lifetract, dictcli | exclude `node_modules` |
+- 공간: workspace×6 + claude-skills 복사본(~700M+) → 심볼릭 디렉터리 수 KB + 바이너리 1벌.
+- 신선도: agent-config SKILL.md/스크립트 수정이 재배포 없이 전 봇·ACP에 즉시 반영 (`skills.load.watch: true`).
+- OpenClaw `skills.load.allowSymlinkTargets`에 SSOT 경로를 열어 심볼릭 following 허용.
+
+### Exclude (봇 미배포)
+
+`telegram` `slack-latest` `jiracli` `memory-sync` `punchout` `browser-tools` `entwurf-peek`
 
 ### Per-agent policy
 
-모든 봇 동일 스킬 (2026-05-09부터). 봇 직관 우선 — agenda/commit/botlog 같은 turn-routine 스크립트는 모든 봇이 자기 `workspace/skills/`에서 찾을 수 있어야 한다. mini 최소 정책(`MINI_SKILLS=(denotecli)`)은 issue #6에서 보고된 mini 봇 stamp 실패 사례로 폐기.
+모든 봇 동일 스킬 세트. mini 최소 정책은 폐기(issue #6).
 
-| Agent | Workspace | Skill scope |
+| Agent | Workspace | Notes |
 |---|---|---|
-| main | `workspace/` | all |
-| glg | `workspace-glg/` | all |
-| gpt | `workspace-gpt/` | all |
-| gemini | `workspace-gemini/` | all |
-| mini | `workspace-mini/` | all |
-| bbot | `workspace-bbot/` | all |
+| main | `workspace/` | allowlist 없음 |
+| glg | `workspace-glg/` | `agents.list[].skills` allowlist 있음 — 신규 스킬 추가 시 allowlist도 갱신 |
+| gpt/gemini/mini/bbot | `workspace-*` | allowlist 없음 |
 
 ### Deployment rules
 
-- `run.sh k)` installs to `main` first, then rsyncs to glg / gpt / gemini / mini / bbot, then syncs to `claude-skills/`.
-- Adding or removing skill directories requires a gateway restart.
-- SKILL.md content-only changes load dynamically (no restart).
-- Go binaries are built for arm64 in pi-skills and deployed outside git.
+- `run.sh k)`: 각 `workspace*/skills` + `claude-skills`를 비운 뒤 `agent-config/skills/<name>` 절대경로 심볼릭 재작성.
+- 스킬 **디렉터리 추가/삭제** 또는 `allowSymlinkTargets` 변경 → gateway restart (필요 시 recreate).
+- SKILL.md content-only → watch로 동적 로드 (재시작 불필요).
+- **절대 복사 금지.** 옛 `rsync --delete` 경로는 gog 실바이너리를 심볼릭으로 덮어 파괴한다.
 
-### Workspace skills vs Claude native skills
+### `~/.claude/skills` footgun (필수)
 
-Two separate systems that do not auto-sync.
+호스트 `~/.claude/skills`가 **디렉터리 하나짜리 심볼릭**(→ `agent-config/skills`)이면, compose의
+`claude-skills → /home/node/.claude/skills` 마운트가 심볼릭을 resolve하며 **agent-config/skills 자체를
+오버레이**한다. 증상: 컨테이너에서 `/home/junghan/repos/gh/agent-config/skills`는 stale 25개,
+`/home/node/repos/gh/agent-config/skills`만 진짜 41개.
 
-- `workspace*/skills/` — OpenClaw workspace skill system.
-- `~/.claude/skills` — Claude ACP sessions discover skills here.
+**고정 형태**: 호스트 `~/.claude/skills` = **실 디렉터리** + per-skill 심볼릭.
+`run.sh k)`와 무관하게 이 형태를 유지할 것. 깨지면 gateway recreate 전에 복구.
 
-Current workaround on Oracle: `config/claude-skills/` is mounted to `/home/node/.claude/skills` for ACP sessions. `claude-skills/` is a union of `agent-config/skills` and `workspace-bbot/skills`. `~/.claude` must be **rw** (Claude writes `session-env/` and `projects/`). Long-term path: MCP bridge exposing workspace skills as tools so the overlay becomes unnecessary.
+### Workspace skills vs Claude ACP skills
 
-### gogcli(gog) — 특수 배포 + 심볼릭 단일화 대상 (2026-07-15)
+- `workspace*/skills/` — OpenClaw workspace skill system (심볼릭 → agent-config).
+- 컨테이너 `~/.claude/skills` — `config/claude-skills/` 마운트 (같은 심볼릭 세트). Claude ACP가 여기를 본다.
+- `~/.claude` 자체는 **rw** (Claude `session-env/`·`projects/` 기록).
 
-봇 `gog`는 이 파이프라인의 **예외이자 함정 집합소**다. 상세·진단은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "gogcli 봇 배포".
+### gogcli(gog) — 바이너리만 스킬 트리 밖
 
-- **봇 bare `gog`의 실소스 = `~/openclaw/config/claude-skills/gogcli/gog`** (= `openclaw-config`, `~/openclaw`는 심볼릭). `agent-config/skills/gogcli/gog`(호스트 에이전트가 보는 것)가 **아니다** — 컨테이너에서 `agent-config/skills`가 `claude-skills`로 bind mount 오버레이되기 때문(위 workaround의 그 오버레이). claude-skills/gogcli는 **실복사본**(심볼릭 아님)이라 소스 갱신이 자동 반영 안 됨 → stale 주의(force-recreate로도 안 풀린다).
-- **정적 링크 필수**(컨테이너 = Debian, nix store 없음), **인증은 호스트 `~/.config/gogcli` rw 마운트 단일 SSOT 공유**(`GOG_ACCOUNT`=개인 gmail default, 회사는 `--account <work-email>` 명시 — 실제 값은 agent-config SKILL.md). 공개 정적 v0.34.0, 옛 `junghan0611` 포크 0.12 폐기. 호스트 설치는 `external-packages.sh`(릴리즈 tarball, `go install` 아님).
-- **공간/버전관리 — 심볼릭 단일화 (완료 2026-07-15, 300M→75M)**: gog 실파일 **마스터 2벌만** 남긴다 — ① `~/.local/bin/gog`(호스트, `external-packages.sh` 설치) ② `~/openclaw/config/claude-skills/gogcli/gog`(**봇 SSOT**, 컨테이너 접근). 나머지 6개(`agent-config/skills` + `workspace×5`)는 ②로 **절대경로 심볼릭**(`/home/junghan/repos/gh/openclaw-config/config/claude-skills/gogcli/gog`) — butlercli의 이중 마운트 덕에 컨테이너에서 resolve. **SSOT를 claude-skills로 둔 이유**: `agent-config/skills`는 컨테이너에서 claude-skills로 오버레이되므로 심볼릭 타깃으로 쓰면 순환. 봇 심볼릭 타깃은 반드시 **오버레이 밖 실체**(= claude-skills 자기 자신)여야 한다. **두 마스터인 이유**: 컨테이너가 `~/.local/bin`을 마운트하지 않는다(claude·agy·goose 등 호스트 도구 노출 회피) → 봇용 실파일이 별도로 필요. gog 업그레이드 시 이 2벌만 갱신(external-packages.sh가 ①, 봇 SSOT ②는 별도 교체).
+상세·진단: [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "gogcli 봇 배포".
+
+- **봇 gog 실파일 SSOT = `~/openclaw/bin/gog`** (openclaw-config/bin, 스킬 트리 밖).
+- `agent-config/skills/gogcli/gog` → 그 경로 심볼릭. workspace/claude-skills의 gogcli는 agent-config로 심볼릭이므로 한 곳에서 resolve.
+- 호스트 마스터는 별도 `~/.local/bin/gog` (`external-packages.sh`). 컨테이너는 `~/.local/bin` 미마운트 → 봇용 실파일 1벌 필요.
+- 업그레이드: ① `external-packages.sh`로 호스트 갱신 ② `cp ~/.local/bin/gog ~/openclaw/bin/gog` ③ 끝 (스킬 재배포 불필요).
+- 인증 = 호스트 `~/.config/gogcli` rw 마운트 공유. 정적 링크 바이너리(Debian, nix 없음).
 
 ---
 
