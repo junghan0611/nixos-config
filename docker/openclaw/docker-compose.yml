@@ -35,6 +35,9 @@ services:
       # 봇이 실행하는 스킬/스크립트의 `date` 도 UTC라 자정 근처에 날짜가 하루 어긋난다. (2026-07-14)
       - TZ=Asia/Seoul
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
+      # gog default 계정 = 개인. 봇이 bare `gog calendar`로 개인 캘린더 자동 조회
+      # (계정 둘이라 v0.34는 미지정 시 --account 요구). 회사 계정은 --account 로 명시.
+      - GOG_ACCOUNT=junghanacs@gmail.com
       - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1  # 서브에이전트 ws:// Docker bridge 허용
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       # doctor --deep 권장 (Oracle ARM small host) — 5.2 부팅/CLI 가속, side-effect 없음
@@ -64,9 +67,14 @@ services:
       - ./auth-profile-secrets:/home/node/.config/openclaw
       # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
       # 지식베이스/코드베이스
-      # repos/gh는 rw로 개방 — git 관리 하에 에이전트 직접 편집 허용 (2026-04-25)
-      - ~/repos/gh:/home/node/repos/gh:rw
-      - ~/repos/gh:/home/junghan/repos/gh:rw  # ~/.claude absolute symlink compatibility
+      # repos/gh 기본 ro — 봇이 임의 리포를 고치지 못하게 (2026-08-12)
+      # 예외 rw: aionsclubs(B 본진), self-tracking-data(lifetract.db — 아래 오버라이드)
+      - ~/repos/gh:/home/node/repos/gh:ro
+      - ~/repos/gh:/home/junghan/repos/gh:ro  # ~/.claude absolute symlink compatibility
+      - ~/repos/gh/aionsclubs:/home/node/repos/gh/aionsclubs:rw
+      - ~/repos/gh/aionsclubs:/home/junghan/repos/gh/aionsclubs:rw
+      # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
+      - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:ro
       - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:ro
@@ -78,8 +86,10 @@ services:
       - ~/org/notes:/home/node/org/notes:rw
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
-      # Google Workspace CLI (gogcli) 인증 (read-only)
-      - ~/.config/gogcli:/home/node/.config/gogcli:ro
+      # Google Workspace CLI (gogcli) 인증 (rw — gog v0.34+가 keyring lock write 필요.
+      # 호스트 ~/.config/gogcli 단일 SSOT를 봇이 공유: 호스트 gog login 1회 = 봇도 반영,
+      # refresh token 갱신도 이 파일에 써진다. 2026-07-15 ro→rw. 옛 0.12는 lock 미사용이라 ro OK였음.)
+      - ~/.config/gogcli:/home/node/.config/gogcli:rw
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
@@ -135,6 +145,9 @@ services:
       - TZ=Asia/Seoul  # gateway service와 동일 — 컨테이너 기본 Etc/UTC 방지
       - BROWSER=echo
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
+      # gog default 계정 = 개인. 봇이 bare `gog calendar`로 개인 캘린더 자동 조회
+      # (계정 둘이라 v0.34는 미지정 시 --account 요구). 회사 계정은 --account 로 명시.
+      - GOG_ACCOUNT=junghanacs@gmail.com
       # ACP route child spawn 보강 — gateway service와 동일 (pi-shell-acp #21 consumer-side workaround)
       # claude-cli provider needs `claude` on PATH; SDK ships binary at `/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64/claude` (no auto-symlink). Without this entry the `spawn("claude", ...)` from `dist/cli-backend-CO2SZJAY.js` ENOENTs → child exits ~4ms → parent stdin write hits EPIPE.
       - PATH=/app/node_modules/@anthropic-ai/claude-agent-sdk-linux-arm64:/home/junghan/.pi/agent/claude-plugin/skills/bibcli:/home/junghan/.pi/agent/claude-plugin/skills/denotecli:/home/junghan/.pi/agent/claude-plugin/skills/dictcli:/home/junghan/.pi/agent/claude-plugin/skills/gitcli:/home/junghan/.pi/agent/claude-plugin/skills/gogcli:/home/junghan/.pi/agent/claude-plugin/skills/lifetract:/home/junghan/.pi/agent/claude-plugin/skills/semantic-memory:/nix/store/flz7vwvzin0wpsrmrxymzlg1jn840ck9-emacs-nox-30.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -149,9 +162,14 @@ services:
       # 5.12 신규: OAuth profile secret key persistence (XDG, gateway와 공유)
       - ./auth-profile-secrets:/home/node/.config/openclaw
       # 지식베이스/코드베이스
-      # repos/gh는 rw로 개방 — git 관리 하에 에이전트 직접 편집 허용 (2026-04-25)
-      - ~/repos/gh:/home/node/repos/gh:rw
-      - ~/repos/gh:/home/junghan/repos/gh:rw  # ~/.claude absolute symlink compatibility
+      # repos/gh 기본 ro — 봇이 임의 리포를 고치지 못하게 (2026-08-12)
+      # 예외 rw: aionsclubs(B 본진), self-tracking-data(lifetract.db — 아래 오버라이드)
+      - ~/repos/gh:/home/node/repos/gh:ro
+      - ~/repos/gh:/home/junghan/repos/gh:ro  # ~/.claude absolute symlink compatibility
+      - ~/repos/gh/aionsclubs:/home/node/repos/gh/aionsclubs:rw
+      - ~/repos/gh/aionsclubs:/home/junghan/repos/gh/aionsclubs:rw
+      # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
+      - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:ro
       - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:ro
@@ -163,8 +181,10 @@ services:
       - ~/org/notes:/home/node/org/notes:rw
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
-      # Google Workspace CLI (gogcli) 인증 (read-only)
-      - ~/.config/gogcli:/home/node/.config/gogcli:ro
+      # Google Workspace CLI (gogcli) 인증 (rw — gog v0.34+가 keyring lock write 필요.
+      # 호스트 ~/.config/gogcli 단일 SSOT를 봇이 공유: 호스트 gog login 1회 = 봇도 반영,
+      # refresh token 갱신도 이 파일에 써진다. 2026-07-15 ro→rw. 옛 0.12는 lock 미사용이라 ro OK였음.)
+      - ~/.config/gogcli:/home/node/.config/gogcli:rw
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
