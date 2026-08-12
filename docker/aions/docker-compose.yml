@@ -1,0 +1,42 @@
+# aionsclubs.org — B 의 클럽 집
+#
+# 기존 proxy 네트워크에 붙이지 않는다. proxy 에는 밖에 나가면 안 되는 것이 섞여 있다
+# (openclaw-gateway 18789 직결 경로 = 인증 우회). 여기 aions 네트워크에는
+# cloudflared 와 aions-web 둘만 산다.
+#
+# 금지: docker socket 마운트 · extra_hosts(host-gateway) · 포트 publish
+#       셋 중 하나라도 넣으면 전용망이 무의미해진다.
+
+services:
+  aions-web:
+    image: caddy:2-alpine
+    container_name: aions-web
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # 부모째 마운트한다 — current symlink 자체를 bind mount 하면
+      # 컨테이너가 기동 시점 타깃에 고정돼 교체가 안 보인다
+      - /home/junghan/docker-data/aions:/srv/aions:ro
+    networks: [aions]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: aions-cloudflared
+    restart: unless-stopped
+    # 호스트 junghan(1000:100) 으로 돈다 — credentials 를 chmod 600 인 채로 읽기 위해서다.
+    # 기본 nonroot(65532) 로는 못 읽어 "credentials file doesn't exist" 로 재시작을 반복한다.
+    # 권한을 644 로 낮추는 대신 uid 를 맞추는 쪽을 택한다.
+    user: "1000:100"
+    command: tunnel --no-autoupdate --config /etc/cfd-config/config.yml run
+    volumes:
+      # config 와 credentials 를 같은 경로에 겹치지 않는다 — ro 디렉터리 위에
+      # 파일을 또 마운트하면 mountpoint 를 못 만들어 컨테이너가 안 뜬다
+      - ./config.yml:/etc/cfd-config/config.yml:ro
+      - /home/junghan/docker-data/aions/cloudflared:/etc/cloudflared:ro
+    networks: [aions]
+    depends_on: [aions-web]
+
+networks:
+  aions:
+    name: aions
+    driver: bridge

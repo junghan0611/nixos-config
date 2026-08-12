@@ -1,0 +1,12 @@
+# aions-web — 정적 서빙 전용. TLS 는 Cloudflare 가 종단하므로 :80.
+# 호스트명 매칭 없음 — 터널이 이 컨테이너로만 보낸다.
+:80 {
+	root * /srv/aions/current
+	file_server
+
+	# 액세스 로그 — 누가 읽었나가 이 집의 관측면이다 (ax.junghanacs.com 패턴)
+	log {
+		output stderr
+		format json
+	}
+}
