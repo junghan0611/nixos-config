@@ -12,6 +12,29 @@
 
 ## 활성
 
+### heartbeat를 한 봇에만 주면 나머지 봇이 조용히 꺼진다 (2026-08-12)
+
+한 봇의 주기만 바꾸려고 `agents.list[]`에 `heartbeat` 블록을 하나 넣는 순간 **스케줄러가 모드를
+바꾼다**. `isHeartbeatEnabledForAgent()`가 이렇게 판정하기 때문이다:
+
+```
+list 안에 heartbeat 블록을 가진 에이전트가 하나라도 있나?
+  있다 → 그 블록을 가진 에이전트에게만 heartbeat 적용 (나머지 전원 OFF)
+  없다 → agents.defaults.heartbeat 존재 시 전원 적용
+```
+
+즉 `defaults.heartbeat`는 **아무도 명시하지 않았을 때만** 전원에게 걸리는 폴백이다. bbot에만
+`{ every: "30m" }`을 넣으면 bbot만 돌고 main/glg/gpt/mini는 에러도 경고도 없이 멈춘다 — 로그에
+"안 도는 봇"은 안 찍히니 한참 뒤에나 눈치챈다.
+
+처방: **heartbeat를 쓰는 봇 전원에게 블록을 명시한다.** 그 순간부터 `agents.list`가 진짜 SSOT이고
+`defaults`는 죽은 폴백이 된다 — **새 봇을 추가할 때 블록을 빼먹으면 그 봇은 heartbeat 없이
+태어난다.** 반대로 특정 봇을 끄고 싶으면 블록을 안 주면 된다(2026-08-12 gemini가 이 경로로 OFF).
+
+주기 해석 순서는 `overrideEvery ?? agent.heartbeat.every ?? defaults.heartbeat.every ?? "30m"`.
+config-only 변경이라 **`docker compose restart openclaw-gateway`면 충분**(recreate 불필요),
+restart 뒤 memory prewarm은 평소대로.
+
 ### 컨테이너에 전역 gitconfig가 없다 — 봇의 push는 막히고 안전레일은 통째로 빠진다 (2026-08-12)
 
 봇 컨테이너에는 `~/.gitconfig`도 `/etc/gitconfig`도 **존재하지 않았다**. 결과가 두 갈래로 갈렸는데,
