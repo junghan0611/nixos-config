@@ -12,6 +12,35 @@
 
 ## 활성
 
+### 컨테이너에 전역 gitconfig가 없다 — 봇의 push는 막히고 안전레일은 통째로 빠진다 (2026-08-12)
+
+봇 컨테이너에는 `~/.gitconfig`도 `/etc/gitconfig`도 **존재하지 않았다**. 결과가 두 갈래로 갈렸는데,
+한쪽은 시끄럽게 막히고 다른 쪽은 조용히 뚫려 있어서 둘을 같이 보기 전엔 반쪽만 고치게 된다.
+
+- **push는 막힌다(시끄러움)**: `~/.config/gh`가 ro로 마운트돼 `gh auth`는 GREEN인데도 plain
+  `git push`는 `fatal: could not read Username for 'https://github.com'`(exit 128). 토큰은
+  허가돼 있고 git이 그걸 쓸 배선만 없는 상태 — 권한 문제로 오진하기 쉽다.
+- **안전레일은 빠진다(조용함)**: 호스트를 지키는 global `core.hooksPath`가 컨테이너엔 없으니
+  봇 커밋이 신원/secret 스캔을 **한 번도 거치지 않고** 공개 리포로 나간다. 아무 에러도 안 나므로
+  누가 실측하기 전까지는 보이지 않는다.
+
+처방은 한 파일: `~/openclaw/config/gitconfig-system` → compose에서 `/etc/gitconfig:ro`로 마운트
+(공개 백업은 `docker/openclaw/config/gitconfig-system`). credential helper(`!gh auth git-credential`)와
+`core.hooksPath`를 같이 넣는다 — **한쪽만 넣으면 열어놓고 지키지 않는 상태가 된다.**
+
+반사신경 둘:
+
+- **이 파일을 고칠 땐 in-place append**(`>>`). single-file bind-mount inode 함정이라 atomic
+  rename으로 새 inode를 만들면 컨테이너는 옛 내용을 계속 본다(Caddyfile과 같은 병). 제자리 수정은
+  재시작 없이 즉시 반영된다 — `docker exec ... git config --system --list`로 확인.
+- **compose 백업만 옮기고 파일을 빼먹지 마라.** bind source가 없으면 docker가 그 자리에 빈
+  **디렉터리**를 만들고 `/etc/gitconfig`가 디렉터리가 되면서 컨테이너의 git이 통째로 깨진다.
+
+hooksPath는 경로가 없으면 훅 없이 조용히 진행한다(fail-open) — 봇을 막지는 않는다. gitleaks는
+컨테이너에 없어서 fallback 패턴으로 동작하고, 공개 리포(`junghan0611/*`·`junghanacs/*`)는 strict
+(신원 용어 + secret)로 잡힌다. 실측(2026-08-12): 정상 커밋 통과, `ghp_` 토큰 커밋 차단, 신원 용어
+커밋 차단, `git push --dry-run` 인증 통과 + pre-push 스캔 동작.
+
 ### gogcli(gog) 봇 배포 — 정적 링크 필수 + bin SSOT (2026-08-11 갱신)
 
 **한 줄**: 봇 `gog` = openclaw/gogcli 공개 **정적** v0.34.0. 옛 `junghan0611` 포크 0.12는 폐기. **실파일 SSOT = `~/openclaw/bin/gog`** (스킬 트리 밖).

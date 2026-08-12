@@ -1,0 +1,12 @@
+# OpenClaw container — plain `git push` via gh auth (hosts.yml mounted ro)
+[credential "https://github.com"]
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = !gh auth git-credential
+
+# 안전레일 — 호스트와 동일한 전역 훅. 공개 리포(junghan0611/*, junghanacs/*)는
+# strict(신원 용어 + secret), 그 외는 loose(secret). 컨테이너에는 전역 gitconfig가
+# 아예 없어서 봇 커밋이 이 스캔을 통째로 건너뛰고 있었다 (2026-08-12).
+# 경로가 없으면 git은 훅 없이 조용히 진행한다 — fail-open이므로 봇을 막지 않는다.
+[core]
+	hooksPath = /home/node/repos/gh/agent-config/git-hooks
