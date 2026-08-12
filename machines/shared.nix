@@ -315,6 +315,7 @@ in
     dnsutils
     traceroute
     httpie
+    cloudflared
     tailscale
     syncthing
     stc-cli
