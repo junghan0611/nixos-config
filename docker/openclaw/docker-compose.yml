@@ -92,6 +92,8 @@ services:
       - ~/.config/gogcli:/home/node/.config/gogcli:rw
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # plain git push/fetch → gh credential helper (no interactive username)
+      - ./config/gitconfig-system:/etc/gitconfig:ro
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
       - ~/.claude:/home/node/.claude
       # Claude ACP skills (모든 ACP 세션이 공유)
@@ -187,6 +189,8 @@ services:
       - ~/.config/gogcli:/home/node/.config/gogcli:rw
       # GitHub CLI 인증 (read-only)
       - ~/.config/gh:/home/node/.config/gh:ro
+      # plain git push/fetch → gh credential helper (no interactive username)
+      - ./config/gitconfig-system:/etc/gitconfig:ro
       # Claude Code 런타임 (ACPX Claude용, rw — session-env/projects 기록 필요)
       - ~/.claude:/home/node/.claude
       # Claude ACP skills (모든 ACP 세션이 공유)
