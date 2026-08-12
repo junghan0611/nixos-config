@@ -12,8 +12,4 @@ metrics: 0.0.0.0:2000
 ingress:
   - hostname: aionsclubs.org
     service: http://aions-web:80
-  # www 도 당분간 같이 서빙한다 — apex 가 살아나면 Redirect Rule(301)로 옮기고
-  # 이 줄을 지운다. 지금 빼면 www 가 404 라 집을 확인할 길이 없다.
-  - hostname: www.aionsclubs.org
-    service: http://aions-web:80
   - service: http_status:404
