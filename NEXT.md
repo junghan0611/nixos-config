@@ -6,6 +6,25 @@
 
 ---
 
+## 🔴 재부팅 부팅 순서 레이스 — caddy는 막았고 emacs는 안 막았다 (2026-08-16)
+
+커널 `7.1.2 → 7.1.4` 재부팅(04:49 KST)이 **독립된 부팅 레이스 두 개**를 동시에 터뜨려 `junghanacs.com` 서브도메인 전부가 5시간 죽었다. 둘 다 "docker가 다른 무엇보다 먼저 뜨느냐"에 결과가 갈리는 같은 모양이다. 복구는 끝났고(전 vhost 200), **재발 방지가 절반만 됐다**.
+
+**① caddy 443 선점 — 영구 수정 완료.** `machines/oracle.nix:19`의 `tailscale serve --bg --https=443 → 127.0.0.1:18789`(OpenClaw gateway 레인)이 `--bg`라 tailscaled 영구 설정에 남는다. 재부팅 후 tailscaled가 docker보다 먼저 올라와 `100.67.72.1:443`을 잡았고, 리눅스는 `0.0.0.0:443`과 특정IP `:443`을 공존시키지 않으므로 caddy가 `exit 128 / address already in use`로 죽었다. 지난 부팅(7/2)엔 caddy가 이겨서 5개월간 안 드러났다 — **어느 쪽이 이기느냐만 달랐지 설정은 내내 충돌 상태였다.** 조치: `docker/caddy/docker-compose.yml` 포트를 `10.0.0.157:{80,443}`(enp0s6 NIC)로 묶어 tailnet 443과 공존. 공인 IPv6가 없고 A레코드(`168.107.2.68`)만 쓰므로 외부 손실 0.
+
+**② geworfen/agenda — 미해결.** docker가 호스트 emacs보다 먼저 떠서 마운트 소스 `/run/user/1000/emacs`를 **root 소유로 생성** → `agent-emacs.service`가 *"is not a safe directory because it is not owned by you"*로 기동 실패 → `server` 소켓 부재 → geworfen healthcheck 영구 실패 → autoheal이 2.5분마다 재시작(5시간 약 120회). 수동 복구는 emacs·geworfen 정지 → root 소유 dir `rmdir` → `agent-emacs`+`emacs` 기동 → geworfen `--force-recreate`. **다음 재부팅에 docker가 또 이기면 그대로 재발한다.**
+
+- [ ] **emacs 소켓 dir 레이스 항구 차단 (①의 짝, 이게 남은 본체).** 후보 셋: ⓐ `agent-emacs.service`에 `ExecStartPre`로 `/run/user/1000/emacs` 소유자 검사 후 root 소유면 `rmdir`, ⓑ geworfen 컨테이너 시작을 emacs 유닛 뒤로 미룸(`restart: unless-stopped`라 docker가 부팅 시 자력 기동 — systemd drop-in으로 순서 강제 필요), ⓒ systemd-tmpfiles로 부팅 시 junghan 소유 선점. ⓐ가 제일 싸고 국소적 — **GLG 판단 필요.**
+- [ ] **`10.0.0.157` 하드코딩 — DHCP가 IP를 바꾸면 caddy가 안 뜬다.** 오라클 VM은 `default via 10.0.0.1 dev enp0s6 proto dhcp`라 리스 갱신에서 주소가 바뀔 여지가 있다(현재까지 고정으로 관측). 정공법은 NixOS에서 enp0s6 static IP 선언 또는 compose를 생성하는 얇은 래퍼. 지금은 **주소가 바뀌면 caddy가 조용히 죽는 구조**라는 걸 알고 두는 상태.
+- [ ] **근본 판단 — tailscale serve 443을 계속 쓸 것인가.** 지금은 "NIC 바인딩으로 비켜간" 상태지 충돌을 없앤 게 아니다. OpenClaw tailnet 레인을 `--https=8443`으로 옮기면 caddy가 `0.0.0.0`을 되찾지만 페어링 URL이 바뀐다. 안 옮기면 443이 두 주인을 가진 채로 남는다.
+- [ ] **재부팅 후 점검 체크리스트가 없다.** 이번엔 GLG가 "ax 안 들어가진다"로 발견했다 — 5시간 뒤였다. `run.sh`에 부팅 후 자가진단(전 vhost 8-세트 + 컨테이너 Up + emacs 소켓 2개) 항목을 넣을지 판단. `docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수"의 부팅판.
+- [ ] **gotchas 박제** — 위 두 레이스를 `docs/openclaw-gotchas.md`에 영속화. 현재 caddy 항목은 *Caddyfile 편집* 함정만 담고 **부팅 시 포트 선점**은 없다.
+- 봇은 무사했다: 텔레그램 6채널이 **폴링**이라 caddy와 무관하게 5시간 내내 연결 유지(`channels status --probe` 전부 `works`), heartbeat 30분 주기 정상, 08:00 cron 음성 발송 성공. 죽은 건 `claw` Control UI 공개면뿐.
+- [ ] **6봇 memory 인덱스 전부 `Dirty: yes`.** 재부팅 + 5시간치 세션 누적분. 콜드 `memory_search` 15s 하드타임아웃 방어의 1차선이 인덱스 정합이므로(`.claude/skills/nixos-config` §5) 재인덱싱 판단 필요. dims 4096 정상, `Sources: memory, sessions` 정상.
+- 참고 상태: github-copilot **Premium 0% left**(Chat 100%), openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내, gemini는 기존 방침대로 DOWN 유지.
+
+---
+
 ## 디스크 정리 루틴 = `scripts/diskclean.sh` (2026-07-21, thinkpad 실측 91G 회수)
 
 thinkpad가 96%(여유 19G)까지 찼던 건을 계기로 정리 로직을 스크립트 SSOT로 뽑고 `run.sh` `c)`/`C)`에 연결. 디바이스 프로파일은 `~/.current-device`. 개념·순서 근거는 [AGENTS.md](AGENTS.md) §2.6.
