@@ -94,7 +94,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 >
 > **판정 규칙**: `expires`가 오늘/내일이어도 **정상이다.** 손댈 때는 ① `.credentials.json` mtime이 회전 주기(~8h)보다 오래 멈춰 있거나, ② `refreshTokenExpiresAt`이 임박했거나, ③ 실제 서빙이 깨졌을 때다. 그 경우에만 수동 `models auth login`(TTY, GLG)이 필요하다. 매일 만료 알람으로 읽으면 있지도 않은 부채를 만든다.
 
-**과금 경로는 전부 구독(OAuth)이다. 종량제 API 키로 도는 챗 모델은 하나도 없다** — `models auth list`에서 anthropic/openai/google-gemini-cli 모두 `oauth`. Anthropic flat-rate / Copilot 양쪽 다 안 씀 (`github-copilot` OAuth 프로필은 잔재, 미사용). ⚠️ 단 glg/gpt/gemini 3봇에 `anthropic:default [anthropic/**token**]` 프로필이 남아있다 — 유일한 비-OAuth 항목이고, claude-cli OAuth가 실패하면 **구독 밖 종량 과금**으로 흐를 수 있는 자리다(현재 primary 경로로는 미사용).
+**과금 경로는 전부 구독(OAuth)이다. 종량제 API 키로 도는 챗 모델은 하나도 없다** — `models auth list`에서 anthropic/openai/google-gemini-cli 모두 `oauth`. Anthropic flat-rate / Copilot 양쪽 다 안 씀. **Copilot은 2026-08-16에 전면 제거했다** — GLG "이제 안 쓴다" 결정. config 3곳(`auth.profiles."github-copilot:github"`·`plugins.entries.github-copilot`·`plugins.allow`) + **auth sqlite의 토큰 실물**(`auth_profile_store.profiles`·`auth_profile_state.lastGood`/`usageStats`) + 호스트 `~/.copilot/`까지 걷어냈다. ⚠️ **config에서 프로필을 unset해도 토큰은 sqlite에 남는다** — `models status`가 계속 `token:ghu_…`를 보여주면 그것 때문이다(경로는 [ROADMAP.md](ROADMAP.md) 해당 항목). ⚠️ 단 glg/gpt/gemini 3봇에 `anthropic:default [anthropic/**token**]` 프로필이 남아있다 — 유일한 비-OAuth 항목이고, claude-cli OAuth가 실패하면 **구독 밖 종량 과금**으로 흐를 수 있는 자리다(현재 primary 경로로는 미사용).
 
 ### Thinking level — 기본 `medium`, 올리는 건 세션에서
 
@@ -374,7 +374,7 @@ Implication: if `docker compose up` runs from a shell that never sourced `.env.l
 | `GEMINI_API_KEY` | image generation only (banana / `gemini-3-flash-preview-image`). **Not** memorySearch since 2026-05-08 (replaced by OpenRouter Qwen3) | `~/.env.local` SSOT |
 | `GROQ_API_KEY` | active-memory primary (currently disabled) | `~/.env.local` SSOT |
 | `TELEGRAM_BOT_TOKEN_*` | per-bot Telegram | `~/openclaw/.env` (gitignore) |
-| `OPENAI_CODEX_*` | Codex OAuth — actual LLM serving for all agents (Anthropic flat-rate blocked, Copilot disabled) | `~/openclaw/.env` (gitignore) |
+| `OPENAI_CODEX_*` | Codex OAuth — actual LLM serving for all agents (Anthropic flat-rate blocked; Copilot removed 2026-08-16) | `~/openclaw/.env` (gitignore) |
 
 ---
 

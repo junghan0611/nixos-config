@@ -187,6 +187,16 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 
 ## 운영 결정 이력
 
+### github-copilot 전면 제거 (2026-08-16)
+
+GLG 결정("이제 안 쓴다"). Premium 쿼터도 0% 소진 상태였고, `github-copilot` 프로필은 2026-04-22 routing에서 gemini가 `github-copilot/gemini-3.1-pro-preview`로 돌던 시절의 잔재였다(gemini는 2026-06-10 네이티브 `google-gemini-cli`로 이관 — 아래 항목). 그 뒤로 서빙 경로 0인 채 토큰만 남아 있었다.
+
+- **제거 범위 네 층**: 라이브 config 3곳(`auth.profiles."github-copilot:github"` / `plugins.entries.github-copilot` / `plugins.allow` 14→13개) → auth sqlite 3곳(`auth_profile_store.primary.profiles` / `auth_profile_state.primary.lastGood` / `usageStats`) → 호스트 `~/.copilot/`(Copilot CLI 흔적, 파일 5개). 백업 `openclaw.json.bak-copilot-purge-20260816T102602` + `backups/openclaw-agent.sqlite.bak-copilot-purge-20260816T102602`.
+- **🔴 함정 — `config unset`은 자격증명을 안 지운다.** config의 `auth.profiles`는 *선언*이고 토큰 실물은 `agents/main/agent/openclaw-agent.sqlite`에 산다. unset + gateway restart를 마친 뒤에도 `models status`가 `github-copilot … token:ghu_…`를 그대로 출력했다 — CLI에 프로필 삭제 명령이 없어(`models auth`는 add/list/login/order/paste-*/setup-token뿐) **sqlite를 직접 손봐야 완결된다**. gateway stop → JSON 편집 → start 순서로 처리. copilot 한정 얘기가 아니라 **모든 provider 은퇴에 해당하는 절차**다.
+- **검증**: gateway healthy, `models auth list` 3개(anthropic/openai/google-gemini-cli)만, `models status`에 copilot 문자열 0, 텔레그램 6채널 전부 `works`, 모델 카탈로그 11개 불변, gemini `google-gemini-cli/` prefix 유지.
+- **문서는 이력을 남겼다**: 현재-상태 서술(ORACLE.md 과금 경로·env 표)만 갱신하고 change history(이 항목, CHANGELOG, `docker/openclaw/Dockerfile` 업글 로그, `docker/openclaw/README.md`의 2026-04-22 routing 표, `openclaw.json.reference` 2026.4.8 스냅샷)는 보존했다. 지우면 gemini 경로 이동사가 사라진다.
+- **잔여 부채**: 제거 과정에서 토큰 2종(`ghu_…` provider token, `gho_…` CLI OAuth)이 에이전트 세션 트랜스크립트에 평문 노출 → GitHub 쪽 revoke 필요(NEXT.md).
+
 ### bbot fable-5 재승격 + mini sonnet-5 승격 (2026-07-12)
 
 6.11 라이브에서 **bbot `opus-4-8` → `claude-fable-5`**, **mini `sonnet-4-6` → `claude-sonnet-5`** 승격. 둘 다 claude-cli 구독 동적 해결(재빌드 불필요), primary 경로 서빙 검증 `fallbackUsed=false`.

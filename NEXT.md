@@ -21,7 +21,21 @@
 - [ ] **gotchas 박제** — 위 두 레이스를 `docs/openclaw-gotchas.md`에 영속화. 현재 caddy 항목은 *Caddyfile 편집* 함정만 담고 **부팅 시 포트 선점**은 없다.
 - 봇은 무사했다: 텔레그램 6채널이 **폴링**이라 caddy와 무관하게 5시간 내내 연결 유지(`channels status --probe` 전부 `works`), heartbeat 30분 주기 정상, 08:00 cron 음성 발송 성공. 죽은 건 `claw` Control UI 공개면뿐.
 - [ ] **6봇 memory 인덱스 전부 `Dirty: yes`.** 재부팅 + 5시간치 세션 누적분. 콜드 `memory_search` 15s 하드타임아웃 방어의 1차선이 인덱스 정합이므로(`.claude/skills/nixos-config` §5) 재인덱싱 판단 필요. dims 4096 정상, `Sources: memory, sessions` 정상.
-- 참고 상태: github-copilot **Premium 0% left**(Chat 100%), openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내, gemini는 기존 방침대로 DOWN 유지.
+- 참고 상태: openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내, gemini는 기존 방침대로 DOWN 유지. (github-copilot은 같은 날 전면 제거 — 아래 항목.)
+
+---
+
+## ✅ github-copilot 전면 제거 (2026-08-16) — 토큰 회전만 남음
+
+GLG "이제 안 쓴다" 결정. Premium 쿼터도 0% 소진 상태였다. **네 층을 다 걷어냈고 6봇 회귀 0**(`channels status --probe` 전부 `works`, auth 프로필 anthropic/openai/google-gemini-cli 3개만 잔존).
+
+지운 자리: 라이브 config 3곳(`auth.profiles."github-copilot:github"` / `plugins.entries.github-copilot` / `plugins.allow`) → **auth sqlite 3곳**(`auth_profile_store.primary.profiles` / `auth_profile_state.primary.lastGood` / `usageStats`) → 호스트 `~/.copilot/`(파일 5개). 백업 `openclaw.json.bak-copilot-purge-20260816T102602` + `backups/openclaw-agent.sqlite.bak-copilot-purge-20260816T102602`.
+
+**핵심 함정 — `config unset`은 토큰을 안 지운다.** config의 `auth.profiles`는 *선언*일 뿐이고 자격증명 실물은 `agents/main/agent/openclaw-agent.sqlite`에 있다. unset + restart 후에도 `models status`가 `github-copilot … token:ghu_…`를 그대로 뿜었다. sqlite까지 손대야 진짜 제거다 — 이건 copilot만의 얘기가 아니라 **모든 provider 제거에 해당**한다.
+
+- [ ] **🔴 GitHub 토큰 2개 회전.** 제거 과정에서 평문이 에이전트 세션 트랜스크립트에 남았다: gateway auth store의 `ghu_xJoQ…`(Copilot provider token)와 `~/.copilot/config.json`의 `gho_Ia8n…`(Copilot CLI OAuth). 저장소에서는 지웠으나 **GitHub 쪽에서 revoke해야 실효**한다 — Settings → Applications에서 GitHub Copilot 권한 취소. claw 배포 때 gateway token 건([claw 항목](#clawjunghanacs.com--openclaw-control-ui-공개면--배포-완료-2026-08-06))과 같은 모양의 부채다.
+- [ ] **`plugins.allow` 화이트리스트 회귀 관찰.** allow는 실제 게이트라 목록에서 빼면 그 플러그인이 disabled된다(ROADMAP 2026-06-04 "plugins.allow 명시" 함정). 13개로 줄였고 boot WARN 0·6봇 정상을 확인했지만, 업그레이드로 새 bundled plugin이 들어오면 allow에 없어서 조용히 꺼진다는 성질은 그대로다.
+- 안 지운 것 = **이력**: `ROADMAP.md`·`CHANGELOG.md`·`docker/openclaw/Dockerfile` 업글 로그 주석·`docker/openclaw/README.md`의 날짜 라벨 change history(2026-04-22 routing 표에서 gemini가 `github-copilot/` 경로였던 기록)·`openclaw.json.reference`(2026.4.8 스냅샷). "어떻게 여기까지 왔나"를 지우면 gemini 경로 이동사가 통째로 사라진다 — AGENTS.md 세 문서 분업 원칙대로 보존한다.
 
 ---
 
