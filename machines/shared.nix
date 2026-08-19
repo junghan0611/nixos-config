@@ -250,6 +250,12 @@ in
     unzip
     lsof
     iotop
+    # AppImage 실행 (FHS 환경 래퍼). CLI 도구용 AppImage는 됨.
+    # WebKitGTK 등 GUI(Electron) AppImage는 bwrap 샌드박스 안에서
+    # EGL 초기화 실패로 렌더러가 뜨지 않음 (2026-08-19, GitHub Copilot
+    # AppImage로 확인 — nixGL 붙이거나 전용 FHS 패키지가 필요, 삽질 가치 없음).
+    # GUI 앱은 appimage-run 대신 nixpkgs 네이티브 패키지를 우선 찾을 것.
+    appimage-run
 
     # Development tools
     tmux
