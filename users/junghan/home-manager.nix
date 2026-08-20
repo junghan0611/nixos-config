@@ -109,6 +109,8 @@ in {
     clojure-lsp
     mitscheme
     janet
+    lean4           # theorem prover / functional language
+    ledger          # double-entry accounting (ledger-cli)
 
     google-clasp     # Google Apps Script CLI
 
