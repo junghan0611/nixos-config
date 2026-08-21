@@ -101,7 +101,7 @@ services:
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
-      - ~/cookies.txt:/home/node/cookies.txt:ro
+      - ~/cookies.txt:/home/node/cookies.txt:rw
       # pi-shell-acp host overlay passthrough (Phase 1.8 β, trusted single-user)
       # ~/.pi/agent 전체 rw — child pi가 sessions/cache/resolver state write 필요.
       # 이전 memory:ro 항목 흡수 (knowledge-search 스킬도 같은 path).
@@ -198,7 +198,7 @@ services:
       # 디바이스 식별 (에이전트 공통 필터링)
       - ~/.current-device:/home/node/.current-device:ro
       # YouTube 쿠키 (yt-dlp 폴백용)
-      - ~/cookies.txt:/home/node/cookies.txt:ro
+      - ~/cookies.txt:/home/node/cookies.txt:rw
       # pi-shell-acp host overlay passthrough (Phase 1.8 β, trusted single-user)
       # ~/.pi/agent 전체 rw — child pi가 sessions/cache/resolver state write 필요.
       # 이전 memory:ro 항목 흡수 (knowledge-search 스킬도 같은 path).

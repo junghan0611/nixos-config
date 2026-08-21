@@ -183,7 +183,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
 # yt-dlp (pip — GitHub binary download가 불안정)
-RUN pip install --no-cache-dir --break-system-packages yt-dlp
+# 2026.08+ required on datacenter IPs (oracle): older builds hit
+# "The page needs to be reloaded" without the EJS challenge solver path.
+RUN pip install --no-cache-dir --break-system-packages "yt-dlp>=2026.8.19"
 
 # jsonschema — butlercli estate surface bridge(skills/butlercli/scripts/estate_surface.py).
 # 봇이 viewer(map.junghanacs.com)로 IR을 post하기 전 클라이언트 fail-closed 검증에 필수
