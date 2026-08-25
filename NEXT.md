@@ -39,6 +39,28 @@ GLG "이제 안 쓴다" 결정. Premium 쿼터도 0% 소진 상태였다. **네 
 
 ---
 
+## ✅ thinkpad 마이크 — 잭에 묶인 내장 마이크, UCM 패치로 해결 (2026-08-25)
+
+화상회의마다 마이크가 죽던 건. 원인은 `alsa-ucm-conf` #785 — 이 기기(ALC257 + AMD ACP)엔 `Input Source` 셀렉터가 없어 UCM이 `HDA/HiFi-mic.conf` fallback 분기를 타고, 그 분기가 **내장** 아날로그 마이크(`HiFi__Mic2`, "Stereo Microphone")에 **외부** 잭 컨트롤 `Mic Jack`을 붙인다. 잭이 비어 있으면(`Mic Jack=off`) 포트가 `not available` → WirePlumber가 기본 후보에서 빼고 → AMD ACP `Digital Microphone`(`HiFi__Mic1`)을 고르는데 이쪽은 **열거만 되고 캡처는 완전 무음**이다.
+
+실측 (`pw-record` + `sox … -n stat`):
+
+| 노드 | 최대 진폭 |
+|---|---|
+| Stereo Microphone (Mic2) | `0.999969` — 정상 |
+| Digital Microphone (Mic1) | `0.000000` — 무음 |
+
+조치: `machines/thinkpad.nix`에서 잭 바인딩만 걷어낸 UCM 트리를 만들고 pipewire/wireplumber 유닛에 `ALSA_CONFIG_UCM2`로 물렸다. **`alsa-ucm-conf`를 overlay로 직접 패치하면 alsa-lib 체인이 딸려와 로컬 빌드 764개**가 되므로 패키지는 건드리지 않는다(실측; 현 방식은 11개, 그중 실제 새 빌드는 UCM 트리 하나).
+
+검증(임시 조치 전부 제거 후, 설정만으로): Mic2 포트 `availability unknown` → 기본 소스로 선택 → `default.audio.source = …HiFi__Mic2__source` → 실측 376832 샘플 캡처.
+
+- [ ] **재부팅 검증 안 함.** systemd 유닛 `Environment=`라 살아남는 게 자연스럽지만 실제로 재부팅해 확인한 적은 없다. 다음 재부팅 때 `wpctl status`의 기본 소스가 Stereo인지 한 번 보면 닫힌다.
+- [ ] **상류가 고쳐지면 이 블록을 지운다.** [alsa-ucm-conf#785](https://github.com/alsa-project/alsa-ucm-conf/issues/785). 이 기기엔 `Internal Mic Phantom Jack` 컨트롤이 없어 upstream 제안(phantom jack 있으면 바인딩 생략)이 그대로는 안 맞는다 — 상류 수정이 이 케이스를 덮는지 확인하고 제거할 것.
+- 입력 볼륨 1.0에서 최대 진폭이 `0.999969`(클리핑 상단)까지 붙는다. 통화에서 갈리면 게인을 0.6 전후로 낮출 것.
+- **다시 시도하지 말 것** (전부 실패, 근거는 `machines/thinkpad.nix` 주석): `wpctl set-default`(configured만 바뀜) · `priority.session` 하향(availability가 우선) · `api.acp.auto-port=false`(availability 그대로) · Mic1에 `node.disabled`(UCM이 두 마이크를 한 프로파일로 묶어 Mic2까지 죽음) · `api.alsa.use-ucm=false`(아날로그 라우팅 소실, 캡처 0).
+
+---
+
 ## 디스크 정리 루틴 = `scripts/diskclean.sh` (2026-07-21, thinkpad 실측 91G 회수)
 
 thinkpad가 96%(여유 19G)까지 찼던 건을 계기로 정리 로직을 스크립트 SSOT로 뽑고 `run.sh` `c)`/`C)`에 연결. 디바이스 프로파일은 `~/.current-device`. 개념·순서 근거는 [AGENTS.md](AGENTS.md) §2.6.

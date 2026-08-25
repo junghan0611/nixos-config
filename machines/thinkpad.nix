@@ -107,6 +107,45 @@
     pulse.enable = true;
   };
 
+  # 내장 마이크가 빈 3.5mm 잭에 묶여 "not available"이 되는 문제 (alsa-ucm-conf #785).
+  #
+  # 이 기기(Realtek ALC257 + AMD ACP)에는 'Input Source' 셀렉터가 없어서 UCM이
+  # HDA/HiFi-mic.conf 의 fallback 분기를 탄다. 그 분기는 내장 아날로그 마이크
+  # (HiFi__Mic2, "Stereo Microphone")에 외부 잭 컨트롤 'Mic Jack'을 붙인다.
+  # 잭이 비어 있으면 Mic Jack=off → 포트가 "not available" → WirePlumber가
+  # 기본 소스 후보에서 제외 → 대신 AMD ACP 'Digital Microphone'(HiFi__Mic1)을
+  # 고르는데, 이쪽은 열거만 되고 캡처는 완전 무음이다(실측 최대진폭 0.000000,
+  # 정상인 Mic2는 0.999969). 결과: 화상회의마다 마이크가 죽는다.
+  #
+  # 이 기기에는 'Internal Mic Phantom Jack' 컨트롤이 없어 upstream 수정안을
+  # 그대로 쓸 수 없다. 그래서 fallback 분기의 잭 바인딩만 걷어낸 UCM 트리를
+  # 따로 만들고, PipeWire 쪽에만 ALSA_CONFIG_UCM2 로 그 트리를 물린다.
+  #
+  # alsa-ucm-conf 를 overlay 로 직접 패치하면 alsa-lib 체인이 딸려와
+  # 로컬 빌드가 764개로 불어난다(2026-08-25 dry-build 실측). 그래서 패키지를
+  # 건드리지 않고 복사본을 쓴다 — 빌드는 이 트리 하나뿐.
+  #
+  # 통하지 않은 것들 (2026-08-25 실측, 다시 시도하지 말 것):
+  #   - wpctl set-default    → default.configured 만 바뀌고 활성 default 는 Mic1 유지
+  #   - priority.session 하향 → availability 가 우선이라 무효
+  #   - api.acp.auto-port=false → availability 보고 자체는 그대로
+  #   - node.disabled on Mic1 → UCM이 두 마이크를 한 HiFi 프로파일로 묶어서
+  #                             Mic2 까지 죽었다 ("Samples read: 0")
+  #   - api.alsa.use-ucm=false → 아날로그 마이크 라우팅이 통째로 사라져 캡처 0
+  #
+  # 되돌리기: 이 블록을 지우고 rebuild. UCM 상류가 고쳐지면 함께 제거한다.
+  systemd.user.services = let
+    ucmMicFix = pkgs.runCommand "alsa-ucm-conf-thinkpad-micfix" { } ''
+      cp -r ${pkgs.alsa-ucm-conf}/share/alsa/ucm2 $out
+      chmod -R u+w $out
+      substituteInPlace $out/HDA/HiFi-mic.conf \
+        --replace-fail 'DeviceMicJack "Mic Jack"' 'DeviceMicJack ""'
+    '';
+  in {
+    pipewire.environment.ALSA_CONFIG_UCM2 = "${ucmMicFix}";
+    wireplumber.environment.ALSA_CONFIG_UCM2 = "${ucmMicFix}";
+  };
+
   # Graphics support (AMD GPU)
   hardware.graphics = {
     enable = true;
