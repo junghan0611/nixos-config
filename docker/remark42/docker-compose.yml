@@ -18,10 +18,10 @@ services:
     environment:
       - REMARK_URL=https://comments.junghanacs.com
       - SECRET=${SECRET}
-      - SITE=notes,www
+      - SITE=notes,www,aionsclubs
       # SSL은 Caddy가 처리
       - SSL_TYPE=none
-      - ALLOWED_HOSTS=comments.junghanacs.com,junghanacs.com,notes.junghanacs.com,www.junghanacs.com
+      - ALLOWED_HOSTS=comments.junghanacs.com,junghanacs.com,notes.junghanacs.com,www.junghanacs.com,aionsclubs.org
       # Auth providers
       - AUTH_GITHUB_CID=${AUTH_GITHUB_CID}
       - AUTH_GITHUB_CSEC=${AUTH_GITHUB_CSEC}
