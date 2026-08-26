@@ -103,6 +103,7 @@ in {
     bun             # JavaScript runtime
     zig
     zls
+    zmx             # terminal session persistence (unstable 0.7.0; 26.05 미등록)
     go
     gopls
     clojure
@@ -116,7 +117,6 @@ in {
 
     # AI CLI tools — pnpm global로 설치 (버전 변동 큰 툴은 nix에 넣지 않음)
     # codex / claude-code / claude-monitor / claude-code-acp / claude-code-router
-    # zmx: zig15 ↔ 26.05 zig16 충돌 우려로 제외 — 별도 후속 (NEXT.md)
 
     # System tools
     fortune
