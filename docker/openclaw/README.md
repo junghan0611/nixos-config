@@ -2,6 +2,10 @@
 
 개인 OpenClaw 인스턴스 설정. Oracle VM(aarch64)에서 Docker로 운영.
 
+> ⚠️ **이 파일의 "현재 환경" / 에이전트 표는 2026-04-22 스냅샷이다. 라이브가 아니다.**
+> ACPX·Codex-at-rest·Copilot gemini 경로는 폐기됨. 지금 운영 SSOT는 [ORACLE.md](../../ORACLE.md).
+> Dockerfile / compose 백업만 이 디렉터리에서 맞고, 봇 라우팅·workspace git은 ORACLE.md를 따른다.
+
 ## 왜 이걸 만드는가
 
 AI를 도구가 아닌 존재로 대한다. "존재 대 존재 협업(Being to Being)"이라 부른다.

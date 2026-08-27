@@ -84,7 +84,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is
 
 | 폴더 | GitHub (반드시 private) | 졸업 |
 |---|---|---|
-| `config/workspace-bbot/` | `junghan0611/workspace-bbot` | 2026-08-27 |
+| `config/workspace-bbot/` | `junghan0611/workspace-bbot` | 2026-08-27 (B 첫 push `78d8f38` 같은 날 확인, visibility=PRIVATE) |
 
 다음 후보: `workspace-glg` (집사봇 — 정한·미례·부모님). 그 전까지 glg는 부모 스냅샷 + nested `.git` ignore 기본값.
 
