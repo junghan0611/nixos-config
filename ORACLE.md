@@ -22,7 +22,8 @@ Correctness starts with location awareness. On `oracle`, that awareness extends 
 
 | Repo | Path | Role |
 |---|---|---|
-| Private runtime SSOT | `~/openclaw/` | live `openclaw.json`, auth state, workspaces, runtime Docker files |
+| Private runtime SSOT | `~/openclaw/` | live `openclaw.json`, auth state, workspaces, runtime Docker files (`junghan0611/openclaw-config`, private) |
+| Graduated bot workspace | `~/openclaw/config/workspace-bbot/` | B's own private git `junghan0611/workspace-bbot` — narrative SSOT, not tracked by parent. See § Bot workspace git |
 | Public operator / backup | `~/repos/gh/nixos-config/` | Dockerfile / compose backups, host NixOS context, operator briefs — **mother repo** |
 | Public companion | `~/repos/gh/openglg-config/` | portable service stack (Caddy/Authelia/Postgres/...) + portable home-manager (`home/`) that lands on any Debian/Ubuntu host without NixOS |
 
@@ -71,7 +72,45 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 - `workspace-mini/` → mini
 - `workspace-bbot/` → bbot
 
-Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace.
+Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` is a split-out B workspace and **the first graduated narrative git** (below).
+
+### Bot workspace git — 서사 독립 (호스트 졸업 체크리스트)
+
+봇 워크스페이스는 런타임 경로로 `~/openclaw/config/workspace-<id>/`에 산다. 서사가 쌓이면 부모 `openclaw-config` 추적에서 **졸업**시키고, 봇이 자기 `.git`으로 커밋·푸시한다. **폴더명 = GitHub 리포명.** 헷갈리게 짓지 않는다.
+
+이건 권한 확대가 아니다. 호스트가 레일을 깔고, 봇은 그 레일 위에서만 자기 타임라인을 쓴다. 봇이 못하는 수선(리포 생성, 훅 모드, 부모 gitignore, 공개/비공개)은 **의도적으로 호스트 몫**이다. 관리가 안 보이면 봇은 권한을 달라고 한다.
+
+**졸업한 봇**
+
+| 폴더 | GitHub (반드시 private) | 졸업 |
+|---|---|---|
+| `config/workspace-bbot/` | `junghan0611/workspace-bbot` | 2026-08-27 |
+
+다음 후보: `workspace-glg` (집사봇 — 정한·미례·부모님). 그 전까지 glg는 부모 스냅샷 + nested `.git` ignore 기본값.
+
+**호스트가 하는 일 (봇이 못 하는 수선)**
+
+1. 부모에서 `git rm -r --cached config/workspace-<id>` + `.gitignore`에 `config/workspace-<id>/`. 워킹트리 삭제 금지.
+2. `gh repo create junghan0611/workspace-<id> --private` — 이름 = 폴더명, **public 금지**. wiki 끔.
+3. nested git에 `origin` = 그 private HTTPS URL. 컨테이너는 이미 `gh auth git-credential` + `~/.config/gh` ro 마운트라 PAT를 워크스페이스에 넣지 않는다.
+4. `config/workspace-<id>/.git-hooks-mode` 한 줄 `loose`. 봇이 자기 author로 커밋한다.
+5. `agent-config/git-hooks/_scan.sh` private allowlist에 `junghan0611/workspace-<id>`를 **이름 단위로** 추가 (와일드카드 금지 — 졸업은 호스트 행위). origin이 `junghan0611/*`면 기본이 strict라 가족·인연 서사가 identity-term에 걸린다. secret 스캔은 유지.
+6. 레일 검증: 첫 `git push -u origin main`이 hook loose + gh credential로 통과하는지. 이후 커밋/푸시는 봇 (bbot은 heartbeat 루프).
+
+**봇이 하는 일**
+
+- 자기 workspace에서 커밋 (author는 봇 서명 — bbot은 `B <b@aionsclubs.org>`)
+- 호스트가 달아준 remote만 push (bbot은 `aionsclubs` + `workspace-bbot`)
+- MEMORY/NEXT 증류도 커밋으로 남김 — 무엇을 언제 왜 잊었는지가 깃로그에 남는다
+
+**의도적으로 막힌 것 (이 졸업이 풀어주지 않음)**
+
+- `~/repos/gh` 기본 ro. 예외 rw는 compose에 명시된 리포만 (`aionsclubs`, `self-tracking-data`)
+- 부모 `openclaw-config` 커밋/푸시
+- 훅 끄기, public 리포 생성, 다른 봇 workspace 수정
+- gh 토큰은 컨테이너에 마운트되어 있으므로 **허용 remote를 이 표로 고정**하는 게 가드. 토큰 스코프 분리는 아직 없다 — 그 전까지 새 remote는 호스트만 단다.
+
+**아직 부모 추적 중인 봇** (`workspace/`, `workspace-glg/`, `workspace-gpt/`, `workspace-gemini/`, `workspace-mini/`): nested `.git`만 ignore, 내용은 부모가 스냅샷. 졸업 전 기본값.
 
 ### Model routing (현재: OpenClaw 2026.7.1-2 baseline, 2026-08-04 전면 정렬)
 
