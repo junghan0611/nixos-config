@@ -344,7 +344,7 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding) b
 - baseline reindex chunk 수치 이력 (5.2 → 5.7 → 8B 4096d 전환 절차 + chunk 분포 + storage)은 [ROADMAP.md](ROADMAP.md) "임베딩 baseline 전환". 현재 baseline = 8B 4096d, 총 ~4982 chunks. **재현 함정**: 8B 전환 시 `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` 삭제 + restart로 schema 4096d 재생성 후 **reindex 필수**(4B↔8B 임베딩 공간 직교). OpenRouter privacy에서 8B endpoint 허용 필요(default 차단 시 "No endpoints available matching your guardrail restrictions").
 - 진단: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider 별도 진단, `vec0.so` 경로 확인.
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
-- `~/org:/home/node/org:ro` is for file access (denotecli / bibcli / botlog), not embedding. Do not remove.
+- `~/org:/home/node/org:rw` is for file access (denotecli / bibcli / botlog / journal), not embedding. Do not remove.
 - andenken layer is still separate by *storage* (LanceDB vs sqlite), *corpus* (org KB vs OpenClaw sessions/memory), and **since 2026-05-08 16:00 also by *model*** (4B vs 8B) until andenken follows. To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle — but cross-store retrieval will be slightly miscalibrated until both layers share a model again.
 - This baseline is the comparison point for andenken bake-off (first-result precision, freshness, CJK short query, operator trust). OpenClaw is SSOT; andenken follows.
 
@@ -357,11 +357,9 @@ The `ro`/`rw` boundary was widened to reduce host-hop friction for agent edits. 
 | `~/repos/gh` | **rw** | git (each repo). `git status` surfaces unintended writes immediately. |
 | `~/repos/3rd` | rw | git + "third-party, disposable" nature |
 | `~/repos/work` | ro | intentional — company code never modified through bot hand |
-| `~/org` (root) | ro | protects `diary.org`, `archives/`, `authinfo.gpg`, etc. |
-| `~/org/botlog`, `~/org/llmlog` | rw | bot activity output — always rw |
-| `~/org/meta`, `~/org/bib`, `~/org/notes` | **rw** | new; git-managed (`~/org` is a Denote git repo). |
+| `~/org` | **rw** | whole tree (2026-08-27, GLG). Includes `diary.org`, `archives/`, `authinfo.gpg`. Rollback = git on `~/org`. |
 
-**Post-deploy habit**: after a rw-expanding change, monitor each affected repo's `git status` for the first hour. Unintended writes in `~/org/diary.org` or other `:ro` regions should be impossible — if you see one, the mount config regressed.
+**Post-deploy habit**: after a rw-expanding change, monitor `~/org` `git status` for the first hour. Unintended writes are possible now — git is the rollback surface, not the mount.
 
 ---
 

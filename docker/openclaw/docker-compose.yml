@@ -77,13 +77,7 @@ services:
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:ro
       - ~/repos/3rd:/home/node/repos/3rd:rw
-      - ~/org:/home/node/org:ro
-      # 봇 활동 기록 + org 서브디렉토리 rw 오버라이드 (2026-04-25 확대)
-      - ~/org/botlog:/home/node/org/botlog:rw
-      - ~/org/llmlog:/home/node/org/llmlog:rw
-      - ~/org/meta:/home/node/org/meta:rw
-      - ~/org/bib:/home/node/org/bib:rw
-      - ~/org/notes:/home/node/org/notes:rw
+      - ~/org:/home/node/org:rw  # 2026-08-27 전체 rw (GLG). diary/archives/authinfo.gpg 포함. git이 롤백 표면.
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (rw — gog v0.34+가 keyring lock write 필요.
@@ -112,7 +106,6 @@ services:
       # backend CLI auth — host passthrough (β). plugin은 token 만지지 않음 (invariant).
       - ~/.codex:/home/node/.codex:rw
       - ~/.gemini:/home/node/.gemini:rw
-      - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       # ⚠️ Nix store hash hardcoded — NixOS rebuild 시 갱신 의무.
       # 갱신 절차: `readlink -f /run/current-system/sw/bin/emacsclient` → emacs hash,
@@ -174,13 +167,7 @@ services:
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:ro
       - ~/repos/3rd:/home/node/repos/3rd:rw
-      - ~/org:/home/node/org:ro
-      # 봇 활동 기록 + org 서브디렉토리 rw 오버라이드 (2026-04-25 확대)
-      - ~/org/botlog:/home/node/org/botlog:rw
-      - ~/org/llmlog:/home/node/org/llmlog:rw
-      - ~/org/meta:/home/node/org/meta:rw
-      - ~/org/bib:/home/node/org/bib:rw
-      - ~/org/notes:/home/node/org/notes:rw
+      - ~/org:/home/node/org:rw  # 2026-08-27 전체 rw (GLG). diary/archives/authinfo.gpg 포함. git이 롤백 표면.
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (rw — gog v0.34+가 keyring lock write 필요.
@@ -209,7 +196,6 @@ services:
       # backend CLI auth — host passthrough (β). plugin은 token 만지지 않음 (invariant).
       - ~/.codex:/home/node/.codex:rw
       - ~/.gemini:/home/node/.gemini:rw
-      - ~/org:/home/node/org:ro
       # Emacs agent-server 연결 (Nix store emacsclient + glibc + 소켓)
       # ⚠️ Nix store hash hardcoded — NixOS rebuild 시 갱신 의무.
       # 갱신 절차: `readlink -f /run/current-system/sw/bin/emacsclient` → emacs hash,
