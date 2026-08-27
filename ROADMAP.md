@@ -187,6 +187,15 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 
 ## 운영 결정 이력
 
+### gemini 챗봇 → GitHub Copilot (2026-08-27)
+
+GLG 결정: Google Gemini 구독 안 함. gemini-cli는 deprecated라 응용하지 않음. Copilot이 제미나이 서빙 레일.
+
+- 모델: `github-copilot/gemini-3.7-flash`. 플러그인 stock `@openclaw/github-copilot` 재활성, `plugins.allow` 14개(github-copilot 복귀). 새 GitHub device-code 로그인(8/16 제거 때 샌 토큰 재사용 금지).
+- 격리 probe: `winnerModel=gemini-3.7-flash fallbackUsed=false` 후 primary 승격. 텔레그램 DM `/model` 정렬까지 한 쌍.
+- catch-all 1번 `openai/gpt-5.6-terra` 유지. `google/` api-key·`google-gemini-cli/` 챗 경로 금지 유지. `doctor --fix` 금지 유지.
+- 8/16 "Copilot 전면 제거" 결정을 이 날짜로 뒤집음. 이력은 아래 항목에 보존.
+
 ### github-copilot 전면 제거 (2026-08-16)
 
 GLG 결정("이제 안 쓴다"). Premium 쿼터도 0% 소진 상태였고, `github-copilot` 프로필은 2026-04-22 routing에서 gemini가 `github-copilot/gemini-3.1-pro-preview`로 돌던 시절의 잔재였다(gemini는 2026-06-10 네이티브 `google-gemini-cli`로 이관 — 아래 항목). 그 뒤로 서빙 경로 0인 채 토큰만 남아 있었다.

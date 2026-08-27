@@ -6,12 +6,6 @@
 
 ---
 
-## ⬜ workspace-glg 서사 git 졸업 (bbot 다음)
-
-bbot은 2026-08-27 졸업 — 폴더명=리포명 `junghan0611/workspace-bbot` (private), 부모 추적 해제, 훅 loose. 체크리스트 SSOT는 [ORACLE.md](ORACLE.md) "Bot workspace git". 집사봇이 다음 (사용자: 정한·미례·부모님). 호스트가 레일만 깔고 봇이 커밋·푸시. 권한 확대 아님.
-
----
-
 ## 🔴 재부팅 부팅 순서 레이스 — caddy는 막았고 emacs는 안 막았다 (2026-08-16)
 
 커널 `7.1.2 → 7.1.4` 재부팅(04:49 KST)이 **독립된 부팅 레이스 두 개**를 동시에 터뜨려 `junghanacs.com` 서브도메인 전부가 5시간 죽었다. 둘 다 "docker가 다른 무엇보다 먼저 뜨느냐"에 결과가 갈리는 같은 모양이다. 복구는 끝났고(전 vhost 200), **재발 방지가 절반만 됐다**.
@@ -27,13 +21,13 @@ bbot은 2026-08-27 졸업 — 폴더명=리포명 `junghan0611/workspace-bbot` (
 - [ ] **gotchas 박제** — 위 두 레이스를 `docs/openclaw-gotchas.md`에 영속화. 현재 caddy 항목은 *Caddyfile 편집* 함정만 담고 **부팅 시 포트 선점**은 없다.
 - 봇은 무사했다: 텔레그램 6채널이 **폴링**이라 caddy와 무관하게 5시간 내내 연결 유지(`channels status --probe` 전부 `works`), heartbeat 30분 주기 정상, 08:00 cron 음성 발송 성공. 죽은 건 `claw` Control UI 공개면뿐.
 - [ ] **6봇 memory 인덱스 전부 `Dirty: yes`.** 재부팅 + 5시간치 세션 누적분. 콜드 `memory_search` 15s 하드타임아웃 방어의 1차선이 인덱스 정합이므로(`.claude/skills/nixos-config` §5) 재인덱싱 판단 필요. dims 4096 정상, `Sources: memory, sessions` 정상.
-- 참고 상태: openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내, gemini는 기존 방침대로 DOWN 유지. (github-copilot은 같은 날 전면 제거 — 아래 항목.)
+- 참고 상태: openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내. gemini는 2026-08-27부터 `github-copilot/gemini-3.7-flash` (Google 구독 안 함).
 
 ---
 
-## ✅ github-copilot 전면 제거 (2026-08-16) — 토큰 회전만 남음
+## ✅ github-copilot 전면 제거 (2026-08-16) → 2026-08-27 gemini 레일로 복귀 — 옛 토큰 회전만 남음
 
-GLG "이제 안 쓴다" 결정. Premium 쿼터도 0% 소진 상태였다. **네 층을 다 걷어냈고 6봇 회귀 0**(`channels status --probe` 전부 `works`, auth 프로필 anthropic/openai/google-gemini-cli 3개만 잔존).
+8/16 GLG "이제 안 쓴다"로 네 층을 걷어냈다. **2026-08-27에 gemini 챗봇 서빙 레일로 되돌림** (`github-copilot/gemini-3.7-flash`, 새 device-code 로그인). 이력은 ROADMAP. 아래 회전 부채는 **8/16에 샌 옛 토큰** 이야기다 — 새 로그인 토큰과 별개, revoke는 여전히 필요.
 
 지운 자리: 라이브 config 3곳(`auth.profiles."github-copilot:github"` / `plugins.entries.github-copilot` / `plugins.allow`) → **auth sqlite 3곳**(`auth_profile_store.primary.profiles` / `auth_profile_state.primary.lastGood` / `usageStats`) → 호스트 `~/.copilot/`(파일 5개). 백업 `openclaw.json.bak-copilot-purge-20260816T102602` + `backups/openclaw-agent.sqlite.bak-copilot-purge-20260816T102602`.
 
@@ -259,13 +253,12 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 
 ### 남은 한 걸음 (ACP 잔재 청소)
 
-- [⏸] **gemini 챗봇 DOWN — agy 연동 대기 (억지로 살리지 않는다, 2026-06-13)** — gemini 무응답은 `google-gemini-cli` OAuth의 `insufficient authentication scopes [403]`. **재로그인 시도했으나(2026-06-13, `models auth --agent main login --provider google-gemini-cli --force` 완료) probe는 여전히 403** — 발급 OAuth 스코프 자체가 OpenClaw의 Generative AI API 경로를 못 덮는다. **agy(Antigravity) 이관이 gemini-cli OAuth를 스코프 레벨에서 깬 것.** **방침(GLG): API(`google/`)로 억지로 살리지 말 것. 안 되는 대로 DOWN 유지하고 두고 본다.** 차단 해소 조건 = OpenClaw가 **agy/antigravity provider 연동**을 지원하거나 업스트림이 `google-gemini-cli` 스코프를 고칠 때. 그때 모델을 agy provider로 마이그레이션(손으로 creds 복사 아닌 공식 provider 추적 — ROADMAP 2026-06-10 forward 리스크). **근본원인 정정 (2026-06-24 규명)**: 403은 OAuth 스코프 *결함*이 아니라 **Google이 2026-05-19 I/O에서 gemini-cli → Antigravity CLI(`agy`) 전환을 발표하고, 개인티어(AI Pro/Ultra/무료 Code Assist) gemini-cli 서빙을 2026-06-18 중단**한 것 — Google이 경로 자체를 닫아 재로그인으로 안 풀린다(우리 DOWN 관찰 2026-06-13과 일치). **추적 단일 지점**: OpenClaw issue [#84527](https://github.com/openclaw/openclaw/issues/84527)(agy를 gemini-cli 대체 CLI backend로) + 구현 PR [#90975](https://github.com/openclaw/openclaw/pull/90975) `feat(google): add Antigravity CLI backend`(보조 #91473/#91474/#91477) — 둘 다 OPEN·활발(2026-06-24). agy CLI 자체는 **v1.0.5에서 Google AI Pro OAuth로 작동 검증됨**(#84527 Kirchlive: `agy --model gemini-3.1-pro-preview --print` OK). **준비 = PR #90975 머지 + OpenClaw 릴리즈 반영 모니터 → 반영 시 gemini를 agy CLI backend로 전환**(creds = agy OAuth/Google AI Pro, `gtgkjh@gmail.com` 구독 등급 선확인 + oracle 컨테이너에 `agy` 바이너리 설치 경로 확보). ⚠️ 재로그인은 config를 `google/` 드리프트시키니 시도 후 반드시 정리(절차·경계 전체는 ORACLE.md gemini 함정 블록).
-  - 관찰: OpenClaw 릴리즈 노트/플러그인에 `antigravity`/`agy` provider 등장 여부 주시. 등장 시 이 항목 재가동. **6.8(2026-06-17) 체크 = 미등장** — doctor가 gemini를 `google/`로 또 드리프트시켜 되돌림(6.6에 이어 반복). 베이스라인 `google-gemini-cli/` 유지, 403 DOWN 그대로. **6.9(2026-06-22) 체크 = 여전히 미등장. 단 이번엔 `doctor --fix`를 안 돌려 gemini 드리프트 0** — `google-gemini-cli/` 그대로(403 DOWN). doctor --fix가 드리프트의 원인임이 역으로 확정됨 → 업글 시 `doctor --fix` 미사용이 gemini 보존에 유리. **6.10(2026-06-24) 체크 = agy backend 아직 미머지·미릴리즈** (자동봇 clawsweeper가 #84527에 "v2026.6.10 still exposes only the local `google-gemini-cli` backend" 명시). plugins 80개 중 antigravity/agy provider 0, `@openclaw/google-plugin`(stock)만 존재. 드리프트 0 유지. ※ 6.10 read-only doctor가 gemini를 `google/` 금지경로로 더 이상 안 미는 건 agy 지원 신호가 아니라 **PR #28081(doctor가 죽은 `google-antigravity-auth` 엔트리 auto-prune) 계열 정비**일 뿐 — 위 [⏸] 항목의 #90975/#84527가 실제 추적 지점. 다음 사이클에 PR #90975 머지 여부 + plugins 목록 재확인.
+- [x] **gemini 챗봇 — 2026-08-27 Copilot으로 서빙.** `github-copilot/gemini-3.7-flash`. Google 구독·gemini-cli·agy 안 쫓음(GLG). 긴 DOWN/agy 추적은 ROADMAP.
 - [ ] **compose mount 정리** — gemini가 마지막 ACP 사용처였다. `docker-compose.yml`의 ACP 전용 mount(`~/.pi/agent`, `~/.claude-plugin/skills` 등)가 남아있으면 제거(이제 unblocked). 단 claude-skills overlay(§ skills)와 겹치는 mount는 남김 — 헷갈리지 말 것.
 - [x] **pi-shell-acp 엔트리 최종 거취 — 2026-06-22(6.9) 완전 제거.** ~~present + `enabled:false` 영구 유지~~ → **6.9 strict plugin discovery가 죽은 `plugins.load.paths`(pi-shell-acp 경로)를 startup hard-fail로 거부해 crash loop** 발생 → `plugins.load.paths` + `plugins.entries.pi-shell-acp` + `plugins.allow` 전부 제거. **옛 "엔트리 삭제 = 기본 로드 복귀" 함정(2026-06-10)은 6.9에서 무효** — provider 외부화로 pi-shell-acp가 번들에서 완전히 사라져 default-load할 대상 자체가 없음(제거 후 clean boot·warnings 0 확인). workspace-gemini는 네이티브 gemini가 씀, 유지.
 - [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.
 - [~] **bbot turn soak GREEN / Telegram ingress follow-up** — 2026-06-29 무응답 사건: claude-cli/OAuth/session은 정상(probe ok, direct session 3.5s ok), root cause는 bbot isolated polling ingress 유령 connected. 컨테이너 런타임 핫패치로 bbot만 standard polling 전환 후 살아남. **후속**: 핫패치는 recreate/image rebuild 시 사라지므로 Dockerfile/entrypoint patch 또는 upstream config toggle로 영구화할지 결정. 상세는 `docs/openclaw-gotchas.md`.
-- [ ] **gemini Pro 쿼터 soak** — `usage: Pro/Flash 100% left`에서 실사용 시 소진 곡선 관찰. fallback 없으니 쿼터 소진=무응답, `Week % left` 주시.
+- [ ] **Copilot Premium soak (gemini 챗봇)** — 재로그인 직후 Premium 잔량 확인됨. fallback 없으니 쿼터 소진=무응답. `models status`의 Premium % 주시.
 - [ ] **이미지생성(나노바나나) `GEMINI_API_KEY` 경로 미재검증** — gemini 챗봇이 `google-gemini-cli/` OAuth로 전환된 뒤, `GEMINI_API_KEY`(`google` api-key provider) 기반 이미지생성이 여전히 동작하는지 확인. 두 provider가 분리돼 무관할 가능성 큼(추정). **실제 이미지 호출 1회로 검증 전까지 단정 금지.** (`auth.order.google` 핀은 cross-provider라 안 먹어 제거됨 — 자세한 건 ROADMAP 2026-06-10 함정 항목)
 - [ ] **(보류) telega 리치 지원 매트릭스 (T01~T15)** — 2026-06-22 richMessages 전 6봇 글로벌 ON 했다가 **당일 OFF로 되돌림**(telega가 rich message를 "unsupported"로 가려 **봇 대화 복사 불가** → 소통 워크플로 단절. GLG 결정: "핵심은 rich가 아니라 소통"). **baseline = OFF 확정.** 따라서 매트릭스 추적은 더 이상 active task 아님 — **richMessages 재활성을 검토할 때만** 선결조건으로 부활시킨다. 그때는 main 봇 T01~T15(헤딩/표/details/풀쿼트/divider/sup·sub/mark/spoiler/list/task-list/code/footnote/formula/link) 격리 테스트 → telega에서 정상/폴백/unsupported 3분류 → TOOLS.md + doomemacs-config 패치. 현재는 호환모드(굵게/기울임/링크/코드/스포일러/블록인용)만으로 충분.
 
@@ -278,7 +271,6 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 릴리즈 [v2026.6.11](https://github.com/openclaw/openclaw/releases/tag/v2026.6.11)(2026-06-30) = 순수 신뢰성/버그픽스. **idle 창(턴 0) 확인 후 `docker compose down` → Dockerfile bump → 재빌드 → up.** 검증: 버전 2026.6.11, claude-cli(main/bbot/mini) GREEN(bbot 라이브 턴), codex(glg/gpt) OK(openai expires 10d·usable), gemini 403 DOWN(예상), memory 4096d, 6봇 prefix 유지(gemini `google-gemini-cli/`·**google/ 드리프트 0** — read-only doctor만), fallbacks 전부 `[]`. 디스크 82%→77%(캐시 3.3GB 회수), 이미지 2.68→2.05GB.
 
 - **⚠️ node-gyp hang 규명(신규 함정, gotchas 기록됨)**: 재빌드가 `npm install -g` node-gyp에서 9분+ hang. 범인 = **`@google/gemini-cli` 0.49.0**(transitive `@github/keytar`+`node-pty` native, aarch64 buildkit). → **Dockerfile npm 줄에서 3개 제거**: pi-coding-agent+codex-acp(ACP 폐기로 unused) + gemini-cli(gemini DOWN·안 쫓음+범인). `@anthropic-ai/claude-code`만 남김(native 0). 양쪽 Dockerfile 동기.
-- [ ] **gemini 부활(agy) 시 `@google/gemini-cli` 복원** — 그땐 `libsecret-dev` 등 build deps 추가 필요할 수 있음(keytar/node-pty 컴파일). 위 [⏸] agy 추적 항목과 연동.
 - [ ] **6.11 텔레그램 실사용 soak** — headless 검증 GREEN, 실 가족봇 turn 5~7d 관찰(codex glg/gpt·claude main/bbot).
 - [ ] **jsonschema 컨테이너 baked-in 검증 (다음 recreate 때)** — glg 봇 집사 스킬(butlercli `estate_surface.py`)이 viewer(map.junghanacs.com)로 IR post 전 fail-closed 검증에 Python `jsonschema` 필요(fallback 없음). 6.11 재빌드 때 **라이브 `~/openclaw/Dockerfile`에서만 이 레이어가 누락**(공개 백업 `docker/openclaw/Dockerfile`엔 `9ed9afe`로 이미 존재)되어 실행 컨테이너 Python 3.11에 없었음. **무중단 조치(2026-07-01): 실행 중 openclaw-gateway에 `pip install jsonschema` 런타임 설치(4.26.0, node 유저 `import` OK 확인) + 라이브 Dockerfile을 백업과 동기(byte-identical).** ⚠️ 런타임 설치는 recreate/rebuild 시 사라짐 → **다음 재시작(force-recreate) 후 `docker exec openclaw-gateway python3 -c "import jsonschema"` 검증**으로 Dockerfile 레이어 영구 반영 확인. (라이브 `~/openclaw/Dockerfile` 커밋은 GLG.)
 
