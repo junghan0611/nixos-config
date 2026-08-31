@@ -6,13 +6,57 @@
 
 ---
 
+## 🔴 8.1 회귀 — 비주력 경로가 죽은 codex 런타임으로 떨어진다 (2026-09-01, 진행 중)
+
+**오늘 아침 두 개가 동시에 터졌고 뿌리는 하나다.** 경위·코드 근거·재현은
+[docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 최상단 두 항목, 봇별 현황은
+[docs/openclaw-automations.md](docs/openclaw-automations.md)(**자동화 SSOT**). 여기는 **남은 것만**.
+
+한 줄 요약: `agents.defaults.models["openai/*"].agentRuntime = "openclaw"` 오버라이드를
+cron·active-memory 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로는 멀쩡하다.
+
+### 오늘 만진 것 (전부 되돌릴 수 있음)
+
+| 변경 | 상태 | 되돌리기 |
+|---|---|---|
+| 가족 cron 3건에 `--model anthropic/claude-sonnet-5` | 08:00 잡은 **실증 완료**(delivered) | `cron edit <id> --clear-model` |
+| 아내 07:00 cron `disable` | GLG 지시 | `cron enable 2b9edc67-…` |
+| main/glg/gpt/mini heartbeat 제거 | bbot 30m만 남음 | `openclaw.json.bak-heartbeat-off-20260901T075810` |
+| active-memory 비활성 + gateway restart | **유령 typing 멈춤 확인** | `openclaw.json.bak-activemem-off-20260901T083503` |
+| `scripts/turnwatch.sh` + `run.sh w)` | 커밋 `6ddc428` | — |
+
+### 남은 것
+
+- [ ] **아내 07:00 cron을 언제 다시 켤지 GLG 판단.** model은 이미 sonnet-5로 박아뒀다.
+      켜면 도는 게 맞다고 보지만 **그 잡 자체는 아직 성공 실행 0회**다 — 08:00 형제 잡으로 간접 실증했을 뿐.
+- [ ] **내일(9/2) 08:00 KST 두 건 확인** — `morning-family-schedule-reminder`(반복)와
+      `baron-kindergarten-dropoff-2026-09-02`(1회성). 이게 model 우회의 진짜 검증이다.
+- [ ] **subagents 미검증.** `agents.defaults.subagents.model = openai/gpt-5.6-terra`로 같은 뿌리를
+      공유한다. 8.1 이후 실행 0건이라 표본이 없다. **자연 발생을 기다려** `sessions list`의
+      Runtime 컬럼을 보는 게 무비용 검증이다(`OpenClaw Default`면 정상, `OpenAI Codex`면 같은 병).
+- [ ] **active-memory를 되살릴지 결정.** 지금은 껐다. 살리려면 model을 anthropic 계열로 바꿔야
+      같은 병에 안 걸린다 — 다만 recall lane을 main lane과 분리하려던 원래 취지(quota 경합 회피)와
+      충돌한다. 애초에 "실질적으로 잘 동작하지 않는다"는 평가가 있었으니(ORACLE.md) **폐기도 선택지.**
+- [ ] **upstream 이슈로 올릴지 판단.** 8.1 cron/plugin 경로의 model-policy resolver 버그.
+      교차검수(gpt-5.6-terra)도 별도 추적 사안으로 봤다.
+- [ ] **`daily_real_estate_auction_study_brief_*`(mini, disabled)** — 켜기 전에 model을 박아야 한다.
+      안 그러면 같은 이유로 죽는다. turnwatch §1b가 이걸 `codex 낙하 위험`으로 표시한다.
+
+### 진단 교훈 (반복 방지)
+
+내 첫 진단은 **틀렸다** — typing을 heartbeat 탓으로 지목했는데 heartbeat 4개를 지워도 안 멈췄다.
+교차검수가 "typing 경로는 하나가 아니다"를 짚었고, 결국 **한 번에 한 변수만 끄는** 방식으로 잡았다.
+**관측면이 없는 증상(typing은 로그에도 audit에도 안 남는다)은 코드 판독으로 단정하지 마라.**
+
+---
+
 ## 🟡 OpenClaw 8.1 컷오버 완료 — soak + 후속 (2026-08-31 21:15 KST)
 
 **라이브 = `2026.8.1` (ea80657), healthy.** 컷오버 경위·3층 검수 결과·폐기된 반사신경 3건은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`로 이관했다. 11겹 함정표·재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md), 버전 이력은 [ROADMAP.md](ROADMAP.md). 여기는 **남은 것만**.
 
 증거 사슬: `~/openclaw/backups/pre-8.1-cutover-20260831T203708/` (cold 백업 1.8G + gate4~16 stdout/stderr/status + `ROLLBACK.sh`).
 
-- [ ] **24h soak** — 6봇 응답성, memory_search 콜드, cron/heartbeat 발송 대상(8.1이 owner DM 기본으로 바꿈, #121988), telegram 렌더 복사 가능성(telega).
+- [x] ~~24h soak — cron/heartbeat 발송 대상(#121988)~~ → **터졌다.** 위 🔴 섹션으로 이관. 남은 soak 축은 6봇 응답성·memory_search 콜드·telega 렌더 복사 가능성.
 - [ ] **ORACLE.md 재작성** — 8.1로 사실이 바뀐 자리들. ① `doctor --fix 금지`(:265,:280) → **8.1에선 필수 절차**로 성격이 바뀌었다(단 gemini는 이미 Copilot 레일이라 겨눌 대상 없음). ② config 키 이름: `agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, catch-all 규율은 `agents.defaults.models` 키 순서 → **`agents.defaults.modelPolicy.allow` 배열 순서**. ③ 런타임 지형표에서 codex 행 삭제(=2026-08-07 GLG 결정이 이번에 완결됨). ④ `agents.ownership=explicit` + `bindings` 6개 명시가 새 baseline.
 - [ ] **issue #7 닫기** — 결과/receipt 코멘트 달고 close.
 - [ ] **레거시 잔재 청소 (비긴급)** — `config/agents/*/sessions/*.migrated` 다수 + `sessions.json.bak*`. 마이그레이션이 남긴 원본이라 soak 통과 후 지운다. `backups/…/isolated-orphans/telegram-deepseek-allowFrom.json`도 그때 판단.

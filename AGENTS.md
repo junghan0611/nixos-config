@@ -18,6 +18,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **`thinkpad` 로컬 AI (Ollama)** | [THINKPAD.md](THINKPAD.md) |
 | **`nuc` / `laptop` 일반 NixOS 작업** | 이 문서 + 표준 NixOS 흐름 |
 | 함정 카탈로그 (OpenClaw) | [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) |
+| **봇별 크론/heartbeat — 무엇이 사람 없이 도는가** | [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**. 동기화 `./run.sh w)` |
 
 > **핵심 분리 원칙**: nixos-config에서 `oracle`이 아니면 OpenClaw를 볼 필요가 없다. oracle/openclaw 작업이 아니라면 ORACLE.md를 열지 마라 — 이 문서만으로 충분하다.
 

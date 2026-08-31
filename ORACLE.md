@@ -178,6 +178,15 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
+### heartbeat — bbot 하나만 (2026-09-01)
+
+`agents.entries.<id>.heartbeat`를 명시한 봇만 등록된다. 현재 **bbot(30m) 하나**다.
+main/glg/gpt/mini는 모델 턴을 0회 돌면서 매시간 typing과 task 행만 만들어 2026-09-01에 제거했다.
+`agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 아무에게도 적용되지 않는다.
+
+봇별 전량은 [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**.
+동기화는 `./run.sh w)` (turnwatch).
+
 ### 동시성 상한
 
 - `agents.defaults.maxConcurrent: 4` — 에이전트 턴
@@ -220,11 +229,11 @@ if (value === "codex-app-server") return "codex";
 
 **Live model IDs** (provider 접두사: `openai/*` = ChatGPT 구독 OAuth via **openclaw 내장 런타임**, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), **`github-copilot/*` = Copilot 구독 토큰** — gemini 챗봇 전용. `google/*`(api-key env `GEMINI_API_KEY`)는 **나노바나나 이미지 전용**, 챗봇은 `google/` 절대 안 씀. `google-gemini-cli/*`는 deprecated, 쓰지 않음). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix가 과금 경로를 결정(`google/`=api-key vs `google-gemini-cli/`=OAuth):
 
-| Agent | Model | Workspace | Streaming | Active memory | 비고 |
+| Agent | Model | Workspace | Streaming | Active memory<br>*(2026-09-01 전량 비활성)* | 비고 |
 |---|---|---|---|---|---|
-| **main** | `anthropic/claude-opus-5` | `workspace/` | off | ✓ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context. **2026-08-04 opus-4-8→opus-5 승격** — 카탈로그 미등재 모델이라 `defaults.models`에 `agentRuntime claude-cli`로 등록 후 격리 probe(`winnerModel=claude-opus-5`, `fallbackUsed=false`)로 서빙 확인하고 승격. opus-4-8은 per-agent 카탈로그에 롤백용 보존 |
+| **main** | `anthropic/claude-opus-5` | `workspace/` | off | ~~✓~~ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context. **2026-08-04 opus-4-8→opus-5 승격** — 카탈로그 미등재 모델이라 `defaults.models`에 `agentRuntime claude-cli`로 등록 후 격리 probe(`winnerModel=claude-opus-5`, `fallbackUsed=false`)로 서빙 확인하고 승격. opus-4-8은 per-agent 카탈로그에 롤백용 보존 |
 | glg (가족) | `anthropic/claude-sonnet-5` | `workspace-glg/` | partial | — | `@glg_junghanacs_bot`. **claude-cli runtime**(Codex 아님). **2026-07-16 `gpt-5.6-terra`→`claude-sonnet-5` 이동** — 가족 DM에서 화자 프레임을 승인하는 사이코팬시("두 에코챔버")가 모델 스왑만으론 안 풀려 USER.md 대칭 규칙과 함께 처방. 정한·미례 **동일 모델**(대칭 보호). terra는 per-agent 카탈로그에 롤백용 보존. ※ 이력: 2026-07-14 5.5→5.6-terra, 2026-06-13 5.4→5.5 재승격, 2026-06-10 5.5→5.4 강등. **DM 3개 전부 sonnet-5 정렬 확인(2026-08-04)**. active-memory 제외(응답성 우선) |
-| gpt | `openai/gpt-5.6-sol` | `workspace-gpt/` | partial | ✓ | 개인. **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
+| gpt | `openai/gpt-5.6-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
 | **bbot** | `anthropic/claude-fable-5` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
 | **gemini** | `github-copilot/gemini-3.7-flash` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. **2026-08-27 Copilot 레일** — 격리 probe `winnerModel=gemini-3.7-flash fallbackUsed=false` + 텔레그램 DM `/model` 정렬. Google Gemini 구독·gemini-cli·agy 안 씀. **fallback 없음**. `google/` api-key 금지(나노바나나 전용). catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
@@ -336,7 +345,15 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — 현재 main/gpt 활성
+### Active memory — **2026-09-01 비활성** (main 봇 유령 typing의 원인이었다)
+
+> 🔻 **현재 `plugins.entries.active-memory.enabled = false`.** 8.1 컷오버 후 실행 0건인 채로
+> main 봇 텔레그램 방에 턴 없는 typing을 계속 냈다. 끄니 멈췄다(단일 변수 검증, 2026-09-01 08:40).
+> 원인은 8.1이 비주력 경로에서 모델 런타임 오버라이드를 잃는 것 —
+> 모델 `openai/gpt-5.6-luna`가 disabled인 codex 런타임으로 떨어진다.
+> [gotchas](docs/openclaw-gotchas.md) 최상단 항목 · [자동화 SSOT](docs/openclaw-automations.md).
+> 엔트리는 지우지 않고 `enabled:false`로 남겼다(ORACLE.md 규율). 아래는 **꺼지기 전 운영 config**다.
+
 
 운영 config:
 - `agents: ["main"]` — **1개만 활성**. glg 2026-06-09 제외(recall 훅이 가족 응답을 16~35s 지연), **bbot 2026-06-13 제외**, **gpt도 제외 — active-memory가 실질적으로 잘 동작하지 않아 GLG가 뺐다**(2026-08-07 확인). mini/gemini 제외. ⚠️ 문서가 오래 `["main","gpt"]` 2개로 적혀 있었으나 라이브는 main 단독이었다(2026-08-07 실측 후 정정). **즉 현재 active-memory는 main 한 봇에만 남은 실험 lane이다** — 이 전제로 읽을 것. glg 2026-06-09 제외(recall 훅이 가족 응답을 16~35s 지연). **bbot 2026-06-13 제외**(같은 mini-lane 증상: 매 direct 메시지마다 recall lane 2차 턴이 23~35s·절반 timeout으로 본 턴과 겹치고 `incomplete turn` 에러 노출 → 응답성 우선). mini/gemini 제외

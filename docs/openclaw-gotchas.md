@@ -12,6 +12,78 @@
 
 ## 활성
 
+### 8.1 은 **비주력 경로에서 모델 런타임 오버라이드를 잃는다** — 가족 cron 2건 사망 + 유령 typing (2026-09-01)
+
+**증상 두 개가 뿌리 하나다.** 8.1 컷오버 다음 날 아침에 동시에 드러났다.
+
+`agents.defaults.models["openai/gpt-5.6-terra"].agentRuntime.id = "openclaw"` 를
+**일반 에이전트 세션은 적용하는데, cron 과 active-memory 경로는 잃는다.** 잃으면 openai 모델의
+카탈로그 기본 런타임 `codex` 로 떨어지고, codex 는 2026-08-07 결정으로 disabled 라 하드 실패한다.
+
+```
+Agent harness runtime "codex" is unavailable because its plugin registration is
+missing from this prepared run.
+```
+
+| 증상 | 무엇이 죽었나 | 어떻게 드러났나 |
+|---|---|---|
+| cron | 가족 아침 알림 2건 (아내 07:00 · GLG 08:00) | 아무도 모르게 조용히 실패. 로그가 telegram poll diag 로 100% 덮여 있었다 |
+| active-memory (`gpt-5.6-luna`) | 실행 0건인 채로 **main 봇 방에 유령 typing** | GLG 가 "아무 말도 안 하는데 타이핑하는 척한다"로 발견 |
+
+**회귀 확정 근거** — `task_runs` 에서 아내 07:00 잡이 8/28·29·30·31 succeeded → 9/1 첫 failed.
+**대조군** — gpt 봇 일반 세션은 같은 오버라이드가 먹혀 `gpt-5.6-sol / OpenClaw Default` 로 뜬다.
+**추가 사실** — pre-8.1 백업에는 `"openai/gpt-5.6-terra": {}` 로 **runtime 매핑 자체가 없었고**
+그때 cron 은 잘 돌았다. `agentRuntime: openclaw` 매핑은 8.1 컷오버 중 생겼다(`doctor --fix` 유력).
+단 그 백업 mtime 이 8/27 이라 4 일 묵었다 — 단독으로 upstream 회귀를 절대 확정하진 못한다.
+
+#### 대응
+
+```bash
+# cron agentTurn 은 model 을 반드시 명시한다
+docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5
+# active-memory 는 껐다 (main 전용 lane 이었다)
+docker exec openclaw-gateway openclaw config set plugins.entries.active-memory.enabled false
+```
+
+`agents.defaults.model.primary` 를 Claude 로 바꾸는 광역 수선은 **하지 마라** — CLI/API/새 자동화까지
+blast radius 가 번지고 회귀 원인을 숨긴다(교차검수 gpt-5.6-terra 동의).
+
+#### 진단이 두 번 빗나갔다 — 그 순서가 교훈이다
+
+1. 처음엔 typing 을 **heartbeat 탓으로 지목**했다. 8.1 이 heartbeat 에 typing 을 새로 붙인 건
+   사실이지만(아래 항목), heartbeat 4 개를 지워도 typing 은 멈추지 않았다.
+2. 교차검수가 **"typing 경로는 하나가 아니다"** 를 짚었다 — 인바운드 일반 메시지도 모델 실행 전에
+   typing 을 보낸다(`bot-message-DLpp_4_3.js:1226-30`). 코드로 경로를 짚은 것과 그 경로가
+   실제 원인이라는 것은 다르다.
+3. 결국 **한 번에 한 변수만 바꿔서** 잡았다. active-memory 만 끄고 `typingMode` 는 원복해
+   단일 변수로 만든 뒤 typing 이 멈추는 걸 확인했다.
+
+**교훈**: 관측면이 없는 증상(typing 은 로그에도 audit 에도 안 남는다)은 코드 판독으로 단정하지 말고
+**되돌릴 수 있는 변수를 하나씩 끄면서** 좁혀라.
+
+### 8.1 heartbeat 는 턴이 없어도 owner DM 에 typing 을 보낸다 (2026-09-01)
+
+위 항목의 진범은 아니었지만 **사실 자체는 맞다.** 8.1 이 새로 넣었다.
+
+- `targets-CwL8pr8V.js:301` — heartbeat 배달 대상 기본값이 **owner DM** (`target ?? "owner"`)
+- `heartbeat-runner-CWkWsEqw.js:1170` — `showOk:false, showAlerts:true`
+  → 메시지는 안 보내는데 `hasChatDelivery` 는 true 가 된다
+- `:167` — `typingMode !== "never"` 면 typing 활성 (기본 on)
+- `:1376` — keepalive 6 초. `:1501` 에서 **모델 호출 전에** 시작한다
+- 텔레그램 채널 플러그인(`channel-DyARihQ8.js:1603`)은 `sendTyping` 만 있고 `clearTyping` 이 없다
+  (matrix 에만 있다) → 끌 방법이 없고 5 초 뒤 알아서 꺼진다
+
+**그래서 실턴이 0 인 heartbeat 도 typing 을 낸다.** main/glg/gpt/mini 는 `agent:<id>:main` 세션이
+없어 heartbeat 가 6~19ms no-op 였는데도 매시간 typing 1 회와 `task_runs` 행 1 개를 만들고 있었다.
+2026-09-01 에 네 봇의 heartbeat 를 config 에서 제거했다. bbot 30m 만 남았다(의도된 루프).
+
+⚠️ heartbeat 잡은 **system-owned 라 `cron disable` 이 거부된다**
+(`system-owned monitor jobs cannot be edited by cron clients`). config 에서 빼야 한다:
+`openclaw config unset agents.entries.<id>.heartbeat`.
+등록 조건은 `heartbeat-config-Z4gqDu5K.js:33` — 엔트리에 `heartbeat` 를 명시한 봇만 등록된다.
+
+봇별 현황 SSOT 는 [openclaw-automations.md](openclaw-automations.md).
+
 ### 7.1 → 8.1 은 버전 bump 가 아니라 **순서 있는 마이그레이션**이다 — 조용한 실패 11겹 (2026-08-31)
 
 **어려웠던 진짜 이유는 각 단계가 어려워서가 아니라, 실패가 전부 "정상"처럼 보였기 때문이다.**
@@ -90,6 +162,9 @@ node openclaw.mjs doctor --session-sqlite validate  # legacy 0 확인
 
 
 ### heartbeat를 한 봇에만 주면 나머지 봇이 조용히 꺼진다 (2026-08-12)
+
+> 🔻 **2026-09-01 현재 이 판정 규칙을 의도적으로 이용하고 있다** — bbot 하나만 `heartbeat` 블록을
+> 가지므로 나머지 5봇은 전원 OFF다. 그게 지금 원하는 상태다. [자동화 SSOT](openclaw-automations.md).
 
 한 봇의 주기만 바꾸려고 `agents.list[]`에 `heartbeat` 블록을 하나 넣는 순간 **스케줄러가 모드를
 바꾼다**. `isHeartbeatEnabledForAgent()`가 이렇게 판정하기 때문이다:
