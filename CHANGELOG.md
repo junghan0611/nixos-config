@@ -9,6 +9,58 @@
 
 ## Unreleased
 
+## v2026.8.31 — OpenClaw 8.1 오프라인 컷오버 + aionsclubs 공개면
+
+### OpenClaw 2026.8.1 — 버전 bump가 아니라 순서 있는 마이그레이션이었다
+
+- **7.1-2 → `2026.8.1` (ea80657) 라이브 컷오버** (`cfeb9a5`). 게이트웨이를 정지하고 **오프라인으로** 옮겼다 — 다운타임 **20:36:40 → 21:15:54 KST**(약 39분, 재작업 포함). **`Dockerfile` `FROM` 한 줄 + `--force-recreate`로는 부팅이 거부된다**(19:14 실측: `Invalid config` 7키 + `OpenClawStateDatabaseSchemaMigrationRequiredError`) — 8.1은 **옛 state를 거부**한다. 순서가 강제된다: ① 게이트웨이 정지 후 `doctor --fix` **직렬 재시도**로 agent DB 7개를 v19까지(`core:agent-database-maintenance/global` 리스를 도중에 잃어 나머지를 건너뛴다 — lab·라이브 양쪽 재현) → ② 그제야 startup config repair가 커밋된다(repair는 state migration이 clean하게 끝난 뒤에만 커밋한다) → ③ 세션 스토어는 `--fix`가 아니라 `doctor --session-sqlite {dry-run,import,validate}`라는 **별도 경로**.
+- **어려웠던 이유는 실패가 전부 `healthy`로 보였기 때문이다 — 조용한 실패 11겹.** 컨테이너 `healthy` + 텔레그램 6/6 `works`가 찍히는 동안 봇은 답을 못 하거나(7·10·11), 정체성 없이 답하거나(8), 텔레그램 계정에 소유자가 없었다(9). **그래서 검수를 3층으로 못박았다**: 컨테이너 `healthy`(아무것도 보장하지 않는다) → `channels status --probe`("붙었다" ≠ "답한다") → **6봇 격리 프로브**(이걸 안 하면 8·9·10·11을 전부 놓친다). 11겹 표와 재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md), 서사는 [ROADMAP.md](ROADMAP.md), 삽질 전문은 [issue #7](https://github.com/junghan0611/nixos-config/issues/7).
+- **격리 lab은 절반만 준다.** 사전 lab 2개로 1~5번을 미리 잡았으나 6·7(cold archive에 `credentials/`·`exec-approvals.json` 미포함)과 8·9·10·11은 못 잡았다 — lab이 `--network none`이라 **실제 턴을 한 번도 안 돌렸기 때문이다.** 나머지 절반은 라이브 턴에서만 나온다.
+- **사람이 정한 config 편집** (자동 수선 대상이 아니다 — 전부 정책 결정): `agents.ownership="explicit"`(8.1 스키마가 에이전트 2개↑ + default 마커 0을 거부, `zod-schema.agents.ts:79-85`) · `bindings`에 `telegram:default → main`(위 결정의 직접 귀결 — 7.1은 암묵적 기본 에이전트가 받아줬다) · `plugins.allow`에서 은퇴한 `phone-control` 제거 · `skills.workshop` 3키 명시(`autonomous.mode:"off"` / `approvalPolicy:"pending"` / `allowSymlinkTargetWrites:false`) · 6봇 `workspace` 명시 · `openai/gpt-5.6-{terra,sol,luna}`의 `agentRuntime` 명시. 나머지 **17건 semantic 변환은 startup repair가 결정적으로 수행**했다(`agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, legacy 모델맵→`modelPolicy.allow`). **lab config를 통째로 복사하지 않았다** — doctor가 model auth/wizard 경로까지 건드리기 때문.
+- **catch-all 규율이 사는 자리가 이사했다.** legacy 모델맵이 `modelPolicy.allow`로 복사되며 **순서가 보존**됐고 1번은 `openai/gpt-5.6-terra` 그대로다. 이제 규율은 `agents.defaults.models`의 **키 순서**가 아니라 **`agents.defaults.modelPolicy.allow`의 배열 순서**다. ORACLE.md의 옛 문구는 이 자리에서 무효.
+- **`skills.workshop`을 명시적 `off`로 박고 받았다.** 8.1은 미설정 기본값을 자동 적용 쪽으로 뒤집는데(#115576), 릴리즈 노트가 보호한다는 것도 *"explicit off or propose"*이지 **미설정이 아니다** — 우리에겐 `off`라는 명시 자체가 없었다. 근거: `workspace-skill-write.ts:420-440`이 `allowSymlinkTargetWrites=false`면 심링크 타깃 쓰기를 throw하지만 **auto create는 로컬 real dir에 가능하고 `run.sh k)`가 그걸 지운다** — 우리 스킬 트리는 agent-config SSOT로의 심볼릭이라 자율 쓰기 경로를 열어둘 수 없다.
+- **2026-08-07 codex 결정이 미완이었음이 드러나 완결됐다.** 그때 `plugins.entries.codex.enabled=false`로 껐지만 `openai/gpt-5.6-*` 세 모델은 `{}`인 채라 **여전히 Codex 런타임으로 해상**되고 있었다. 7.1은 doctor 경고 7건으로 봐줬고 우리는 그걸 소음으로 취급했다 — **8.1은 fail-closed 한다.** 세 모델에 `agentRuntime:{id:"openclaw"}`를 명시해 결정을 완성했다. doctor 경고 **7 → 0**. ⚠️ 고친 뒤 프로브가 `⚠️ API rate limit reached` / `rawError=Codex error: The usage limit has been reached`로 떨어지면 그건 **성공 신호다**(런타임이 OpenAI에 도달했고 벽은 구독 쿼터) — 수정 전 문자열 `runtime "codex" is unavailable`과 반드시 구분할 것.
+- **검수 결과**: 컨테이너 `healthy`·restart 0, boot WARN 0, 채널 **6/6 `works`**, 6봇 모델 prefix·워크스페이스·라우팅 불변, catch-all 1번 유지, doctor codex 경고 0. **서빙 실턴은 5/6이다** — main(opus-5)·glg(sonnet-5)·mini(sonnet-5)·bbot(fable-5)·gemini(`github-copilot/gemini-3.7-flash`) 정체성·모델 정확. **gpt는 아직 미검증**이며, ChatGPT 5h 쿼터 100% 소진 대기이지 결함이 아니다(후속 → [NEXT.md](NEXT.md)).
+- **세션·트랜스크립트 손실 0.** `doctor --session-sqlite import` = 42 → 42 entries·0 issues. 미참조 `.jsonl`은 **삭제가 아니라 아카이브**(`config/agents/<id>/session-sqlite-import-archive/*.imported-<ts>`). 부수 효과로 DB compact 약 870MB 회수. 오래 남아 있던 **orphan transcript 104건이 이 과정에서 해소**됐고, 옛 전제 *"`--fix`는 gemini를 깨므로 못 쓴다"*도 이번 실행에서 드리프트 0으로 반증됐다.
+- **롤백면은 백업 2종이 합쳐져야 온전하다** — 컷오버 백업 `backups/pre-8.1-cutover-20260831T203708/`(1.8G, 마이그레이션 대상 + gate 증거 + `ROLLBACK.sh`)에는 **`.jsonl` 트랜스크립트가 0개**다. 트랜스크립트는 `backups/pre-8.1-20260831T190622/config-state-cold.tar.zst`(837M) 쪽에 있다. 이미지 태그 `openclaw-custom:7.1-rollback`. **마이그레이션된 state로는 롤백하지 않는다 — cold 백업이 롤백 원본이다.**
+
+#### 폐기된 반사신경 3건 — 옛 규칙을 그대로 따르면 사고가 난다
+
+1. ~~업그레이드 = `Dockerfile` `FROM` 한 줄~~ → **패치/마이너 hop인지 메이저 hop인지 먼저 판정한다.** 8.1은 한 달치 메이저 + breaking 2건이었고, 그 사이 stable이 없었다(6.34는 백포트).
+2. ~~`doctor --fix` 금지~~ → **8.1에선 필수 절차다.** 금지 사유였던 gemini `google/` 재작성은 2026-08-27 Copilot 이관으로 **이미 대상이 소멸**했고, 이번 실행에서 드리프트 0을 확인했다.
+3. ~~gemini는 DOWN 유지~~ → **화석이다.** `github-copilot/gemini-3.7-flash`로 살아 있다.
+
+### Added
+
+- **`aionsclubs.org` 격리 클럽하우스 스택** (`97c1360`) — 로컬 관리 터널 `aions` + 전용 docker 네트워크, **호스트 포트 publish 0**. web root는 `/srv/aions/current`(부모 bind `docker-data/aions`), 자격증명은 리포 밖. 이어서 **creator-mode publish**(`86d5152`) — 리포 HEAD를 `docker-data` releases로 스냅샷하고 `current`를 원자적으로 재지향, 게이트는 시크릿 유사 경로에만 거는 soft gate(홈페이지 작업은 열어둔다). `deploy.sh`는 리포 publish 스크립트에 위임(`8e900bb`). **`www` 는 ingress에서 뺐다**(`c2292d8`) — 엣지 Single Redirect가 301로 apex에 보내고 **Redirect Rule이 오리진보다 먼저 평가**되므로 404가 아니다(확인: www → 301, apex → 200). remark42에 aionsclubs 댓글 사이트 추가(`8adcfc8`), `cloudflared` 유틸리티 패키지 추가(`121e923`).
+- **heartbeat per-agent 블록 함정 박제** (`ebbe31e`) — 한 봇 주기만 바꾸려 `agents.list[]`에 `heartbeat` 블록을 하나 넣으면 `isHeartbeatEnabledForAgent()`가 **명시 목록 모드로 뒤집혀** 블록 없는 봇이 **에러도 경고도 없이 전부 멈춘다**. `defaults.heartbeat`는 아무도 명시하지 않았을 때만 도는 폴백이다. 2026-08-12 적용: main/glg/gpt/mini 1h, bbot 30m, gemini는 블록 미부여로 OFF.
+- **컨테이너 안전레일을 시스템 gitconfig에 배선** (`308f397`, `78fbade`) — 봇 컨테이너에는 `~/.gitconfig`도 `/etc/gitconfig`도 **없었다**. 결과가 두 갈래로 갈렸다: plain `git push`는 credential helper가 없어 exit 128로 **시끄럽게** 막히고, global `core.hooksPath`가 없어 봇 커밋이 신원/secret 스캔을 **조용히** 건너뛰었다. 한쪽만 고치면 열어놓고 지키지 않는 상태가 된다. ⚠️ bind source 파일이 없으면 docker가 그 자리에 **빈 디렉터리**를 만들어 `/etc/gitconfig`가 디렉터리가 되고 컨테이너 git이 통째로 깨진다 — compose 마운트 줄만 옮기고 파일을 빼먹지 말 것.
+- 패키지: `lean4`·`ledger`(`d32bfe4`), `appimage-run` + GUI AppImage 샌드박스 주석(`de54a05`).
+
+### Changed
+
+- **gemini 서빙 레일 — 2026-08-16 "github-copilot 전면 제거"는 2026-08-27에 뒤집혔다. 현재 사실은 8/27이다.**
+  - **8/16 제거** (`20d03a7`, GLG "이제 안 쓴다"): 네 층을 걷어냈다 — 라이브 config 3곳(`auth.profiles."github-copilot:github"` / `plugins.entries.github-copilot` / `plugins.allow` 14→13) → **auth sqlite 3곳**(`auth_profile_store.primary.profiles` / `auth_profile_state.primary.lastGood` / `usageStats`) → 호스트 `~/.copilot/`. 백업 `openclaw.json.bak-copilot-purge-20260816T102602` + `backups/openclaw-agent.sqlite.bak-copilot-purge-20260816T102602`. **함정 박제: `config unset`은 자격증명을 안 지운다** — `auth.profiles`는 *선언*일 뿐이고 토큰 실물은 `openclaw-agent.sqlite`에 있어 unset + restart 뒤에도 `models status`가 토큰을 그대로 뿜었다. CLI에 프로필 삭제 명령이 없어 sqlite를 직접 손봐야 완결된다 — **copilot만의 얘기가 아니라 모든 provider 은퇴에 해당한다.**
+  - **8/19 재도입** (`a8d5655`): `@github/copilot` CLI를 pnpm SSOT(`scripts/external-packages.sh`)에 되돌림.
+  - **8/27 복귀** (`9665500`): **gemini 챗봇의 서빙 레일로 Copilot을 되돌렸다** — `github-copilot/gemini-3.7-flash`, 플러그인 재활성 + `plugins.allow` 14개 + **새 device-code 로그인**(옛 토큰 재사용 금지). Google Gemini 구독·gemini-cli·agy는 쫓지 않는다(GLG 결정). 8/16 상태를 baseline으로 읽으면 틀린다. 남은 부채는 **8/16에 샌 옛 토큰의 revoke**뿐 — 새 로그인 토큰과 별개다([NEXT.md](NEXT.md)).
+  - 이력 문서(CHANGELOG / `docker/openclaw/Dockerfile` 주석 / `openclaw.json.reference` 스냅샷 / `docker/openclaw/README.md` 날짜 라벨)는 **지우지 않았다** — 지우면 gemini의 경로 이동사가 통째로 사라진다. AGENTS.md 세 문서 분업 원칙 그대로.
+- **`workspace-glg` 서사 git 졸업** (`9665500`, 체크리스트 `fcc2606`) — 집사봇 workspace가 `junghan0611/workspace-glg`(private)로 독립. bbot(2026-08-27)에 이은 두 번째. **호스트가 레일만 깔고**(private 리포·origin·훅 loose·부모 gitignore) **봇이 커밋·푸시를 소유**한다. 폴더명 = 리포명. 권한 확대가 아니다 — public 리포 생성·훅 끄기·다른 봇 workspace 수정은 그대로 막혀 있다. 남은 후보는 `workspace/`·`workspace-gpt/`·`workspace-gemini/`·`workspace-mini/`.
+- **봇 스킬 배포를 rsync 복사 → agent-config SSOT 절대 심볼릭으로 전환** (`4904439`) — `run.sh k)` 개편, `~/.claude/skills` overlay footgun 문서화, gog 바이너리 SSOT를 스킬 트리 **밖**(`openclaw-config/bin`)으로 이동.
+- **whole-org rw 마운트 미러 + ORACLE.md 갱신** (`6ab049d`). `docker/openclaw/README.md`는 **2026-04-22 화석**으로 표기(`85ab35e`) — 라이브 운영 정본은 ORACLE.md다.
+- **compose를 라이브 openclaw-config와 정합** (`271f678`) — mount fence(gh ro / aionsclubs rw / `docker-data/aions`)와 gog env 복원. 백업 재배포가 creator-mode 배선을 지우지 못하게 하는 것이 목적.
+- **zmx 재도입** (`965583b`) — 26.05 이관 때 제외했던 사유 *"zig15 ↔ 26.05 zig16 충돌"*은 **실측 결과 기우였다**(zmx flake는 zig2nix로 자기 zig 툴체인을 격리해 시스템 zig와 무관). 26.05에는 zmx 0.7.0이 미등록이라 `nixpkgs-unstable` 예외로 되돌렸고, 이번엔 upstream flake의 Zig 0.15 빌드가 아니라 **cache.nixos.org 바이너리**를 쓴다. unstable 예외는 이제 **tdlib + zmx 둘**이며 26.05가 따라잡으면 오버레이와 input을 함께 지운다. (자립성 계약 — entwurf 설치면이 zmx를 스스로 확보하는가 — 은 [entwurf #47](https://github.com/junghan0611/entwurf/issues/47)에 그대로 남는다. 이제 PATH에 있으므로 그쪽에서 "우연히 만족"을 경계할 것.)
+- **tmux 상태바를 두 줄로 쪼갰다** (`49de039`) — 한 줄이던 시절엔 디바이스 배지·세션명·시계가 폭을 먼저 먹어 창 목록이 **조각으로** 렌더됐다. `status-format[0]/[1]`로 창 목록을 자기 전폭 줄에 두고, 현재 창은 `#I`를 앞에 세워 배경을 반전한다(뒤따르던 `*` 플래그 하나로만 구분되던 것). 현재 창의 `*`는 떼고 `Z`는 남긴다 — zoom된 pane을 잃어버린 것으로 오해하지 않도록. `status-bg`/`status-fg`는 문서화된 `status-style`로 접었다.
+
+### Fixed
+
+- **claude-cli 4봇이 매 턴 1.1초에 죽던 침묵 회귀 — 8.1이 아니라 base 이미지의 npm이 범인이었다** (`cfeb9a5`). npm **11.13.0 → 12.0.2**가 install script를 `allowScripts`로 **기본 차단**한다 → `@anthropic-ai/claude-code` postinstall 미실행 → `bin/claude.exe`가 **500 B 에러 shim**으로 남고(7.1 base에서는 `285457336 B`) 진짜 213MB 네이티브는 `node_modules/@anthropic-ai/claude-code-linux-arm64/claude`에 방치된다. **빌드는 성공했다** — 로그에 남은 건 error가 아니라 `npm warn install-scripts` 한 줄뿐이고, 부팅도 채널 프로브도 전부 통과한다. Dockerfile 3단으로 고정: ① `--allow-scripts=@anthropic-ai/claude-code` ② `node install.cjs` 명시 실행(멱등) ③ **`claude --version` 빌드 게이트**. **③이 본체다** — 없으면 같은 회귀가 다음 bump에서 또 조용히 지나간다.
+- **caddy 443 — tailscale이 먼저 선점하면 `junghanacs.com` 서브도메인이 통째로 죽는다** (`c11b1db`). 커널 `7.1.2 → 7.1.4` 재부팅에서 tailscaled가 docker보다 먼저 올라와 tailnet IP `100.67.72.1:443`을 잡았고, 리눅스는 `0.0.0.0:443`과 특정IP `:443`을 공존시키지 않으므로 caddy가 `exit 128 / address already in use`로 죽었다 — **5시간 무응답**. 지난 부팅(7/2)엔 caddy가 이겼을 뿐 **설정은 내내 충돌 상태였다.** 조치: caddy 포트를 enp0s6 NIC(`10.0.0.157`)에만 묶어 tailnet 443과 공존. 공인 IPv6가 없고 A레코드만 쓰므로 외부 손실 0. ⚠️ 같은 재부팅에서 터진 **emacs 소켓 dir 레이스(geworfen/agenda)는 수동 복구만 했고 항구 차단은 미결**이며, `10.0.0.157` 하드코딩과 "tailscale serve 443을 계속 쓸 것인가"라는 근본 판단도 남아 있다 — 전부 [NEXT.md](NEXT.md).
+- **thinkpad 내장 마이크가 빈 잭에 묶여 죽던 문제** (`462842b`). 원인은 [alsa-ucm-conf#785](https://github.com/alsa-project/alsa-ucm-conf/issues/785) — ALC257 + AMD ACP 조합엔 `Input Source` 셀렉터가 없어 UCM이 `HDA/HiFi-mic.conf` fallback 분기를 타고, 그 분기가 **내장** 아날로그 마이크(`HiFi__Mic2`)에 **외부** 잭 컨트롤 `Mic Jack`을 붙인다. 잭이 비면 포트가 `not available` → WirePlumber가 기본 후보에서 빼고 → **열거만 되고 캡처는 완전 무음**인 AMD ACP `Digital Microphone`(`HiFi__Mic1`)을 고른다. 실측 최대 진폭 **Mic2 `0.999969` / Mic1 `0.000000`**. 조치: 잭 바인딩만 걷어낸 UCM 트리를 만들어 pipewire/wireplumber 유닛에 `ALSA_CONFIG_UCM2`로 물렸다 — **`alsa-ucm-conf`를 overlay로 직접 패치하면 alsa-lib 체인이 딸려와 로컬 빌드가 764개**가 되므로 패키지는 건드리지 않는다(현 방식은 11개, 실제 새 빌드는 UCM 트리 하나). 검증: 임시 조치 전부 제거 후 설정만으로 Mic2가 기본 소스로 선택되고 **376832 샘플 캡처**.
+- **`~/.config/mimeapps.list` 심링크 파손 — home-manager가 매 switch마다 죽고 있었다** (`1d77cb0`). Chrome 등이 기본 핸들러를 등록하며 심링크를 일반 파일로 갈아치웠고, home-manager는 그 파일을 낯선 것으로 보고 백업하려 하는데 **4월치 `.hm-backup`이 자리를 막고 있어** `home-manager-junghan.service`가 `exit 1`로 죽었다(시스템 부분만 적용되는 상태). 홈 파일 쪽이 최신이라 **그 내용을 리포 SSOT로 승격**했다 — 기본 브라우저 firefox → google-chrome, `github-handler`(github-app/ghapp/gh)·slack 스킴 핸들러, about/unknown 추가.
+- **Doom Emacs를 데스크톱 엔트리에서 직접 기동** (`9852477`).
+- **컨테이너 YouTube 쿠키를 rw로 + `yt-dlp>=2026.8.19` 핀** (`80202aa`) — oracle에서 EJS challenge solver를 타려면 컨테이너가 쿠키를 재작성할 수 있어야 하고 yt-dlp가 그만큼 새로워야 한다. 라이브 openclaw-config 미러.
+
+
 ## v2026.8.10 — 26.05.20260808 hop + 리포 자기 수선 협업
 
 ### Added

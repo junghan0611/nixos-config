@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.8.10`.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.8.31`.
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -8,9 +8,7 @@
 
 ## 🟡 OpenClaw 8.1 컷오버 완료 — soak + 후속 (2026-08-31 21:15 KST)
 
-**라이브 = `2026.8.1` (ea80657), healthy.** 게이트웨이 정지 후 오프라인 마이그레이션으로 넘어갔다. 다운타임 20:36:40 → 21:15:54 (약 39분, 재작업 포함). 채널 6/6 `works`, 6봇 모델/워크스페이스/라우팅 불변, catch-all `openai/gpt-5.6-terra` 1번 유지.
-
-**왜 어려웠는지 / 재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "8.1 컷오버" 항목**, 버전 이력은 [ROADMAP.md](ROADMAP.md). 여기는 **남은 것만**.
+**라이브 = `2026.8.1` (ea80657), healthy.** 컷오버 경위·3층 검수 결과·폐기된 반사신경 3건은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`로 이관했다. 11겹 함정표·재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md), 버전 이력은 [ROADMAP.md](ROADMAP.md). 여기는 **남은 것만**.
 
 증거 사슬: `~/openclaw/backups/pre-8.1-cutover-20260831T203708/` (cold 백업 1.8G + gate4~16 stdout/stderr/status + `ROLLBACK.sh`).
 
@@ -30,7 +28,7 @@
 
 커널 `7.1.2 → 7.1.4` 재부팅(04:49 KST)이 **독립된 부팅 레이스 두 개**를 동시에 터뜨려 `junghanacs.com` 서브도메인 전부가 5시간 죽었다. 둘 다 "docker가 다른 무엇보다 먼저 뜨느냐"에 결과가 갈리는 같은 모양이다. 복구는 끝났고(전 vhost 200), **재발 방지가 절반만 됐다**.
 
-**① caddy 443 선점 — 영구 수정 완료.** `machines/oracle.nix:19`의 `tailscale serve --bg --https=443 → 127.0.0.1:18789`(OpenClaw gateway 레인)이 `--bg`라 tailscaled 영구 설정에 남는다. 재부팅 후 tailscaled가 docker보다 먼저 올라와 `100.67.72.1:443`을 잡았고, 리눅스는 `0.0.0.0:443`과 특정IP `:443`을 공존시키지 않으므로 caddy가 `exit 128 / address already in use`로 죽었다. 지난 부팅(7/2)엔 caddy가 이겨서 5개월간 안 드러났다 — **어느 쪽이 이기느냐만 달랐지 설정은 내내 충돌 상태였다.** 조치: `docker/caddy/docker-compose.yml` 포트를 `10.0.0.157:{80,443}`(enp0s6 NIC)로 묶어 tailnet 443과 공존. 공인 IPv6가 없고 A레코드(`168.107.2.68`)만 쓰므로 외부 손실 0.
+**① caddy 443 선점 — 영구 수정 완료.** 경위(tailnet 443 선점 → caddy `exit 128` → 5시간 무응답)와 조치(enp0s6 NIC `10.0.0.157` 바인딩)는 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`. 이 자리에 남은 건 아래 하드코딩·근본 판단 둘뿐이다.
 
 **② geworfen/agenda — 미해결.** docker가 호스트 emacs보다 먼저 떠서 마운트 소스 `/run/user/1000/emacs`를 **root 소유로 생성** → `agent-emacs.service`가 *"is not a safe directory because it is not owned by you"*로 기동 실패 → `server` 소켓 부재 → geworfen healthcheck 영구 실패 → autoheal이 2.5분마다 재시작(5시간 약 120회). 수동 복구는 emacs·geworfen 정지 → root 소유 dir `rmdir` → `agent-emacs`+`emacs` 기동 → geworfen `--force-recreate`. **다음 재부팅에 docker가 또 이기면 그대로 재발한다.**
 
@@ -45,34 +43,18 @@
 
 ---
 
-## ✅ github-copilot 전면 제거 (2026-08-16) → 2026-08-27 gemini 레일로 복귀 — 옛 토큰 회전만 남음
+## 🔴 github-copilot 옛 토큰 회전 — 제거(8/16)와 복귀(8/27) 뒤에 남은 부채
 
-8/16 GLG "이제 안 쓴다"로 네 층을 걷어냈다. **2026-08-27에 gemini 챗봇 서빙 레일로 되돌림** (`github-copilot/gemini-3.7-flash`, 새 device-code 로그인). 이력은 ROADMAP. 아래 회전 부채는 **8/16에 샌 옛 토큰** 이야기다 — 새 로그인 토큰과 별개, revoke는 여전히 필요.
-
-지운 자리: 라이브 config 3곳(`auth.profiles."github-copilot:github"` / `plugins.entries.github-copilot` / `plugins.allow`) → **auth sqlite 3곳**(`auth_profile_store.primary.profiles` / `auth_profile_state.primary.lastGood` / `usageStats`) → 호스트 `~/.copilot/`(파일 5개). 백업 `openclaw.json.bak-copilot-purge-20260816T102602` + `backups/openclaw-agent.sqlite.bak-copilot-purge-20260816T102602`.
-
-**핵심 함정 — `config unset`은 토큰을 안 지운다.** config의 `auth.profiles`는 *선언*일 뿐이고 자격증명 실물은 `agents/main/agent/openclaw-agent.sqlite`에 있다. unset + restart 후에도 `models status`가 `github-copilot … token:ghu_…`를 그대로 뿜었다. sqlite까지 손대야 진짜 제거다 — 이건 copilot만의 얘기가 아니라 **모든 provider 제거에 해당**한다.
+경위 3단(8/16 4층 제거 → 8/19 CLI 재도입 → 8/27 gemini 서빙 레일 복귀)과 **`config unset`은 토큰을 안 지운다** 함정은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31` / [ROADMAP.md](ROADMAP.md)로 이관. **현재 사실은 8/27이다** — gemini는 `github-copilot/gemini-3.7-flash`로 서빙 중. 아래 회전 부채는 **8/16에 샌 옛 토큰** 이야기이고 새 로그인 토큰과는 별개다.
 
 - [ ] **🔴 GitHub 토큰 2개 회전.** 제거 과정에서 평문이 에이전트 세션 트랜스크립트에 남았다: gateway auth store의 `ghu_xJoQ…`(Copilot provider token)와 `~/.copilot/config.json`의 `gho_Ia8n…`(Copilot CLI OAuth). 저장소에서는 지웠으나 **GitHub 쪽에서 revoke해야 실효**한다 — Settings → Applications에서 GitHub Copilot 권한 취소. claw 배포 때 gateway token 건([claw 항목](#clawjunghanacs.com--openclaw-control-ui-공개면--배포-완료-2026-08-06))과 같은 모양의 부채다.
-- [ ] **`plugins.allow` 화이트리스트 회귀 관찰.** allow는 실제 게이트라 목록에서 빼면 그 플러그인이 disabled된다(ROADMAP 2026-06-04 "plugins.allow 명시" 함정). 13개로 줄였고 boot WARN 0·6봇 정상을 확인했지만, 업그레이드로 새 bundled plugin이 들어오면 allow에 없어서 조용히 꺼진다는 성질은 그대로다.
-- 안 지운 것 = **이력**: `ROADMAP.md`·`CHANGELOG.md`·`docker/openclaw/Dockerfile` 업글 로그 주석·`docker/openclaw/README.md`의 날짜 라벨 change history(2026-04-22 routing 표에서 gemini가 `github-copilot/` 경로였던 기록)·`openclaw.json.reference`(2026.4.8 스냅샷). "어떻게 여기까지 왔나"를 지우면 gemini 경로 이동사가 통째로 사라진다 — AGENTS.md 세 문서 분업 원칙대로 보존한다.
+- [ ] **`plugins.allow` 화이트리스트 회귀 관찰.** allow는 실제 게이트라 목록에서 빼면 그 플러그인이 disabled된다(ROADMAP 2026-06-04 "plugins.allow 명시" 함정). 8/16 당시엔 boot WARN 0·6봇 정상을 확인했지만(그 뒤 8/27 Copilot 복귀와 8.1의 `phone-control` 제거로 목록이 두 번 바뀌었다 — 현재 개수는 재측정 대상), 업그레이드로 새 bundled plugin이 들어오면 allow에 없어서 조용히 꺼진다는 성질은 그대로다.
 
 ---
 
-## ✅ thinkpad 마이크 — 잭에 묶인 내장 마이크, UCM 패치로 해결 (2026-08-25)
+## thinkpad 마이크 — UCM 잭 바인딩 제거로 해결, 재부팅 검증만 남음 (2026-08-25)
 
-화상회의마다 마이크가 죽던 건. 원인은 `alsa-ucm-conf` #785 — 이 기기(ALC257 + AMD ACP)엔 `Input Source` 셀렉터가 없어 UCM이 `HDA/HiFi-mic.conf` fallback 분기를 타고, 그 분기가 **내장** 아날로그 마이크(`HiFi__Mic2`, "Stereo Microphone")에 **외부** 잭 컨트롤 `Mic Jack`을 붙인다. 잭이 비어 있으면(`Mic Jack=off`) 포트가 `not available` → WirePlumber가 기본 후보에서 빼고 → AMD ACP `Digital Microphone`(`HiFi__Mic1`)을 고르는데 이쪽은 **열거만 되고 캡처는 완전 무음**이다.
-
-실측 (`pw-record` + `sox … -n stat`):
-
-| 노드 | 최대 진폭 |
-|---|---|
-| Stereo Microphone (Mic2) | `0.999969` — 정상 |
-| Digital Microphone (Mic1) | `0.000000` — 무음 |
-
-조치: `machines/thinkpad.nix`에서 잭 바인딩만 걷어낸 UCM 트리를 만들고 pipewire/wireplumber 유닛에 `ALSA_CONFIG_UCM2`로 물렸다. **`alsa-ucm-conf`를 overlay로 직접 패치하면 alsa-lib 체인이 딸려와 로컬 빌드 764개**가 되므로 패키지는 건드리지 않는다(실측; 현 방식은 11개, 그중 실제 새 빌드는 UCM 트리 하나).
-
-검증(임시 조치 전부 제거 후, 설정만으로): Mic2 포트 `availability unknown` → 기본 소스로 선택 → `default.audio.source = …HiFi__Mic2__source` → 실측 376832 샘플 캡처.
+원인([alsa-ucm-conf#785](https://github.com/alsa-project/alsa-ucm-conf/issues/785))·실측 진폭·조치(UCM 트리 + `ALSA_CONFIG_UCM2`)·검증은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`로 이관. 남은 것만:
 
 - [ ] **재부팅 검증 안 함.** systemd 유닛 `Environment=`라 살아남는 게 자연스럽지만 실제로 재부팅해 확인한 적은 없다. 다음 재부팅 때 `wpctl status`의 기본 소스가 Stereo인지 한 번 보면 닫힌다.
 - [ ] **상류가 고쳐지면 이 블록을 지운다.** [alsa-ucm-conf#785](https://github.com/alsa-project/alsa-ucm-conf/issues/785). 이 기기엔 `Internal Mic Phantom Jack` 컨트롤이 없어 upstream 제안(phantom jack 있으면 바인딩 생략)이 그대로는 안 맞는다 — 상류 수정이 이 케이스를 덮는지 확인하고 제거할 것.
@@ -154,7 +136,6 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 - [ ] **gpt 봇 thinking 인상 여부 관찰.** `thinkingDefault=medium`은 sol에겐 **인하가 아니라 인상**(upstream 기본 `low`). GLG 목적이 "턴 속도"였으므로 느려지면 `agents.entries.gpt.thinkingDefault="low"`로 되돌린다. ⚠️ 8.1에서 gpt는 codex 런타임을 떠나 **openclaw 내장 런타임**을 타므로 thinking 매핑이 달라졌을 수 있다 — 쿼터 리셋 후 재관측.
 - [ ] **luna/terra lane 품질 soak.** ① active-memory recall 품질(요약 정확도, `stopReason=missing` 비율), ② recall latency — 5.4-mini의 31.5s Codex CLI 콜드스타트가 사라졌으니 **개선돼야 정상**, ③ subagent 결과물 품질(terra), ④ ChatGPT 구독 quota 소진 속도(Codex Plus 크레딧 표는 이 두 lane에 더 이상 안 맞는다).
 - [ ] **`channels.mattermost` 죽은 설정 정리.** 2026-08-31 실측 — `channels` 키가 `discord/mattermost/telegram` 3개인데 mattermost는 **botToken을 든 채** 남아있다. 안 쓰면 `config unset channels.mattermost`로 토큰까지 지운다(평문 시크릿 축소).
-- [x] ~~orphan transcript 104건~~ — **8.1 마이그레이션이 해결했다.** `--session-sqlite import`가 참조된 트랜스크립트를 SQLite로 넣고 미참조분을 **아카이브**했다(삭제 아님): main 229 / glg 413 / gpt 123 / bbot 59 / gemini 17 → `config/agents/<id>/session-sqlite-import-archive/*.imported-<ts>` (6봇 합 2,170개 현존). 옛 전제 *"`--fix`는 gemini를 깨므로 못 쓴다"* 도 **8/27 Copilot 이관으로 이미 무효**였고, 이번에 `doctor --fix`를 실제로 돌려 gemini 드리프트 0으로 확인됐다.
 
 ---
 
@@ -268,7 +249,6 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 
 ### 남은 한 걸음 (ACP 잔재 청소)
 
-- [x] **gemini 챗봇 — 2026-08-27 Copilot으로 서빙.** `github-copilot/gemini-3.7-flash`. Google 구독·gemini-cli·agy 안 쫓음(GLG). 긴 DOWN/agy 추적은 ROADMAP.
 - [ ] **compose mount 정리** — gemini가 마지막 ACP 사용처였다. `docker-compose.yml`의 ACP 전용 mount(`~/.pi/agent`, `~/.claude-plugin/skills` 등)가 남아있으면 제거(이제 unblocked). 단 claude-skills overlay(§ skills)와 겹치는 mount는 남김 — 헷갈리지 말 것.
 - [x] **pi-shell-acp 엔트리 최종 거취 — 2026-06-22(6.9) 완전 제거.** ~~present + `enabled:false` 영구 유지~~ → **6.9 strict plugin discovery가 죽은 `plugins.load.paths`(pi-shell-acp 경로)를 startup hard-fail로 거부해 crash loop** 발생 → `plugins.load.paths` + `plugins.entries.pi-shell-acp` + `plugins.allow` 전부 제거. **옛 "엔트리 삭제 = 기본 로드 복귀" 함정(2026-06-10)은 6.9에서 무효** — provider 외부화로 pi-shell-acp가 번들에서 완전히 사라져 default-load할 대상 자체가 없음(제거 후 clean boot·warnings 0 확인). workspace-gemini는 네이티브 gemini가 씀, 유지.
 - [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.
@@ -422,7 +402,6 @@ pi-shell-acp 코어 0.7.0 npm publish 라운드 완료 + Phase 3 진입 stamp �
   - **동기 Dockerfile 2개**: `~/openclaw/Dockerfile` + `docker/openclaw/Dockerfile`(현재 byte-identical). summarize `npm install -g` 자리 근처(L133), **`USER node`(L162) 앞 root 구간**에 삽입(`/usr/local/bin` 쓰기 권한). `TARGETARCH` 대신 `arm64` 하드코드(레거시 빌더 빈값 함정 회피).
   - **OAuth creds 마운트**(이미지에 굽지 말 것): 봇 계정 `~/.config/gogcli` → `/home/node/.config/gogcli`(ro). 봇 계정 선택 = **GLG 결정 대기**.
   - 재빌드 후: `docker exec openclaw-gateway gog --version` + `gog calendar` 1회 + 봇 라이브 turn 캘린더 응답. `run.sh k)` SKILL_EXCLUDE에 gogcli 넣지 말 것(봇이 씀).
-- [ ] **zmx — entwurf 설치면 계약 우선, 재도입 보류** — 제외 사유 "zig15 ↔ 26.05 zig16 충돌"은 **실측 결과 기우로 확인**(zmx flake는 zig2nix로 자기 zig 툴체인 격리 → 시스템 zig 무관, 26.05에서 깨끗이 빌드됨). 재도입 자체는 보류: zmx 확보 책임은 **entwurf 설치면(하네스-중립)**에 있고, nixos-config가 먼저 깔면 entwurf가 "zmx는 PATH에 있다"를 우연히 만족된 채 개발 → 자립성 미검증 결합. 계약은 [entwurf #47](https://github.com/junghan0611/entwurf/issues/47#issuecomment-4888633470)로 넘김(probe/optional + upstream prebuilt self-fetch). nixos-config의 zmx 설치는 그 뒤 **순수 개인 편의**(택하면 B 방식 = home-manager 한 줄, 오버레이 자리 재개방 불필요).
 - [ ] **문서 정정 (라이브마운트)** — caddy·authelia가 repo 워킹트리를 라이브 마운트(`docker/caddy/Caddyfile` · `docker/authelia/{users,configuration}.yml`)함을 `docs/openclaw-gotchas.md`에 박고, nixos-config 스킬의 "docker/*=백업/레퍼런스" 문구 정정(oracle에선 부정확). git checkout/stash가 이 파일 바꾸면 라이브 인증/프록시 영향 — 이번 이관 중 실측 확인(브랜치는 안 건드려 무영향이었음).
 
 ---
