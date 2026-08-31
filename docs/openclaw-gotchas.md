@@ -40,9 +40,15 @@ lab 은 네트워크가 없어 **실제 턴을 한 번도 돌리지 않았다**.
 | 8 | main 이 정체성을 잃음 (봇은 살아 있음) | 8.1 은 workspace 미지정을 `workspace/<agentId>` 로 해석. main 은 `workspace/` 를 쓰고 있었다 → IDENTITY/AGENTS/MEMORY 전부 못 봄 | 6봇 **전부 workspace 를 명시**. `agents list` 의 `Identity:` 줄이 검수 지표 |
 | 9 | 텔레그램 `default` 계정에 소유자 없음 | 5번의 직접 귀결. 7.1 은 암묵적 기본 에이전트가 받아줬고 `default` 만 binding 이 없었다(나머지 5개는 있었음) | top-level `bindings` 에 `telegram:default → main` 추가. **6/6 명시** |
 
-#### 그리고 10번째 — 8.1 과 무관한, 같은 날의 조용한 실패
+#### 10번 — 8.1 과 **무관한**, 같은 날 겹쳐 터진 조용한 실패
 
+| # | 겉보기 증상 | 진짜 원인 | 처방 |
+|---|---|---|---|
 | 10 | 4개 claude-cli 봇만 매 턴 spawn 1.1초 만에 죽음 | **base 이미지 npm 11.13.0 → 12.0.2.** npm 12 는 install script 를 `allowScripts` 로 **기본 차단**한다 → `@anthropic-ai/claude-code` postinstall 미실행 → `bin/claude.exe` 가 500B 에러 shim (진짜 213MB 는 `node_modules/@anthropic-ai/claude-code-linux-arm64/claude` 에 방치). 빌드 로그엔 error 가 아니라 `npm warn install-scripts` 만 남는다 | Dockerfile 3단: `--allow-scripts=@anthropic-ai/claude-code` + `node install.cjs`(멱등) + **`claude --version` 으로 빌드 fail-closed**. 실측 대조 7.1=285457336B / 8.1=500B |
+#### 11번 — 8.1 이 **경고를 거부로 승격**한 자리 (10번과 성격이 다르다)
+
+| # | 겉보기 증상 | 진짜 원인 | 처방 |
+|---|---|---|---|
 | 11 | gpt 봇만 `UNAVAILABLE`, 나머지 5봇 정상 | 8.1 이 "codex 플러그인 비활성인데 모델이 codex 런타임으로 해상"을 **경고 → 거부**로 승격. 7.1 doctor 는 같은 상태를 경고 7건으로만 냈다 | `openai/gpt-5.6-{terra,sol,luna}` 의 `agentRuntime` 을 `openclaw` 내장으로 **명시**(2026-08-07 GLG 결정의 완결). doctor 경고 7건 → 0. ⚠️ 고친 뒤 프로브가 `⚠️ API rate limit reached` / `rawError=Codex error: The usage limit has been reached` 로 떨어지면 그건 **성공 신호다** — 런타임이 OpenAI 에 도달했다는 뜻이고 벽은 구독 쿼터다. 수정 전 문자열(`runtime "codex" is unavailable`)과 반드시 구분하라 |
 
 #### 재현 가능한 순서 (다음에 이대로 하면 된다)
@@ -342,7 +348,7 @@ SDK 디렉토리에는 `claude` + LICENSE/README/package.json만 있어서 다�
 > 두 이미지 `/app/node_modules/@anthropic-ai/` 에는 `sdk`(+8.1은 `claude-agent-sdk`)뿐). 즉 **compose PATH
 > 첫 항목은 이미 오래전부터 빈 경로를 가리키는 화석**이고, 실제로 spawn 되는 것은 Dockerfile 이 전역 설치한
 > `/usr/local/bin/claude` → `@anthropic-ai/claude-code` 다. 지워도 되지만 무해해서 남아 있다.
-> 이 자리의 현재 함정은 PATH 가 아니라 **npm 12 의 `allowScripts`** 다 — 위 "조용한 실패 9겹" 항목 10번.
+> 이 자리의 현재 함정은 PATH 가 아니라 **npm 12 의 `allowScripts`** 다 — 위 "조용한 실패 11겹" 표의 10번 행.
 
 
 ### bonjour plugin — disable on Oracle Cloud + Docker (since 2026-04-24)

@@ -54,14 +54,14 @@
 
 **왜 어려웠나**: 실패가 전부 `healthy` 로 보였다. 컨테이너 healthy + 텔레그램 6/6 `works` 가 찍히는 동안
 봇은 답을 못 하거나(7·10), 정체성 없이 답하거나(8), 계정에 소유자가 없었다(9). 그리고 의존 사슬이라
-하나를 풀어야 다음이 드러났다. 9겹 전체와 재현 절차는
-[docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "조용한 실패 9겹".
+하나를 풀어야 다음이 드러났다. 11겹 전체와 재현 절차는
+[docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "조용한 실패 11겹".
 
 **사전 준비 (issue #7, 8/31 낮)**: 격리 lab 2개로 5번(ownership)·1~4번(config/state migration)을 미리 잡았다.
 lab 이 못 잡은 것은 6·7(cold archive 에 `credentials/`·`exec-approvals.json` 미포함)과 8·9·10
 (lab 은 `--network none` 이라 **실제 턴을 한 번도 안 돌렸다**). **lab 은 절반을 준다 — 나머지 절반은 라이브 턴에서만 나온다.**
 
-**사람이 정한 config 편집 4건** (자동 수선 대상이 아니다 — 전부 정책 결정):
+**사람이 정한 config 편집 6건** (자동 수선 대상이 아니다 — 전부 정책 결정. 실측: 백업 config ↔ 라이브 config 대조):
 
 | 편집 | 이유 |
 |---|---|
@@ -69,6 +69,8 @@ lab 이 못 잡은 것은 6·7(cold archive 에 `credentials/`·`exec-approvals.
 | `bindings` 에 `telegram:default → main` | 위 결정의 귀결. 7.1 은 암묵적 기본 에이전트가 받아줬다 |
 | `plugins.allow` 에서 `phone-control` 제거 | 8.1 에서 은퇴 → boot WARN. "Warn = Error" |
 | `skills.workshop` 명시 (`autonomous.mode:"off"` · `approvalPolicy:"pending"` · `allowSymlinkTargetWrites:false`) | 8.1 이 미설정 기본값을 `auto` 로 뒤집는다(#115576). 우리 스킬 트리는 agent-config SSOT 로의 심볼릭이라 자율 쓰기 경로를 열어둘 수 없다 |
+| 6봇 **workspace 명시** | 8.1 은 미지정을 `workspace/<agentId>` 로 해석 → main 이 `workspace/` 의 IDENTITY/AGENTS/MEMORY 를 통째로 잃었다 (11겹 표 8번) |
+| `openai/gpt-5.6-{terra,sol,luna}.agentRuntime = openclaw` | 8.1 이 "codex 플러그인 비활성 + codex 런타임 해상"을 경고→**거부**로 승격 (11겹 표 11번). 2026-08-07 GLG 결정의 완결 |
 
 나머지 17건 semantic 변환(`memorySearch→memory.search`, `agents.list→agents.entries`,
 `models→modelPolicy.allow` 등)은 8.1 startup config repair 가 결정적으로 수행했다. **lab config 를
