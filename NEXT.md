@@ -12,7 +12,6 @@
 
 증거 사슬: `~/openclaw/backups/pre-8.1-cutover-20260831T203708/` (cold 백업 1.8G + gate4~16 stdout/stderr/status + `ROLLBACK.sh`).
 
-- [ ] **gpt 봇 실턴 재검증 — 22:12 KST 이후.** 6봇 중 유일한 미검증. 21:20 `quota` 실측 = codex 5h primary **100% 소진**, 리셋 22:12. 프로브가 `⚠️ API rate limit reached` / `rawError=Codex error: The usage limit has been reached`로 떨어지는 건 **런타임이 OpenAI에 도달했다는 증거**이지 결함이 아니다(수정 전엔 `runtime "codex" is unavailable`이었다). 리셋 후 `openclaw agent --agent gpt --session-key … --message '너는 누구고 어떤 모델이니'`로 확인.
 - [ ] **24h soak** — 6봇 응답성, memory_search 콜드, cron/heartbeat 발송 대상(8.1이 owner DM 기본으로 바꿈, #121988), telegram 렌더 복사 가능성(telega).
 - [ ] **ORACLE.md 재작성** — 8.1로 사실이 바뀐 자리들. ① `doctor --fix 금지`(:265,:280) → **8.1에선 필수 절차**로 성격이 바뀌었다(단 gemini는 이미 Copilot 레일이라 겨눌 대상 없음). ② config 키 이름: `agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, catch-all 규율은 `agents.defaults.models` 키 순서 → **`agents.defaults.modelPolicy.allow` 배열 순서**. ③ 런타임 지형표에서 codex 행 삭제(=2026-08-07 GLG 결정이 이번에 완결됨). ④ `agents.ownership=explicit` + `bindings` 6개 명시가 새 baseline.
 - [ ] **issue #7 닫기** — 결과/receipt 코멘트 달고 close.
