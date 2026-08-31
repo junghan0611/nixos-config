@@ -6,7 +6,7 @@
 
 ---
 
-## 🔴 OpenClaw 2026.7.1 → 2026.8.1 업그레이드 — 타깃 확정, 착수 전 게이트 1건 (2026-08-31)
+## 🔴 OpenClaw 2026.7.1 → 2026.8.1 업그레이드 — 1단계 완료, 2단계 전 검토 2건 (2026-08-31)
 
 바로 다음 stable `v2026.8.1`이 2026-08-31 공개(7.1-2 8/04 → 8.1, 사이 stable 없음). **한 달치 메이저(Changes 137개)이고 우리가 8/07·8/16·8/27에 손으로 세운 방어선 세 개를 정확히 겨냥한다.** 분석·체크리스트·receipt 전문은 이슈로 뺐다 — **다음 턴은 그 이슈부터 읽고 시작한다.**
 
@@ -14,7 +14,10 @@
 - **지금 상태**: 라이브 `2026.7.1` healthy, 이미지 핀 `docker/openclaw/Dockerfile:169` = `2026.7.1-2`. **아무것도 안 건드렸다.**
 - 핵심 셋만 요약: ① breaking 2건이 **`doctor --fix`를 정규 절차로 요구** + "Safer startup repair"(#132135)로 **부팅 때 자동 마이그레이션** → ORACLE.md:265/280의 `doctor --fix 금지` 방어선이 무효화된다(재작성 대상). ② `modelPolicy.allow` 신설(#110888)이 우리 catch-all 규율인 `agents.defaults.models` 키 순서를 "legacy restriction"으로 흡수 → **1번 자리 재확인 필수**(2026-06-13 사건 자리). ③ **Automatic self-learning 기본 ON**(#115576) — `skills.workshop` 미설정이라 그대로 받으면 6봇에 새 자율 쓰기 경로가 생긴다.
 - **(가) 타깃 = `v2026.8.1`, 결정 완료 (GLG, 2026-08-31).** 베타(`2026.9.1-beta.1`)는 쓰지 않으므로 묵힐 이유가 아니다 — `gh api …/releases/latest` 가 `v2026.8.1`·`prerelease:false` 로 확인. 초안의 "다음 줄기가 열렸으니 대기" 저울질은 철회.
-- [ ] **(나) 남은 게이트 하나 — Automatic self-learning(#115576) 을 켠 채 받을지 `off`·`propose` 로 받을지.** 업글과 **별개의 결정**이고 권고는 끄고 받기. **1단계(사전 정리)는 (나)와 무관하게 7.1에서 지금 착수 가능**, 2단계(핀 교체)부터가 이 게이트에 걸린다.
+- **1단계(사전 정리) 2026-08-31 실행 완료** — 백업 + doctor 기준선 채증 + 죽은 `google-gemini-cli` 선언 제거(JSON 직접 편집, 모델 키 순서 보존) → restart 후 boot WARN 0 · 6봇 prefix 불변 · 채널 6/6 `works` · doctor diff 0줄.
+- [ ] **⚠️ 계획 정정 — `plugins.entries.codex` 는 죽은 엔트리가 아니다. 제거하지 말 것.** `openai/gpt-5.6-*` 가 **Codex runtime 으로 해상**되어 7.1 doctor 가 경고 7건을 내고 있고, doctor 는 `--fix` 시 *"it enables plugins.entries.codex"* 라고 명시한다. 8.1 route migration 이 *"retaining Codex runtime intent"* 라 했으므로 **업글 후 codex 플러그인이 켜졌는지**가 새 검수 항목.
+- [ ] **⏸ GLG 승인 대기 — auth *store* 의 죽은 gemini-cli 프로필 제거.** 선언을 지워도 doctor diff 가 0줄이었다(= 실물은 sqlite, 계정도 다름). 7.1 CLI 에 `logout` 이 없어 2026-08-16 copilot 때와 같은 **sqlite 직접 수술** 필요. 안 지워도 업글 지장 없음.
+- [ ] **🔍 (나) 추가 검토 — Automatic self-learning(#115576) 이 무엇을 어떻게 하는가.** 결정 이전에 파악이 먼저다(GLG). 측정: `skills.workshop` 키 **없음**, 7.1 에 `skills workshop` 기계는 이미 있고 제안 **0건**. 즉 **`off` 라는 명시가 우리에겐 없고** 기본값에 얹혀 있는데 8.1 이 그 기본값을 뒤집는다. **최우선 확인**: 자동 생성 스킬의 **쓰기 대상 경로** — 우리 스킬 트리는 `agent-config` SSOT 로의 심볼릭 링크(`run.sh k)`)라, 심링크 너머로 쓰면 성격이 완전히 달라진다.
 - 무장해제된 함정 하나: 8/27 Copilot 이관으로 gemini primary가 `github-copilot/gemini-3.7-flash`라 `google-gemini-cli` legacy-runtime 재작성이 겨눌 대상이 없다. 죽은 `auth.profiles` 항목만 남았다.
 
 ---
