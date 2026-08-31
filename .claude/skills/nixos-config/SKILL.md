@@ -61,17 +61,27 @@ sudo nixos-rebuild switch --flake .#<profile>   # profile = oracle|nuc|laptop|th
 라이브 truth = `~/openclaw/`. 공개 백업/레퍼런스 = `docker/openclaw/`, `docker/*`. 절대
 secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. 자주 쓰는 반사신경만:
 
-- **OpenClaw 업그레이드 = Dockerfile `FROM` 한 줄 bump**: `~/openclaw/Dockerfile` +
-  `docker/openclaw/Dockerfile` 둘 다 `ghcr.io/openclaw/openclaw:X → :Y` + 업글 로그 주석 →
-  재빌드 → `up -d --force-recreate`. codex/claude-cli 플러그인은 stock(번들)이라 자동으로 따라옴.
-- **업글 후 doctor는 read-only만, `--fix` 금지** — `doctor --fix`가 gemini를 `google/`
-  금지경로로 드리프트시킨다(6.9에서 확정). surgical `config set/unset`으로만 정리.
-- **6봇 모델 prefix 전수 재확인** (특히 gemini `google-gemini-cli/` 유지), claude-cli 3봇
-  (main/bbot/mini) Anthropic auth GREEN, memory 4096d, glg/gpt `fallbacks` 빈 상태.
+- **업그레이드는 두 종류다 — 먼저 어느 쪽인지 판정하라.**
+  - **패치/마이너 (`X.Y-1 → X.Y-2` 등) = Dockerfile `FROM` 한 줄 bump**: `~/openclaw/Dockerfile` +
+    `docker/openclaw/Dockerfile` 둘 다 `ghcr.io/openclaw/openclaw:X → :Y` + 업글 로그 주석 →
+    재빌드 → `up -d --force-recreate`. 플러그인은 stock(번들)이라 자동으로 따라옴.
+  - **메이저 hop (7.1 → 8.1 같은 한 달치) = 한 줄 bump가 아니다.** 새 이미지는 **옛 state를 거부**한다
+    (agent DB v1 → v19). 게이트웨이를 **끄고** 오프라인으로 마이그레이션한 뒤 올린다:
+    백업 → 정지 → `doctor --fix` **직렬 반복**(lease를 잃으면 남은 DB를 건너뛴다) → 기동 → 검수.
+    실측 39분. 절차·함정 전문 = `docs/openclaw-gotchas.md` "8.1 컷오버" (2026-08-31).
+- **~~업글 후 `--fix` 금지~~ → 2026-08-31 폐기.** 그 금지는 gemini가 `google-gemini-cli/`였을 때의
+  방어였고, 8/27 Copilot 이관으로 겨눌 대상이 사라졌다. **8.1부터 `doctor --fix`는 필수**다 —
+  agent DB 스키마를 올리는 건 doctor뿐이다. 단 **반드시 게이트웨이를 끈 상태**에서(라이브 writer가
+  있으면 "stopped-writer maintenance" 로 전부 skip), 그리고 **끝난 뒤 6봇 prefix를 재확인**한다.
+- **6봇 모델 prefix 전수 재확인** (gemini는 `github-copilot/gemini-3.7-flash` — `google*` 아님),
+  claude-cli 봇 Anthropic auth GREEN, memory 4096d, `fallbacks` 빈 상태,
+  catch-all 1번(8.1부터 `modelPolicy.allow` 배열 첫 항목 = `openai/gpt-5.6-terra`).
 - **모델은 claude-cli 봇이면 카탈로그 등록만으로 태운다** — `agentRuntime claude-cli`는 구독
   API에서 모델을 동적 해결(예: Sonnet 5 = `anthropic/claude-sonnet-5` + primary, 재빌드 불필요).
   서빙 미보장 모델을 primary로 박지 말 것(auto-fallback catch-all이 정체성 훼손).
-- **gemini 403 = agy(Antigravity) 이관 대기** — 안 쫓고 DOWN 유지. api-key(`google/`) 폴백 금지.
+- **gemini는 DOWN 아니다 (2026-08-27~)** — 서빙 레일 = **`github-copilot/gemini-3.7-flash`**(Copilot 구독).
+  옛 "403 → agy 이관 대기 → DOWN 유지" 반사신경은 **화석이다**. Google 구독·gemini-cli·agy 안 쫓는다.
+  api-key(`google/`) 폴백은 여전히 금지 — 그 키는 나노바나나 이미지 전용.
 
 ## 5. 반사신경 — 다시 당하지 말 것
 

@@ -46,6 +46,58 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.8.1 (2026-08-31, GREEN) — **오프라인 마이그레이션 컷오버**. 버전 bump 가 아니었다
+
+7.1-2(8/04) → 8.1(8/31). 사이 stable 없음(6.34 는 백포트). **한 달치 메이저 + breaking 2건**이라 "이미지 핀
+한 줄"로 가는 종래 절차가 통하지 않았다. 게이트웨이를 **26분 정지**하고 오프라인으로 옮겼다
+(20:36:40 stop → 21:02:32 8.1 healthy → 21:15:54 최종 이미지 recreate).
+
+**왜 어려웠나**: 실패가 전부 `healthy` 로 보였다. 컨테이너 healthy + 텔레그램 6/6 `works` 가 찍히는 동안
+봇은 답을 못 하거나(7·10), 정체성 없이 답하거나(8), 계정에 소유자가 없었다(9). 그리고 의존 사슬이라
+하나를 풀어야 다음이 드러났다. 9겹 전체와 재현 절차는
+[docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "조용한 실패 9겹".
+
+**사전 준비 (issue #7, 8/31 낮)**: 격리 lab 2개로 5번(ownership)·1~4번(config/state migration)을 미리 잡았다.
+lab 이 못 잡은 것은 6·7(cold archive 에 `credentials/`·`exec-approvals.json` 미포함)과 8·9·10
+(lab 은 `--network none` 이라 **실제 턴을 한 번도 안 돌렸다**). **lab 은 절반을 준다 — 나머지 절반은 라이브 턴에서만 나온다.**
+
+**사람이 정한 config 편집 4건** (자동 수선 대상이 아니다 — 전부 정책 결정):
+
+| 편집 | 이유 |
+|---|---|
+| `agents.ownership = "explicit"` | 8.1 스키마가 6에이전트·default 마커 0 을 거부 (`zod-schema.agents.ts:79-85`) |
+| `bindings` 에 `telegram:default → main` | 위 결정의 귀결. 7.1 은 암묵적 기본 에이전트가 받아줬다 |
+| `plugins.allow` 에서 `phone-control` 제거 | 8.1 에서 은퇴 → boot WARN. "Warn = Error" |
+| `skills.workshop` 명시 (`autonomous.mode:"off"` · `approvalPolicy:"pending"` · `allowSymlinkTargetWrites:false`) | 8.1 이 미설정 기본값을 `auto` 로 뒤집는다(#115576). 우리 스킬 트리는 agent-config SSOT 로의 심볼릭이라 자율 쓰기 경로를 열어둘 수 없다 |
+
+나머지 17건 semantic 변환(`memorySearch→memory.search`, `agents.list→agents.entries`,
+`models→modelPolicy.allow` 등)은 8.1 startup config repair 가 결정적으로 수행했다. **lab config 를
+통째로 복사하지 않았다** — doctor 가 model auth/wizard 경로도 건드리기 때문.
+
+**codex 런타임 — 2026-08-07 결정이 미완이었음이 드러났다.** 그때 `plugins.entries.codex.enabled=false` 로
+껐지만 `openai/gpt-5.6-*` 세 모델은 `{}` 인 채라 **여전히 Codex 런타임으로 해상**되고 있었다. 7.1 은 doctor
+경고 7건으로 봐줬고 우리는 그걸 소음으로 취급했다. 8.1 은 fail-closed 한다(#110447) → gpt 봇 + **6봇 공유
+subagents** + active-memory 가 죽는다. 세 모델에 `agentRuntime:{id:"openclaw"}` 를 명시해 결정을 완성했다.
+doctor 경고 7 → **0**. 과금 안전은 사전 확인됨 — OpenAI API 키가 env 에 없고 `openai:…[openai/oauth]`
+구독 프로필뿐이라, 어느 쪽을 골라도 종량제로 샐 수 없었다.
+
+**이미지 — 8.1 과 무관한 조용한 실패 하나가 겹쳤다.** base 가 npm 11.13.0 → **12.0.2** 로 올라갔고, npm 12 는
+install script 를 `allowScripts` 로 기본 차단한다. `@anthropic-ai/claude-code` postinstall 이 안 돌아
+`bin/claude.exe` 가 **500B 에러 shim**(7.1 은 285457336B)으로 남았다 — 빌드 로그엔 error 가 아니라
+`npm warn install-scripts` 만. claude-cli 봇 4개가 매 턴 spawn 1.1초 만에 죽는데 빌드·부팅·채널은 전부 통과했다.
+Dockerfile 을 3단으로 고정: `--allow-scripts` + `node install.cjs`(멱등) + **`claude --version` 빌드 게이트**.
+게이트가 핵심이다 — 없으면 다음 bump 에서 같은 회귀가 또 조용히 지나간다.
+
+**검수 (3층 전부 통과)**: 컨테이너 healthy·restart 0 / 채널 6/6 `works` / **6봇 격리 프로브** — main(opus-5)
+glg(sonnet-5) mini(sonnet-5) bbot(fable-5) gemini(copilot gemini-3.7-flash) 정체성·모델 정확.
+gpt 는 ChatGPT **5h 쿼터 100% 소진**(22:12 리셋)이라 `rate limit` 으로 막혔다 — 런타임 도달은 확인됐고
+서빙 최종 확인은 쿼터 창 이후로 남겼다. 방어선 유지 확인: catch-all #1 `openai/gpt-5.6-terra`,
+`modelPolicy.allow` 7개, workshop `off`, dreaming `false`, `dmScope` 유지, 6봇 워크스페이스·모델 prefix 불변.
+
+**롤백면**: `openclaw-custom:7.1-rollback` 이미지 + `backups/pre-8.1-cutover-20260831T203708/`
+(1.8G cold: openclaw.json·agents·state·plugin-state·tasks·cron + `ROLLBACK.sh`). 마이그레이션된 state 로는
+롤백하지 않는다 — cold 백업이 롤백 원본이다.
+
 ### 2026.7.1 (2026-07-14, GREEN) — **GPT-5.6 진입 + 봇 모델 재배치**
 
 6.11 다음 stable. **월간 대형 롤업**(2,018 PR / 3,063 기여 / 532 contributors) — 6.x 계열의 유지보수 patch들과 성격이 다르다. breaking 섹션 없음, 릴리즈 기조 자체가 "안전한 업그레이드"(마이그레이션·플러그인 수리를 gateway ready 보고 *전에* 끝내고, 읽을 수 없는 `openclaw.json`은 교체 거부). 절차 동일: `Dockerfile` `FROM ...:2026.6.11 → :2026.7.1`(두 사본 동기) + `docker compose build` + `up -d --force-recreate`. 봇 유휴 확인 후 gateway 정지하고 진입(GLG 지시).

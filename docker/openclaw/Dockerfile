@@ -165,8 +165,24 @@
 # 검증 축은 7.1 과 동일하되 짧다(모델 축 변화 0): 컨테이너 업글은 여전히 ready 보고 전에 마이그레이션을 자동
 # 수행하므로 **gemini `google-gemini-cli/` prefix 전수 재확인 유지**, `doctor` 는 read-only 만 — **`--fix` 금지는
 # 7.1-2 에서도 유효**(changes-preview 의 `google/` 재작성 + 롤백용 카탈로그 병합, 둘 다 그대로).
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.7.1
-FROM ghcr.io/openclaw/openclaw:2026.7.1-2
+# 2026-08-31 7.1-2 → 8.1 업그레이드. 게이트웨이 정지 후 오프라인 마이그레이션으로 올렸다 — 8.1은
+# "이미지 바꾸고 재시작"으로 안 올라온다. 순서가 곧 절차다: ① agent DB 7개를 doctor --fix 로 v1→v19
+# (전역 maintenance lease를 한 번에 못 쥐어 pass1 은 5개만 끝내고 lease 를 잃는다 → writer 0 상태로
+# 직렬 재실행하면 나머지가 끝난다) ② DB 가 전부 v19 가 된 뒤에야 startup config repair 가 커밋된다
+# (automatic-startup-config-repair.ts: state migration 이 clean 해야 config 를 쓴다) ③ sessions.json →
+# SQLite 는 doctor --session-sqlite import --session-sqlite-all-agents (42/42, 0 issues).
+# ⚠️ 8.1 함정 둘, 둘 다 upstream 미해결:
+#   - exec-approvals.json 이 있으면 doctor --fix 자신이 ExecApprovalsMigrationRequiredError 로 죽는다
+#     (upstream #133813 / #134036 / PR #133773). TTY 를 줘도 같다. 우회는 파일을 state dir 밖으로 옮기고
+#     `openclaw approvals set --file <옮긴 사본>` — 라이브에서 hash 동일·allowlist 4건 보존 확인.
+#   - agents.ownership="explicit" 이 필수(6봇·default 마커 없음, zod-schema.agents.ts:79-85)인데, 그걸
+#     넣는 순간 암묵적 기본 에이전트가 사라져 telegram:default 가 주인을 잃는다. top-level bindings 에
+#     telegram:default → main 을 명시해야 한다(나머지 5계정은 7.1 때부터 binding 이 있었다).
+# 승격한 config 편집은 딱 3건: agents.ownership, plugins.allow 에서 죽은 phone-control 제거,
+# skills.workshop 명시(autonomous.mode=off — 8.1 기본값이 auto 로 뒤집혔다). 나머지 17건 semantic 변환은
+# startup repair 가 결정적으로 수행한다. 롤백 이미지: openclaw-custom:7.1-rollback (sha 7548f90058dd).
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.7.1-2
+FROM ghcr.io/openclaw/openclaw:2026.8.1
 
 USER root
 
@@ -218,7 +234,22 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 #   - @google/gemini-cli: gemini 403 DOWN(agy 이관 대기, 안 쫓음) + node-gyp hang 진짜 범인 — 0.49.0이
 #     @github/keytar + node-pty(native) 를 끌어와 buildkit에서 컴파일 hang. 부활(agy) 시 복원(libsecret-dev
 #     등 build deps 필요할 수 있음).
-RUN npm install -g \
-      @anthropic-ai/claude-code
+# ⚠️ 2026-08-31 (8.1 bump) — **npm 12 는 install script 를 기본 차단한다(allowScripts).** 3단을 통째로 유지할 것.
+#   근인: 8.1 base 가 npm 11.13.0 → 12.0.2 로 올라갔고, npm 12 는 postinstall 을 allowScripts 로 옵트인시킨다.
+#   빌드 로그에 에러가 아니라 warn 만 남는다 —
+#     "npm warn install-scripts 1 package had install scripts blocked because they are not covered by allowScripts:
+#        @anthropic-ai/claude-code@2.1.251 (postinstall: node install.cjs)"
+#   결과: bin/claude.exe 가 500B 에러 shim 으로 남고 진짜 213MB 바이너리는
+#   node_modules/@anthropic-ai/claude-code-linux-arm64/claude 에 방치된다. 실측 대조 —
+#   7.1 base(npm 11.13.0) claude.exe=285457336B / 8.1 base(npm 12.0.2) 같은 명령 = 500B.
+#   **조용한 실패다**: 이미지 빌드도, 게이트웨이 부팅도, 텔레그램 6/6 connected 도 전부 통과한다.
+#   claude-cli 봇 4개(main/glg/mini/bbot)만 매 턴 spawn 1.1초 만에 죽는다 — 밖에서는 건강해 보인다.
+#   처방 3단: ① --allow-scripts 로 벤더 의도대로 postinstall 을 돌리고(경고도 사라진다)
+#             ② install.cjs 를 명시 실행해 npm 버전이 또 바뀌어도 자가치유하며(멱등)
+#             ③ `claude --version` 으로 빌드를 fail-closed 시킨다. ③ 이 없으면 같은 회귀가 다음 bump 에 또 조용히 지나간다.
+RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
+      @anthropic-ai/claude-code \
+ && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
+ && claude --version
 
 USER node

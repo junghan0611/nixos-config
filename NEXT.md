@@ -6,19 +6,23 @@
 
 ---
 
-## 🔴 OpenClaw 2026.7.1 → 2026.8.1 업그레이드 — 1단계 완료, 2단계 전 검토 2건 (2026-08-31)
+## 🟡 OpenClaw 8.1 컷오버 완료 — soak + 후속 (2026-08-31 21:15 KST)
 
-바로 다음 stable `v2026.8.1`이 2026-08-31 공개(7.1-2 8/04 → 8.1, 사이 stable 없음). **한 달치 메이저(Changes 137개)이고 우리가 8/07·8/16·8/27에 손으로 세운 방어선 세 개를 정확히 겨냥한다.** 분석·체크리스트·receipt 전문은 이슈로 뺐다 — **다음 턴은 그 이슈부터 읽고 시작한다.**
+**라이브 = `2026.8.1` (ea80657), healthy.** 게이트웨이 정지 후 오프라인 마이그레이션으로 넘어갔다. 다운타임 20:36:40 → 21:15:54 (약 39분, 재작업 포함). 채널 6/6 `works`, 6봇 모델/워크스페이스/라우팅 불변, catch-all `openai/gpt-5.6-terra` 1번 유지.
 
-- [ ] **→ [#7 OpenClaw 2026.7.1 → 2026.8.1 업그레이드 검토](https://github.com/junghan0611/nixos-config/issues/7)** — 4단 절차(사전정리 → 업글 → 검수 → 문서)와 판단 2건이 거기 있다. 이 항목은 포인터일 뿐, 세부는 중복하지 않는다.
-- **지금 상태**: 라이브 `2026.7.1` healthy, 이미지 핀 `docker/openclaw/Dockerfile:169` = `2026.7.1-2`. **아무것도 안 건드렸다.**
-- 핵심 셋만 요약: ① breaking 2건이 **`doctor --fix`를 정규 절차로 요구** + "Safer startup repair"(#132135)로 **부팅 때 자동 마이그레이션** → ORACLE.md:265/280의 `doctor --fix 금지` 방어선이 무효화된다(재작성 대상). ② `modelPolicy.allow` 신설(#110888)이 우리 catch-all 규율인 `agents.defaults.models` 키 순서를 "legacy restriction"으로 흡수 → **1번 자리 재확인 필수**(2026-06-13 사건 자리). ③ **Automatic self-learning 기본 ON**(#115576) — `skills.workshop` 미설정이라 그대로 받으면 6봇에 새 자율 쓰기 경로가 생긴다.
-- **(가) 타깃 = `v2026.8.1`, 결정 완료 (GLG, 2026-08-31).** 베타(`2026.9.1-beta.1`)는 쓰지 않으므로 묵힐 이유가 아니다 — `gh api …/releases/latest` 가 `v2026.8.1`·`prerelease:false` 로 확인. 초안의 "다음 줄기가 열렸으니 대기" 저울질은 철회.
-- **1단계(사전 정리) 2026-08-31 실행 완료** — 백업 + doctor 기준선 채증 + 죽은 `google-gemini-cli` 선언 제거(JSON 직접 편집, 모델 키 순서 보존) → restart 후 boot WARN 0 · 6봇 prefix 불변 · 채널 6/6 `works` · doctor diff 0줄.
-- [ ] **⚠️ 계획 정정 — `plugins.entries.codex` 는 죽은 엔트리가 아니다. 제거하지 말 것.** `openai/gpt-5.6-*` 가 **Codex runtime 으로 해상**되어 7.1 doctor 가 경고 7건을 내고 있고, doctor 는 `--fix` 시 *"it enables plugins.entries.codex"* 라고 명시한다. 8.1 route migration 이 *"retaining Codex runtime intent"* 라 했으므로 **업글 후 codex 플러그인이 켜졌는지**가 새 검수 항목.
-- [ ] **⏸ GLG 승인 대기 — auth *store* 의 죽은 gemini-cli 프로필 제거.** 선언을 지워도 doctor diff 가 0줄이었다(= 실물은 sqlite, 계정도 다름). 7.1 CLI 에 `logout` 이 없어 2026-08-16 copilot 때와 같은 **sqlite 직접 수술** 필요. 안 지워도 업글 지장 없음.
-- [ ] **🔍 (나) 추가 검토 — Automatic self-learning(#115576) 이 무엇을 어떻게 하는가.** 결정 이전에 파악이 먼저다(GLG). 측정: `skills.workshop` 키 **없음**, 7.1 에 `skills workshop` 기계는 이미 있고 제안 **0건**. 즉 **`off` 라는 명시가 우리에겐 없고** 기본값에 얹혀 있는데 8.1 이 그 기본값을 뒤집는다. **최우선 확인**: 자동 생성 스킬의 **쓰기 대상 경로** — 우리 스킬 트리는 `agent-config` SSOT 로의 심볼릭 링크(`run.sh k)`)라, 심링크 너머로 쓰면 성격이 완전히 달라진다.
-- 무장해제된 함정 하나: 8/27 Copilot 이관으로 gemini primary가 `github-copilot/gemini-3.7-flash`라 `google-gemini-cli` legacy-runtime 재작성이 겨눌 대상이 없다. 죽은 `auth.profiles` 항목만 남았다.
+**왜 어려웠는지 / 재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "8.1 컷오버" 항목**, 버전 이력은 [ROADMAP.md](ROADMAP.md). 여기는 **남은 것만**.
+
+증거 사슬: `~/openclaw/backups/pre-8.1-cutover-20260831T203708/` (cold 백업 1.8G + gate4~16 stdout/stderr/status + `ROLLBACK.sh`).
+
+- [ ] **gpt 봇 실턴 재검증 — 22:12 KST 이후.** 6봇 중 유일한 미검증. 21:20 `quota` 실측 = codex 5h primary **100% 소진**, 리셋 22:12. 프로브가 `⚠️ API rate limit reached` / `rawError=Codex error: The usage limit has been reached`로 떨어지는 건 **런타임이 OpenAI에 도달했다는 증거**이지 결함이 아니다(수정 전엔 `runtime "codex" is unavailable`이었다). 리셋 후 `openclaw agent --agent gpt --session-key … --message '너는 누구고 어떤 모델이니'`로 확인.
+- [ ] **24h soak** — 6봇 응답성, memory_search 콜드, cron/heartbeat 발송 대상(8.1이 owner DM 기본으로 바꿈, #121988), telegram 렌더 복사 가능성(telega).
+- [ ] **ORACLE.md 재작성** — 8.1로 사실이 바뀐 자리들. ① `doctor --fix 금지`(:265,:280) → **8.1에선 필수 절차**로 성격이 바뀌었다(단 gemini는 이미 Copilot 레일이라 겨눌 대상 없음). ② config 키 이름: `agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, catch-all 규율은 `agents.defaults.models` 키 순서 → **`agents.defaults.modelPolicy.allow` 배열 순서**. ③ 런타임 지형표에서 codex 행 삭제(=2026-08-07 GLG 결정이 이번에 완결됨). ④ `agents.ownership=explicit` + `bindings` 6개 명시가 새 baseline.
+- [ ] **issue #7 닫기** — 결과/receipt 코멘트 달고 close.
+- [ ] **레거시 잔재 청소 (비긴급)** — `config/agents/*/sessions/*.migrated` 다수 + `sessions.json.bak*`. 마이그레이션이 남긴 원본이라 soak 통과 후 지운다. `backups/…/isolated-orphans/telegram-deepseek-allowFrom.json`도 그때 판단.
+- **오해 방지 3건 (정상이다)**: ① boot 라인이 `11 plugins`인데 `plugins list`는 `12/66 enabled` — 차이는 `google`이고 8.1이 provider를 **lazy-load**한다(설치·enabled 상태 정상, `stock:google/index.js`). ② `AgentSelectionRequiredError`는 `--agent` 없이 CLI를 친 **내 호출** 탓이지 봇 문제가 아니다(ownership=explicit의 정상 동작). ③ telegram `menu text exceeded … 5700-character budget` — 명령 101개라 설명만 줄인다, 기능 영향 없음.
+- [ ] **⚠️ 백업 범위 정직하게 — 내 컷오버 백업에는 트랜스크립트가 없다.** `pre-8.1-cutover-20260831T203708/`(1.8G)은 *마이그레이션 대상*(agent/state/plugin-state sqlite, cron, tasks, openclaw.json, sessions.json)만 담았다 — `.jsonl` **0개**(실측). 트랜스크립트를 든 pre-8.1 스냅샷은 **형제가 19:06에 뜬 `pre-8.1-20260831T190622/config-state-cold.tar.zst`(837M, main만 `.jsonl` 276개)** 쪽이다. 즉 **두 디렉터리가 합쳐져야 온전한 롤백면**이다 — soak 통과 전에는 둘 다 지우지 말 것.
+- [ ] **디스크 회수 (soak 통과 후)** — `/home` 82% (18G 여유). `~/openclaw/upgrade-lab/` **8.2G**가 최대 회수원, 그다음이 후보 이미지 태그 3개(`8.1-candidate`/`candidate2`/`candidate3`)와 위 백업 2.7G. 롤백면(`7.1-rollback` 이미지 + 백업 2종)은 **soak 끝날 때까지 유지**.
+- [ ] **별건 2개 (업그레이드 이전부터 있던 간극)**: bbot workspace에 skills 미배포(`run.sh k)` 재실행 필요) / bbot·mini `IDENTITY.md` 형식이 달라 `agents list`에 Identity 줄이 안 뜬다(봇 본인은 자기 정체성을 정확히 안다 — 실턴으로 확인).
 
 ---
 
@@ -142,20 +146,15 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 
 ---
 
-## OpenClaw 7.1 업글 완료 — soak 남음 (2026-07-14, 2026-08-04 7.1-2 적용)
+## OpenClaw 7.1 잔여 후속 — 8.1로 넘어온 것만 (2026-07-14 → 2026-08-31 갱신)
 
-6.11 → **2026.7.1** 적용. 6봇 전수 GREEN, boot WARN 0, 모델 드리프트 0(gemini `google-gemini-cli/` 유지), 메모리 4096d 정상. **GPT-5.6 승격 실행**: gpt → `openai/gpt-5.6-sol`, glg(가족) → `openai/gpt-5.6-terra` (둘 다 격리 probe → 라이브 primary 턴 `fallbackUsed=false` 2단 검증). 상세는 `docker/openclaw/Dockerfile` 주석 + [ORACLE.md](ORACLE.md).
+7.1/7.1-2 서사(correction release가 버전 문자열을 안 올린다, Control UI 상시 오탐)는 [ROADMAP.md](ROADMAP.md)·[docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 이관. **8.1 컷오버 후에도 살아있는 항목만 남긴다.**
 
-**2026-08-04: 7.1 → 7.1-2 correction release 적용.** 다운타임 16초, 모델 드리프트 0, doctor Errors 0. ⚠️ **`--version`으로는 7.1과 7.1-2를 구분할 수 없다** — correction release는 버전 문자열을 안 올려 둘 다 `OpenClaw 2026.7.1`로 보고한다. 구분은 이미지 digest로만(`7.1`=`6a31d44b…` / `-1`=`2f5ce884…` / `-2`=`8789721d…`). 소스 실diff 결과 7.1 대비 바뀐 파일은 **7개뿐**(codex 5 + memory-core 2) — 메모리 **엔진은 무변경**, `memory-core/doctor-contract-api.ts`의 legacy sidecar 임포트 경로만 바뀌었다.
-
-**2026-08-06 재확인 — 라이브는 `-2`가 맞다.** Control UI가 `업데이트 사용 가능: v2026.7.1-2 (실행 중 v2026.7.1)`를 띄우지만 **상시 오탐**이다(UI가 릴리즈 태그와 package.json version 문자열을 비교 — 위 "버전 문자열을 안 올린다"의 직접적 귀결). `build --pull` 재실행이 전 레이어 CACHED + 이미지 ID 불변으로 끝났고, diff_ids 대조로 확정: 로컬 base 26개가 `-2`와 완전 일치, 7.1과는 index 5부터 갈린다. **이 알림은 앞으로도 계속 뜬다 — 무시한다.** 오진 경위와 진단 명령은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "correction release(`-N`)는 버전 문자열을 안 올린다".
-
-- [ ] **5.6 soak — 관찰 축은 비용이 아니라 품질.** 단가상 이번 승격은 **인상이 아니다**: sol = 5.5와 동일 단가($5/$30), terra = 5.5의 절반($2.50/$15). 즉 gpt는 같은 값에 상위 모델. 볼 것은 크레딧이 아니라 **응답 품질·지연**. 품질이 처지면 되돌릴 곳은 luna가 아니라 **terra**다(5.5는 2026-08-04 전면 제거 — GLG: 아예 안 씀). **(2026-07-16 갱신: glg(가족봇)는 terra를 떠나 Sonnet 5로 이동 — terra soak 무효. 이 항목은 이제 gpt 봇 `sol`만 해당. glg 관찰은 위 "glg 가족봇 = Sonnet 5" 항목으로.)**
-- [ ] **bbot 세션 `think:xhigh` 처리 판단.** `thinkingDefault=medium`을 박았지만 **세션 sticky가 이긴다** — bbot 라이브 세션만 `xhigh`로 남아있다(main/mini는 이미 medium). fable-5 승격 때 "thinking=high 강제"의 잔재로 보이는데, **의도한 것이면 per-agent `agents.list.<bbot>.thinkingDefault`로 config에 정식 등록**하고, 잔재면 세션에서 내린다. 지금은 config와 라이브가 어긋난 상태 — 2026-08-04 'config ↔ DM 쌍' 사건과 같은 모양이다.
-- [ ] **gpt 봇 thinking 인상 여부 관찰.** `thinkingDefault=medium`은 sol에겐 **인하가 아니라 인상**이다(upstream 기본 `low` → `medium`). GLG의 목적이 "턴 속도"였으므로 gpt 봇이 되레 느려지면 목적에 반한다 — 느려지면 `agents.list.<gpt>.thinkingDefault="low"`로 되돌린다.
-- [ ] **luna/terra lane 품질 soak (위 항목의 미해결 잔여).** 옮기기 전 하려던 품질 확인을 **아직 안 했다** — 결정이 비용이 아닌 의존성 축에서 났기 때문이다. 볼 것: ① active-memory recall 품질이 5.4-mini 대비 처지지 않는지(요약 정확도, `stopReason=missing` 비율), ② recall latency — **5.4-mini의 31.5s Codex CLI 콜드스타트가 사라졌으니 오히려 개선돼야 정상이다**([docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) L288), ③ subagent 결과물 품질(terra), ④ ChatGPT 구독 quota 소진 속도 — Codex Plus 크레딧 표가 더 이상 이 두 lane에 안 맞으므로 재관측 필요.
-- [ ] **`channels.mattermost` 죽은 설정 정리.** 7.1에서 mattermost가 번들 외부화됐고 `plugins.entries.mattermost`(enabled:false)는 제거해 WARN을 껐으나, `channels.mattermost`는 **botToken을 든 채 라이브 config에 남아있다**. 안 쓸 거면 `config unset channels.mattermost`로 토큰까지 지우는 게 맞다(평문 토큰 축소 = doctor 보안 경고 축소).
-- [ ] **orphan transcript 104건(doctor 기준) — 인덱스 행은 정리됐고 파일은 그대로.** 2026-08-04 `memory index`가 *삭제된 트랜스크립트를 가리키던 인덱스 행*을 걷어냈다(glg 3250→2816, gpt 728→545, bbot 1299→889 chunk, 6봇 전부 `Indexed: n/n` + `Dirty: no`). 하지만 `sessions.json`이 참조 안 하는 **`.jsonl` 파일 자체는 디스크에 남아있다** — 이 항목은 그 파일 쪽이다. doctor가 `*.deleted.<ts>`로 아카이브해줄 수 있으나 **`--fix`는 gemini를 깨므로 못 쓴다** → 수동 정리 또는 방치 판단.
+- [ ] **bbot 세션 `think:xhigh` 처리 판단.** 8.1 컷오버 후에도 그대로다(2026-08-31 실측: bbot direct/subagent 세션 `think:x…`, main/mini는 medium). **세션 sticky가 config를 이긴다**는 성질은 8.1에서도 동일. 의도한 것이면 per-agent `agents.entries.bbot.thinkingDefault`로 정식 등록하고, 잔재면 세션에서 내린다.
+- [ ] **gpt 봇 thinking 인상 여부 관찰.** `thinkingDefault=medium`은 sol에겐 **인하가 아니라 인상**(upstream 기본 `low`). GLG 목적이 "턴 속도"였으므로 느려지면 `agents.entries.gpt.thinkingDefault="low"`로 되돌린다. ⚠️ 8.1에서 gpt는 codex 런타임을 떠나 **openclaw 내장 런타임**을 타므로 thinking 매핑이 달라졌을 수 있다 — 쿼터 리셋 후 재관측.
+- [ ] **luna/terra lane 품질 soak.** ① active-memory recall 품질(요약 정확도, `stopReason=missing` 비율), ② recall latency — 5.4-mini의 31.5s Codex CLI 콜드스타트가 사라졌으니 **개선돼야 정상**, ③ subagent 결과물 품질(terra), ④ ChatGPT 구독 quota 소진 속도(Codex Plus 크레딧 표는 이 두 lane에 더 이상 안 맞는다).
+- [ ] **`channels.mattermost` 죽은 설정 정리.** 2026-08-31 실측 — `channels` 키가 `discord/mattermost/telegram` 3개인데 mattermost는 **botToken을 든 채** 남아있다. 안 쓰면 `config unset channels.mattermost`로 토큰까지 지운다(평문 시크릿 축소).
+- [x] ~~orphan transcript 104건~~ — **8.1 마이그레이션이 해결했다.** `--session-sqlite import`가 참조된 트랜스크립트를 SQLite로 넣고 미참조분을 **아카이브**했다(삭제 아님): main 229 / glg 413 / gpt 123 / bbot 59 / gemini 17 → `config/agents/<id>/session-sqlite-import-archive/*.imported-<ts>` (6봇 합 2,170개 현존). 옛 전제 *"`--fix`는 gemini를 깨므로 못 쓴다"* 도 **8/27 Copilot 이관으로 이미 무효**였고, 이번에 `doctor --fix`를 실제로 돌려 gemini 드리프트 0으로 확인됐다.
 
 ---
 

@@ -114,7 +114,19 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 
 **아직 부모 추적 중인 봇** (`workspace/`, `workspace-gpt/`, `workspace-gemini/`, `workspace-mini/`): nested `.git`만 ignore, 내용은 부모가 스냅샷. 졸업 전 기본값.
 
-### Model routing (현재: OpenClaw 2026.7.1-2 baseline, 2026-08-04 전면 정렬)
+### Model routing (현재: OpenClaw **2026.8.1** baseline, 2026-08-31 컷오버)
+
+> 🔻 **2026-08-31 8.1 컷오버로 이 장의 전제 4개가 바뀌었다. 아래 본문에는 아직 7.1 표현이 남아있다 — 충돌하면 이 상자가 이긴다.** (전면 재작성은 [NEXT.md](NEXT.md) 항목)
+>
+> | 7.1까지 | 8.1부터 | 근거 |
+> |---|---|---|
+> | `doctor --fix` **금지** | **필수 절차** — 게이트웨이를 끄고 직렬로 돌린다 | agent DB v1→v19는 doctor만 한다. 금지 사유였던 gemini `google/` 재작성은 8/27 Copilot 이관으로 겨눌 대상이 사라졌고, 2026-08-31 실제 실행에서 드리프트 0 확인 |
+> | catch-all = `agents.defaults.models` **키 순서** | catch-all = **`agents.defaults.modelPolicy.allow` 배열 순서** | 8.1 `modelPolicy` 신설(#110888). doctor가 legacy 맵을 이 배열로 복사했고 1번은 `openai/gpt-5.6-terra` 그대로 |
+> | `agents.list` (배열) · `agents.defaults.memorySearch` · `tools.exec.security/ask` | `agents.entries` (키드 맵) · `memory.search` · `tools.exec.mode` | 8.1 startup config repair가 자동 변환 |
+> | 봇 라우팅은 계정명↔에이전트명 암묵 매칭 | `agents.ownership="explicit"` + **`bindings` 6개 명시 필수** | 8.1 스키마가 다중 에이전트에 explicit 소유권을 요구. `telegram:default`가 소유자를 잃어 main에 binding을 박았다 |
+>
+> 절차/함정 전문은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "8.1 컷오버".
+
 
 > 버전 업그레이드 이력 / 운영 결정 연혁 (5.2→5.28, claude-cli 전환, 정공법들, 6.1 codex auth canonical migration)은 [ROADMAP.md](ROADMAP.md)로 이관. 이 섹션은 *현재 라우팅 상태*만 답한다.
 
@@ -190,7 +202,7 @@ if (value === "codex-app-server") return "codex";
 | `openclaw` (구 `pi`) | OpenClaw Default | **agentRuntime 미지정 = 기본**. gpt(sol), gemini 제외 전 openai 모델, subagents, active-memory |
 | `claude-cli` | Claude CLI | main/glg/bbot/mini — Anthropic은 구독 API가 없어 `claude -p` spawn |
 | `google-gemini-cli` | Gemini CLI | gemini (deprecation 경로, §agy 이관 참조) |
-| ~~`codex`~~ | ~~OpenAI Codex~~ | **2026-08-07 제거** |
+| ~~`codex`~~ | ~~OpenAI Codex~~ | **2026-08-07 결정 → 2026-08-31 완결.** 8.1이 "플러그인 비활성인데 codex 런타임 선언"을 경고에서 **거부**로 바꿔 gpt 봇이 못 돌았다. `openai/*` 3종의 `agentRuntime`을 `openclaw`로 명시해 해소(doctor 경고 7건 → 0) |
 
 **codex 제거 (2026-08-07, GLG 결정)**: openai는 `openai/oauth` 프로필(ChatGPT 구독)로 **내장 런타임에서 그대로 서빙된다** — codex CLI를 경유할 이유가 없다. 제거 내역:
 
@@ -262,7 +274,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 > **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 openclaw 내장 런타임(`openai/gpt-5.6-terra`, ChatGPT OAuth)이라 claude login은 main/bbot/mini 3봇만.
 
-> **2026-08-27 현재 서빙 경로: `github-copilot/gemini-3.7-flash`.** gemini-cli는 deprecated라 복원하지 않는다. 아래 403/`exec: gemini: not found`/agy 블록은 DOWN 시절 화석 — 챗봇을 `google-gemini-cli/`나 `google/`로 되돌리지 말 것. `doctor --fix` 금지는 그대로(누르면 또 `google/`로 쓴다).
+> **2026-08-27 현재 서빙 경로: `github-copilot/gemini-3.7-flash`.** gemini-cli는 deprecated라 복원하지 않는다. 아래 403/`exec: gemini: not found`/agy 블록은 DOWN 시절 화석 — 챗봇을 `google-gemini-cli/`나 `google/`로 되돌리지 말 것. ~~`doctor --fix` 금지는 그대로(누르면 또 `google/`로 쓴다)~~ → **2026-08-31 폐기.** 이 금지는 gemini가 `google-gemini-cli/`였을 때의 방어였다. Copilot 레일로 옮긴 뒤엔 재작성이 겨눌 대상이 없고, 8.1 컷오버에서 `doctor --fix`를 실제로 돌려 **6봇 prefix 드리프트 0**을 확인했다. 8.1에서 이건 금지가 아니라 **필수**다.
 >
 > **⚠️ 2026-08-06 실측 — 당시 gemini DOWN의 근인은 403이 아니라 `exec: gemini: not found`다.** prewarm 턴이 `GatewayClientRequestError: FailoverError: gemini: 1: exec: gemini: not found`로 떨어진다. 즉 OAuth 이전에 **CLI 바이너리 자체가 컨테이너에 없다** — 2026-07-01(6.11) node-gyp hang 대응으로 Dockerfile `npm install -g`에서 `@google/gemini-cli`를 뺀 것의 직접적 귀결이다(아래 "이미지 재빌드 node-gyp hang" 항목과 같은 사건). 결론(DOWN 유지)은 그대로지만 **사유는 바뀌었다**: 아래 403 서사는 *바이너리가 있던 시절*의 진단이다. agy 이관으로 부활시킬 땐 Dockerfile 복원이 첫 단계이고, 403이 여전한지는 그 다음에야 확인 가능하다.
 >
@@ -281,7 +293,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 > **⚠️ auto-fallback catch-all 함정 — primary 실패 시 봇 정체성 훼손 (2026-06-13)**: OpenClaw 모델 해상도는 `primary → model.fallbacks(순서) → auto-fallback`. configured primary가 실패(서빙 불가/overload)하고 `fallbacks`가 비어있으면, auto-fallback이 **글로벌 allowlist(`agents.defaults.models`) 첫 작동모델**로 떨어진다(`modelOverrideSource: "auto"`). **user `/model` 선택만 fail-closed**(도달 불가 시 가시적 실패), configured primary는 항상 이 체인을 탄다. **2026-06-13 사건**: bbot을 fable-5로 올렸다가 Fable 5 서빙 실패 → allowlist 1번이던 `deepseek/deepseek-v4-pro`가 catch-all로 잡혀 **bbot이 deepseek로 응답**(정체성 훼손, "차라리 무응답이 낫다"). **조치**: allowlist에서 deepseek pro/flash **제거**(참조 봇 0) → `openai/gpt-5.5`(=default·1번)가 catch-all. **원칙**: ① allowlist 1번은 "정체성 훼손이 가장 덜한 catch-all"이어야 한다 — **2026-08-04 gpt-5.5 전면 제거로 catch-all은 `openai/gpt-5.4`, `defaults.model.primary`는 `openai/gpt-5.6-terra`로 이동**(둘 다 codex 구독, 5.5와 같은 훼손 프로파일). ⚠️ allowlist **키 순서는 `config set --replace`로 지정해도 안 먹는다** — OpenClaw가 기존 순서를 유지하며 정규화하므로, 1번 자리를 바꾸려면 순서가 아니라 *구성*을 바꿔야 한다. ② 서빙 미보장 모델(fable 등)을 **primary로 박지 말 것** — `/model`로 세션에서 시험하고, 살아나면 그때 primary 승격. ③ deepseek은 어떤 봇 정체성에도 안 맞아 allowlist에서 영구 제외(필요 시 `config set agents.defaults.models '{"deepseek/deepseek-v4-pro":{}}' --strict-json --merge`로 한시 추가, 단 catch-all 1번 자리는 피한다). **(2026-07-12 갱신)**: fable-5는 upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개**돼 bbot primary로 재승격됨 — "fable-5 서빙 실패" 전제는 이 버전에선 해소. 단 원칙 ②(서빙 미보장 모델을 primary로 박지 말 것)는 여전히 유효 — 이번에도 primary=opus 유지한 채 `agent --model` 오버라이드 격리 probe로 서빙(`fallbackUsed=false`)을 먼저 확인한 뒤에만 promote했다. fable을 `defaults.models` 끝(catch-all 아닌 자리)에 등록해 오버라이드 probe + `/model fable` 전 봇 개방.
 >
-> **(2026-08-07 갱신 — codex 제거로 catch-all 재배치)**: `openai/gpt-5.4` 삭제로 1번 자리가 비어 gemini(403 DOWN)→fable-5로 밀릴 뻔했다. allowlist를 **`terra, sol, luna, gemini, fable-5, opus-5, sonnet-5`** 순으로 재정렬해 catch-all을 `openai/gpt-5.6-terra`(= `defaults.model.primary`와 동일, ChatGPT 구독, 정체성 중립)로 고정. **순서 지정 방법 정정**: "`config set --replace`로 순서가 안 먹는다"는 여전히 맞지만, **`~/openclaw/config/openclaw.json`을 직접 편집하면 순서가 그대로 선다**(이번에 그렇게 했고 `config validate` 통과). 단 OpenClaw가 config를 스스로 재작성하는 경로(`doctor --fix`, 업그레이드 마이그레이션)를 타면 다시 정규화될 수 있으니, **그런 작업 뒤에는 1번 자리를 재확인**한다.
+> **(2026-08-07 갱신 — codex 제거로 catch-all 재배치)**: `openai/gpt-5.4` 삭제로 1번 자리가 비어 gemini(403 DOWN)→fable-5로 밀릴 뻔했다. allowlist를 **`terra, sol, luna, gemini, fable-5, opus-5, sonnet-5`** 순으로 재정렬해 catch-all을 `openai/gpt-5.6-terra`(= `defaults.model.primary`와 동일, ChatGPT 구독, 정체성 중립)로 고정. **순서 지정 방법 정정**: "`config set --replace`로 순서가 안 먹는다"는 여전히 맞지만, **`~/openclaw/config/openclaw.json`을 직접 편집하면 순서가 그대로 선다**(이번에 그렇게 했고 `config validate` 통과). 단 OpenClaw가 config를 스스로 재작성하는 경로(`doctor --fix`, 업그레이드 마이그레이션)를 타면 다시 정규화될 수 있으니, **그런 작업 뒤에는 1번 자리를 재확인**한다. **(2026-08-31 8.1 갱신 — 자리가 이사했다)**: catch-all은 이제 `agents.defaults.models` 키 순서가 아니라 **`agents.defaults.modelPolicy.allow` 배열 순서**다. 8.1 마이그레이션이 legacy 맵을 그 배열로 복사하며 순서를 보존했고 1번은 `openai/gpt-5.6-terra` 그대로였다(실측). 앞으로 1번을 바꾸려면 **배열을 직접 편집**한다.
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 

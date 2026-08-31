@@ -12,6 +12,77 @@
 
 ## 활성
 
+### 7.1 → 8.1 은 버전 bump 가 아니라 **순서 있는 마이그레이션**이다 — 조용한 실패 11겹 (2026-08-31)
+
+**어려웠던 진짜 이유는 각 단계가 어려워서가 아니라, 실패가 전부 "정상"처럼 보였기 때문이다.**
+컨테이너 `healthy`, 텔레그램 `6/6 connected + works` 가 찍히는 동안 봇은 답을 못 하거나, 정체성 없이
+답하거나, 엉뚱한 에이전트가 계정을 소유하고 있었다. **health check 와 channel probe 는 서빙 검사가 아니다.**
+서빙 검사는 격리 프로브 한 줄뿐이다 — 텔레그램 발송 없이 `agent --agent <id> --session-key "agent:<id>:probe-<ts>"`.
+
+두 번째 이유: **의존 사슬인데 도구는 자기 앞 한 칸만 보고한다.** 하나를 고치면 그제야 다음이 드러난다.
+"지금 전부 뭐가 막혀 있는지" 보여주는 화면이 없다. 그래서 격리 lab 으로 미리 다 잡을 수 없었다 —
+cold archive 에 `credentials/` 와 `exec-approvals.json` 이 없었고(멤버는 `agents,cron,plugin-state,state,tasks` 뿐),
+lab 은 네트워크가 없어 **실제 턴을 한 번도 돌리지 않았다**. lab 이 준 것은 5~6번까지고, 7~9번은 라이브에서만 나왔다.
+
+세 번째: **doctor 가 "doctor --fix 를 돌려라"라고 말하는데 그 doctor 자신이 막혀 있는 경우가 있다**(6번).
+
+#### 실제로 걸린 순서 — 각 칸이 앞칸을 풀어야 열린다
+
+| # | 겉보기 증상 | 진짜 원인 | 처방 |
+|---|---|---|---|
+| 1 | `Gateway failed to start: Invalid config` (7키) | 8.1 이 `memorySearch`·`acp.maxConcurrentSessions`·`ownerDisplay`·`resetOnExit`·`bundledDiscovery` 등 은퇴 | 8.1 **startup config repair 가 자동으로 한다** — 단 2번이 먼저 풀려야 |
+| 2 | startup repair 가 "안 도는" 것처럼 보임 | repair 는 **state migration 이 clean 하게 끝난 뒤에만 커밋**된다 (`automatic-startup-config-repair.ts`: "after state migrations") | 순서가 config→state 가 아니라 **state→config** 다 |
+| 3 | agent DB 7개 전부 skip, `ready` 거부 | `Agent identity migration requires stopped-writer maintenance` — 게이트웨이가 자기 DB 를 잡고 있으면 못 옮긴다 | **게이트웨이 정지 후** `doctor --fix`. v1→v19 |
+| 4 | doctor 1회로 일부만 마이그레이션 | `core:agent-database-maintenance/global` 리스를 도중에 잃는다 (lab·라이브 양쪽 재현) | **직렬 재시도**. 라이브 실측 pass1=main/glg/gpt/gemini/mini, pass2=나머지 |
+| 5 | `agents.ownership` 스키마 거부 | 8.1 은 에이전트 2개↑ + default 마커 없음을 거부 (`zod-schema.agents.ts:79-85`). 우리는 6개·마커 0 | `agents.ownership="explicit"` **명시**. 자동 수선 대상이 아니다 — 정책 결정이라서 |
+| 6 | doctor 가 배너만 찍고 즉시 종료 | `exec-approvals.json` 레거시 가드가 **doctor 가 실행하려는 그 마이그레이션 앞에서** doctor 를 죽인다 (순환). upstream #133813 / #134036 | 파일을 **state dir 밖으로** 옮기고 `approvals set --file <밖의 경로>` 로 흡수 |
+| 7 | 게이트웨이 healthy·텔레그램 붙음, 그런데 **턴이 `UNAVAILABLE`** | `Legacy workspace setup state requires migration` | 6번을 푼 뒤 `doctor --fix` 가 통과한다 |
+| 8 | main 이 정체성을 잃음 (봇은 살아 있음) | 8.1 은 workspace 미지정을 `workspace/<agentId>` 로 해석. main 은 `workspace/` 를 쓰고 있었다 → IDENTITY/AGENTS/MEMORY 전부 못 봄 | 6봇 **전부 workspace 를 명시**. `agents list` 의 `Identity:` 줄이 검수 지표 |
+| 9 | 텔레그램 `default` 계정에 소유자 없음 | 5번의 직접 귀결. 7.1 은 암묵적 기본 에이전트가 받아줬고 `default` 만 binding 이 없었다(나머지 5개는 있었음) | top-level `bindings` 에 `telegram:default → main` 추가. **6/6 명시** |
+
+#### 그리고 10번째 — 8.1 과 무관한, 같은 날의 조용한 실패
+
+| 10 | 4개 claude-cli 봇만 매 턴 spawn 1.1초 만에 죽음 | **base 이미지 npm 11.13.0 → 12.0.2.** npm 12 는 install script 를 `allowScripts` 로 **기본 차단**한다 → `@anthropic-ai/claude-code` postinstall 미실행 → `bin/claude.exe` 가 500B 에러 shim (진짜 213MB 는 `node_modules/@anthropic-ai/claude-code-linux-arm64/claude` 에 방치). 빌드 로그엔 error 가 아니라 `npm warn install-scripts` 만 남는다 | Dockerfile 3단: `--allow-scripts=@anthropic-ai/claude-code` + `node install.cjs`(멱등) + **`claude --version` 으로 빌드 fail-closed**. 실측 대조 7.1=285457336B / 8.1=500B |
+| 11 | gpt 봇만 `UNAVAILABLE`, 나머지 5봇 정상 | 8.1 이 "codex 플러그인 비활성인데 모델이 codex 런타임으로 해상"을 **경고 → 거부**로 승격. 7.1 doctor 는 같은 상태를 경고 7건으로만 냈다 | `openai/gpt-5.6-{terra,sol,luna}` 의 `agentRuntime` 을 `openclaw` 내장으로 **명시**(2026-08-07 GLG 결정의 완결). doctor 경고 7건 → 0. ⚠️ 고친 뒤 프로브가 `⚠️ API rate limit reached` / `rawError=Codex error: The usage limit has been reached` 로 떨어지면 그건 **성공 신호다** — 런타임이 OpenAI 에 도달했다는 뜻이고 벽은 구독 쿼터다. 수정 전 문자열(`runtime "codex" is unavailable`)과 반드시 구분하라 |
+
+#### 재현 가능한 순서 (다음에 이대로 하면 된다)
+
+```bash
+# 0) 롤백 이미지 태그 + cold 백업 (게이트웨이 정지 후 떠야 일관적이다)
+docker tag openclaw-custom:latest openclaw-custom:<old>-rollback
+cd ~/openclaw && docker compose stop openclaw-gateway
+#    백업 대상: openclaw.json + agents/ + state/ + plugin-state/ + tasks/ + cron/
+
+# 1) 사람이 정해야 하는 config 편집 3건 (자동 수선 대상 아님)
+#    agents.ownership="explicit" / plugins.allow 에서 죽은 항목 제거 / skills.workshop 명시
+#    ※ agents.defaults.models 는 파일 직접 편집 — 키 순서 = catch-all 규율
+
+# 2) 레거시 잔해를 state dir 밖으로 (doctor 를 막는 것들)
+#    credentials/telegram-<죽은계정>-allowFrom.json  → 백업으로 이동
+#    exec-approvals.json → 밖으로 옮기고 `approvals set --file` 로 흡수
+
+# 3) 게이트웨이 정지 상태에서 doctor 직렬 (writer 0 확인 필수)
+docker run --rm --network none -v ~/openclaw/config:/home/node/.openclaw:rw \
+  <candidate> node openclaw.mjs doctor --fix       # 리스 잃으면 그대로 재실행
+#    게이트: state v15 + agent DB 전부 v19 + integrity_check=ok
+
+# 4) 세션 스토어 이관은 별도 경로다 (--fix 가 아니다)
+node openclaw.mjs doctor --session-sqlite dry-run   # issues 0 확인
+node openclaw.mjs doctor --session-sqlite import
+node openclaw.mjs doctor --session-sqlite validate  # legacy 0 확인
+
+# 5) 격리 기동 → ready 확인 → 승격 → recreate → **6봇 격리 프로브**
+```
+
+#### 검수는 3층이다 — 하나만 보면 속는다
+
+1. **컨테이너**: `healthy` + `RestartCount` — 여기까지는 아무것도 보장하지 않는다
+2. **채널**: `channels status --probe` 6/6 `works` — 붙었다는 뜻일 뿐 답한다는 뜻이 아니다
+3. **서빙**: 6봇 격리 프로브. **이걸 안 하면 8·9·10번을 전부 놓친다**
+
+> ⚠️ 재시작 직후 1회 probe 로 장애 판정하지 말 것 — 폴링 재연결 전이면 `disconnected` 로 찍힌다.
+
+
 ### heartbeat를 한 봇에만 주면 나머지 봇이 조용히 꺼진다 (2026-08-12)
 
 한 봇의 주기만 바꾸려고 `agents.list[]`에 `heartbeat` 블록을 하나 넣는 순간 **스케줄러가 모드를
@@ -265,6 +336,14 @@ Fix (정공법, env 변경 — force-recreate 필요):
 SDK 디렉토리에는 `claude` + LICENSE/README/package.json만 있어서 다른 binary와 충돌 0. `node_modules`가 image 안이라 영구.
 
 대안 (안 채택): host `npm i -g @anthropic-ai/claude-code` 후 mount — 호스트 의존 늘어남. Dockerfile에 `npm i -g` 추가도 가능 — image 재빌드 비용.
+
+> **⚠️ 2026-08-31 정정 — 위 처방은 화석이다. "안 채택"이라던 대안이 지금의 정본이다.**
+> `@anthropic-ai/claude-agent-sdk-linux-arm64` 는 **7.1 이미지에도 8.1 이미지에도 존재하지 않는다**(실측:
+> 두 이미지 `/app/node_modules/@anthropic-ai/` 에는 `sdk`(+8.1은 `claude-agent-sdk`)뿐). 즉 **compose PATH
+> 첫 항목은 이미 오래전부터 빈 경로를 가리키는 화석**이고, 실제로 spawn 되는 것은 Dockerfile 이 전역 설치한
+> `/usr/local/bin/claude` → `@anthropic-ai/claude-code` 다. 지워도 되지만 무해해서 남아 있다.
+> 이 자리의 현재 함정은 PATH 가 아니라 **npm 12 의 `allowScripts`** 다 — 위 "조용한 실패 9겹" 항목 10번.
+
 
 ### bonjour plugin — disable on Oracle Cloud + Docker (since 2026-04-24)
 
