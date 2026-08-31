@@ -6,6 +6,18 @@
 
 ---
 
+## 🔴 OpenClaw 2026.7.1 → 2026.8.1 업그레이드 — 검토 대기, 진행 금지 (2026-08-31)
+
+바로 다음 stable `v2026.8.1`이 2026-08-31 공개(7.1-2 8/04 → 8.1, 사이 stable 없음). **한 달치 메이저(Changes 137개)이고 우리가 8/07·8/16·8/27에 손으로 세운 방어선 세 개를 정확히 겨냥한다.** 분석·체크리스트·receipt 전문은 이슈로 뺐다 — **다음 턴은 그 이슈부터 읽고 시작한다.**
+
+- [ ] **→ [#7 OpenClaw 2026.7.1 → 2026.8.1 업그레이드 검토](https://github.com/junghan0611/nixos-config/issues/7)** — 4단 절차(사전정리 → 업글 → 검수 → 문서)와 판단 2건이 거기 있다. 이 항목은 포인터일 뿐, 세부는 중복하지 않는다.
+- **지금 상태**: 라이브 `2026.7.1` healthy, 이미지 핀 `docker/openclaw/Dockerfile:169` = `2026.7.1-2`. **아무것도 안 건드렸다.**
+- 핵심 셋만 요약: ① breaking 2건이 **`doctor --fix`를 정규 절차로 요구** + "Safer startup repair"(#132135)로 **부팅 때 자동 마이그레이션** → ORACLE.md:265/280의 `doctor --fix 금지` 방어선이 무효화된다(재작성 대상). ② `modelPolicy.allow` 신설(#110888)이 우리 catch-all 규율인 `agents.defaults.models` 키 순서를 "legacy restriction"으로 흡수 → **1번 자리 재확인 필수**(2026-06-13 사건 자리). ③ **Automatic self-learning 기본 ON**(#115576) — `skills.workshop` 미설정이라 그대로 받으면 6봇에 새 자율 쓰기 경로가 생긴다.
+- [ ] **GLG 판단 2건 (업글 착수 전제)**: (가) 지금 갈지 / `2026.9.1-beta.1`(8/28 공개)로 다음 줄기가 이미 열렸으니 며칠 묵힐지. (나) self-learning을 켠 채 받을지 `off`·`propose`로 받을지 — 업글과 **별개의 결정**. 권고는 (나) 끄고 받기.
+- 무장해제된 함정 하나: 8/27 Copilot 이관으로 gemini primary가 `github-copilot/gemini-3.7-flash`라 `google-gemini-cli` legacy-runtime 재작성이 겨눌 대상이 없다. 죽은 `auth.profiles` 항목만 남았다.
+
+---
+
 ## 🔴 재부팅 부팅 순서 레이스 — caddy는 막았고 emacs는 안 막았다 (2026-08-16)
 
 커널 `7.1.2 → 7.1.4` 재부팅(04:49 KST)이 **독립된 부팅 레이스 두 개**를 동시에 터뜨려 `junghanacs.com` 서브도메인 전부가 5시간 죽었다. 둘 다 "docker가 다른 무엇보다 먼저 뜨느냐"에 결과가 갈리는 같은 모양이다. 복구는 끝났고(전 vhost 200), **재발 방지가 절반만 됐다**.
