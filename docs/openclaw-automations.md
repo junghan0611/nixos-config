@@ -25,7 +25,7 @@
 
 | 봇 | 모델 | heartbeat | 소유 cron | 사람 없이 도는가 |
 |---|---|---|---|---|
-| **main** (default) | `anthropic/claude-opus-5` | **없음** | 없음 | **아니오** |
+| **main** (default) | `anthropic/claude-opus-5` | **없음** | 없음 | **아니오** (`typingMode=never`, 9/1 관찰 중) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5` | **없음** | 가족 알림 3건 (아래) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-5.6-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `github-copilot/gemini-3.7-flash` | **없음** (원래 없었음) | 없음 | **아니오** |
@@ -43,6 +43,13 @@
 
 `agent:<id>:main` 세션이 있는 봇만 heartbeat가 실턴이 된다. 그 세션을 가진 건 bbot뿐이다.
 되돌리려면: `openclaw config set agents.entries.main.heartbeat '{"every":"1h"}'`
+
+### main typing 억제 — 원인 미확정 상태의 운영 가드 (2026-09-01)
+
+`agents.entries.main.typingMode = "never"`를 설정하고 hot reload를 확인했다. 이는 main의
+사용자 가시 typing을 우선 끄는 **가드**이며, 원인 확정은 아니다. active-memory를 끈 뒤
+잠시 사라졌던 typing이 다시 관측되어, `active-memory → 죽은 codex 런타임 → typing` 인과는
+현재 증명되지 않았다. 8.1 soak 동안 재발 시각과 `audit_events`의 main run을 함께 기록한다.
 
 ### bbot 30m — 의도된 예외
 
@@ -77,7 +84,7 @@ GLG가 일부러 유지한 루프다. 매 30분 fable-5 실턴이 돌고 **매�
 |---|---|---|
 | `skills.workshop.autonomous.mode` | `off` | 켜면 `skill-collection-review` 6개가 살아난다 |
 | `plugins.entries.memory-core.config.dreaming.enabled` | `false` | |
-| `plugins.entries.active-memory.enabled` | **`false`** | 2026-09-01 비활성 (§함정 — main 봇 유령 typing의 원인) |
+| `plugins.entries.active-memory.enabled` | **`false`** | 2026-09-01 typing 조사 중 비활성; 원인 인과는 미확정 |
 | `hooks.internal` | `enabled` (`boot-md`, `session-memory`) | 턴을 스스로 만들진 않지만 인벤토리에 포함 |
 | `plugins.entries.codex.enabled` | `false` | 2026-08-07 GLG 결정 |
 | `acp.enabled` / `plugins` acpx | `false` / disabled | acpx는 `plugins.allow` 화이트리스트에서 빠져 막혀 있다 |
@@ -87,20 +94,22 @@ GLG가 일부러 유지한 루프다. 매 30분 fable-5 실턴이 돌고 **매�
 
 ---
 
-## 함정 — 8.1이 비주력 경로에서 런타임 오버라이드를 잃는다
+## 함정 — 8.1이 cron에서 런타임 오버라이드를 잃는다
 
-**증상 2개가 뿌리 하나다.**
+**cron 회귀는 확정, active-memory와의 같은 뿌리는 가설이다.**
 
 `agents.defaults.models["openai/gpt-5.6-terra"].agentRuntime.id = "openclaw"` 오버라이드를
-**일반 에이전트 세션은 적용하고, cron/active-memory 같은 경로는 잃는다.** 잃으면 openai 모델의
-카탈로그 기본 런타임 `codex`로 떨어지고, codex는 disabled라 하드 실패한다.
+**일반 에이전트 세션은 적용하고 cron 경로는 잃는다.** 잃으면 openai 모델의 카탈로그 기본
+런타임 `codex`로 떨어지고, codex는 disabled라 하드 실패한다. active-memory도 같은 모델 정책
+해상도 경로를 탈 가능성은 있으나, 아직 실행 표본이 없어 확정하지 않는다.
 
 - **cron**: 가족 알림 2건이 2026-09-01 아침에 죽었다.
   `Agent harness runtime "codex" is unavailable...`
   회귀 증거: `task_runs`에서 8/28·29·30·31 succeeded → 9/1 첫 실패.
   대조군: gpt 봇 일반 세션은 `gpt-5.6-sol / OpenClaw Default`로 정상.
-- **active-memory** (모델 `openai/gpt-5.6-luna`): 8.1 이후 실행 0건인 채로
-  **main 봇 텔레그램 방에 유령 typing을 계속 냈다.** 끄니 멈췄다(단일 변수 검증).
+- **active-memory** (모델 `openai/gpt-5.6-luna`): 8.1 이후 실행 0건이다. 비활성화와
+  typing 소실이 한 차례 함께 관측됐지만 뒤에 typing이 재관측됐다. 원인으로 기록하지 않고
+  비활성 상태에서 soak한다.
 
 **대응**: cron `agentTurn`에는 `--model anthropic/claude-sonnet-5`처럼 **model을 명시**한다.
 `agents.defaults.model.primary`를 바꾸는 건 권하지 않는다 — blast radius가 넓고 회귀 원인을 숨긴다.

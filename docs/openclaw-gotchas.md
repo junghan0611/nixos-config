@@ -12,13 +12,15 @@
 
 ## 활성
 
-### 8.1 은 **비주력 경로에서 모델 런타임 오버라이드를 잃는다** — 가족 cron 2건 사망 + 유령 typing (2026-09-01)
+### 8.1 은 **cron 경로에서 모델 런타임 오버라이드를 잃는다** — 가족 cron 2건 사망 (2026-09-01)
 
-**증상 두 개가 뿌리 하나다.** 8.1 컷오버 다음 날 아침에 동시에 드러났다.
+**cron 회귀는 확정, active-memory와 같은 뿌리라는 것은 가설이다.** 8.1 컷오버 다음 날 아침에
+동시에 의심됐지만, 증상 동시성은 인과가 아니다.
 
 `agents.defaults.models["openai/gpt-5.6-terra"].agentRuntime.id = "openclaw"` 를
-**일반 에이전트 세션은 적용하는데, cron 과 active-memory 경로는 잃는다.** 잃으면 openai 모델의
-카탈로그 기본 런타임 `codex` 로 떨어지고, codex 는 2026-08-07 결정으로 disabled 라 하드 실패한다.
+**일반 에이전트 세션은 적용하는데 cron 경로는 잃는다.** 잃으면 openai 모델의 카탈로그 기본
+런타임 `codex` 로 떨어지고, codex 는 2026-08-07 결정으로 disabled 라 하드 실패한다.
+active-memory도 같은 모델 정책 해상도를 탈 가능성은 있으나, 실행 표본 없이 확정하지 않는다.
 
 ```
 Agent harness runtime "codex" is unavailable because its plugin registration is
@@ -28,7 +30,7 @@ missing from this prepared run.
 | 증상 | 무엇이 죽었나 | 어떻게 드러났나 |
 |---|---|---|
 | cron | 가족 아침 알림 2건 (아내 07:00 · GLG 08:00) | 아무도 모르게 조용히 실패. 로그가 telegram poll diag 로 100% 덮여 있었다 |
-| active-memory (`gpt-5.6-luna`) | 실행 0건인 채로 **main 봇 방에 유령 typing** | GLG 가 "아무 말도 안 하는데 타이핑하는 척한다"로 발견 |
+| active-memory (`gpt-5.6-luna`) | 실행 0건, typing과 시간상 상관 | 비활성화 뒤 한 차례 소실됐으나 재관측되어 인과 미확정 |
 
 **회귀 확정 근거** — `task_runs` 에서 아내 07:00 잡이 8/28·29·30·31 succeeded → 9/1 첫 failed.
 **대조군** — gpt 봇 일반 세션은 같은 오버라이드가 먹혀 `gpt-5.6-sol / OpenClaw Default` 로 뜬다.
@@ -41,8 +43,10 @@ missing from this prepared run.
 ```bash
 # cron agentTurn 은 model 을 반드시 명시한다
 docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5
-# active-memory 는 껐다 (main 전용 lane 이었다)
+# active-memory 는 조사 중 껐다 (main 전용 lane 이었다)
 docker exec openclaw-gateway openclaw config set plugins.entries.active-memory.enabled false
+# main의 사용자 가시 typing을 우선 억제한다 (원인 판정과 별개)
+docker exec openclaw-gateway openclaw config set agents.entries.main.typingMode never
 ```
 
 `agents.defaults.model.primary` 를 Claude 로 바꾸는 광역 수선은 **하지 마라** — CLI/API/새 자동화까지
@@ -55,11 +59,13 @@ blast radius 가 번지고 회귀 원인을 숨긴다(교차검수 gpt-5.6-terra
 2. 교차검수가 **"typing 경로는 하나가 아니다"** 를 짚었다 — 인바운드 일반 메시지도 모델 실행 전에
    typing 을 보낸다(`bot-message-DLpp_4_3.js:1226-30`). 코드로 경로를 짚은 것과 그 경로가
    실제 원인이라는 것은 다르다.
-3. 결국 **한 번에 한 변수만 바꿔서** 잡았다. active-memory 만 끄고 `typingMode` 는 원복해
-   단일 변수로 만든 뒤 typing 이 멈추는 걸 확인했다.
+3. active-memory만 끈 뒤 `typingMode`를 원복한 관측에서 한 차례 typing이 멈췄지만,
+   뒤에 main typing이 재관측됐다. 따라서 그 실험은 상관을 강하게 만들었을 뿐 인과를 닫지 못했다.
+4. 현재는 main `typingMode=never`로 사용자 가시 신호를 억제하고 8.1 soak에서 재발 시각과
+   audit run을 함께 모은다.
 
-**교훈**: 관측면이 없는 증상(typing 은 로그에도 audit 에도 안 남는다)은 코드 판독으로 단정하지 말고
-**되돌릴 수 있는 변수를 하나씩 끄면서** 좁혀라.
+**교훈**: 관측면이 없는 증상(typing 은 로그에도 audit 에도 안 남는다)은 코드 판독이나 한 번의
+on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나씩 바꾸며 반복 관측**으로 좁혀라.
 
 ### 8.1 heartbeat 는 턴이 없어도 owner DM 에 typing 을 보낸다 (2026-09-01)
 

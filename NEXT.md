@@ -13,7 +13,8 @@
 [docs/openclaw-automations.md](docs/openclaw-automations.md)(**자동화 SSOT**). 여기는 **남은 것만**.
 
 한 줄 요약: `agents.defaults.models["openai/*"].agentRuntime = "openclaw"` 오버라이드를
-cron·active-memory 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로는 멀쩡하다.
+cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로는 멀쩡하다. active-memory는
+같은 뿌리일 수 있으나 실행 표본이 없어 가설로 남긴다.
 
 ### 오늘 만진 것 (전부 되돌릴 수 있음)
 
@@ -22,7 +23,8 @@ cron·active-memory 경로가 잃고 disabled인 `codex`로 떨어진다. 일반
 | 가족 cron 3건에 `--model anthropic/claude-sonnet-5` | 08:00 잡은 **실증 완료**(delivered) | `cron edit <id> --clear-model` |
 | 아내 07:00 cron `disable` | GLG 지시 | `cron enable 2b9edc67-…` |
 | main/glg/gpt/mini heartbeat 제거 | bbot 30m만 남음 | `openclaw.json.bak-heartbeat-off-20260901T075810` |
-| active-memory 비활성 + gateway restart | **유령 typing 멈춤 확인** | `openclaw.json.bak-activemem-off-20260901T083503` |
+| active-memory 비활성 + gateway restart | typing과 상관 관측; **원인 미확정** | `openclaw.json.bak-activemem-off-20260901T083503` |
+| main `typingMode=never` | 09:21 hot reload 적용; 사용자 가시 typing 억제 | `config unset agents.entries.main.typingMode` |
 | `scripts/turnwatch.sh` + `run.sh w)` | 커밋 `6ddc428` | — |
 
 ### 남은 것
@@ -34,9 +36,9 @@ cron·active-memory 경로가 잃고 disabled인 `codex`로 떨어진다. 일반
 - [ ] **subagents 미검증.** `agents.defaults.subagents.model = openai/gpt-5.6-terra`로 같은 뿌리를
       공유한다. 8.1 이후 실행 0건이라 표본이 없다. **자연 발생을 기다려** `sessions list`의
       Runtime 컬럼을 보는 게 무비용 검증이다(`OpenClaw Default`면 정상, `OpenAI Codex`면 같은 병).
-- [ ] **active-memory를 되살릴지 결정.** 지금은 껐다. 살리려면 model을 anthropic 계열로 바꿔야
-      같은 병에 안 걸린다 — 다만 recall lane을 main lane과 분리하려던 원래 취지(quota 경합 회피)와
-      충돌한다. 애초에 "실질적으로 잘 동작하지 않는다"는 평가가 있었으니(ORACLE.md) **폐기도 선택지.**
+- [ ] **active-memory를 되살릴지 결정.** 지금은 껐다. luna/codex와 typing의 인과는 미확정이므로
+      anthropic으로 바꾸는 수선도 아직 하지 않는다. 애초에 "실질적으로 잘 동작하지 않는다"는
+      평가가 있었으니(ORACLE.md) **폐기도 선택지.**
 - [ ] **upstream 이슈로 올릴지 판단.** 8.1 cron/plugin 경로의 model-policy resolver 버그.
       교차검수(gpt-5.6-terra)도 별도 추적 사안으로 봤다.
 - [ ] **`daily_real_estate_auction_study_brief_*`(mini, disabled)** — 켜기 전에 model을 박아야 한다.
@@ -46,7 +48,11 @@ cron·active-memory 경로가 잃고 disabled인 `codex`로 떨어진다. 일반
 
 내 첫 진단은 **틀렸다** — typing을 heartbeat 탓으로 지목했는데 heartbeat 4개를 지워도 안 멈췄다.
 교차검수가 "typing 경로는 하나가 아니다"를 짚었고, 결국 **한 번에 한 변수만 끄는** 방식으로 잡았다.
-**관측면이 없는 증상(typing은 로그에도 audit에도 안 남는다)은 코드 판독으로 단정하지 마라.**
+**관측면이 없는 증상(typing은 로그에도 audit에도 안 남는다)은 코드 판독이나 한 번의 on/off로 단정하지 마라.**
+
+- [ ] **7일 8.1 typing soak.** main `typingMode=never`를 유지한다. 재발을 보면 시각·어느 봇의
+      UI인지·직전 인바운드 여부를 함께 남기고, 그 창의 `audit_events`/gateway 로그와 대조한다.
+      active-memory는 이 기간 재활성하지 않는다.
 
 ---
 

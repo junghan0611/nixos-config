@@ -183,6 +183,8 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 `agents.entries.<id>.heartbeat`를 명시한 봇만 등록된다. 현재 **bbot(30m) 하나**다.
 main/glg/gpt/mini는 모델 턴을 0회 돌면서 매시간 typing과 task 행만 만들어 2026-09-01에 제거했다.
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 아무에게도 적용되지 않는다.
+main은 같은 날 `agents.entries.main.typingMode="never"`로 사용자 가시 typing을 억제했다.
+원인은 아직 확정하지 않고 8.1 soak에서 관측한다.
 
 봇별 전량은 [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**.
 동기화는 `./run.sh w)` (turnwatch).
@@ -345,12 +347,12 @@ for a in c.get('agents', {}).get('list', []):
 PY
 ```
 
-### Active memory — **2026-09-01 비활성** (main 봇 유령 typing의 원인이었다)
+### Active memory — **2026-09-01 비활성** (typing 조사 중)
 
-> 🔻 **현재 `plugins.entries.active-memory.enabled = false`.** 8.1 컷오버 후 실행 0건인 채로
-> main 봇 텔레그램 방에 턴 없는 typing을 계속 냈다. 끄니 멈췄다(단일 변수 검증, 2026-09-01 08:40).
-> 원인은 8.1이 비주력 경로에서 모델 런타임 오버라이드를 잃는 것 —
-> 모델 `openai/gpt-5.6-luna`가 disabled인 codex 런타임으로 떨어진다.
+> 🔻 **현재 `plugins.entries.active-memory.enabled = false`.** 8.1 컷오버 후 실행 0건과 main
+> typing이 함께 관측됐고, 비활성화 뒤 한 차례 typing이 사라졌다. 그러나 이후 typing이 다시
+> 관측되어 active-memory 또는 luna/codex 해상도를 원인으로 확정하지 않는다.
+> main은 별도로 `typingMode="never"`로 사용자 가시 신호를 억제하며 8.1 soak에서 관측한다.
 > [gotchas](docs/openclaw-gotchas.md) 최상단 항목 · [자동화 SSOT](docs/openclaw-automations.md).
 > 엔트리는 지우지 않고 `enabled:false`로 남겼다(ORACLE.md 규율). 아래는 **꺼지기 전 운영 config**다.
 
