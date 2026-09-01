@@ -644,6 +644,13 @@ for a in c.get('agents', {}).get('list', []):
     print(a.get('id'), a.get('model'))
 PY
 
+# 신호 감사 — "누가 이 프로세스를 죽였나" (2026-09-01 uid-wide SIGTERM 사건 이후)
+sudo audit-query term      # 오늘 SIGTERM 발신자 (pid/ppid/comm/exe/uid/auid/세션)
+sudo audit-query kill      # 오늘 SIGKILL 발신자
+sudo audit-query recent    # 최근 10분 전부
+sudo audit-query rules     # 로드된 규칙 / status, size
+# auditctl 은 일부러 NOPASSWD 로 안 열었다 — -D(규칙 전삭제)·-e 0(감사 끄기)까지 열린다.
+
 # restart vs recreate
 cd ~/openclaw && docker compose restart openclaw-gateway
 cd ~/openclaw && docker compose up -d --force-recreate openclaw-gateway   # env / mount changes

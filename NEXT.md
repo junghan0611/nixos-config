@@ -77,15 +77,34 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🔴 재부팅 부팅 순서 레이스 — caddy는 막았고 emacs는 안 막았다 (2026-08-16)
+## 🟡 uid 전체 SIGTERM 사건 — 발신자 미상, 감사 설비만 갖췄다 (2026-09-01)
 
-커널 `7.1.2 → 7.1.4` 재부팅(04:49 KST)이 **독립된 부팅 레이스 두 개**를 동시에 터뜨려 `junghanacs.com` 서브도메인 전부가 5시간 죽었다. 둘 다 "docker가 다른 무엇보다 먼저 뜨느냐"에 결과가 갈리는 같은 모양이다. 복구는 끝났고(전 vhost 200), **재발 방지가 절반만 됐다**.
+2026-09-01 20:42:53.53~.63, **93ms 안에 uid 1000 프로세스 전체가 SIGTERM**을 맞았다. SSH 세션 5개(`mm_reap: child terminated by signal 15`), tmux 판 전부(1~2주 붙어 있던 pane 5개), emacs, syncthing, gpg-agent, `systemd --user`, prime-agent 데몬 수퍼바이저, 그리고 **호스트 uid가 1000이던 컨테이너 3개**(openclaw-gateway/forge/aions-cloudflared)가 동시에 죽었다. root로 도는 컨테이너 11개는 무사 — 컨테이너 단위도 도커 단위도 아닌 **uid 단위 신호**, `kill(-1, SIGTERM)`의 서명이다.
+
+공격이 아니다: 오늘 성공한 SSH 로그인은 전부 junghan 본인 IP 2개, 외부 성공 0. 스캐너(34.81.32.10)의 `.env`/`docker-compose.yml` 탐색 619건은 **전부 308, 200 하나도 없음**. OOM도 아니다(23Gi 중 11Gi free, `OOMKilled=false`, systemd-oomd 로그 0건).
+
+**발신자를 못 밝혔다.** auditd 꺼짐 · atuin 오늘 105건 중 kill/reboot/systemctl 0건(마지막 대화형 입력 19:20:29 `piao`) · 20:42 근처 발화 타이머 없음 · `.bash_logout`/`.zlogout` 부재 · 20:42대 코어덤프 없음 · 오늘자 에이전트 transcript 전수 검색 0건. prime-agent(마지막 도구 호출 20:18)·entwurf·openclaw 컨테이너(PID 네임스페이스 격리) 셋 다 코드 경로 확인 결과 브로드캐스트 수단이 없어 **전부 피해자**로 판정.
+
+- [x] **감사 설비 도입** — 커밋 `9a308b1`. `sudo audit-query {rules|status|term|kill|recent|size}`로 발신 pid·ppid·comm·exe·uid·auid·세션까지 나온다(실패한 kill도 `exit=ESRCH`로 기록). 정상 상태 잡음 실측 **2분에 1건**, 로그 64MiB 상한.
+- [ ] **재발하면 즉시 `sudo audit-query term`.** 이번엔 못 밝혔지만 다음엔 한 줄로 나온다. 발신자가 잡히면 여기에 박고 근본을 고친다.
+- [ ] **저널 1G 상한과 감사 로그가 사후 분석의 두 축.** `diskclean.sh`는 저널을 200M로 vacuum하려 하지만 `sudo journalctl`이 NOPASSWD가 아니라 매번 건너뛴다. 이제 선언적 1G(커밋 `deb63b6`)가 그 역할을 하니 **스크립트의 200M 단계를 빼거나 1G로 맞출지 판단 필요**. 200M이었으면 이번 추적이 불가능했다.
+
+---
+
+## 🟡 재부팅 부팅 순서 레이스 — caddy·emacs 둘 다 막았다 (2026-08-16 → emacs 2026-09-01 해결)
+
+커널 `7.1.2 → 7.1.4` 재부팅(04:49 KST)이 **독립된 부팅 레이스 두 개**를 동시에 터뜨려 `junghanacs.com` 서브도메인 전부가 5시간 죽었다. 둘 다 "docker가 다른 무엇보다 먼저 뜨느냐"에 결과가 갈리는 같은 모양이다. 복구는 끝났고(전 vhost 200), **둘 다 항구 차단됐다** — ①은 2026-08-31, ②는 2026-09-01.
 
 **① caddy 443 선점 — 영구 수정 완료.** 경위(tailnet 443 선점 → caddy `exit 128` → 5시간 무응답)와 조치(enp0s6 NIC `10.0.0.157` 바인딩)는 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`. 이 자리에 남은 건 아래 하드코딩·근본 판단 둘뿐이다.
 
-**② geworfen/agenda — 미해결.** docker가 호스트 emacs보다 먼저 떠서 마운트 소스 `/run/user/1000/emacs`를 **root 소유로 생성** → `agent-emacs.service`가 *"is not a safe directory because it is not owned by you"*로 기동 실패 → `server` 소켓 부재 → geworfen healthcheck 영구 실패 → autoheal이 2.5분마다 재시작(5시간 약 120회). 수동 복구는 emacs·geworfen 정지 → root 소유 dir `rmdir` → `agent-emacs`+`emacs` 기동 → geworfen `--force-recreate`. **다음 재부팅에 docker가 또 이기면 그대로 재발한다.**
+**② geworfen/agenda — 해결 (2026-09-01).** 2026-09-01 21:15 재부팅에서 **예측 그대로 재현**됐다: docker가 먼저 떠 `/run/user/1000/emacs`를 root 소유로 생성 → `agent-emacs` 기동 실패(*"is not a safe directory"*) → geworfen healthcheck 실패 → autoheal 재시작. 커밋 `d86d9d8`이 `emacs-socket-dir.service`(`After=user-runtime-dir@1000`, `Before=docker.service docker.socket`, `install -d -o junghan -g users -m 0700`)로 항구 차단했다.
 
-- [ ] **emacs 소켓 dir 레이스 항구 차단 (①의 짝, 이게 남은 본체).** 후보 셋: ⓐ `agent-emacs.service`에 `ExecStartPre`로 `/run/user/1000/emacs` 소유자 검사 후 root 소유면 `rmdir`, ⓑ geworfen 컨테이너 시작을 emacs 유닛 뒤로 미룸(`restart: unless-stopped`라 docker가 부팅 시 자력 기동 — systemd drop-in으로 순서 강제 필요), ⓒ systemd-tmpfiles로 부팅 시 junghan 소유 선점. ⓐ가 제일 싸고 국소적 — **GLG 판단 필요.**
+후보 ⓒ(systemd-tmpfiles)는 **쓸 수 없다**는 걸 실측으로 확인했다 — `/run/user/1000`은 logind가 거는 tmpfs라 tmpfiles가 먼저 만들어도 tmpfs가 나중에 덮어쓴다. `user-runtime-dir@1000` 뒤 · `docker` 앞이 유일한 창이다. ⓐ(ExecStartPre rmdir)는 geworfen 컨테이너가 이미 옛 inode를 물고 있으면 컨테이너 재시작이 또 필요해 반쪽이다.
+
+- [x] **emacs 소켓 dir 레이스 항구 차단** — 커밋 `d86d9d8`. 위 ② 참조.
+- [ ] **autoheal이 원인이 아니라 증상을 재시작한다 — geworfen 담당자와 논의 필요.** geworfen healthcheck가 `emacsclient -s server --eval '(+ 1 1)'`이라 **emacs가 죽으면 geworfen이 unhealthy가 되고 autoheal은 geworfen을 재시작한다**. 고장 난 건 emacs인데 처방이 geworfen을 때린다 — 8/16의 5시간 120회 재시작, 9/1의 20:45:48 재시작이 전부 이 구조다. 후보: healthcheck에서 emacs 의존을 빼거나(geworfen 자체 생존만 확인), autoheal 라벨에서 geworfen 제외. **compose/geworfen 쪽 결정이라 이 리포 단독으로 못 정한다.** 발생하면 수선.
+- [ ] **`agent-emacs.service` 라이브가 geworfen SSOT와 갈렸다.** SSOT는 `~/repos/gh/geworfen/ops/systemd/agent-emacs.service`. 2026-09-01 라이브에 `Type=simple → Type=notify`를 넣었다(emacs가 `LIBSYSTEMD` 빌드 + `libsystemd.so.0` 링크 확인 후 적용, `restart`가 2557ms 블록하고 소켓 준비 후 반환하는 것까지 실측). **geworfen 리포에는 아직 안 넣었다** — 그쪽에서 다시 배포하면 조용히 되돌아간다. `Restart=no`는 의도적 fail-stop이라 그대로 둔다.
+
 - [ ] **`10.0.0.157` 하드코딩 — DHCP가 IP를 바꾸면 caddy가 안 뜬다.** 오라클 VM은 `default via 10.0.0.1 dev enp0s6 proto dhcp`라 리스 갱신에서 주소가 바뀔 여지가 있다(현재까지 고정으로 관측). 정공법은 NixOS에서 enp0s6 static IP 선언 또는 compose를 생성하는 얇은 래퍼. 지금은 **주소가 바뀌면 caddy가 조용히 죽는 구조**라는 걸 알고 두는 상태.
 - [ ] **근본 판단 — tailscale serve 443을 계속 쓸 것인가.** 지금은 "NIC 바인딩으로 비켜간" 상태지 충돌을 없앤 게 아니다. OpenClaw tailnet 레인을 `--https=8443`으로 옮기면 caddy가 `0.0.0.0`을 되찾지만 페어링 URL이 바뀐다. 안 옮기면 443이 두 주인을 가진 채로 남는다.
 - [ ] **재부팅 후 점검 체크리스트가 없다.** 이번엔 GLG가 "ax 안 들어가진다"로 발견했다 — 5시간 뒤였다. `run.sh`에 부팅 후 자가진단(전 vhost 8-세트 + 컨테이너 Up + emacs 소켓 2개) 항목을 넣을지 판단. `docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수"의 부팅판.
