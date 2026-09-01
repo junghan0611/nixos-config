@@ -268,6 +268,31 @@ in
     disk_error_action = "SUSPEND";
   };
 
+  # emacs 소켓 디렉토리를 docker보다 먼저, junghan 소유로 만들어 둔다.
+  #
+  # openclaw-gateway(`/run/user/1000/emacs:/run/emacs:ro`)와 geworfen이 이 경로를
+  # bind mount 하는데, docker는 없는 bind source를 **root 소유로** 만든다. 부팅
+  # 순서상 docker가 emacs보다 먼저 뜨면 emacs가 자기 소켓 디렉토리를 잃는다:
+  #   Unable to start daemon: '/run/user/1000/emacs' is not a safe directory
+  #   because it is not owned by you (owner = System administrator (0)); exiting
+  # 2026-09-01 재부팅에서 실제로 터졌다. 그 전 16일은 8월에 emacs가 먼저 만들어
+  # 둔 디렉토리가 남아 있어서 가려져 있었을 뿐 — 재부팅마다 재발하는 문제였다.
+  #
+  # /run/user/1000 은 logind가 거는 tmpfs이므로 systemd.tmpfiles로는 못 앞지른다
+  # (tmpfs가 나중에 덮어쓴다). user-runtime-dir 뒤, docker 앞이 유일한 창이다.
+  systemd.services.emacs-socket-dir = {
+    description = "Pre-create /run/user/1000/emacs owned by junghan (before docker binds it)";
+    wantedBy = [ "multi-user.target" ];
+    requires = [ "user-runtime-dir@1000.service" ];
+    after = [ "user-runtime-dir@1000.service" ];
+    before = [ "docker.service" "docker.socket" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.coreutils}/bin/install -d -o junghan -g users -m 0700 /run/user/1000/emacs";
+    };
+  };
+
   # Headless VM에 vconsole 불필요 — 물리 콘솔 없어 setfont 실패
   systemd.services.systemd-vconsole-setup.enable = false;
 
