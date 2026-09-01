@@ -12,6 +12,57 @@
 
 ## 활성
 
+### 호스트 청소기가 **프롬프트 텍스트를 죽인다** — `acp-zombie-reaper` 은퇴 (2026-09-01)
+
+**4월 acpx 시절 손설치한 청소기가, 보호 대상이 6월에 사라진 뒤에도 4개월 더 돌면서 남의 agent 세션을 15분마다 저격했다.** 은퇴 처리 완료(`systemctl --user disable --now acp-zombie-reaper.timer`).
+
+**함정의 정체 — argv 부분문자열은 술어가 될 수 없다.** `~/openclaw/scripts/acp-zombie-reaper.sh` Phase 1은
+`ps -eo pid,etimes,user,args`의 **한 줄 전체**에 `claude-agent-acp`가 있으면 900초 넘은 것을 SIGTERM했다.
+
+```sh
+# 이 줄이 원인이다 — $0 는 argv 전체이고, argv에는 프롬프트가 실린다
+awk -v age="$AGE_SECS" '$2 > age && $0 ~ /claude-agent-acp/ && $0 !~ /awk/ { print $1 }'
+```
+
+Claude Code·copilot CLI는 **프롬프트를 argv에 통째로 싣는다.** 그래서 *이 청소기 얘기를 하는 프롬프트를 받은
+평범한 세션*이 그대로 조준선에 들어온다. 실측(2026-09-01 12:10 KST): 호스트에 ACP 프로세스 **0개**인데
+스크립트의 `alive_acp` 카운터는 **3**을 셌다 — 셋 다 프롬프트에 그 문자열이 박힌 CC/copilot 세션이었고,
+그중 하나가 이 조사를 하던 세션 자신이었다(12:27:52 tick에 죽을 예정이었다).
+
+**왜 8개월간 안 보였나.** 벤더 핸들러가 SIGTERM을 `dispose(); process.exit(0)`으로 흡수해서
+**exit 0 / 무시그널**로 도착한다. 죽인 흔적이 정상 종료처럼 보인다.
+
+**보호 대상은 이미 없었다** (전부 실측):
+
+| 확인 | 결과 |
+|---|---|
+| upstream `openclaw/acpx` PR #245 | **CLOSED, 머지 안 됨** (`mergedAt=null`, 2026-04-21). 스크립트 주석의 "still OPEN"은 화석 |
+| 이 배포의 ACP | `acp.enabled=false`, acp 쓰는 agent 0개 (2026-06-10 제거, [ORACLE.md](../ORACLE.md) §ACP 제거 완료) |
+| 8.1 이미지의 acpx | **미설치**. `/app/node_modules/acpx` 부재, `.bin/acpx`·`.bin/claude-agent-acp` 둘 다 **dangling 심링크** |
+| 컨테이너 프로세스 | gateway 4개뿐, acpx/claude-agent-acp 0 |
+
+**reap 이력이 은퇴 근거다** (journal Phase 1 75건):
+
+```
+04-19~25   58건  한 tick에 3~5개씩  ← 진짜 acpx 누수기 (스크립트 mtime 04-18)
+04-21             PR #245 CLOSED
+06-10             ACP 제거 → 보호 대상 소멸
+07-30~08-31 17건  전부 "reaping 1"  ← 전량 오폭
+```
+
+**요약줄 두 개 다 고장나 있었다.** `alive_claude`의 `grep -cE ' [c]laude($| )'`는 **앞 공백을 요구**해서
+`claude --model opus`(줄 맨 앞)도 `/home/junghan/.local/bin/claude`(앞이 `/`)도 못 센다 →
+매 tick `claude=0`은 관측이 아니라 고장난 계기판. `alive_acp`는 반대로 프롬프트를 세서 없는 것을 있다고 했다.
+
+**남긴 것 / 지운 것**: 타이머만 `disable --now`. 스크립트(`~/openclaw/scripts/acp-zombie-reaper.sh`)와
+유닛 파일 2개(`~/.config/systemd/user/acp-zombie-reaper.{timer,service}`)는 **화석으로 그대로 둔다** —
+4월 누수기의 운영 증거다. 셋 다 nixos-config repo 밖의 **손설치**(nix store 심링크 아님)라
+다른 디바이스에는 존재하지 않는다. **다시 켜지 마라.**
+
+**교훈(재발 방지)**: 호스트 전역 청소기가 남의 프로세스를 **이름/argv**로 고르면 안 된다. 술어는 argv 바깥에
+있어야 한다 — cgroup(`/proc/<pid>/cgroup`) 또는 launch env 마커(`/proc/<pid>/environ`). 컨테이너 안의
+누수는 애초에 **컨테이너 안의 supervisor**가 맡을 일이다.
+
 ### 8.1 은 **cron 경로에서 모델 런타임 오버라이드를 잃는다** — 가족 cron 2건 사망 (2026-09-01)
 
 **cron 회귀는 확정, active-memory와 같은 뿌리라는 것은 가설이다.** 8.1 컷오버 다음 날 아침에

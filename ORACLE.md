@@ -58,6 +58,7 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 - **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), openclaw 내장(gpt), google-gemini-cli(gemini). third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
 - **codex 런타임 의존성 제거 완료 (2026-08-07)** — `plugins.entries.codex.enabled=false`, `gpt-5.4`/`gpt-5.4-mini` 카탈로그 전면 제거, subagents·active-memory를 `openclaw` 내장 런타임으로 이관. 상세는 아래 §"런타임 지형".
 - 전환 서사 / 옛 pi-shell-acp stance(backend 자치권 등) / 빈응답 사건은 [ROADMAP.md](ROADMAP.md) 운영 결정 이력으로 이관.
+- **호스트 측 `acp-zombie-reaper` 은퇴 (2026-09-01)** — 4월 acpx 누수 대응 user timer. 보호 대상이 6월에 사라진 뒤에도 돌면서 argv 부분문자열로 남의 agent 세션을 저격했다. `disable --now` 완료, 스크립트·유닛은 화석 보존, **재활성 금지**. 상세 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) §활성 최상단.
 - pi-shell-acp 엔트리는 삭제하지 않고 `enabled:false`로 남긴다 — **엔트리를 지우면 기본 로드로 복귀**하기 때문(2026-06-10 확인). 끄려면 반드시 엔트리 present + `enabled:false`.
 
 ---

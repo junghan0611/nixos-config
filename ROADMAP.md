@@ -241,6 +241,21 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 
 ## 운영 결정 이력
 
+### `acp-zombie-reaper` 은퇴 (2026-09-01)
+
+2026-04-18 acpx 0.5.3 누수(upstream PR #245) 대응으로 호스트에 손설치했던 user timer를 **은퇴**시켰다.
+보호 대상은 2026-06-10 ACP 제거로 이미 사라졌고, 8.1 이미지에는 acpx가 아예 설치돼 있지 않다(dangling 심링크만 잔존).
+PR #245도 머지되지 않고 2026-04-21 CLOSED — 스크립트 주석의 "still OPEN"은 화석이었다.
+
+4월 누수기(reap 58건, 한 tick에 3~5개) 이후 잡힌 17건은 **전부 단발 오폭**이었다. Phase 1이 argv 부분문자열로
+`claude-agent-acp`를 고르는 탓에, 그 문자열이 프롬프트에 들어간 **평범한 Claude Code 세션**까지 15분마다
+SIGTERM 대상이 됐다. entwurf 이슈 #72("ACP child가 tool-loop 중간에 죽는다", 8개월 미해결)의 진짜 원인이
+이것이었고, 그 판에서 역추적돼 이 호스트로 돌아왔다.
+
+- 조치: `systemctl --user disable --now acp-zombie-reaper.timer`. 스크립트·유닛 파일은 화석으로 보존.
+- 셋 다 repo 밖 손설치라 oracle 전용 — nuc/laptop/thinkpad에는 존재하지 않는다.
+- 함정의 전문·실측·재발 방지 원칙은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) §활성 최상단.
+
 ### gemini 챗봇 → GitHub Copilot (2026-08-27)
 
 GLG 결정: Google Gemini 구독 안 함. gemini-cli는 deprecated라 응용하지 않음. Copilot이 제미나이 서빙 레일.
