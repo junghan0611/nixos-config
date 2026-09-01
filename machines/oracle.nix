@@ -268,6 +268,17 @@ in
     disk_error_action = "SUSPEND";
   };
 
+  # 저널 상한 — 공인 IP 서버라 caddy access log가 저널을 밀어올린다.
+  # 선언이 없어 무제한으로 3.1G까지 자랐다. diskclean.sh는 이걸 200M로 vacuum
+  # 하려 하지만 `sudo journalctl`이 NOPASSWD가 아니라 매번 건너뛰어 왔다.
+  #
+  # 200M이 아니라 1G인 이유: 2026-09-01 uid-wide SIGTERM 사건을 밝힌 게 저널
+  # 히스토리였다. 200M이면 그 추적이 불가능했다. 감사 로그(64MiB 상한)와 저널이
+  # 사후 분석의 두 축이므로 저널에는 몇 주치 여유를 남긴다.
+  services.journald.extraConfig = ''
+    SystemMaxUse=1G
+  '';
+
   # emacs 소켓 디렉토리를 docker보다 먼저, junghan 소유로 만들어 둔다.
   #
   # openclaw-gateway(`/run/user/1000/emacs:/run/emacs:ro`)와 geworfen이 이 경로를
