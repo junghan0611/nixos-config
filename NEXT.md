@@ -30,9 +30,12 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 ### 남은 것
 
 - [ ] **아내 07:00 cron을 언제 다시 켤지 GLG 판단.** model은 이미 sonnet-5로 박아뒀다.
-      켜면 도는 게 맞다고 보지만 **그 잡 자체는 아직 성공 실행 0회**다 — 08:00 형제 잡으로 간접 실증했을 뿐.
-- [ ] **내일(9/2) 08:00 KST 두 건 확인** — `morning-family-schedule-reminder`(반복)와
-      `baron-kindergarten-dropoff-2026-09-02`(1회성). 이게 model 우회의 진짜 검증이다.
+      그 잡 자체는 여전히 성공 실행 0회지만, 이제 **형제 잡(08:00)이 직접 실증됐다**(아래) — 켜면 돈다고 볼 근거가 세졌다.
+- [x] ~~9/2 08:00 KST 반복 잡 확인~~ — **통과.** `cron runs` 실측: `completionStatus: succeeded`,
+      **`provider: "claude-cli"`, `model: "claude-sonnet-5"`**, `delivered: true`, 53.7s, `consecutiveErrors: 0`.
+      **`--model` 명시 우회가 작동한다** — 죽은 codex로 안 떨어졌다. 어제는 간접 실증뿐이었는데 이제 그 잡 자체가 증거다.
+- [ ] **1회성 `baron-kindergarten-dropoff-2026-09-02`는 확인 불가** — `cron list --all`에도 없다.
+      one-shot은 소진 후 스토어에서 사라지는 듯. **텔레그램 도착 여부는 GLG 육안 확인 몫.**
 - [ ] **subagents 미검증.** `agents.defaults.subagents.model = openai/gpt-5.6-terra`로 같은 뿌리를
       공유한다. 8.1 이후 실행 0건이라 표본이 없다. **자연 발생을 기다려** `sessions list`의
       Runtime 컬럼을 보는 게 무비용 검증이다(`OpenClaw Default`면 정상, `OpenAI Codex`면 같은 병).
@@ -53,6 +56,57 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 - [ ] **7일 8.1 typing soak.** main `typingMode=never`를 유지한다. 재발을 보면 시각·어느 봇의
       UI인지·직전 인바운드 여부를 함께 남기고, 그 창의 `audit_events`/gateway 로그와 대조한다.
       active-memory는 이 기간 재활성하지 않는다.
+
+---
+
+## 🟢 OpenClaw 8.2 컷오버 완료 — 15초. soak만 남음 (2026-09-02 10:38 KST)
+
+**전문 = [issue #8](https://github.com/junghan0611/nixos-config/issues/8)** (본문 = 사전 검토, [완료 코멘트](https://github.com/junghan0611/nixos-config/issues/8#issuecomment-5503120293) = 실행·검수). 여기는 **남은 것만**.
+
+라이브 `OpenClaw 2026.8.2 (0965053)`, healthy. 다운타임 **약 2분**(대부분 이미지 빌드), 정지→기동 자체는 **15초**.
+8.1이 39분이었던 것과 대조된다 — **마이그레이션이 0이었기 때문**이다.
+
+**왜 빨랐나 (다음 bump에서 그대로 재사용할 방법)**: 릴리즈 노트의 "breaking 0"을 믿지 않고
+**8.2 이미지를 받아 라이브 컨테이너와 직접 대조**했다 — state 마이그레이션 ID 15개 완전 동일,
+`OPENCLAW_AGENT_SCHEMA_VERSION` 19=19, `npm` 12.0.2 동일, 그리고 **라이브 config를 8.2 이미지로 격리 파싱해
+`Config valid`**(retired key 0). 8.1을 39분으로 만든 3대 요인이 전부 부재임을 *올리기 전에* 확정했다.
+예측대로 부팅 로그 마이그레이션/repair/error **0줄**, config 편집 **0건**.
+추출 명령은 issue #8 완료 코멘트 §2에 재현 가능한 형태로 있다.
+
+검수 전항목 통과: 6봇 model prefix·정체성 스모크 6/6, catch-all 1번 `openai/gpt-5.6-terra`,
+`agentRuntime` 오버라이드 보존, fallbacks `[]`, telegram 6/6, cron 10건 생존,
+claude 바이너리 215MB(500B shim 함정 없음), memory 6봇 전부 4096d·`Dirty: no`.
+
+**롤백 좌표**: 이미지 `openclaw-custom:8.1-rollback`(`ed2a67c2f90b`),
+config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`.
+
+### 남은 것
+
+- [ ] **내일(9/3) 08:00 KST cron 재관측** — 8.2에서의 첫 자동 실행이다. `--model` 우회가 계속 필요한지,
+      그리고 위 🔴 회귀가 8.2에서도 재현되는지. **재현되면 "8.1 일회성"이 아니라 두 릴리즈 연속 회귀**이고,
+      🔴의 "upstream 이슈로 올릴지" 판단이 그만큼 무거워진다.
+- [ ] **`bbot` 시맨틱 memory_search 15초 타임아웃** — 인덱스 정비(`Dirty: no`) 후에도 걸린다.
+      청크 990개로 6봇 중 최대 밀도. **8.2 회귀 아님 · 기존 알려진 한계**(`memory-core` tools.ts 하드코딩).
+      grep 폴백으로는 답한다. 방치할지 청크 다이어트를 할지 판단 필요.
+- [ ] **`doctor --fix`는 안 태웠다.** 마이그레이션이 0이라 #134429 코드 경로를 지나지 않아 태워도 검증이 안 된다.
+      **그 실측은 다음 메이저 hop으로 이월.**
+- [ ] **🔭 Linux 데스크톱 컴패니언(.deb/AppImage, x86-64)** — 조사만, 설치 금지.
+      먼저 답할 것: "remote Gateway 연결"이 claw 자물쇠 3겹(Authelia → gateway token → pairing) 중
+      **어디를 통과하는가.** gateway token만으로 붙으면 그건 Authelia 우회하는 네 번째 경로다.
+      대상은 laptop/thinkpad(oracle은 aarch64 headless라 무관). 패키징도 3층 모델과 마찰.
+- [ ] **`tools.sessions.visibility = "all"` 재검토** (8.2와 무관). 라이브에 명시돼 있어 8.2의 기본값 변경엔
+      안 흔들리지만 새 기본보다 **넓다**. 가족 봇 섞인 6봇에 `tree`/`self`가 맞는지.
+- [ ] **관찰 1건 (회귀 주장 아님)**: `gpt`·`gemini` 두 봇이 스모크에서 자신을 **"힣봇(glg)"** 이라 소개했다.
+      모델 해상은 각자 정확했다. 8.2 이전과 대조하지 않았으므로 기록만 — 워크스페이스 페르소나가 겹쳐 보이는 자리.
+
+### 교훈 (반복 방지)
+
+- **시각은 훅이 아니라 `date`로 확인한다.** SessionStart 훅의 `time_kst`를 그대로 믿고 "지금 06:2x, 08:00 게이트
+  전이니 bump 금지"라고 판단했는데 실제로는 **10:28**이었다 — 게이트는 2시간 반 전에 지나 있었다. 훅 값은
+  세션 시작 스냅샷이고 세션이 길어지면 화석이 된다.
+- **초록이 나오면 그게 진짜 내 파일을 읽은 초록인지 먼저 의심한다.** config 격리 파싱 1차 시도는
+  `OPENCLAW_CONFIG` env로 경로를 주려다 전부 `unset`으로 나왔다. 값이 우리 것(`all`/`never`/`false`)으로
+  읽히는 걸 확인하고 나서야 판정으로 썼다.
 
 ---
 

@@ -115,7 +115,9 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 
 **아직 부모 추적 중인 봇** (`workspace/`, `workspace-gpt/`, `workspace-gemini/`, `workspace-mini/`): nested `.git`만 ignore, 내용은 부모가 스냅샷. 졸업 전 기본값.
 
-### Model routing (현재: OpenClaw **2026.8.1** baseline, 2026-08-31 컷오버)
+### Model routing (현재: OpenClaw **2026.8.2** baseline, 2026-09-02 bump)
+
+> 8.2는 8.1 대비 **마이그레이션 0**인 버그픽스 bump다(state 마이그레이션 ID 15개 동일, `OPENCLAW_AGENT_SCHEMA_VERSION` 19=19, config retired key 0 — 올리기 전 이미지 대조로 확정). 따라서 **아래 8.1 전제 4개는 8.2에서도 그대로 유효하다.** 경위 = [issue #8](https://github.com/junghan0611/nixos-config/issues/8).
 
 > 🔻 **2026-08-31 8.1 컷오버로 이 장의 전제 4개가 바뀌었다. 아래 본문에는 아직 7.1 표현이 남아있다 — 충돌하면 이 상자가 이긴다.** (전면 재작성은 [NEXT.md](NEXT.md) 항목)
 >

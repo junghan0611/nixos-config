@@ -181,8 +181,23 @@
 # 승격한 config 편집은 딱 3건: agents.ownership, plugins.allow 에서 죽은 phone-control 제거,
 # skills.workshop 명시(autonomous.mode=off — 8.1 기본값이 auto 로 뒤집혔다). 나머지 17건 semantic 변환은
 # startup repair 가 결정적으로 수행한다. 롤백 이미지: openclaw-custom:7.1-rollback (sha 7548f90058dd).
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.7.1-2
-FROM ghcr.io/openclaw/openclaw:2026.8.1
+# 2026-09-02 8.1 → 8.2 업그레이드. **이번엔 진짜 한 줄 bump다** — 위 8.1 절차(정지·오프라인
+# 마이그레이션·doctor 직렬)를 하나도 안 탄다. 노트를 믿지 않고 이미지를 열어 대조한 근거:
+#   - state 마이그레이션 ID 목록 15개가 8.1 과 **완전 동일**(최대 conversation-binding-targets-v15)
+#   - OPENCLAW_AGENT_SCHEMA_VERSION = 19 → 19, targetVersion = 19(+16 레거시 수리) 동일
+#   - 라이브 openclaw.json 을 8.2 이미지로 격리 파싱 → `Config valid`, retired key 0
+#     (8.1 이 7키를 Unrecognized 로 뱉어 부팅 거부했던 실패 모드가 없다)
+#   - npm 12.0.2 → 12.0.2 동일 ⇒ 아래 claude-code allowScripts 3단 처방 그대로 유효
+# 8.2 는 upstream 이 우리 8.1 컷오버 상처 둘을 이름 붙여 고친 릴리즈다: doctor 가 자기 DB 리스를
+# 놓지 않아 재시작이 막히던 것(#134429), agent DB maintenance 가 owner 와 조율되지 않던 것(#133563).
+# 즉 위 "lease 를 잃어 직렬 재실행" 이 upstream 에서 닫혔다 — 다만 이번 bump 는 마이그레이션이 0 이라
+# 그 경로를 지나지 않으므로 **검증은 다음 메이저 hop 으로 미룬다.**
+# 안 고쳐진 것: cron 경로가 agentRuntime 오버라이드를 잃고 disabled codex 로 낙하하는 8.1 회귀
+# (릴리즈 노트 전문 grep: agentRuntime 0건 / model polic 0건). --model 명시 우회는 계속 필요하다.
+# 규모 대조 — 7.1-2→8.1: 27일 19,750커밋 Changes149/Fixes349 breaking2 · 8.1→8.2: 1.5일 794커밋
+# Changes12/Fixes92 breaking0. 롤백 이미지: openclaw-custom:8.1-rollback (sha ed2a67c2f90b).
+# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.8.1
+FROM ghcr.io/openclaw/openclaw:2026.8.2
 
 USER root
 

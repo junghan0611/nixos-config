@@ -141,6 +141,50 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 
 봇별 현황 SSOT 는 [openclaw-automations.md](openclaw-automations.md).
 
+### bump 가 "한 줄"인지 "마이그레이션"인지는 **릴리즈 노트로 판정하지 마라 — 이미지를 열어라** (2026-09-02)
+
+바로 아래 8.1 항목의 반대 사례가 하루 만에 왔다. **8.1→8.2 는 진짜로 한 줄 bump 였고, 정지→기동 15 초에
+끝났다.** 두 경우를 가른 것은 노트가 아니라 **이미지 안의 세 상수**다.
+
+8.1 노트도 읽을 땐 "핀 교체 + recreate" 로 보였다(그래서 8/31 19:14 부팅이 거부됐다). 8.2 노트의
+`breaking` 0 건 역시 그 자체로는 근거가 못 된다. **올리기 전에 이미지를 받아 라이브와 대조하라** —
+컨테이너를 안 건드리고 3 분이면 끝난다.
+
+```bash
+# ① state 마이그레이션 ID 목록 + agent DB 스키마 상수 + npm (신규 이미지)
+docker pull ghcr.io/openclaw/openclaw:<새버전>
+docker run --rm --entrypoint sh ghcr.io/openclaw/openclaw:<새버전> -c '
+  cat /app/dist/state-migrations.doctor-*.js | grep -o -E "\"[a-z0-9-]+-v[0-9]+\"" | sort -u
+  grep -o -E "OPENCLAW_AGENT_SCHEMA_VERSION = [0-9]+|targetVersion = [0-9]+" /app/dist/openclaw-agent-db-*.js | sort -u
+  npm --version'
+# ② 라이브(현행)에서 같은 것을 뽑아 diff
+docker exec openclaw-gateway sh -c '<위와 동일>'
+
+# ③ 라이브 config 를 새 이미지로 격리 파싱 — retired key 를 미리 잡는다
+TMP=$(mktemp -d); mkdir -p $TMP/.openclaw
+cp ~/openclaw/config/openclaw.json $TMP/.openclaw/openclaw.json
+docker run --rm --network none -u "$(id -u):$(id -g)" -v $TMP:/tmp/oc -e HOME=/tmp/oc \
+  --entrypoint sh ghcr.io/openclaw/openclaw:<새버전> -c '
+    node /app/openclaw.mjs config get tools.sessions.visibility
+    node /app/openclaw.mjs config validate'
+```
+
+**판정**: ①의 마이그레이션 ID 목록과 스키마 상수가 **동일** + ③이 `Config valid` + retired key 0 ⇒
+**한 줄 bump.** 하나라도 다르면 아래 8.1 절차(정지 → 오프라인 마이그레이션 → 직렬 doctor)로 간다.
+
+실측 8.1 vs 8.2 — ID 15 개 완전 동일(최대 `conversation-binding-targets-v15`),
+`OPENCLAW_AGENT_SCHEMA_VERSION` 19=19, `targetVersion` 19(+16 레거시 수리) 동일, `npm` 12.0.2 동일,
+config `Config valid`. 예측대로 **부팅 로그 마이그레이션/repair/error 0 줄, config 편집 0 건.**
+
+⚠️ **③ 의 초록을 의심하라.** 1 차 시도에서 `OPENCLAW_CONFIG` env 로 경로를 주려다 모든 키가
+`Config path is valid but unset` 으로 나왔다 — CLI 는 `$HOME/.openclaw/openclaw.json` 만 본다. 그대로
+믿었으면 "우리 config 는 8.2 에서 문제없다" 를 **아무 파일도 안 읽고** 선언할 뻔했다. 반드시 **우리가 아는
+값**(`tools.sessions.visibility` 등)이 되읽히는지부터 확인하고 나서 `validate` 결과를 판정으로 써라.
+
+**규모 대조도 같은 방향을 가리켰다** — 7.1-2→8.1: 27 일 · 19,750 커밋 · Changes 149/Fixes 349 · breaking 2.
+8.1→8.2: 1.5 일 · 794 커밋 · Changes 12/Fixes 92 · breaking 0. **Fixes:Changes 비**가 2.3:1 → 7.7:1 로
+뒤집힌 게 "기능 릴리즈 vs 수정 릴리즈" 의 지표다. 단 이건 방증일 뿐, 판정은 위 세 상수가 한다.
+
 ### 7.1 → 8.1 은 버전 bump 가 아니라 **순서 있는 마이그레이션**이다 — 조용한 실패 11겹 (2026-08-31)
 
 **어려웠던 진짜 이유는 각 단계가 어려워서가 아니라, 실패가 전부 "정상"처럼 보였기 때문이다.**
