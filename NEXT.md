@@ -6,6 +6,26 @@
 
 ---
 
+# RAIL — 현재 좌표
+
+- [x] **1. Emacs 31.1 베이스 결정 + thinkpad 이관** — switch GREEN, `doom sync`, face 순환 해소, `v2026.9.2-emacs.1`
+- [ ] **2. oracle 이관** ← CURRENT: 사람이 붙어 있을 때만. switch → **곧바로** `doom sync` → `agent-emacs` 재시작 → 스모크
+- [ ] **3. nuc / laptop 이관** — 급하지 않다. 각자 다음 rebuild에 따라온다
+- [ ] **4. emacs31 클로저 두 벌 정리** ← PAUSED: doomemacs-config 쪽 판단 대기(preview flake 은퇴 여부)
+
+현재 좌표: 1 완료 → 2 대기(시간 날 때, GLG가 직접) → 3/4 뒤
+
+# NOW
+
+- **Hot group**: emacs 31 이관 — thinkpad만 끝났고 oracle/nuc/laptop은 30.2다.
+- **Next**: oracle에서 (1) `sudo nixos-rebuild switch --flake .#oracle` → (2) `doom sync`로 `build-31.1` 생성 확인 → (3) `systemctl --user restart agent-emacs.service` → (4) `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14` + geworfen healthy.
+- **Blocker**: 없음. 다만 **봇 런타임을 건드리는 작업이라 무인 실행 금지** — 아래 ⚠️ 블록의 순서와 롤백면을 먼저 읽는다.
+- **Read**: 이 문서 "🟢 Emacs 30.2 → 31.1" 섹션의 ⚠️ 블록 / [ROADMAP.md](ROADMAP.md) 운영 결정 이력 최상단.
+- **Do not touch**: `machines/shared.nix`의 `emacs-nox`를 전역 제거하지 말 것 — oracle `agent-emacs.service`가 `/run/current-system/sw/bin/emacs`를 하드코딩한다. `pkgs.emacs` 전역 override도 금지(`pkgs.mu` 재빌드).
+- **병행 레인(이 세션 소관 아님)**: 🔴 8.1 cron 런타임 회귀 + 🟢 8.2 soak는 **오라클/openclaw 레인이 계속 들고 있다.** 아래 해당 섹션이 SSOT.
+
+---
+
 ## 🔴 8.1 회귀 — 비주력 경로가 죽은 codex 런타임으로 떨어진다 (2026-09-01, 진행 중)
 
 **오늘 아침 두 개가 동시에 터졌고 뿌리는 하나다.** 경위·코드 근거·재현은
@@ -117,6 +137,42 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
       즉 rebuild 순간 봇 백엔드 emacs가 31로 바뀐다. 미리 확인해둔 것: aarch64 `emacs-nox-31.1`은
       cache.nixos.org에 있고(narinfo 200, 465MB nar) `systemd-minimal-libs-261.1`을 여전히 링크한다
       → 라이브의 `Type=notify`는 안전. 스모크는 `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14`.
+
+### ⚠️ oracle은 rebuild와 `doom sync`를 반드시 같은 창에서 (2026-09-02 실측)
+
+oracle에 read-only로 물어본 현재 상태 — **셋 다 thinkpad가 오늘 아침에 있던 자리 그대로다**:
+
+```
+~/doomemacs/.local/straight/build-*        → build-30.2 하나뿐 (build-31.1 없음)
+straight repos/doom-themes HEAD            → b48cc73  (2026-03-21, face 순환 있는 그 커밋)
+/run/current-system/sw/bin/emacs           → emacs-nox-30.2
+```
+
+**위험한 자리는 `agent-server.el`의 build 디렉토리 선택이다.** `agent-server--find-straight-build-dir`은
+`build-*` 중 **가장 최근에 수정된 것**을 고른다(`sort … #'file-newer-than-file-p`의 `car`) — *실행 중인
+Emacs 버전에 맞는 것*을 고르는 게 아니다. 그래서 **switch만 하고 `doom sync`를 안 하면 Emacs 31.1이
+`build-30.2`의 `.elc`를 읽는다.** eln 경로는 버전별로 갈리므로 native-comp 이득도 사라진다.
+
+그리고 이건 그냥 느려지는 문제가 아니다 — `agent-emacs.service`는 **의도적 `Restart=no` fail-stop**이고,
+geworfen healthcheck가 `emacsclient -s server --eval '(+ 1 1)'`이라 **emacs가 못 뜨면 geworfen이 unhealthy가
+되고 autoheal이 geworfen을 재시작한다**(이 리포 아래쪽 "autoheal이 원인이 아니라 증상을 재시작한다" 항목,
+8/16의 5시간 120회 재시작이 그 구조다). 봇이 조용히 죽는 경로다.
+
+**순서 (한 창에서 끝까지)**
+
+1. `sudo nixos-rebuild switch --flake .#oracle`
+2. **곧바로** `doom sync` — `build-31.1`이 생기는 것까지 눈으로 확인
+3. `systemctl --user restart agent-emacs.service`
+4. 스모크: `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14`, 그리고 geworfen healthy
+
+**해도 되는 것 / 안 해도 되는 것**: face 순환(`gnus-group-news-low`)은 **oracle에선 안 터진다** —
+`agent-server.el`은 *"No UI, no themes, no keybindings"*(파일 상단 주석)이고 doom 코어를 로드하지 않아
+`load-theme`을 부르지 않는다. 그래도 straight의 doom-themes가 `b48cc73`에 멈춰 있으니 `doom sync`가
+`ko` 최신(`c13dff8`)으로 전진시키게 두는 게 낫다. **거꾸로, 사람이 oracle에서 `doom emacs`나 TTY doom을
+직접 띄우면 그때는 그대로 터진다.**
+
+**롤백면**: 이전 generation이 남아 있으니 `sudo nixos-rebuild switch --rollback`으로 30.2 복귀 가능.
+봇 살리기가 우선이면 먼저 롤백하고 낮에 다시 올린다.
 - [ ] **emacs31 클로저가 store에 두 벌 생긴다.** doomemacs-config의 unstable rev(`9fbb54b`)와 이 리포의
       rev(`ac6b216`)가 하루 차이라 클로저가 완전히 갈라진다 — 각 1.7 GiB, **공유 store 경로 0개**(224개 중 0, 실측).
       rev를 맞추거나, 더 나은 결말로 **doomemacs-config의 preview flake를 은퇴**시킨다("시스템이 31을 갖기 전에
