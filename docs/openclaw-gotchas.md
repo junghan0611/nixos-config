@@ -141,6 +141,47 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 
 봇별 현황 SSOT 는 [openclaw-automations.md](openclaw-automations.md).
 
+#### `heartbeat.target` — `none` 을 **defaults 에 걸지 마라** (2026-09-02, 8.2 에서 재확인)
+
+배달처 스위치이지 on/off 스위치가 아니다. 허용값은 셋뿐이고(`targets-*.js`:
+`rawTarget === "none" || rawTarget === "last" || rawTarget === "owner"`), 안 정하면 `owner` 다:
+
+| 값 | 뜻 |
+|---|---|
+| `owner` | **기본값.** 소유자 DM 으로 보낸다 (`target ?? "owner"`) |
+| `last` | 그 봇이 마지막으로 대화한 방으로 |
+| `none` | 아무 데도 안 보낸다. **하트비트는 계속 돌고 기록도 남는다** — 입만 막는다 (`=== "none" \|\| !delivery.to) return delivery`) |
+
+⚠️ **`agents.defaults.heartbeat.target: "none"` 은 금지다 — bbot 을 죽인다.**
+지금 등록된 하트비트는 bbot 하나이고 **그 배달은 의도된 라이브 기능**이다(GLG 확인 2026-09-02).
+나머지 4 봇이 조용한 건 고장이 아니라 **GLG 가 검수 목적으로 일부러 꺼둔 것**이고, 검수가 끝나면 다시 켠다.
+따라서 소음을 막아야 할 일이 생기면 **defaults 가 아니라 `agents.entries.<id>.heartbeat.target`** 으로
+그 봇만 걸어라. cron 발송은 이 스위치와 무관하다 — 잡이 자기 `delivery.to` 를 따로 들고 있다.
+
+**파일명이 아니라 심볼로 찾아라.** 번들 해시는 빌드마다 바뀐다 —
+같은 러너가 8.1 에선 `heartbeat-runner-BAMpymke.js`, 8.2 에선 `heartbeat-runner-jhGs3jbv.js` 다
+(위 8.1 항목이 적은 `CWkWsEqw` 도 또 다른 빌드다). `target ?? "owner"` 는 8.2 에서도 그대로다.
+
+#### 미해명 — main 은 잡이 없는데 main 계정으로 알림이 나갔다 (2026-09-02)
+
+2026-09-02 10:47:58, `outbound send ok accountId=default` 로 소유자 DM 에 하트비트 알림이 갔다
+(`@junghan_openclaw_bot` = main). **그런데 main 에는 하트비트 잡이 없다** — `cron list --all` 에
+`heartbeat:bbot` 하나뿐이고, 이미지에도 이런 문장이 있다:
+
+> Multi-agent config has no ambient heartbeat owner; heartbeats stay disabled until
+> `agents.defaults.heartbeat.agentId` or `agents.defaults.systemAgent.agentId` is set.
+
+우리는 둘 다 unset 이다(실측). 즉 **defaults 하트비트는 비활성이어야 하는데 알림은 나갔다.**
+
+- **방아쇠는 확인됐다**: 격리 프로브 턴(`agent:main:warm-*`)이 워크스페이스 grep 을 띄웠고, 턴이
+  끝나며 그 grep 이 SIGTERM 됐다. 러너의 `resolveHeartbeatTerminalToolFailure` 경로가 그걸
+  "봐야 할 일" 로 분류했다. 봇 스스로는 메시지에 **"정상 종료"** 라고 썼다 — 알림이 스스로 문제
+  아님을 말한 셈이다.
+- **8.2 회귀가 아니다**: `First heartbeat alert` 문자열과 `resolveHeartbeatTerminalToolFailure` 는
+  8.1 이미지에도 똑같이 있다(각각 2 파일 / 3 파일). 경로는 원래 있었고 오늘 처음 조건이 맞았다.
+- **잡 없이 어떻게 배달됐는지는 못 밝혔다.** 추정으로 메우지 않는다. 재발하면 그때가 단서다 —
+  발생 시각·어느 계정·직전 턴의 도구 종료 상태를 함께 남길 것.
+
 ### bump 가 "한 줄"인지 "마이그레이션"인지는 **릴리즈 노트로 판정하지 마라 — 이미지를 열어라** (2026-09-02)
 
 바로 아래 8.1 항목의 반대 사례가 하루 만에 왔다. **8.1→8.2 는 진짜로 한 줄 bump 였고, 정지→기동 15 초에

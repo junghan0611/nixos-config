@@ -83,6 +83,18 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
       안 흔들리지만 새 기본보다 **넓다**. 가족 봇 섞인 6봇에 `tree`/`self`가 맞는지.
 - [ ] **관찰 1건 (회귀 주장 아님)**: `gpt`·`gemini` 두 봇이 스모크에서 자신을 **"힣봇(glg)"** 이라 소개했다.
       모델 해상은 각자 정확했다. 8.2 이전과 대조하지 않았으므로 기록만 — 워크스페이스 페르소나가 겹쳐 보이는 자리.
+- [ ] **미해명 — main 은 잡이 없는데 main 계정으로 하트비트 알림이 나갔다** (9/2 10:47:58,
+      `outbound send ok accountId=default`). 방아쇠는 내 격리 프로브가 띄운 grep 이 턴 종료로 SIGTERM 된 것이고
+      (`resolveHeartbeatTerminalToolFailure`), **8.2 회귀는 아니다**(그 경로는 8.1 이미지에도 있다).
+      다만 `cron list --all` 엔 `heartbeat:bbot` 하나뿐이고 `agents.defaults.heartbeat.agentId`·`systemAgent` 둘 다
+      unset 이라 **defaults 하트비트는 비활성이어야 한다** — 잡 없이 어떻게 배달됐는지는 못 밝혔다.
+      **재발이 단서다**: 시각·계정·직전 턴의 도구 종료 상태를 함께 남길 것. 근거는
+      [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) "미해명 — main 은 잡이 없는데".
+      ⚠️ **처방으로 `agents.defaults.heartbeat.target: "none"` 을 쓰지 마라 — bbot 을 죽인다**(그 배달은
+      살아 있어야 하는 라이브 기능). 막아야 하면 `agents.entries.<id>.heartbeat.target` 으로 그 봇만.
+- [ ] **나머지 4봇 heartbeat 재활성 (GLG 예정)** — main·glg·gpt·mini 는 **검수 목적으로 일부러 꺼둔 상태**다
+      (고장 아님). 검수가 끝나면 GLG 가 켠다. 되돌리기는 `config set agents.entries.<id>.heartbeat '{"every":"1h"}'`.
+      켤 때 8.1 이 넣은 **턴 0회에도 owner DM typing** 동작이 함께 돌아온다는 것만 기억할 것.
 
 ### 교훈 (반복 방지)
 

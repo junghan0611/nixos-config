@@ -33,7 +33,16 @@
 | **bbot** (B) | `anthropic/claude-fable-5` | **30m** | 없음 | 예 — 의도된 루프 |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 **아무에게도 적용되지 않는다.**
-`heartbeat-config-Z4gqDu5K.js:33` — 엔트리에 `heartbeat`를 명시한 봇만 등록된다. 지금은 bbot 하나.
+`heartbeat-config-*.js`(`resolveHeartbeatConfig`) — 엔트리에 `heartbeat`를 명시한 봇만 등록된다.
+지금은 bbot 하나. 8.2도 동일(재확인 2026-09-02). 이미지도 같은 말을 한다 — *"Multi-agent config has
+no ambient heartbeat owner; heartbeats stay disabled until `agents.defaults.heartbeat.agentId` or
+`agents.defaults.systemAgent.agentId` is set"* 이고 우리는 둘 다 unset이다.
+
+> ⚠️ **`agents.defaults.heartbeat.target: "none"`을 걸지 마라 — bbot을 죽인다.**
+> `target`은 배달처 스위치(`owner`(기본) / `last` / `none`)이고, defaults에 걸면 **지금 유일하게
+> 살아 있는 bbot 배달까지 함께 막는다.** 소음을 막을 일이 생기면 `agents.entries.<id>.heartbeat.target`
+> 으로 그 봇만 걸어라. cron 발송은 이 스위치와 무관하다(잡이 자기 `delivery.to`를 따로 든다).
+> 상세는 [openclaw-gotchas.md](openclaw-gotchas.md) "`heartbeat.target` — `none`을 defaults에 걸지 마라".
 
 ### main·glg·gpt·mini heartbeat를 왜 없앴나 (2026-09-01)
 
@@ -43,6 +52,10 @@
 
 `agent:<id>:main` 세션이 있는 봇만 heartbeat가 실턴이 된다. 그 세션을 가진 건 bbot뿐이다.
 되돌리려면: `openclaw config set agents.entries.main.heartbeat '{"every":"1h"}'`
+
+**이건 고장이 아니라 GLG의 의도다** (확인 2026-09-02). 네 봇은 **검수 목적으로 일부러 꺼둔 상태**이고
+검수가 끝나면 다시 켠다. 반대로 **bbot 배달은 지금 살아 있어야 하는 라이브 기능**이다 — 위 경고 상자대로
+defaults 레벨 억제는 그걸 죽이므로 금지. "왜 네 봇이 조용하지"를 다시 조사하지 마라, 답은 여기다.
 
 ### main typing 억제 — 원인 미확정 상태의 운영 가드 (2026-09-01)
 
