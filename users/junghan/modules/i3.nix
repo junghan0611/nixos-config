@@ -485,7 +485,7 @@ in {
 
           # Scratchpad (Regolith style: Ctrl+a=show, Ctrl+m=move)
           # -s user: GUI Emacs 소켓 (agent daemon은 -s server 사용)
-          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${pkgs.emacs}/bin/emacsclient -c -s user'";
+          "${mod}+m" = "exec --no-startup-id ${scratchpad-toggle} 'scratch-emacs' '${config.programs.emacs.finalPackage}/bin/emacsclient -c -s user'";
           "${mod}+Ctrl+a" = "scratchpad show";
           "${mod}+Ctrl+m" = "move scratchpad";
 

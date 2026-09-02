@@ -15,12 +15,19 @@ in {
   # - Desktop (thinkpad/laptop): emacs-gtk (GTK3 + X11) — 마우스 커서, 파일 다이얼로그, context-menu가 GTK 테마 따름
   # - Server (oracle/nuc): emacs-nox — GUI 불필요, X11 의존성 제거
   # - emacs-pgtk는 Wayland용이라 i3wm(X11)에서는 gtk가 적합
+  # - 2026-09-02부터 emacs-gtk/emacs-nox 는 flake.nix 오버레이에서 unstable
+  #   emacs31-gtk3 / emacs31-nox 로 잡힌다 (26.05는 30.2에 멈춰 있음)
   programs.emacs = {
     enable = true;
     package = emacsPackage;
+    # 2026-09-02: 둘 다 주석 처리. doom 쪽에서 이미 꺼져 있어
+    # (doomemacs-config/init.el:136 `;; vterm`, :210 `;; (mu4e +org +gmail
+    # +mbsync)`) 여기서 site-lisp 로 실어봐야 아무도 require 하지 않는다.
+    # 되살릴 때는 init.el 의 해당 모듈부터 켤 것. mu4e(elisp)는 아래
+    # home.packages 의 mu 와 버전이 lockstep 이어야 한다.
     extraPackages = epkgs: [
-      epkgs.vterm
-      epkgs.mu4e
+      # epkgs.vterm
+      # epkgs.mu4e
     ];
   };
 
@@ -49,10 +56,12 @@ in {
     hunspell
     hunspellDicts.ko_KR
 
-    # Email (mu4e)
-    mu
-    isync
-    offlineimap
+    # Email (mu4e) — 2026-09-02 주석 처리. 이메일은 Emacs 밖에서 본다
+    # (doomemacs-config/init.el:208 ":email 비활성"). 되살릴 때는
+    # mu 와 위 epkgs.mu4e 를 같은 nixpkgs 에서 함께 켜야 버전이 맞는다.
+    # mu
+    # isync
+    # offlineimap
 
     # Search and navigation
     ripgrep
