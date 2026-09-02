@@ -9,20 +9,26 @@
 # RAIL — 현재 좌표
 
 - [x] **1. Emacs 31.1 베이스 결정 + thinkpad 이관** — switch GREEN, `doom sync`, face 순환 해소, `v2026.9.2-emacs.1`
-- [ ] **2. oracle 이관** ← CURRENT: 사람이 붙어 있을 때만. switch → **곧바로** `doom sync` → `agent-emacs` 재시작 → 스모크
-- [ ] **3. nuc / laptop 이관** — 급하지 않다. 각자 다음 rebuild에 따라온다
+- [x] **2. oracle 이관** — 2026-09-02 완료. client-first(컨테이너 먼저 → switch → `doom sync` → 데몬) · 31↔31 전 경로 GREEN
+- [ ] **3. nuc / laptop 이관** ← CURRENT: 급하지 않다. 각자 다음 rebuild에 따라온다
 - [ ] **4. emacs31 클로저 두 벌 정리** ← PAUSED: doomemacs-config 쪽 판단 대기(preview flake 은퇴 여부)
 
-현재 좌표: 1 완료 → 2 대기(시간 날 때, GLG가 직접) → 3/4 뒤
+현재 좌표: 1·2 완료 → 3 대기(각자 다음 rebuild) → 4는 doomemacs-config 판단 대기
 
 # NOW
 
-- **Hot group**: emacs 31 이관 — thinkpad만 끝났고 oracle/nuc/laptop은 30.2다.
-- **Next**: oracle에서 (1) `sudo nixos-rebuild switch --flake .#oracle` → (2) `doom sync`로 `build-31.1` 생성 확인 → (3) `systemctl --user restart agent-emacs.service` → (4) `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14` + geworfen healthy.
-- **Blocker**: 없음. 다만 **봇 런타임을 건드리는 작업이라 무인 실행 금지** — 아래 ⚠️ 블록의 순서와 롤백면을 먼저 읽는다.
-- **Read**: 이 문서 "🟢 Emacs 30.2 → 31.1" 섹션의 ⚠️ 블록 / [ROADMAP.md](ROADMAP.md) 운영 결정 이력 최상단.
-- **Do not touch**: `machines/shared.nix`의 `emacs-nox`를 전역 제거하지 말 것 — oracle `agent-emacs.service`가 `/run/current-system/sw/bin/emacs`를 하드코딩한다. `pkgs.emacs` 전역 override도 금지(`pkgs.mu` 재빌드).
-- **병행 레인(이 세션 소관 아님)**: 🔴 8.1 cron 런타임 회귀 + 🟢 8.2 soak는 **오라클/openclaw 레인이 계속 들고 있다.** 아래 해당 섹션이 SSOT.
+- **Hot group**: 없음. oracle Emacs 31.1 이관이 2026-09-02 끝났다. nuc/laptop은 30.2지만 급하지 않다.
+- **Next**: oracle 31.1 soak 관측. `./scripts/emacs-skew-check.sh` 가 전 경로(호스트·geworfen·gateway) 판정.
+  판정은 고정 20000자 프로브로 한다 — day 왕복은 크기가 경계 근처에서 진동해 "어떤 날은 깨지고 어떤 날은 멀쩡"하게 보인다.
+- **Blocker**: 없음.
+- **Read**: 아래 "🟢 Emacs 30.2 → 31.1" 절 / `~/repos/gh/geworfen/ops/README.md`(데몬 운영 SSOT).
+- **Do not touch**: `machines/shared.nix`의 `emacs-nox` 전역 제거 금지. `pkgs.emacs` 전역 override 금지(`pkgs.mu` 재빌드).
+- **자동복구 없음 (2026-09-02, GLG 방침)**: geworfen의 autoheal 라벨을 뗐고 `agent-emacs.service`는 `disable`이다.
+  **재부팅하면 emacs 데몬이 안 뜬다** — 사람이 `~/repos/gh/geworfen/ops/tmux/agent-emacs.sh start` 로 띄운다.
+  뭔가 죽으면 그냥 죽는다. 화면이 안 뜨는 게 재시도 루프보다 낫다는 판단.
+- **소유권**: emacs 데몬 수명은 **geworfen 담당자 소관**이다(`ops/tmux/agent-emacs.sh`가 정본). 이 리포는 안 건드린다.
+- **병행 레인(이 세션 소관 아님)**: 🔴 8.1 cron 런타임 회귀 + 🟢 8.2 soak는 오라클/openclaw 레인 SSOT.
+  bbot Fable 5.1 지원 조사는 별도 형제가 들고 있다(2026-09-02 개시).
 
 ---
 
@@ -138,41 +144,50 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
       cache.nixos.org에 있고(narinfo 200, 465MB nar) `systemd-minimal-libs-261.1`을 여전히 링크한다
       → 라이브의 `Type=notify`는 안전. 스모크는 `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14`.
 
-### ⚠️ oracle은 rebuild와 `doom sync`를 반드시 같은 창에서 (2026-09-02 실측)
+### ✅ oracle 이관 완료 (2026-09-02). 순서가 client-first 로 바뀐 이유
 
-oracle에 read-only로 물어본 현재 상태 — **셋 다 thinkpad가 오늘 아침에 있던 자리 그대로다**:
+이 절은 원래 "rebuild와 `doom sync`를 같은 창에서"라는 경고였다. 실행 과정에서 **더 큰 함정이 나와
+순서 자체가 바뀌었다.** 아래가 실제로 한 순서이고, 다음 emacs 업그레이드도 이 순서다.
 
-```
-~/doomemacs/.local/straight/build-*        → build-30.2 하나뿐 (build-31.1 없음)
-straight repos/doom-themes HEAD            → b48cc73  (2026-03-21, face 순환 있는 그 커밋)
-/run/current-system/sw/bin/emacs           → emacs-nox-30.2
-```
+**핵심 발견 — emacsclient/server 버전 스큐는 조용히 데이터를 썩힌다.**
+Emacs 31 `server.el` 이 응답 청크 분할을 제거했고(upstream Bug#80807), 30.x client 는 고정 `BUFSIZ`
+버퍼로 매 `recv` 를 독립 메시지처럼 처리해 쪼개진 protocol line 을 못 합친다. 약 8 KB 를 넘으면
+인용 누출(`&_` `&-` `&n`) · payload 안에 `*ERROR*: Unknown message:` 주입 · **한글이 잘려 무효 UTF-8**.
+`exit 0` · stderr 없음 · healthcheck `(+ 1 1)` 통과 · agenda HTTP 200 — **전부 초록인 채 내용만 깨진다.**
+geworfen 이 실제로 서빙하는 `agent-org-agenda-day` 는 바쁜 날 8.6~8.8 KB 라 **메인 화면이 대상**이었다.
 
-**위험한 자리는 `agent-server.el`의 build 디렉토리 선택이다.** `agent-server--find-straight-build-dir`은
-`build-*` 중 **가장 최근에 수정된 것**을 고른다(`sort … #'file-newer-than-file-p`의 `car`) — *실행 중인
-Emacs 버전에 맞는 것*을 고르는 게 아니다. 그래서 **switch만 하고 `doom sync`를 안 하면 Emacs 31.1이
-`build-30.2`의 `.elc`를 읽는다.** eln 경로는 버전별로 갈리므로 native-comp 이득도 사라진다.
+**그래서 client-first.** 31 client 는 옛 server 를 의도적으로 계속 지원하므로(실측: 31 client → 30 server
+바이트 동등) 컨테이너를 먼저 올리면 깨진 방향이 한순간도 안 생긴다.
 
-그리고 이건 그냥 느려지는 문제가 아니다 — `agent-emacs.service`는 **의도적 `Restart=no` fail-stop**이고,
-geworfen healthcheck가 `emacsclient -s server --eval '(+ 1 1)'`이라 **emacs가 못 뜨면 geworfen이 unhealthy가
-되고 autoheal이 geworfen을 재시작한다**(이 리포 아래쪽 "autoheal이 원인이 아니라 증상을 재시작한다" 항목,
-8/16의 5시간 120회 재시작이 그 구조다). 봇이 조용히 죽는 경로다.
+1. geworfen · openclaw-gateway 를 **31.1 emacsclient 로 먼저** recreate (호스트는 아직 30.2)
+2. `./scripts/emacs-skew-check.sh` 로 확인
+3. `sudo nixos-rebuild switch --flake .#oracle`
+4. **곧바로** `doom sync` — `build-31.1` 생성 확인
+5. emacs 데몬 재기동
+6. `./scripts/emacs-skew-check.sh` 전 경로 + agenda 200 + 봇 경로
 
-**순서 (한 창에서 끝까지)**
+**마운트가 2개→5개로 늘었다.** 31.1 emacsclient 에 `libselinux` DT_NEEDED 가 새로 생겨 pcre2 까지 끌고 온다.
+geworfen 은 앱 바이너리의 glibc(`jp8avbmp`)를 **유지한 채 추가**해야 한다 — 교체하면 ELF 인터프리터를 잃는다.
+INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 끼워 보여줘서 틀린다**(여기서 한 번 속았다).
 
-1. `sudo nixos-rebuild switch --flake .#oracle`
-2. **곧바로** `doom sync` — `build-31.1`이 생기는 것까지 눈으로 확인
-3. `systemctl --user restart agent-emacs.service`
-4. 스모크: `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14`, 그리고 geworfen healthy
+**`agent-server.el` 의 버전 무관 선택이 남은 결함이다** (doomemacs-config 소관):
+- `agent-server--find-straight-build-dir` 이 `build-*` 중 **mtime 최신**을 고른다. Doom 은 정반대로
+  `build-<emacs-version>` 으로 버전 격리하는데 그걸 무력화한다.
+- `:107-114` 가 eln 디렉토리를 `^[0-9]` 로 **nosort** 긁어 `add-to-list` 한다 → 31.1 데몬인데 경로
+  첫 항목이 30.2 다. Emacs 는 새 `.eln` 을 첫 항목 아래에 쓰므로 **31.1 캐시가 안 찬다**(재기동해도 안 고쳐진다).
+  기능 영향 없음(`.elc` 폴백). 근본 수정은 `emacs-version` 기준 필터.
 
-**해도 되는 것 / 안 해도 되는 것**: face 순환(`gnus-group-news-low`)은 **oracle에선 안 터진다** —
-`agent-server.el`은 *"No UI, no themes, no keybindings"*(파일 상단 주석)이고 doom 코어를 로드하지 않아
-`load-theme`을 부르지 않는다. 그래도 straight의 doom-themes가 `b48cc73`에 멈춰 있으니 `doom sync`가
-`ko` 최신(`c13dff8`)으로 전진시키게 두는 게 낫다. **거꾸로, 사람이 oracle에서 `doom emacs`나 TTY doom을
-직접 띄우면 그때는 그대로 터진다.**
+**롤백면 — 만료일이 있다.** `sudo nixos-rebuild switch --rollback` (세대 69). 컨테이너는 세트 B 로:
+`jp8avbmp`(앱) + **`jwg0irp5`**(client) + `3a0zzkx-emacs-nox-30.2`. emacs 줄만 갈면 안 뜬다.
+현재 세대(70)의 클로저는 `3a0zzkx` 를 **0회** 참조하고 옛 세대만 잡고 있다 →
+**2026-10-01 이후 세트 B 롤백 불가.** (`--delete-older-than 30d`)
 
-**롤백면**: 이전 generation이 남아 있으니 `sudo nixos-rebuild switch --rollback`으로 30.2 복귀 가능.
-봇 살리기가 우선이면 먼저 롤백하고 낮에 다시 올린다.
+- [ ] **롤백 창을 연장할지 판단.** 안 박으면 10/01 에 조용히 옵션이 사라진다:
+      `nix-store --realise /nix/store/3a0zzkx…-emacs-nox-30.2 --add-root ~/gcroots/emacs-30.2-rollback --indirect`
+- [ ] **gateway recreate 시 `[FATAL tini] exec tini failed: Too many levels of symbolic links` 3회.**
+      2026-09-02 recreate 직후 5초 안에 나고 4번째에 정상 기동(`restart: unless-stopped` 가 건졌다).
+      이후 FATAL 0. **원인 미확정** — 볼륨이 2→5 로 늘어 recreate 경합 창이 커졌다는 건 가설이다.
+      geworfen 은 tini 를 안 쓰므로 대조군이 못 된다. **다음 재부팅이 재현 시험대.**
 - [ ] **emacs31 클로저가 store에 두 벌 생긴다.** doomemacs-config의 unstable rev(`9fbb54b`)와 이 리포의
       rev(`ac6b216`)가 하루 차이라 클로저가 완전히 갈라진다 — 각 1.7 GiB, **공유 store 경로 0개**(224개 중 0, 실측).
       rev를 맞추거나, 더 나은 결말로 **doomemacs-config의 preview flake를 은퇴**시킨다("시스템이 31을 갖기 전에
@@ -242,8 +257,6 @@ geworfen healthcheck가 `emacsclient -s server --eval '(+ 1 1)'`이라 **emacs�
 
 후보 ⓒ(systemd-tmpfiles)는 **쓸 수 없다**는 걸 실측으로 확인했다 — `/run/user/1000`은 logind가 거는 tmpfs라 tmpfiles가 먼저 만들어도 tmpfs가 나중에 덮어쓴다. `user-runtime-dir@1000` 뒤 · `docker` 앞이 유일한 창이다. ⓐ(ExecStartPre rmdir)는 geworfen 컨테이너가 이미 옛 inode를 물고 있으면 컨테이너 재시작이 또 필요해 반쪽이다.
 
-- [ ] **autoheal이 원인이 아니라 증상을 재시작한다 — geworfen 담당자와 논의 필요.** geworfen healthcheck가 `emacsclient -s server --eval '(+ 1 1)'`이라 **emacs가 죽으면 geworfen이 unhealthy가 되고 autoheal은 geworfen을 재시작한다**. 고장 난 건 emacs인데 처방이 geworfen을 때린다 — 8/16의 5시간 120회 재시작, 9/1의 20:45:48 재시작이 전부 이 구조다. 후보: healthcheck에서 emacs 의존을 빼거나(geworfen 자체 생존만 확인), autoheal 라벨에서 geworfen 제외. **compose/geworfen 쪽 결정이라 이 리포 단독으로 못 정한다.** 발생하면 수선.
-- [ ] **`agent-emacs.service` 라이브가 geworfen SSOT와 갈렸다.** SSOT는 `~/repos/gh/geworfen/ops/systemd/agent-emacs.service`. 2026-09-01 라이브에 `Type=simple → Type=notify`를 넣었다(emacs가 `LIBSYSTEMD` 빌드 + `libsystemd.so.0` 링크 확인 후 적용, `restart`가 2557ms 블록하고 소켓 준비 후 반환하는 것까지 실측). **geworfen 리포에는 아직 안 넣었다** — 그쪽에서 다시 배포하면 조용히 되돌아간다. `Restart=no`는 의도적 fail-stop이라 그대로 둔다.
 
 - [ ] **`10.0.0.157` 하드코딩 — DHCP가 IP를 바꾸면 caddy가 안 뜬다.** 오라클 VM은 `default via 10.0.0.1 dev enp0s6 proto dhcp`라 리스 갱신에서 주소가 바뀔 여지가 있다(현재까지 고정으로 관측). 정공법은 NixOS에서 enp0s6 static IP 선언 또는 compose를 생성하는 얇은 래퍼. 지금은 **주소가 바뀌면 caddy가 조용히 죽는 구조**라는 걸 알고 두는 상태.
 - [ ] **근본 판단 — tailscale serve 443을 계속 쓸 것인가.** 지금은 "NIC 바인딩으로 비켜간" 상태지 충돌을 없앤 게 아니다. OpenClaw tailnet 레인을 `--https=8443`으로 옮기면 caddy가 `0.0.0.0`을 되찾지만 페어링 URL이 바뀐다. 안 옮기면 443이 두 주인을 가진 채로 남는다.
