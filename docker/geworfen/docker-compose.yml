@@ -5,15 +5,25 @@
 #   1. geworfen 바이너리:  ~/repos/gh/geworfen/target/geworfen-aarch64
 #   2. Emacs agent daemon: /run/user/1000/emacs/server 소켓 (호스트 측)
 #   3. Caddy proxy 네트워크
-#   4. autoheal 컨테이너 (docker/autoheal/) — unhealthy 시 자동 재시작
+#   4. (autoheal 없음 — 2026-09-02 GLG 방침으로 제거. 아래 labels 주석 참고)
 #
 # 실행: docker compose up -d
 # 로그: docker compose logs -f
 #
-# 사고 회복 메모:
-#   호스트 emacs daemon 재시작 시 tmpfs `/run/user/1000/emacs/`가 새 inode로
-#   재생성되면서 컨테이너 안의 마운트가 stale 상태가 된다. healthcheck가
-#   ping 실패 → autoheal이 컨테이너 재시작 → 마운트 재바인딩으로 회복.
+# 사고 회복 메모 (2026-09-02 정정 — 원인 문장이 틀렸었다):
+#   옛 문장은 "daemon 재시작이 소켓 dir inode를 새로 만든다"였다. **아니다.**
+#   server.el 의 소켓 디렉토리 삭제는 부모가 `/tmp/` 일 때만 실행된다(bug#44644 가드,
+#   emacs-30.2 share/emacs/30.2/lisp/server.el.gz:665-679, 파일 내 delete-directory 유일 출현).
+#   우리 소켓은 `/run/user/1000/emacs` 라 해당 없음 → 평범한 daemon 재시작은
+#   소켓 *파일*만 바꾸고 디렉토리 inode는 유지된다(호스트/geworfen/gateway 모두 inode 64 실측).
+#
+#   inode가 실제로 바뀌는 경로는 daemon 재시작이 아니라 둘이다:
+#     1. `/run/user/1000` tmpfs 자체가 내려갈 때 — 로그아웃/linger 부재.
+#        (enable-linger 는 2026-06-18 도입. 2026-04 사고 시점엔 없었다.)
+#     2. 부팅 경합 — docker 가 emacs 보다 먼저 bind source 를 root 소유로 생성.
+#        machines/oracle.nix 의 emacs-socket-dir.service 가 막는다(2026-09-01 실제 발생).
+#   2026-04-24 1차 사고는 inode 가 아니라 소켓 *이름* 변경이었다(geworfen 1b5270f).
+#   근거·감사 전문: ~/repos/gh/geworfen/ops/README.md (데몬 운영 SSOT)
 #
 # NixOS 업그레이드 절차 (필수 — 25.11 → 26.05에서 실제로 겪음):
 #   아래 store path들은 하드코딩이다. 시스템을 업그레이드하면 glibc·emacs가
@@ -47,16 +57,31 @@ services:
       - PORT=3333
       - HOME=/home/junghan
       - TZ=Asia/Seoul
-      # emacsclient PATH — Nix store 바이너리 직접 참조 (NixOS 26.05 세대)
-      - PATH=/nix/store/s2j8ix6iy5rbzikgd0zg75pchizv78jb-emacs-nox-30.2/bin:/usr/bin:/bin
+      # emacsclient PATH — Nix store 바이너리 직접 참조.
+      # 2026-09-02: Emacs 31.1 이관. client 는 host server 와 짝이어야 한다(아래 볼륨 주석).
+      - PATH=/nix/store/f670wz5i55z7kw8dkg229wqh1psi3mp2-emacs-nox-31.1/bin:/usr/bin:/bin
       # emacsclient -s server 소켓 탐색 경로
       - XDG_RUNTIME_DIR=/run/user/1000
 
-    # autoheal 대상 라벨 (별도 autoheal 컨테이너가 감시)
-    labels:
-      - "autoheal=true"
+    # autoheal 없음 (2026-09-02, GLG 방침).
+    #   "꺼지면 자동복구는 일단 no다. 자동복구 안 되서 계속 재시도하면서 시스템 잡아먹는 걸
+    #    원치 않는다. 안 되면 화면 안 뜨면 된다."
+    #   2026-08-15~16 의 121회(8/15 99 + 8/16 22, 밤을 걸쳐 있다) 가 그 루프였다 —
+    #   autoheal 은 원인이 아니라 증상을 재시작한다. 전체 이력 143회(07-01 16 / 07-31 2 /
+    #   08-15 99 / 08-16 22 / 09-01 4). 반면 docker 자체 재시작(RestartCount)은 0회 —
+    #   프로세스 사망과 healthcheck 실패는 다른 사건이라 `restart: unless-stopped` 는 유지한다.
+    #
+    #   ⚠️ 자동복구가 없으니 사람이 볼 때 **크래시 루프는 health 가 아니라 Status 로 나타난다.**
+    #      마운트 store path 가 없거나 ELF 로드가 실패하면 running 에 도달을 못 해 healthcheck 가
+    #      아예 안 돈다 — `unhealthy` 만 찾으면 못 본다. 한 줄로 가르는 법:
+    #        docker inspect geworfen --format '{{.State.Status}} restarts={{.RestartCount}} health={{.State.Health.Status}}'
+    #        평상시 running restarts=0 health=healthy / 크래시루프 restarting restarts=N↑ / 데몬문제 running healthy=unhealthy
+    # 그래서 healthcheck 는 이제 **복구 트리거가 아니라 신호등**이다: `docker ps` 의 health 를 사람이 본다.
 
-    # emacs 소켓 ping — 실패 시 unhealthy로 마킹되어 autoheal이 재시작
+    # emacs 소켓 ping. 2026-09-02 부터 **아무것도 유발하지 않는다** — autoheal 을 뗐으므로
+    # 이 결과는 `docker ps` 의 health 칸에 뜨는 신호등일 뿐이고, 되살리는 건 사람 몫이다.
+    # ⚠️ 이 `(+ 1 1)` 은 1 B 라 버전 스큐 손상을 **원리적으로 못 잡는다**(경계가 약 8 KB).
+    #    스큐 검사는 nixos-config/scripts/emacs-skew-check.sh 로 따로 돌린다.
     healthcheck:
       test: ["CMD-SHELL", "emacsclient -s server --eval '(+ 1 1)' >/dev/null 2>&1 || exit 1"]
       interval: 60s
@@ -82,14 +107,41 @@ services:
       # 호스트의 lifetract write 에 영향 없음, 매 connection 새로 읽어 갱신 반영.
       - ~/repos/gh/self-tracking-data/lifetract.db:/root/repos/gh/self-tracking-data/lifetract.db:ro
 
-      # --- Nix store (런타임 의존, NixOS 26.05 세대) ---
-      # geworfen 바이너리와 emacsclient가 공유하는 glibc.
-      # NixOS를 업그레이드하면 이 store path가 바뀐다 → 아래 "업그레이드 절차" 참고.
+      # --- Nix store (런타임 의존) ---
+      # ⚠️ 앱과 emacsclient 는 **서로 다른 glibc** 를 쓴다. 둘 다 있어야 한다.
+      #    2026-09-02 이전엔 우연히 같았다(7/13 에 일부러 맞춘 결과, 70bc824).
+      #    Emacs 31.1 은 unstable overlay 라 glibc 가 갈렸다.
+      #
+      #    앱 target/geworfen-aarch64  INTERP jp8avbmp…  (readelf -p .interp, ldd 말고)
       - /nix/store/jp8avbmpfcdnm0axwrzyk072nmq9cr0d-glibc-2.42-67:/nix/store/jp8avbmpfcdnm0axwrzyk072nmq9cr0d-glibc-2.42-67:ro
 
-      # --- Emacs agent daemon 연결 ---
-      # emacsclient 바이너리 (시스템 프로파일이 참조하는 세대라 GC 안전)
-      - /nix/store/s2j8ix6iy5rbzikgd0zg75pchizv78jb-emacs-nox-30.2:/nix/store/s2j8ix6iy5rbzikgd0zg75pchizv78jb-emacs-nox-30.2:ro
+      # --- Emacs agent daemon 연결 (2026-09-02: 30.2 → 31.1) ---
+      # emacsclient 는 **호스트 데몬과 버전이 짝이어야 한다.** 어긋나면 조용히 응답이 깨진다:
+      #   Emacs 31 server.el 이 응답 청크 분할을 제거했고(upstream Bug#80807),
+      #   30.x client 는 고정 BUFSIZ 로 매 recv 를 독립 처리해 쪼개진 줄을 못 합친다.
+      #   증상: 공백→&_ 하이픈→&- / payload 안에 "*ERROR*: Unknown message: " 주입 /
+      #        한글 3바이트가 2바이트에서 잘려 **무효 UTF-8** 생성.
+      #   exit 0, stderr 없음, healthcheck `(+ 1 1)` 통과, HTTP 200 — 전부 초록인 채 내용만 깨진다.
+      #   경계는 약 8 KB(recv 버퍼). agenda day 는 바쁜 날 이미 8.6~8.8 KB → **메인 화면이 대상.**
+      #   검사: ./scripts/emacs-skew-check.sh  (nixos-config)
+      #
+      # 세트 A = 31.1 전환 (지금 이것). client INTERP f8q4w2hb, NEEDED libselinux → pcre2.
+      # 세트 B = 롤백 (30.2 로 되돌릴 때). **옛 s2j8ix 로는 못 돌아간다** —
+      #   컨테이너가 그 경로를 놓은 순간 GC root 가 0 이 됐다(2026-09-02 실측).
+      #   유일한 30.2 경로는 시스템이 참조하는 3a0zzkx 이고, 그건 INTERP 가 jwg0irp5 다.
+      #   ⚠️ emacs 줄만 갈면 ELF 로드 실패로 컨테이너가 안 뜬다. **세 줄을 같이** 바꿔라:
+      #     PATH  → /nix/store/3a0zzkx505dda6kj6m18409bpd6i5z7p-emacs-nox-30.2/bin:/usr/bin:/bin
+      #     emacs → /nix/store/3a0zzkx505dda6kj6m18409bpd6i5z7p-emacs-nox-30.2
+      #     glibc → /nix/store/jwg0irp5cbawz5h4sfxll8ddvpvbx6h4-glibc-2.42-67   (client 용)
+      #   앱용 jp8avbmp 는 세트 A/B 공통이므로 그대로 둔다.
+      #   libselinux / pcre2 줄은 31.1 전용이라 롤백 시 지운다(둬도 무해).
+      - /nix/store/f670wz5i55z7kw8dkg229wqh1psi3mp2-emacs-nox-31.1:/nix/store/f670wz5i55z7kw8dkg229wqh1psi3mp2-emacs-nox-31.1:ro
+      # client INTERP (앱의 jp8avbmp 와 다르다)
+      - /nix/store/f8q4w2hbjvwy7qqwpnvbf5f4qwyww6cp-glibc-2.42-67:/nix/store/f8q4w2hbjvwy7qqwpnvbf5f4qwyww6cp-glibc-2.42-67:ro
+      # 31.1 emacsclient 가 새로 요구 (30.2 엔 없던 DT_NEEDED)
+      - /nix/store/r8lxndj3syf32h2mcp6gnr52vir3qibn-libselinux-3.10:/nix/store/r8lxndj3syf32h2mcp6gnr52vir3qibn-libselinux-3.10:ro
+      # libselinux 가 요구
+      - /nix/store/xa1brw3bh0lrw4f5d1g74gmm2jv4d39v-pcre2-10.47:/nix/store/xa1brw3bh0lrw4f5d1g74gmm2jv4d39v-pcre2-10.47:ro
       # Emacs 소켓 (호스트의 --daemon=server)
       - /run/user/1000/emacs:/run/user/1000/emacs:ro
 
