@@ -12,6 +12,37 @@
 
 ## 활성
 
+### claude-cli 가 **자기 스스로** 모델을 갈아탄다 — OpenClaw fallback 이 아니다 (2026-09-02)
+
+봇이 설정과 다른 모델로 답하는데 OpenClaw 쪽엔 아무 흔적이 없다면 **런타임 CLI 자체의 fallback** 이다.
+
+**실측 (bbot, 2026-09-02 13:20 KST)**:
+```
+컨테이너 내 ~/.claude/projects/-home-node--openclaw-workspace-bbot/7fb2fb03-….jsonl
+  {"type":"fallback","from":{"model":"claude-fable-5"},"to":{"model":"claude-opus-4-8"}}
+→ 그 턴의 assistant 41건이 opus-4-8 로 사용자에게 나갔다.
+```
+
+**OpenClaw 경로가 아니라는 근거 셋**:
+- `agents.defaults.modelPolicy.allow` 의 catch-all 은 `openai/gpt-5.6-terra` 다(§ catch-all 절) — anthropic 이 아니다
+- `~/.claude/settings.json` 에 `fallbackModel` 없음
+- `claude` 바이너리(2.1.258)에 `fable_unavailable` / `fable_probe_failed` 문자열 실재(`grep -a`)
+
+→ **CLI 내장 경로.** 설정을 아무리 봐도 안 나온다. 확인은 config 가 아니라
+**컨테이너 안 claude 트랜스크립트에서 `"type":"fallback"` 을 grep** 해야 한다:
+```bash
+docker exec openclaw-gateway sh -c \
+  'grep -l "\"type\":\"fallback\"" /home/node/.claude/projects/*bbot/*.jsonl'
+```
+
+**원인 미확정.** bbot 트랜스크립트 60여 파일 중 `type=fallback` 은 이 1건뿐이다.
+Fable 5.1 출시 전환기에 5.0 이 잠깐 흔들렸다는 건 **추정**이고 근거가 없다.
+
+**왜 중요한가**: 8/31 에 gpt 봇이 설정과 다른 모델로 돌던 사고를 6봇 정체성 스모크로 잡았는데,
+그건 **봇에게 물어보는** 검사다. 이 fallback 은 턴 단위로 조용히 일어나고 다음 턴엔 원래대로 돌아온다.
+정체성 스모크로는 못 잡는다.
+
+
 ### 호스트 청소기가 **프롬프트 텍스트를 죽인다** — `acp-zombie-reaper` 은퇴 (2026-09-01)
 
 **4월 acpx 시절 손설치한 청소기가, 보호 대상이 6월에 사라진 뒤에도 4개월 더 돌면서 남의 agent 세션을 15분마다 저격했다.** 은퇴 처리 완료(`systemctl --user disable --now acp-zombie-reaper.timer`).

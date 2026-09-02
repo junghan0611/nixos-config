@@ -254,7 +254,7 @@ if (value === "codex-app-server") return "codex";
 
 ```bash
 # ① config 먼저 (primary + per-agent 카탈로그)
-docker exec openclaw-gateway openclaw config set agents.list.<idx>.model.primary <model>
+docker exec openclaw-gateway openclaw config set agents.entries.<id>.model.primary <model>
 
 # ② 그 다음 DM 세션 pin 해제 — 텔레그램 발송 없이(--deliver 없음) CLI로 친다
 docker exec openclaw-gateway openclaw agent --agent <id> \
@@ -342,11 +342,13 @@ ACP는 top-level `acp.enabled=false`로 차단(backend `acpx`). **acpx·pi-shell
 라이브 값 확인:
 
 ```bash
+# 8.1 이후 구조는 `agents.entries` **키드 맵**이다. 옛 `agents.list` 배열을 읽는 스니펫은
+# 오류 없이 **아무것도 출력하지 않는다** — 조용히 빈 결과라 "모델이 없네"로 오독하기 쉽다.
 python3 - <<'PY'
 import json, pathlib
 c = json.loads(pathlib.Path('~/openclaw/config/openclaw.json').expanduser().read_text())
-for a in c.get('agents', {}).get('list', []):
-    print(a.get('id'), a.get('model'))
+for aid, a in c.get('agents', {}).get('entries', {}).items():
+    print(aid, a.get('model'))
 PY
 ```
 
@@ -639,11 +641,13 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 
 ```bash
 # live OpenClaw agent models
+# 8.1 이후 구조는 `agents.entries` **키드 맵**이다. 옛 `agents.list` 배열을 읽는 스니펫은
+# 오류 없이 **아무것도 출력하지 않는다** — 조용히 빈 결과라 "모델이 없네"로 오독하기 쉽다.
 python3 - <<'PY'
 import json, pathlib
 c = json.loads(pathlib.Path('~/openclaw/config/openclaw.json').expanduser().read_text())
-for a in c.get('agents', {}).get('list', []):
-    print(a.get('id'), a.get('model'))
+for aid, a in c.get('agents', {}).get('entries', {}).items():
+    print(aid, a.get('model'))
 PY
 
 # 신호 감사 — "누가 이 프로세스를 죽였나" (2026-09-01 uid-wide SIGTERM 사건 이후)
