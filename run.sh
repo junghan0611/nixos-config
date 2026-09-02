@@ -108,6 +108,7 @@ show_menu() {
     echo "    a) OpenClaw 페어링 승인"
     echo "    k) OpenClaw 스킬 심볼릭 배포 (agent-config SSOT → workspace/claude-skills)"
     echo "    w) OpenClaw 턴 감시 (turnwatch — 자율 트리거/턴 원장/실패 한 화면)"
+    echo "    W) 모델 강등 점검 (봇이 몰래 다른 모델로 갈아탄 자리 — refusal fallback)"
     echo ""
     echo -e "  ${YELLOW}Syncthing${NC}"
     echo "    i) stignore 배포 (~/sync/*/.stignore)"
@@ -521,6 +522,14 @@ main() {
                     "$FLAKE_DIR/scripts/turnwatch.sh" "${TURNWATCH_HOURS:-24}"
                 else
                     execute_cmd "ssh oracle '~/repos/gh/nixos-config/scripts/turnwatch.sh ${TURNWATCH_HOURS:-24}'"
+                fi
+                ;;
+            W)
+                echo ""
+                if [[ "$DEVICE" == "oracle" ]]; then
+                    "$FLAKE_DIR/scripts/model-demotion-check.sh" --days "${DEMOTION_DAYS:-7}" || true
+                else
+                    execute_cmd "ssh oracle '~/repos/gh/nixos-config/scripts/model-demotion-check.sh --days ${DEMOTION_DAYS:-7}'"
                 fi
                 ;;
             i)
