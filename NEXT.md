@@ -107,6 +107,42 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
+## 🟢 Emacs 30.2 → 31.1 — thinkpad 완료, 나머지 디바이스는 각자 rebuild (2026-09-02)
+
+**thinkpad switch GREEN.** 결정 배경·근거는 [ROADMAP.md](ROADMAP.md) 운영 결정 이력. 여기는 **남은 것만**.
+
+- [ ] **oracle / nuc / laptop은 아직 30.2다.** 각 디바이스가 다음에 rebuild할 때 따라온다.
+      oracle에서 특히 볼 것: `agent-emacs.service`의 `ExecStart=/run/current-system/sw/bin/emacs`는
+      **HM이 아니라 시스템 `emacs-nox`를 탄다**(SSOT는 `~/repos/gh/geworfen/ops/systemd/`) —
+      즉 rebuild 순간 봇 백엔드 emacs가 31로 바뀐다. 미리 확인해둔 것: aarch64 `emacs-nox-31.1`은
+      cache.nixos.org에 있고(narinfo 200, 465MB nar) `systemd-minimal-libs-261.1`을 여전히 링크한다
+      → 라이브의 `Type=notify`는 안전. 스모크는 `emacsclient -s /run/emacs/server -e "(+ 6 8)"` → `14`.
+- [ ] **emacs31 클로저가 store에 두 벌 생긴다.** doomemacs-config의 unstable rev(`9fbb54b`)와 이 리포의
+      rev(`ac6b216`)가 하루 차이라 클로저가 완전히 갈라진다 — 각 1.7 GiB, **공유 store 경로 0개**(224개 중 0, 실측).
+      rev를 맞추거나, 더 나은 결말로 **doomemacs-config의 preview flake를 은퇴**시킨다("시스템이 31을 갖기 전에
+      31을 미리 써본다"는 전제가 이 전환으로 사라졌다). `bin/emacs-unstable.sh`·`~/doomemacs-unstable`·
+      `server-name=doom-unstable` 사슬이 걸려 있어 **doomemacs-config 쪽 판단**.
+- [ ] **죽은 코드 3개** — `hosts/nuc/configuration.nix:174`, `hosts/oracle/configuration.nix:187`,
+      `templates/nixos-oracle-vm/configuration.nix:186`의 `emacs-nox`. `machines/*.nix`는
+      `hardware-configuration.nix`만 import하므로 이 파일들은 빌드에 들어가지 않는다. 남겨두면 다음 사람이
+      "여기 고치면 되겠네"로 헛다리 짚는다. 이번엔 손 안 댔다.
+- [ ] **(선택) 데스크톱의 시스템 `emacs-nox` 중복.** `machines/shared.nix:336`이 전 디바이스에 emacs-nox를
+      깐다 → thinkpad/laptop은 HM gtk3와 시스템 nox를 둘 다 진다(31.1 기준 ~1.4 GiB). 전역 제거는 안 된다 —
+      oracle의 `agent-emacs.service`가 그 경로를 하드코딩한다. 데스크톱 한정 분기라야 하고, 이번 전환과
+      섞지 않았다.
+
+### 이번에 배운 것
+
+- **버전 올린 뒤 "안 되는 것"이 나와도 먼저 상류를 본다.** `ep`(pi 데몬 TTY)가 `Face inheritance results in
+  inheritance cycle: gnus-group-news-low`로 죽었는데, 원인은 nix가 아니라 **Emacs 31이 새로 넣은 face 순환
+  검사**였다(`strings emacs-31.1`엔 그 문자열이 있고 `emacs-30.2`엔 없다). 그리고 그 순환은 upstream
+  doom-themes가 이미 `d114523`(2026-08-21)으로 고쳐둔 것이었다 — 우리 포크 체크아웃만 3월에 멈춰 있었다.
+- **doom이 실제로 로드하는 것은 `~/repos/gh/<pkg>`가 아니라 straight 체크아웃이다.**
+  `~/doomemacs/.local/straight/repos/`는 별개 클론이다(심링크 아님). 리포를 고쳐놨는데 증상이 그대로면
+  거기부터 본다.
+
+---
+
 ## 🟡 OpenClaw 8.1 컷오버 완료 — soak + 후속 (2026-08-31 21:15 KST)
 
 **라이브 = `2026.8.1` (ea80657), healthy.** 컷오버 경위·3층 검수 결과·폐기된 반사신경 3건은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`로 이관했다. 11겹 함정표·재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md), 버전 이력은 [ROADMAP.md](ROADMAP.md). 여기는 **남은 것만**.

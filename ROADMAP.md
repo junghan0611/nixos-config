@@ -28,7 +28,7 @@
 **인프라 형상**
 - **디바이스 4종**: `oracle`(aarch64 클라우드 VM, headless, 봇 런타임) / `nuc`(home server) / `laptop`(Samsung NT930SBE) / `thinkpad`(work GUI). i3는 oracle 제외 GUI 디바이스에만, oracle은 headless 프로파일.
 - **Docker 스택 (Oracle, 설정값까지 공개)**: openclaw · forge · caddy · remark42 · homeassistant · geworfen · umami · autoheal (+ 비활성 mattermost/synapse). nixos-config 커스텀만으로 이 oracle 형상을 재현 가능 — 반년+ 담금질한 공개 인프라.
-- **NixOS 채널**: `nixos-26.05` "Yarara" + home-manager 26.05 (stateVersion 25.05 고정 — 최초 설치 마커, 올리지 않음). **v2026.7.2에서 25.11→26.05 이관 완료**(25.11 EOL 2026-06-30 전). 오버레이 제거로 input = nixpkgs/disko/home-manager만. oracle은 `build .#oracle` 게이트 후 switch·재부팅까지 검증.
+- **NixOS 채널**: `nixos-26.05` "Yarara" + home-manager 26.05 (stateVersion 25.05 고정 — 최초 설치 마커, 올리지 않음). **v2026.7.2에서 25.11→26.05 이관 완료**(25.11 EOL 2026-06-30 전). 26.05 이관 때 오버레이를 비웠으나 이후 26.05가 못 따라오는 것만 `nixpkgs-unstable` input으로 되살렸다 — 현재 예외는 **tdlib / zmx / emacs(31.1)** 셋뿐이고, 사유는 `flake.nix` 주석과 아래 운영 결정 이력에 있다. oracle은 `build .#oracle` 게이트 후 switch·재부팅까지 검증.
 
 **봇 런타임 요약**
 - OpenClaw **2026.7.1**(2026-07-14), healthy, boot config warnings 0, plugins 14/errors 0 (mattermost 번들 외부화 → 죽은 엔트리 제거).
@@ -240,6 +240,36 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 ---
 
 ## 운영 결정 이력
+
+### Emacs 30.2 → 31.1, unstable 예외 세 번째 (2026-09-02)
+
+Emacs 31.1이 릴리스되고 Doom의 권장 버전이 31로 올라갔다. 26.05에는 **`emacs31` attr 자체가 없다**
+(26.05 attrNames는 `emacs30*`뿐) — 그래서 tdlib/zmx에 이어 **오버레이 예외 세 번째**로 emacs를 unstable에서
+끌어온다. 현재 lock된 `nixpkgs-unstable`(`ac6b216`)이 이미 31.1을 갖고 있어 flake update 없이 잡혔고,
+cache.nixos.org에 x86 gtk3/nox·aarch64 nox가 전부 있어 로컬 빌드가 0이다.
+
+**바꾼 것은 이름 두 개뿐**: `emacs-gtk = unstable.emacs31-gtk3`, `emacs-nox = unstable.emacs31-nox`.
+`pkgs.emacs`는 일부러 두었다 — `pkgs.mu`의 빌드 입력이라 전역 override하면 mu가 로컬 재빌드된다.
+elisp 세트도 26.05를 그대로 쓴다(HM이 `pkgs.emacsPackagesFor`를 부르므로 자동). unstable epkgs를 끌어오면
+mu4e가 1.14.3이 되어 26.05 `mu`(1.12.13)와 어긋난다 — 그 조합이 실제로 빌드되는 것까지 확인하고 골랐다
+(`emacs-gtk3-with-packages-31.1` → `GNU Emacs 31.1`, vterm/mu4e 로드 확인).
+
+**thinkpad switch GREEN**: 받아온 경로는 `emacs-nox-31.1` 하나(99 MiB), 나머지 44개는 system/HM glue, mu
+재빌드 없음. 곁다리로 `pkgs.emacs`를 emacsclient 하나 때문에 붙들고 있던 i3 scratchpad를
+`programs.emacs.finalPackage`로 옮겨 **세 번째 emacs 클로저(1.0 GiB)를 없앴다**. 안 쓰는 vterm/mu4e와
+메일 도구(mu/isync/offlineimap)는 주석 처리 — doom 쪽에서 이미 꺼져 있어(`init.el:136/208/210`) nix가
+아무도 require하지 않는 걸 실어 나르고 있었다.
+
+**전환 직후 걸린 것 하나**: `ep`(pi 데몬 TTY)가 `Face inheritance results in inheritance cycle:
+gnus-group-news-low`로 죽었다. nix가 아니라 **Emacs 31이 새로 넣은 face 순환 검사**다 —
+`strings emacs-31.1`엔 그 문자열이 있고 `emacs-30.2`엔 없다. doom-themes가 `gnus-group-news-low-empty`를
+`gnus-group-news-low`에 상속시켰는데, 후자의 spec이 display-conditional이라 프레임 생성 중 어떤 clause에도
+안 맞으면 Gnus 자체 defface(`:inherit gnus-group-news-low-empty`)로 폴백해 고리가 닫힌다. upstream이
+`d114523`(2026-08-21)로 이미 고쳐둔 버그였고, 우리 포크 **체크아웃**만 3월(`b48cc73`)에 멈춰 있었다.
+포크 `ko` 브랜치는 당일 upstream 머지로 정렬됐다. 교훈은 NEXT.md에 남겼다 — doom이 로드하는 것은
+`~/repos/gh/<pkg>`가 아니라 `~/doomemacs/.local/straight/repos/`의 별개 클론이다.
+
+oracle/nuc/laptop은 각자 rebuild할 때 따라온다(후속은 NEXT.md).
 
 ### `acp-zombie-reaper` 은퇴 (2026-09-01)
 
