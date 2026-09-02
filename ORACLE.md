@@ -55,7 +55,13 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 
 마지막 ACP 사용처였던 gemini가 **네이티브 `google-gemini-cli` provider(OAuth, Pro 쿼터)로 전환**되면서, `pi-shell-acp` plugin은 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거(acpx와 동일 패턴, 런타임 plugin 목록에서 빠짐). main의 죽은 `pi-shell-acp/*` picker 엔트리도 제거. acpx도 여전히 disabled(`plugins.entries.acpx.enabled=false` + `acp.enabled=false`).
 
-- **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), openclaw 내장(gpt), google-gemini-cli(gemini). third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
+- **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), openclaw 내장(gpt), google-gemini-cli(gemini).
+- **bbot = `anthropic/claude-fable-5-1`** (2026-09-02 승격, 그 전엔 fable-5). 승격 절차는 셋을 함께 만졌다:
+  `agents.defaults.models` 에 runtime 명시(`{"agentRuntime":{"id":"claude-cli"}}`) → `modelPolicy.allow` **배열 맨 끝** append
+  (0번 자리 `openai/gpt-5.6-terra` catch-all 사수) → `agents.entries.bbot.model.primary` 전환.
+  bbot 은 자기 `modelPolicy` 가 없어 defaults 를 상속하므로 **`allow` 밖 모델은 `/model` 이 fail-closed** 다.
+  적용은 `config validate` → gateway **restart**(recreate 아님). 검수는 설정이 아니라 봇 자기보고 +
+  트랜스크립트 `"model"` 실측 — 4층(config/자기보고/트랜스크립트/게이트웨이) 일치를 봐야 한다. third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
 - **codex 런타임 의존성 제거 완료 (2026-08-07)** — `plugins.entries.codex.enabled=false`, `gpt-5.4`/`gpt-5.4-mini` 카탈로그 전면 제거, subagents·active-memory를 `openclaw` 내장 런타임으로 이관. 상세는 아래 §"런타임 지형".
 - 전환 서사 / 옛 pi-shell-acp stance(backend 자치권 등) / 빈응답 사건은 [ROADMAP.md](ROADMAP.md) 운영 결정 이력으로 이관.
 - **호스트 측 `acp-zombie-reaper` 은퇴 (2026-09-01)** — 4월 acpx 누수 대응 user timer. 보호 대상이 6월에 사라진 뒤에도 돌면서 argv 부분문자열로 남의 agent 세션을 저격했다. `disable --now` 완료, 스크립트·유닛은 화석 보존, **재활성 금지**. 상세 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) §활성 최상단.

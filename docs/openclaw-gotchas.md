@@ -23,20 +23,41 @@
 → 그 턴의 assistant 41건이 opus-4-8 로 사용자에게 나갔다.
 ```
 
-**OpenClaw 경로가 아니라는 근거 셋**:
-- `agents.defaults.modelPolicy.allow` 의 catch-all 은 `openai/gpt-5.6-terra` 다(§ catch-all 절) — anthropic 이 아니다
-- `~/.claude/settings.json` 에 `fallbackModel` 없음
-- `claude` 바이너리(2.1.258)에 `fable_unavailable` / `fable_probe_failed` 문자열 실재(`grep -a`)
+**원인 확정 (2026-09-02) — 용량 부족이 아니라 `refusal` 이다. 앤트로픽이 턴을 내린 것.**
 
-→ **CLI 내장 경로.** 설정을 아무리 봐도 안 나온다. 확인은 config 가 아니라
-**컨테이너 안 claude 트랜스크립트에서 `"type":"fallback"` 을 grep** 해야 한다:
-```bash
-docker exec openclaw-gateway sh -c \
-  'grep -l "\"type\":\"fallback\"" /home/node/.claude/projects/*bbot/*.jsonl'
+같은 레코드의 `usage.iterations`:
 ```
+iteration[0]  model=claude-fable-5    output_tokens=1973   type=message
+iteration[1]  model=claude-opus-4-8   output_tokens=2355   type=fallback_message
+```
+**529 overload 는 1973 토큰을 만들어내지 못한다.** Fable 5 는 응답을 다 만들었고, 그 턴이 통째로
+opus-4-8 로 재실행됐다. `claude` 2.1.258 바이너리의 SDK 스키마가 그대로 말한다:
+```
+subtype:"model_refusal_fallback"  trigger:"refusal"  scope:["session","local"]
+  "Emitted when the primary model ends the stream with stop_reason \"refusal\" and the turn
+   is retried once on a fallback model. When scope is \"session\", the swap is made
+   persistent for the session."
+env knob: CLAUDE_CODE_REFUSAL_FALLBACK_CATCH_ALL
+```
+용량 폴백은 **별개 경로**다(`api_request_fallback_triggered`, 529 가드 안, 이 콘텐츠 블록을 안 남긴다).
+처음 근거로 삼았던 `fable_unavailable` / `fable_probe_failed` 는 그 다른 경로 소속이었다 — 오독이었다.
 
-**원인 미확정.** bbot 트랜스크립트 60여 파일 중 `type=fallback` 은 이 1건뿐이다.
-Fable 5.1 출시 전환기에 5.0 이 잠깐 흔들렸다는 건 **추정**이고 근거가 없다.
+**OpenClaw 경로가 아니라는 근거 셋**
+- `agents.defaults.modelPolicy.allow` 의 catch-all 은 `openai/gpt-5.6-terra` — anthropic 이 아니다.
+  게다가 **강등 대상 `claude-opus-4-8` 은 `allow` 배열에 아예 없다**(`models` 에만 있다).
+  OpenClaw 정책을 통째로 우회했다는 뜻이다.
+- `~/.claude/settings.json` 에 `fallbackModel` 없음
+- 바이너리에 `model_refusal_fallback` / `model_refusal_no_fallback` 문자열 실재
+
+**`scope=session` 고착이 실제로 일어났다.** 13:20:13 강등 이후 그 세션 끝(13:32)까지
+assistant **40건 전부** opus-4-8, 그 사이 들어온 새 사용자 턴 1건도 opus-4-8 이 답했다. 복귀 없음.
+
+**설정으로는 안 보인다.** 세션만 갈아탄 것이라 `openclaw.json` 도 `openclaw sessions list` 도
+계속 원래 모델을 보고한다(그날 `session_windows` sqlite 가 실제로 `claude-fable-5` 라고 적고 있었다).
+→ **복구는 설정 되돌리기가 아니라 해당 봇 텔레그램 DM 에서 `/model <원래모델>`.**
+
+**점검**: `./scripts/model-demotion-check.sh` (`run.sh W)`). `--days N` / `--all` / `--context`,
+exit 3 = 강등 발견. 트랜스크립트 271개 전수에서 이 1건이 **사상 처음**이다.
 
 **왜 중요한가**: 8/31 에 gpt 봇이 설정과 다른 모델로 돌던 사고를 6봇 정체성 스모크로 잡았는데,
 그건 **봇에게 물어보는** 검사다. 이 fallback 은 턴 단위로 조용히 일어나고 다음 턴엔 원래대로 돌아온다.
