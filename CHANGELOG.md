@@ -9,6 +9,27 @@
 
 ## Unreleased
 
+## v2026.9.2-emacs.1 — Emacs 31.1 베이스 이관 (thinkpad GREEN)
+
+### Emacs 30.2 → 31.1 — unstable 오버레이 예외 세 번째
+
+- **전 디바이스 베이스를 Emacs 31.1로 옮겼다** (`1c4ecbf`). Emacs 31이 릴리스되고 Doom 권장 버전이 31로 올라갔으며 doomemacs-config도 31 채널이다. 26.05에는 **`emacs31` attr 자체가 없다**(26.05 attrNames는 `emacs30*`뿐, `emacs`/`emacs-gtk`/`emacs-nox` 전부 30.2) — 그래서 tdlib/zmx에 이어 오버레이 예외 셋째로 unstable에서 끌어온다. 현재 lock된 `nixpkgs-unstable`(`ac6b216`)이 이미 31.1을 갖고 있어 **flake update 없이** 잡혔고, cache.nixos.org에 x86 `emacs31-gtk3`/`emacs31-nox`·aarch64 `emacs31-nox`가 전부 있어(narinfo 200) 로컬 빌드가 0이다.
+- **바꾼 이름은 둘뿐 — 폭발 반경을 그렇게 좁혔다.** `emacs-gtk = unstable.emacs31-gtk3`, `emacs-nox = unstable.emacs31-nox`. `pkgs.emacs`는 일부러 두었다: `pkgs.mu`의 빌드 입력이라 전역 override하면 mu가 로컬 재빌드된다. elisp 세트도 26.05를 그대로 쓴다(HM이 `pkgs.emacsPackagesFor`를 부르므로 자동) — unstable epkgs를 끌어오면 mu4e가 1.14.3이 되어 26.05 `mu`(1.12.13)와 어긋난다. **그 조합이 실제로 빌드되는 것을 먼저 확인하고 골랐다**: `emacs-gtk3-with-packages-31.1` → `GNU Emacs 31.1`, `locate-library`로 vterm(`vterm-module.so` 컴파일 성공)·mu4e 1.12.13 로드 확인.
+- **thinkpad switch GREEN.** dry-run 실측 — 받아온 경로는 `emacs-nox-31.1` **하나**(99 MiB), 나머지 44개는 전부 system/HM glue, **mu 재빌드 없음, 연쇄 없음**. 전환 후: `/run/current-system/sw/bin/emacs` → `emacs-nox-31.1`, `/etc/profiles/per-user/junghan/bin/emacs` → `emacs-gtk3-with-packages-31.1`, `emacs --version` → `GNU Emacs 31.1`. oracle/nuc/laptop은 각자 rebuild할 때 따라온다([NEXT.md](NEXT.md)).
+- **곁다리로 세 번째 emacs 클로저(1.0 GiB)를 없앴다.** i3 scratchpad(`i3.nix:488`)가 emacsclient 하나 때문에 `pkgs.emacs`를 통째로 붙들고 있었다 — 같은 파일 501행은 이미 `programs.emacs.finalPackage`를 쓰고 있었으니 488만 어긋나 있었다. `ps`로 실물 확인 후 정정.
+- **안 쓰는 것 주석 처리 — 지우지 않고 되살릴 조건과 함께 남겼다.** `epkgs.vterm`/`epkgs.mu4e`와 메일 도구(`mu`/`isync`/`offlineimap`). doom 쪽에서 이미 꺼져 있어(`doomemacs-config/init.el:136` `;; vterm`, `:208` ":email 비활성", `:210` `;; (mu4e ...)`) nix가 **아무도 `require`하지 않는 것을 실어 나르고 있었다.**
+
+### 전환 직후 걸린 것 — nix가 아니라 Emacs 31의 새 검사였다
+
+- `ep`(pi 데몬 TTY 클라이언트)가 `Face inheritance results in inheritance cycle: gnus-group-news-low`로 죽었다. **Emacs 31이 face 상속 순환 검사를 새로 넣었다** — `strings emacs-31.1`엔 그 문자열이 있고 `emacs-30.2`엔 없다. 최소 재현으로 30.2는 `bold`를 반환하고 31.1은 에러를 던지는 것까지 대조했다.
+- 순환은 doom-themes가 `gnus-group-news-low-empty`를 `gnus-group-news-low`에 상속시킨 데서 났다. 후자의 spec이 display-conditional이라 프레임 생성 중 어떤 clause에도 안 맞으면 Gnus 자체 defface(`:inherit gnus-group-news-low-empty`)로 폴백해 고리가 닫힌다. 격리 재현: `emacs-31.1 -Q --batch` + `(require 'gnus)` + `(load-theme 'doom-one t)` → 같은 에러. 살아 있던 pi 데몬의 `custom-enabled-themes`가 `nil`이었던 것(테마 로드 자체가 중단)이 그 증거다.
+- **upstream doom-themes가 `d114523`(2026-08-21)로 이미 고쳐둔 버그였다.** 우리 포크 `ko` 브랜치는 당일 upstream 머지로 정렬됐고, 문제는 doom이 실제로 로드하는 **straight 체크아웃**(`~/doomemacs/.local/straight/repos/doom-themes`, 3월 `b48cc73`)이 별개 클론이라 뒤처져 있었던 것. fast-forward + `doom sync`로 해소. 교훈은 [NEXT.md](NEXT.md)에 남겼다 — 리포를 고쳐놨는데 증상이 그대로면 straight 체크아웃부터 본다.
+
+### 문서
+
+- ROADMAP 운영 결정 이력에 전환 서사를 박고, NEXT에는 남은 것만 남겼다 (`929bb10`). 곁가지로 "오버레이 제거로 input = nixpkgs/disko/home-manager만"이라는 **현재 위치 서술이 화석**이 돼 있어(zmx 복귀 시점에 이미 틀렸다) 실제 예외 셋(tdlib/zmx/emacs)으로 정정했다.
+- **heartbeat.target을 배달처 스위치로 못 박았다** (`429ee23`). `agents.defaults.heartbeat.target: none`을 억제책 후보로 올렸다가 GLG 확인으로 **bbot을 죽이는 설정**임이 드러났다 — bbot 배달은 라이브 기능이고 나머지 4봇의 침묵은 고장이 아니라 검수 목적의 의도적 off다. 억제가 필요하면 defaults가 아니라 봇별 `agents.entries.<id>.heartbeat.target`으로 건다. 번들 해시는 빌드마다 바뀌므로 파일명이 아니라 심볼로 찾으라는 것도 함께.
+
 ## v2026.9.2 — OpenClaw 8.2 한 줄 컷오버 + 부팅 레이스·SIGTERM 감사 마감
 
 ### OpenClaw 2026.8.2 — 이번엔 진짜 `FROM` 한 줄이었다 (15초)
