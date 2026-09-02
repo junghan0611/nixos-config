@@ -9,6 +9,41 @@
 
 ## Unreleased
 
+## v2026.9.2 — OpenClaw 8.2 한 줄 컷오버 + 부팅 레이스·SIGTERM 감사 마감
+
+### OpenClaw 2026.8.2 — 이번엔 진짜 `FROM` 한 줄이었다 (15초)
+
+- **`2026.8.1` → `2026.8.2` (0965053) 라이브 bump** (`c12219c`). 정지 → 기동 **15초**, 총 다운타임 약 2분(대부분 이미지 빌드). 직전 릴리즈의 8.1 컷오버가 39분이었던 것과 정반대다.
+- **그 차이를 가른 건 릴리즈 노트가 아니라 이미지 안의 세 상수다.** 8.1 노트도 읽을 땐 "핀 교체 + recreate"로 보였고 그래서 부팅이 거부됐다. 8.2 노트의 `breaking` 0건 역시 그 자체로는 근거가 못 된다. 그래서 **올리기 전에** 새 이미지를 받아 라이브 컨테이너와 대조했다(컨테이너 미접촉, 3분): ① state 마이그레이션 ID 목록 **15개 완전 동일**(최대 `conversation-binding-targets-v15`) ② `OPENCLAW_AGENT_SCHEMA_VERSION` **19=19**, `targetVersion` 19(+16 레거시 수리) 동일 ③ `npm` **12.0.2 동일**(⇒ claude-code `allowScripts` 3단 처방 그대로 유효). 여기에 **라이브 `openclaw.json`을 8.2 이미지로 격리 파싱**(격리 HOME + `--network none`)해 `Config valid` · retired key 0을 확인했다. ⇒ 8.1을 39분으로 만든 3대 요인(state 스키마 거부 · agent DB v1→v19 · retired config 키)이 **전부 부재**임을 올리기 전에 확정. 예측대로 **부팅 로그 마이그레이션/repair/error 0줄, config 편집 0건.**
+- **판정 절차를 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)에 새 항목으로 박았다** — *"bump가 '한 줄'인지 '마이그레이션'인지는 릴리즈 노트로 판정하지 마라 — 이미지를 열어라"*. 추출 명령이 재현 가능한 형태로 들어 있고, **초록을 의심하는 단계**까지 포함한다: config 격리 파싱 1차 시도는 `OPENCLAW_CONFIG` env로 경로를 주려다 모든 키가 `unset`으로 나왔다(CLI는 `$HOME/.openclaw/openclaw.json`만 본다). 그대로 믿었으면 **아무 파일도 안 읽고** "우리 config는 안전하다"를 선언할 뻔했다.
+- **8.2는 upstream이 우리 8.1 상처 둘을 이름 붙여 고친 릴리즈다** — doctor가 자기 DB 리스를 놓지 않아 재시작이 막히던 것(#134429), agent DB maintenance가 owner와 조율되지 않던 것(#133563). 직전 릴리즈 표의 "리스를 잃고 나머지 DB를 skip" 이 그것이다. **다만 이번 bump는 마이그레이션이 0이라 그 코드 경로를 지나지 않으므로 검증은 다음 메이저 hop으로 이월한다.**
+- **안 고쳐진 것**: cron 경로가 `agentRuntime` 오버라이드를 잃고 disabled `codex`로 낙하하는 8.1 회귀(노트 전문 grep에서 `agentRuntime` 0건 · `model polic` 0건). **`--model` 명시 우회는 계속 필요하다.** 9/2 08:00 가족 cron이 `provider: "claude-cli"` · `model: "claude-sonnet-5"` · `delivered: true`로 **우회를 직접 실증**했다(그 전날은 형제 잡을 통한 간접 실증뿐이었다).
+- **규모 대조(방증)**: 7.1-2→8.1 = 27일 · 19,750커밋 · Changes 149/Fixes 349 · breaking 2 / 8.1→8.2 = 1.5일 · 794커밋 · Changes 12/Fixes 92 · breaking 0. **Fixes:Changes 비가 2.3:1 → 7.7:1** 로 뒤집힌 게 기능 릴리즈와 수정 릴리즈를 가르는 지표다. 단 판정은 위 세 상수가 한다.
+- **검수 전항목 통과**: claude 바이너리 215,014,736 B(8.1의 500B shim 함정 없음) · 6봇 model prefix · **6봇 정체성 스모크 6/6**(각자 올바른 모델을 자기 입으로 보고) · catch-all 1번 `openai/gpt-5.6-terra` · `agentRuntime` 오버라이드 보존 · `fallbacks: []` · telegram 6/6 · cron 10건 생존 · memory 6봇 전부 4096d. 검수 중 mini(30/33)·bbot 인덱스 `Dirty: yes`를 정비해 **6봇 전부 `Dirty: no`** 로 맞췄고, 정비 후 웜 재시험에서 gemini가 "8.1 컷오버"를 기억에서 정확히 인출했다. 사전 검토·실행 전문은 [issue #8](https://github.com/junghan0611/nixos-config/issues/8).
+- 롤백면: 이미지 `openclaw-custom:8.1-rollback`(`ed2a67c2f90b`) 하나. 8.2가 state를 안 건드렸으므로 복원이 필요 없다.
+
+### 8.1 회귀 대응 — 관측면부터 만들었다
+
+- **`scripts/turnwatch.sh` + `run.sh w)`** (`6ddc428`). 자율 트리거 인벤토리 · 잡별 모델/상태 · 턴 원장 · 최근 턴 · cron receipt · 실패 목록 · **아직 안 끝난 턴**을 한 화면에 세운다. "사람 없이 무엇이 도는가"를 매번 다시 조사하지 않기 위한 자리이고, 이번 8.2 컷오버에서 **"진행 중인 턴 없음"을 판정한 근거**가 바로 §7이었다.
+- **8.1 runtime-override 회귀 기록 + 자동화 SSOT** (`e7567b2`). `agents.defaults.models["openai/*"].agentRuntime = "openclaw"` 오버라이드를 **cron 경로가 잃고** disabled `codex`로 떨어진다(일반 세션 경로는 멀쩡). 가족 아침 알림 2건이 조용히 실패했고, 로그가 telegram poll diag로 100% 덮여 있어 아무도 몰랐다. 봇별 크론/heartbeat 현황은 [docs/openclaw-automations.md](docs/openclaw-automations.md)가 SSOT.
+- **main `typingMode=never`** (`5d16ea7`). 8.1이 heartbeat에 typing을 새로 붙여 **턴이 없어도 owner DM에 typing이 뜬다**(`target ?? "owner"`). 원인 판정과 별개로 사용자 가시 신호부터 억제했다. 진단이 두 번 빗나간 순서 자체가 교훈으로 남았다 — **관측면이 없는 증상은 코드 판독이나 한 번의 on/off로 단정하지 말고, 한 번에 한 변수만 바꿔라.**
+
+### 부팅 레이스 ② geworfen/agenda — 8/16 예견이 그대로 터졌고, 그 자리를 닫았다
+
+- **`emacs-socket-dir.service` 신설** (`d86d9d8`). 9/1 21:15 재부팅에서 8/16에 적어둔 예측(*"다음 재부팅에 docker가 또 이기면 재발한다"*)이 **문자 그대로 재현**됐다: docker가 먼저 떠 `/run/user/1000/emacs`를 root 소유로 만들고 → `agent-emacs`가 *"is not a safe directory"* 로 기동 실패 → geworfen healthcheck 실패 → autoheal이 geworfen을 재시작. `After=user-runtime-dir@1000` · `Before=docker.service docker.socket` · `install -d -o junghan -g users -m 0700`으로 항구 차단.
+- **후보 ⓒ(systemd-tmpfiles)가 왜 못 쓰는지 근거째로 남겼다** — `/run/user/1000`은 logind가 거는 tmpfs라 tmpfiles가 먼저 만들어도 **나중에 덮인다**. `user-runtime-dir@1000` 뒤 · `docker` 앞이 유일한 창이다. 다음 사람이 같은 후보를 다시 시도하지 않도록 [NEXT.md](NEXT.md)에 근거를 박았다.
+
+### uid 전체 SIGTERM 사건 — 못 밝혔다. 대신 다음엔 한 줄로 나오게 했다
+
+- **`sudo audit-query {rules|status|term|kill|recent|size}` 도입** (`9a308b1`). 2026-09-01 20:42:53, **93ms 안에 uid 1000 프로세스 전체가 SIGTERM**을 맞았다(SSH 5개 · tmux 판 전부 · emacs · syncthing · `systemd --user` · 호스트 uid 1000이던 컨테이너 3개). root 컨테이너 11개는 무사 — 컨테이너 단위도 도커 단위도 아닌 **uid 단위 신호**, `kill(-1, SIGTERM)`의 서명이다. 공격도 OOM도 아니었다.
+- **발신자를 못 밝혔다** — auditd가 꺼져 있었기 때문이다. 그래서 범인 추적 대신 **관측면을 세웠다**: 이제 발신 pid·ppid·comm·exe·uid·auid·세션까지 나오고, 실패한 kill도 `exit=ESRCH`로 남는다. 정상 상태 잡음 실측 2분에 1건, 로그 64MiB 상한. **재발하면 `sudo audit-query term` 한 줄.**
+- **journald 1G 상한 선언** (`deb63b6`). `diskclean.sh`의 200M vacuum은 `sudo journalctl`이 NOPASSWD가 아니라 매번 건너뛰고 있었다 — 그게 실제로 200M였다면 이번 사후 분석 자체가 불가능했다. 선언적 상한이 그 역할을 대신한다.
+
+### 그 밖
+
+- **`acp-zombie-reaper` 은퇴** (`e283d92`). 4월 acpx 시절 손으로 설치한 청소기가, 보호 대상이 6월에 사라진 뒤에도 **4개월 더 돌면서 남의 agent 세션을 15분마다 저격**하고 있었다. 함정의 정체는 **argv 부분문자열은 술어가 될 수 없다**는 것 — `ps` 한 줄 전체에 `claude-agent-acp`가 있으면 900초 넘은 것을 SIGTERM했고, 그 문자열은 **프롬프트 텍스트에도 들어간다.**
+- **8.1 디스크 회수 절차를 기억으로 실행해도 안전하게 고쳤다** (`c530c24`). `upgrade-lab`을 통째로 지우면 lab 단계 **유일본 26M**이 같이 날아간다 — "먼저 구하고, 그다음 지운다" 순서와, 태그만 다른 같은 이미지 두 쌍(`8.1-candidate3` = 라이브 `latest`)을 명시했다.
+
 ## v2026.8.31 — OpenClaw 8.1 오프라인 컷오버 + aionsclubs 공개면
 
 ### OpenClaw 2026.8.1 — 버전 bump가 아니라 순서 있는 마이그레이션이었다

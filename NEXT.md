@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.8.31`.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.9.2`.
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -59,26 +59,11 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🟢 OpenClaw 8.2 컷오버 완료 — 15초. soak만 남음 (2026-09-02 10:38 KST)
+## 🟢 OpenClaw 8.2 컷오버 완료 — soak만 남음 (2026-09-02 10:38 KST)
 
-**전문 = [issue #8](https://github.com/junghan0611/nixos-config/issues/8)** (본문 = 사전 검토, [완료 코멘트](https://github.com/junghan0611/nixos-config/issues/8#issuecomment-5503120293) = 실행·검수). 여기는 **남은 것만**.
+**라이브 = `2026.8.2` (0965053), healthy.** 15초 컷오버가 왜 가능했나(이미지 세 상수 대조 → 마이그레이션 0 확정)·검수 전항목·규모 대조는 [CHANGELOG.md](CHANGELOG.md) `v2026.9.2`로 이관했다. 판정 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) *"bump가 '한 줄'인지 '마이그레이션'인지는 릴리즈 노트로 판정하지 마라"*, 사전 검토·실행 전문은 [issue #8](https://github.com/junghan0611/nixos-config/issues/8). 여기는 **남은 것만**.
 
-라이브 `OpenClaw 2026.8.2 (0965053)`, healthy. 다운타임 **약 2분**(대부분 이미지 빌드), 정지→기동 자체는 **15초**.
-8.1이 39분이었던 것과 대조된다 — **마이그레이션이 0이었기 때문**이다.
-
-**왜 빨랐나 (다음 bump에서 그대로 재사용할 방법)**: 릴리즈 노트의 "breaking 0"을 믿지 않고
-**8.2 이미지를 받아 라이브 컨테이너와 직접 대조**했다 — state 마이그레이션 ID 15개 완전 동일,
-`OPENCLAW_AGENT_SCHEMA_VERSION` 19=19, `npm` 12.0.2 동일, 그리고 **라이브 config를 8.2 이미지로 격리 파싱해
-`Config valid`**(retired key 0). 8.1을 39분으로 만든 3대 요인이 전부 부재임을 *올리기 전에* 확정했다.
-예측대로 부팅 로그 마이그레이션/repair/error **0줄**, config 편집 **0건**.
-추출 명령은 issue #8 완료 코멘트 §2에 재현 가능한 형태로 있다.
-
-검수 전항목 통과: 6봇 model prefix·정체성 스모크 6/6, catch-all 1번 `openai/gpt-5.6-terra`,
-`agentRuntime` 오버라이드 보존, fallbacks `[]`, telegram 6/6, cron 10건 생존,
-claude 바이너리 215MB(500B shim 함정 없음), memory 6봇 전부 4096d·`Dirty: no`.
-
-**롤백 좌표**: 이미지 `openclaw-custom:8.1-rollback`(`ed2a67c2f90b`),
-config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`.
+**롤백면**: 이미지 `openclaw-custom:8.1-rollback`(`ed2a67c2f90b`) 하나 + config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`. 8.2가 state를 안 건드렸으므로 state 복원은 불필요하다.
 
 ### 남은 것
 
@@ -116,7 +101,6 @@ config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`.
 
 증거 사슬: `~/openclaw/backups/pre-8.1-cutover-20260831T203708/` (cold 백업 1.8G + gate4~16 stdout/stderr/status + `ROLLBACK.sh`).
 
-- [x] ~~24h soak — cron/heartbeat 발송 대상(#121988)~~ → **터졌다.** 위 🔴 섹션으로 이관. 남은 soak 축은 6봇 응답성·memory_search 콜드·telega 렌더 복사 가능성.
 - [ ] **ORACLE.md 재작성** — 8.1로 사실이 바뀐 자리들. ① `doctor --fix 금지`(:265,:280) → **8.1에선 필수 절차**로 성격이 바뀌었다(단 gemini는 이미 Copilot 레일이라 겨눌 대상 없음). ② config 키 이름: `agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, catch-all 규율은 `agents.defaults.models` 키 순서 → **`agents.defaults.modelPolicy.allow` 배열 순서**. ③ 런타임 지형표에서 codex 행 삭제(=2026-08-07 GLG 결정이 이번에 완결됨). ④ `agents.ownership=explicit` + `bindings` 6개 명시가 새 baseline.
 - [ ] **issue #7 닫기** — 결과/receipt 코멘트 달고 close.
 - [ ] **레거시 잔재 청소 (비긴급)** — `config/agents/*/sessions/*.migrated` 다수 + `sessions.json.bak*`. 마이그레이션이 남긴 원본이라 soak 통과 후 지운다. `backups/…/isolated-orphans/telegram-deepseek-allowFrom.json`도 그때 판단.
@@ -139,7 +123,6 @@ config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`.
 
 **발신자를 못 밝혔다.** auditd 꺼짐 · atuin 오늘 105건 중 kill/reboot/systemctl 0건(마지막 대화형 입력 19:20:29 `piao`) · 20:42 근처 발화 타이머 없음 · `.bash_logout`/`.zlogout` 부재 · 20:42대 코어덤프 없음 · 오늘자 에이전트 transcript 전수 검색 0건. prime-agent(마지막 도구 호출 20:18)·entwurf·openclaw 컨테이너(PID 네임스페이스 격리) 셋 다 코드 경로 확인 결과 브로드캐스트 수단이 없어 **전부 피해자**로 판정.
 
-- [x] **감사 설비 도입** — 커밋 `9a308b1`. `sudo audit-query {rules|status|term|kill|recent|size}`로 발신 pid·ppid·comm·exe·uid·auid·세션까지 나온다(실패한 kill도 `exit=ESRCH`로 기록). 정상 상태 잡음 실측 **2분에 1건**, 로그 64MiB 상한.
 - [ ] **재발하면 즉시 `sudo audit-query term`.** 이번엔 못 밝혔지만 다음엔 한 줄로 나온다. 발신자가 잡히면 여기에 박고 근본을 고친다.
 - [ ] **저널 1G 상한과 감사 로그가 사후 분석의 두 축.** `diskclean.sh`는 저널을 200M로 vacuum하려 하지만 `sudo journalctl`이 NOPASSWD가 아니라 매번 건너뛴다. 이제 선언적 1G(커밋 `deb63b6`)가 그 역할을 하니 **스크립트의 200M 단계를 빼거나 1G로 맞출지 판단 필요**. 200M이었으면 이번 추적이 불가능했다.
 
@@ -155,7 +138,6 @@ config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`.
 
 후보 ⓒ(systemd-tmpfiles)는 **쓸 수 없다**는 걸 실측으로 확인했다 — `/run/user/1000`은 logind가 거는 tmpfs라 tmpfiles가 먼저 만들어도 tmpfs가 나중에 덮어쓴다. `user-runtime-dir@1000` 뒤 · `docker` 앞이 유일한 창이다. ⓐ(ExecStartPre rmdir)는 geworfen 컨테이너가 이미 옛 inode를 물고 있으면 컨테이너 재시작이 또 필요해 반쪽이다.
 
-- [x] **emacs 소켓 dir 레이스 항구 차단** — 커밋 `d86d9d8`. 위 ② 참조.
 - [ ] **autoheal이 원인이 아니라 증상을 재시작한다 — geworfen 담당자와 논의 필요.** geworfen healthcheck가 `emacsclient -s server --eval '(+ 1 1)'`이라 **emacs가 죽으면 geworfen이 unhealthy가 되고 autoheal은 geworfen을 재시작한다**. 고장 난 건 emacs인데 처방이 geworfen을 때린다 — 8/16의 5시간 120회 재시작, 9/1의 20:45:48 재시작이 전부 이 구조다. 후보: healthcheck에서 emacs 의존을 빼거나(geworfen 자체 생존만 확인), autoheal 라벨에서 geworfen 제외. **compose/geworfen 쪽 결정이라 이 리포 단독으로 못 정한다.** 발생하면 수선.
 - [ ] **`agent-emacs.service` 라이브가 geworfen SSOT와 갈렸다.** SSOT는 `~/repos/gh/geworfen/ops/systemd/agent-emacs.service`. 2026-09-01 라이브에 `Type=simple → Type=notify`를 넣었다(emacs가 `LIBSYSTEMD` 빌드 + `libsystemd.so.0` 링크 확인 후 적용, `restart`가 2557ms 블록하고 소켓 준비 후 반환하는 것까지 실측). **geworfen 리포에는 아직 안 넣었다** — 그쪽에서 다시 배포하면 조용히 되돌아간다. `Restart=no`는 의도적 fail-stop이라 그대로 둔다.
 
@@ -164,7 +146,6 @@ config `~/openclaw/config/openclaw.json.bak-pre-8.2-20260902T103549`.
 - [ ] **재부팅 후 점검 체크리스트가 없다.** 이번엔 GLG가 "ax 안 들어가진다"로 발견했다 — 5시간 뒤였다. `run.sh`에 부팅 후 자가진단(전 vhost 8-세트 + 컨테이너 Up + emacs 소켓 2개) 항목을 넣을지 판단. `docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수"의 부팅판.
 - [ ] **gotchas 박제** — 위 두 레이스를 `docs/openclaw-gotchas.md`에 영속화. 현재 caddy 항목은 *Caddyfile 편집* 함정만 담고 **부팅 시 포트 선점**은 없다.
 - 봇은 무사했다: 텔레그램 6채널이 **폴링**이라 caddy와 무관하게 5시간 내내 연결 유지(`channels status --probe` 전부 `works`), heartbeat 30분 주기 정상, 08:00 cron 음성 발송 성공. 죽은 건 `claw` Control UI 공개면뿐.
-- [ ] **6봇 memory 인덱스 전부 `Dirty: yes`.** 재부팅 + 5시간치 세션 누적분. 콜드 `memory_search` 15s 하드타임아웃 방어의 1차선이 인덱스 정합이므로(`.claude/skills/nixos-config` §5) 재인덱싱 판단 필요. dims 4096 정상, `Sources: memory, sessions` 정상.
 - 참고 상태: openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내. gemini는 2026-08-27부터 `github-copilot/gemini-3.7-flash` (Google 구독 안 함).
 
 ---
