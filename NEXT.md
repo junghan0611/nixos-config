@@ -133,6 +133,24 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
+## 🟡 OpenClaw 9.1 릴리즈 확인 — 반영 보류, 후보만 (2026-09-04)
+
+라이브는 여전히 `2026.8.2`(0965053, Dockerfile `FROM ghcr.io/openclaw/openclaw:2026.8.2`). [v2026.9.1](https://github.com/openclaw/openclaw/releases/tag/v2026.9.1) 릴리즈 노트 확인 — 정규 순서(8.1→8.2→9.1)이지 별도 레일 아니다. **GLG 지시로 지금은 안 올린다** — 다음에 올릴 때 챙길 후보만 남긴다.
+
+### 8.2 → 9.1에서 새로 생긴 것
+
+- **Mermaid 다이어그램 렌더링** — Control UI + macOS/iOS/Android 채팅에서 렌더
+- **`openclaw skills library`** — 개인 스킬 ZIP import/공유. 아래 "★ 스킬 심볼릭 배포 전환"과 겹치는 영역이라 대조 필요
+- **`agents.defaults.cwd` / `worktreeRoot` / managed checkout 100개** — worktree 운영 강화
+- **`cron.skipMissedJobs`**, SSRF **`blockedHostnames`** — cron/geworfen 자동화에 바로 쓸 설정 플래그
+- **Fable 5.1 모델 메타데이터 지원** — bbot이 이미 씀(별도 형제가 fable 5.1 지원 조사 중, 2026-09-02 개시)
+- **`openclaw update` 자동 롤백 강화** — post-update Doctor 실패 시 npm 후보 롤백, 서비스 매니저 없어도 진행
+
+- [ ] **9.1로 올릴 때 위 6개 재확인** — 특히 skills library가 심볼릭 배포와 충돌하는지, worktreeRoot가 entwurf worktree 흐름과 겹치는지.
+- [ ] **컷오버 체크리스트는 8.1→8.2 절차 재사용** — [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) *"bump가 '한 줄'인지 '마이그레이션'인지는 릴리즈 노트로 판정하지 마라"*.
+
+---
+
 ## 🟡 봇 시맨틱 스킬 stopgap 2개 — 다음 recreate에서 durable로 한 번에 종결 (2026-09-03)
 
 andenken 통합 인덱스 소비자 검수(andenken [#11](https://github.com/junghan0611/andenken/issues/11#issuecomment-5518338358),

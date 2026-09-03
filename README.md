@@ -2,8 +2,6 @@
 
 **Declarative, reproducible computing environment with NixOS and home-manager**
 
-[한국어 문서](./README-KO.md)
-
 ---
 
 ## Overview
@@ -57,9 +55,9 @@ A comprehensive NixOS configuration for building **identical computing environme
 | GPU | AMD Radeon 780M (RADV PHOENIX) |
 | Recommended model | `qwen3-embedding:4b` (Q4, 2.5GB, 2560-dim) |
 | Endpoint | `http://127.0.0.1:11434` |
-| Keep-alive | `OLLAMA_KEEP_ALIVE=10m` — idle 10분 후 VRAM 언로드 |
+| Keep-alive | `OLLAMA_KEEP_ALIVE=10m` — VRAM unloads after 10 min idle |
 
-History: 2026-04-15 추가 → 04-17 revert (always-on 정책) → **05-07 재도입** (andenken/semantic-memory 세션 임베딩 빈도 ↑, OpenRouter 보조) → **05-21 자동 시작 비활성** (현재 미사용, 수동 시작 유지).
+History: added 2026-04-15 → reverted 04-17 (always-on policy) → **re-added 05-07** (andenken/semantic-memory session embedding frequency ↑, OpenRouter backup) → **auto-start disabled 05-21** (currently unused, manual start only).
 
 Manual use:
 ```bash
@@ -267,25 +265,25 @@ nixos-config provides:
 
 ### Operator Docs (handbook)
 
-운영자(사람·에이전트)가 이 repo에서 일할 때 읽는 핸드북. **시간축**으로 셋, **디바이스축**으로 둘이 분업한다 — 과거는 ROADMAP, 현재는 AGENTS, 미래는 NEXT. 디바이스별 상세는 필요할 때만 꺼내본다.
+The handbook an operator (human or agent) reads while working in this repo. Split three ways along the **time axis** and two ways along the **device axis** — the past lives in ROADMAP, the present in AGENTS, the future in NEXT. Device-specific detail is opened only when needed.
 
-시간축:
+Time axis:
 
-- [AGENTS.md](./AGENTS.md) - **현재 운영 상태** SSOT (디바이스 공통 baseline). 디바이스 식별 + 공통 명령 + 디바이스 핸드북 라우팅. "지금 어떤 상태인가"만 답한다.
-- [NEXT.md](./NEXT.md) - **다음 할 일** (휘발성 후속). 미완 작업과 검증 항목. 끝나면 지우고, ✅ 완료분은 ROADMAP으로 흘려보낸다.
-- [ROADMAP.md](./ROADMAP.md) - **버전·업그레이드·운영 결정 이력** SSOT. OpenClaw 5.2→5.27 업그레이드 연혁, claude-cli 전환, 정공법들. "어떻게 여기까지 왔는가"를 답한다.
+- [AGENTS.md](./AGENTS.md) - SSOT for **current operating state** (device-common baseline). Device identification, shared commands, and routing to device handbooks. Answers only "what's the state right now."
+- [NEXT.md](./NEXT.md) - **What's next** (disposable follow-up). Unfinished work and verification items. Deleted once done; ✅ completed items flow into ROADMAP.
+- [ROADMAP.md](./ROADMAP.md) - SSOT for **version/upgrade/operational-decision history**. OpenClaw 5.2→5.27 upgrade lineage, the claude-cli transition, standard procedures. Answers "how did we get here."
 
-디바이스축 (필요할 때만):
+Device axis (open only when needed):
 
-- [ORACLE.md](./ORACLE.md) - **Oracle / OpenClaw 운영 핸드북**. ownership, 봇 model routing, env/secret SSOT, 업그레이드/restart, skills deploy, 함정. `oracle` 디바이스 또는 OpenClaw 작업일 때만 연다 — 다른 디바이스엔 불필요.
-- [THINKPAD.md](./THINKPAD.md) - **ThinkPad 로컬 AI** (Ollama Vulkan policy). `thinkpad` 작업일 때만.
-- [docs/openclaw-gotchas.md](./docs/openclaw-gotchas.md) - 함정 카탈로그 (활성/비활성/역사). 다음 세션이 또 밟을 것.
+- [ORACLE.md](./ORACLE.md) - **Oracle / OpenClaw operations handbook**. Ownership, bot model routing, env/secret SSOT, upgrade/restart, skills deploy, gotchas. Open only for `oracle`-device or OpenClaw work — unnecessary for other devices.
+- [THINKPAD.md](./THINKPAD.md) - **ThinkPad local AI** (Ollama Vulkan policy). Only for `thinkpad` work.
+- [docs/openclaw-gotchas.md](./docs/openclaw-gotchas.md) - Gotcha catalog (active/retired/historical). What the next session will trip over again.
 
 ### Configuration Guides
 
-- [CHANGELOG.md](./CHANGELOG.md) - NixOS 시스템 구성 변경 이력 (패키지·모듈·키바인딩, Keep a Changelog 형식) — OpenClaw 운영 이력은 ROADMAP.md로 분리
+- [CHANGELOG.md](./CHANGELOG.md) - NixOS system configuration change history (packages/modules/keybindings, Keep a Changelog format) — OpenClaw operational history is kept separately in ROADMAP.md
 - [Package Installation Guide](./docs/PACKAGE_GUIDE.md) - How to add packages (for AI agents and users)
-- [External Packages](./scripts/external-packages.sh) - Non-NixOS 패키지 SSOT (pnpm/harness/gog/uv) — 설치·버전체크 스크립트 (`run.sh` e)/E)에서 호출)
+- [External Packages](./scripts/external-packages.sh) - SSOT for non-NixOS packages (pnpm/harness/gog/uv) — install/version-check script (invoked from `run.sh` e)/E))
 - [Keybindings Reference](./docs/KEYBINDINGS.md) - i3 keybindings
 
 ### Docker Service Guides
@@ -313,3 +311,4 @@ MIT License
 **Jung Han (junghanacs)**
 - [힣's Digital Garden](https://notes.junghanacs.com)
 - [@junghan0611](https://github.com/junghan0611)
+- [Operator's note on this repo (botlog `20260615T100659`)](https://notes.junghanacs.com/botlog/20260615T100659)

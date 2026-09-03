@@ -125,3 +125,7 @@ sudo nixos-rebuild switch --flake .#<profile>
 ---
 
 Correctness starts with location awareness. 어느 디바이스에 있는지 먼저 알고, `oracle`이면 그 앎이 봇 생존으로 확장된다 — 그땐 [ORACLE.md](ORACLE.md).
+
+---
+
+담당자 서사(이 리포가 무엇을 선언으로 맡고 무엇을 일부러 선언 밖에 두는가) — botlog `20260615T100659` ([가든](https://notes.junghanacs.com/botlog/20260615T100659)).
