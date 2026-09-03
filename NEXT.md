@@ -159,6 +159,10 @@ andenken 통합 인덱스 소비자 검수(andenken [#11](https://github.com/jun
 
 타이밍은 GLG 판단(가족봇 잠깐 중단). **recreate를 이것들 때문에 새로 열지 않는다 — 예정된 recreate에 얹는다.**
 
+관련 큰 그림(세 원 · 한 방향 고리 · org축 disabled)은 andenken
+[#10 최신 댓글](https://github.com/junghan0611/andenken/issues/10#issuecomment-5518477947).
+OpenClaw `memory_search` stale 관측·크로스에이전트 시맨틱·코퍼스 편입은 **이 recreate 창의 일이 아니다** — #10이 소유, GLG 우선순위.
+
 ---
 
 ## 🟢 Emacs 30.2 → 31.1 — thinkpad 완료, 나머지 디바이스는 각자 rebuild (2026-09-02)
