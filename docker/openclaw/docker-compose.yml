@@ -121,10 +121,6 @@ services:
       # 31.1 emacsclient 가 새로 요구하는 DT_NEEDED (30.2 엔 없었다)
       - /nix/store/r8lxndj3syf32h2mcp6gnr52vir3qibn-libselinux-3.10:/nix/store/r8lxndj3syf32h2mcp6gnr52vir3qibn-libselinux-3.10:ro
       - /nix/store/xa1brw3bh0lrw4f5d1g74gmm2jv4d39v-pcre2-10.47:/nix/store/xa1brw3bh0lrw4f5d1g74gmm2jv4d39v-pcre2-10.47:ro
-      # dictcli native-image (GraalVM 동적링크) — Layer 3 한↔영 확장. 인터프리터 + RUNPATH 2경로.
-      # ⚠️ dictcli 재빌드 시 해시 skew — readelf로 갱신. 근본안은 +/nix/store:ro (issue #9).
-      - /nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:/nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:ro
-      - /nix/store/rrd22q5cjilnf45kgww6abbcfb2bwrvj-gcc-14.3.0-lib:/nix/store/rrd22q5cjilnf45kgww6abbcfb2bwrvj-gcc-14.3.0-lib:ro
       - /run/user/1000/emacs:/run/emacs:ro
 
     networks:
@@ -224,10 +220,6 @@ services:
       # 31.1 emacsclient 가 새로 요구하는 DT_NEEDED (30.2 엔 없었다)
       - /nix/store/r8lxndj3syf32h2mcp6gnr52vir3qibn-libselinux-3.10:/nix/store/r8lxndj3syf32h2mcp6gnr52vir3qibn-libselinux-3.10:ro
       - /nix/store/xa1brw3bh0lrw4f5d1g74gmm2jv4d39v-pcre2-10.47:/nix/store/xa1brw3bh0lrw4f5d1g74gmm2jv4d39v-pcre2-10.47:ro
-      # dictcli native-image (GraalVM 동적링크) — Layer 3 한↔영 확장. 인터프리터 + RUNPATH 2경로.
-      # ⚠️ dictcli 재빌드 시 해시 skew — readelf로 갱신. 근본안은 +/nix/store:ro (issue #9).
-      - /nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:/nix/store/qqx8w6hdkaq4ckszi08kz568c1a9y8sf-glibc-2.40-218:ro
-      - /nix/store/rrd22q5cjilnf45kgww6abbcfb2bwrvj-gcc-14.3.0-lib:/nix/store/rrd22q5cjilnf45kgww6abbcfb2bwrvj-gcc-14.3.0-lib:ro
       - /run/user/1000/emacs:/run/emacs:ro
 
 networks:

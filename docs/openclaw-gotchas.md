@@ -23,12 +23,11 @@ andenken 통합 인덱스 검수에서 **같은 모양이 두 번** 나왔다. �
    컨테이너에는 emacs용 store 4경로만 bind되어 있어 `existsSync`는 통과하고 exec에서 exit 127
    (`/bin/sh: 1: ./dictcli: not found`). Debian glibc 2.36은 **관여하지 않는다** — 로더·libc는 전부 nix 경로.
 
-처방 (둘 다 **다음 예정 recreate에 얹음**, 따로 창을 열지 않는다 — [issue #9](https://github.com/junghan0611/nixos-config/issues/9)):
+처방:
 
-- env → `~/openclaw/.env`(env_file)에 namespaced 블록. legacy `ANDENKEN_PROVIDER`는 openrouter를 거부하고 조용히 null.
-- dictcli → compose에 store 2경로 ro bind (emacs 패턴 복제). 해시 고정 skew 부채. 근본안은 compose 주석이 이미 지목한 `+/nix/store:ro`.
+- env → `~/openclaw/.env`(env_file) namespaced 블록. **적용됨** (2026-09-03 recreate).
+- dictcli → **portable 산출로 전환** (`junghan0611/dictcli` `4a3afd6`: interp `/lib/ld-linux-aarch64.so.1`, RUNPATH 0). compose store 2줄은 live에서 제거됨. **다음 recreate가 마운트 없는 실측.** aarch64 GraalVM musl static은 불가(담당자 실측). emacs 4줄·`+/nix/store:ro` 근본안은 그대로.
 
-지금 봇은 컨테이너 로컬 stopgap으로 산다 (`/home/node/.env.local` + `docker cp` 스테이징). recreate가 지운다.
 
 
 ### claude-cli 가 **자기 스스로** 모델을 갈아탄다 — OpenClaw fallback 이 아니다 (2026-09-02)
