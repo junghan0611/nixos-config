@@ -133,20 +133,31 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🟡 andenken 컨테이너 env — 봇 시맨틱 스킬 stopgap은 recreate에 사라진다 (2026-09-03)
+## 🟡 봇 시맨틱 스킬 stopgap 2개 — 다음 recreate에서 durable로 한 번에 종결 (2026-09-03)
 
-봇의 `semantic-memory` 스킬이 통합 세션 인덱스를 못 읽던 문제(andenken
-[#11](https://github.com/junghan0611/andenken/issues/11#issuecomment-5518225008))의 임시 조치가 살아 있다:
-컨테이너 `/home/node/.env.local`에 `ANDENKEN_SESSION_*` / `ANDENKEN_MD_*` 16라인을 직접 넣었다
-(호스트에서 파이프, 값 노출 0, `600 node:node`). 래퍼가 이 파일을 소싱하고
-`readEnvWithFileFallback`(`embedding-provider.ts:576`, `$HOME/.env.local`)도 같은 경로를 읽어서
-**게이트웨이 재시작·recreate 없이** 세션축·가든축 둘 다 산다(2026-09-03 컨테이너 내 실측 통과).
+andenken 통합 인덱스 소비자 검수(andenken [#11](https://github.com/junghan0611/andenken/issues/11#issuecomment-5518338358),
+소비자축 종결)에서 나온 컨테이너 로컬 stopgap 두 개가 살아 있다. 둘 다 **같은 recreate 창에서** durable로 닫는다 —
+전문·근본원인·역할 분담은 [issue #9](https://github.com/junghan0611/nixos-config/issues/9).
 
-- [ ] **durable 종결 — 다음 gateway recreate 때 `~/openclaw/.env`(env_file)에 같은 블록 추가.**
-      `/home/node`는 컨테이너 로컬이라 stopgap 파일은 recreate에서 사라지고, 봇 시맨틱 스킬이 조용히 죽는다.
-      env_file 변경은 recreate를 수반하므로(가족봇 잠깐 중단) **이미 예정된 recreate에 얹는다** — 따로 재시작하지 말 것.
-      ⚠️ `ANDENKEN_SESSION_PROVIDER`(namespaced)여야 한다 — legacy 전역 슬롯 `ANDENKEN_PROVIDER`는
-      openrouter를 거부하고 조용히 null이 된다(main 봇 진단 + `resolveProviderType` 코드 확인, 2026-09-03).
+**stopgap ① env 16키** — 컨테이너 `/home/node/.env.local`에 `ANDENKEN_SESSION_*`/`ANDENKEN_MD_*` 직접 배치
+(호스트 파이프, 값 노출 0, `600 node:node`). 래퍼 소싱 + `readEnvWithFileFallback`(`embedding-provider.ts:576`) 양쪽이 읽어서
+재시작 없이 세션축·가든축 부활(실측 통과). ⚠️ legacy 전역 슬롯 `ANDENKEN_PROVIDER`는 openrouter를 거부하고 조용히 null —
+반드시 namespaced `ANDENKEN_SESSION_PROVIDER`.
+
+**stopgap ② dictcli store 스테이징** — agent-config 담당자가 nix store 2경로(glibc 2.40 인터프리터 + gcc-14.3.0-lib RUNPATH,
+52M)를 `docker cp`로 컨테이너 쓰기 레이어에 복사. **봇 위치에서 Layer 3 한↔영 확장이 지금 실제로 돈다**
+(`하네스→harness` 등 exit 0 실측, 2026-09-03). 지울 필요 없음 — recreate가 지운다.
+
+### recreate 시 체크리스트 (이 창에서 전부 닫는다)
+
+- [ ] **`~/openclaw/.env`(env_file)에 ANDENKEN 블록 추가** — ①의 durable 승계.
+- [ ] **compose dictcli bind 2줄** — 이미 반영 완료(live `~/openclaw/docker-compose.yml` gateway+cli 양쪽 + 이 리포 백업 동기화,
+      `docker compose config` 통과). recreate가 적용 시점. ②의 durable 승계. 해시 고정 skew 부채·근본안(`+/nix/store:ro`)은 issue #9.
+- [ ] **recreate 직후**: 컨테이너 안 `./dictcli expand "하네스" --json` → `["harness"]` exit 0,
+      검색 호출 `not found` 2줄 소멸, env 소실 여부(env_file이 못 살리면 stopgap 재배치) — 검증 몫은 agent-config 담당자(봇 눈 재검증 포함).
+- [ ] 회수 상향 측정: andenken `golden-queries.ts --compare`(확장 전/후) — recreate 후.
+
+타이밍은 GLG 판단(가족봇 잠깐 중단). **recreate를 이것들 때문에 새로 열지 않는다 — 예정된 recreate에 얹는다.**
 
 ---
 
