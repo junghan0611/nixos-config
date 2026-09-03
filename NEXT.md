@@ -153,7 +153,7 @@ andenken 통합 인덱스 소비자 검수(andenken [#11](https://github.com/jun
 - [x] **`~/openclaw/.env`(env_file)에 ANDENKEN 블록 추가** — ①의 durable 승계. 16키, 값 비노출. 백업 `.env.bak-andenken-20260903T0930`.
 - [x] **compose dictcli bind 2줄** — live 반영 후 **recreate 적용 완료** (2026-09-03 09:45 KST). gateway health=starting→텔레그램 6채널 polling. `openclaw-cli` 는 TUI owner 없어 exit 1 — 원래 상주 서비스가 아님.
 - [x] **recreate 직후 호스트 검증**: 컨테이너 `./dictcli expand "하네스" --json` → `["harness"]` exit 0 (마운트 형태). `search-sessions "하네스"` → `expanded: ['harness']`, stderr `not found` 0. env 16키 process env에 존재.
-- [ ] 회수 상향 측정: andenken `golden-queries.ts --compare`(확장 전/후) — agent-config 담당자. 봇 눈 재검증도 그쪽.
+- [x] 회수 상향 측정: `golden-queries.ts --compare` — **상향 0** (31/33 동일, 하락 4 / 상승 3). 설계 대표 `보편 학문`이 최대 하락(확장어 9개). 가설: 확장 폭 희석. 다음 작업(폭 제한·FHS 아티팩트)은 agent-config 라인. #9 프로비저닝은 닫힘.
 
 GLG 2026-09-03: 턴이 잠잠하면 **이 창에서 recreate 한다.** 아래 "OpenClaw 기억망 열기"는 이 창의 일이 아니다.
 
