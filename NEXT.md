@@ -150,18 +150,29 @@ andenken 통합 인덱스 소비자 검수(andenken [#11](https://github.com/jun
 
 ### recreate 시 체크리스트 (이 창에서 전부 닫는다)
 
-- [ ] **`~/openclaw/.env`(env_file)에 ANDENKEN 블록 추가** — ①의 durable 승계.
-- [ ] **compose dictcli bind 2줄** — 이미 반영 완료(live `~/openclaw/docker-compose.yml` gateway+cli 양쪽 + 이 리포 백업 동기화,
-      `docker compose config` 통과). recreate가 적용 시점. ②의 durable 승계. 해시 고정 skew 부채·근본안(`+/nix/store:ro`)은 issue #9.
-- [ ] **recreate 직후**: 컨테이너 안 `./dictcli expand "하네스" --json` → `["harness"]` exit 0,
-      검색 호출 `not found` 2줄 소멸, env 소실 여부(env_file이 못 살리면 stopgap 재배치) — 검증 몫은 agent-config 담당자(봇 눈 재검증 포함).
-- [ ] 회수 상향 측정: andenken `golden-queries.ts --compare`(확장 전/후) — recreate 후.
+- [x] **`~/openclaw/.env`(env_file)에 ANDENKEN 블록 추가** — ①의 durable 승계. 16키, 값 비노출. 백업 `.env.bak-andenken-20260903T0930`.
+- [x] **compose dictcli bind 2줄** — live 반영 후 **recreate 적용 완료** (2026-09-03 09:45 KST). gateway health=starting→텔레그램 6채널 polling. `openclaw-cli` 는 TUI owner 없어 exit 1 — 원래 상주 서비스가 아님.
+- [x] **recreate 직후 호스트 검증**: 컨테이너 `./dictcli expand "하네스" --json` → `["harness"]` exit 0 (마운트 형태). `search-sessions "하네스"` → `expanded: ['harness']`, stderr `not found` 0. env 16키 process env에 존재.
+- [ ] 회수 상향 측정: andenken `golden-queries.ts --compare`(확장 전/후) — agent-config 담당자. 봇 눈 재검증도 그쪽.
 
-타이밍은 GLG 판단(가족봇 잠깐 중단). **recreate를 이것들 때문에 새로 열지 않는다 — 예정된 recreate에 얹는다.**
+GLG 2026-09-03: 턴이 잠잠하면 **이 창에서 recreate 한다.** 아래 "OpenClaw 기억망 열기"는 이 창의 일이 아니다.
 
-관련 큰 그림(세 원 · 한 방향 고리 · org축 disabled)은 andenken
-[#10 최신 댓글](https://github.com/junghan0611/andenken/issues/10#issuecomment-5518477947).
-OpenClaw `memory_search` stale 관측·크로스에이전트 시맨틱·코퍼스 편입은 **이 recreate 창의 일이 아니다** — #10이 소유, GLG 우선순위.
+관련 큰 그림: andenken [#10](https://github.com/junghan0611/andenken/issues/10#issuecomment-5518477947).
+
+---
+
+## 🟡 OpenClaw 기억망 열기 — 바로 안 함 (2026-09-03)
+
+andenken 세션축+가든 md는 봇이 읽는다. 다음 원은 **OpenClaw 쪽 기억망**이고 오늘 착수하지 않는다.
+
+- [ ] OpenClaw 세션(`~/.openclaw/agents/*/sessions/`)을 andenken 코퍼스에 편입 → 양방향 고리
+- [ ] `memory_search` stale ↔ `memory status` clean 불일치 — 재인덱스 후 "main 격리" 판정 재확인
+- [ ] 시맨틱 크로스에이전트 vs andenken 일원화 — GLG 판단
+
+**org 임베딩은 의도적 보류.** andenken org축 `production: disabled`가 미완이 아니다.
+가든 md(`notes/content/`)만 공유한다. 켜려면 andenken을 많이 고쳐야 해서 보류 — 양쪽(이 리포·agent-config)이 이걸로 기억한다.
+
+큰 그림·3면 대조: andenken #10.
 
 ---
 
