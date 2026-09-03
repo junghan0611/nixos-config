@@ -133,6 +133,23 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
+## 🟡 andenken 컨테이너 env — 봇 시맨틱 스킬 stopgap은 recreate에 사라진다 (2026-09-03)
+
+봇의 `semantic-memory` 스킬이 통합 세션 인덱스를 못 읽던 문제(andenken
+[#11](https://github.com/junghan0611/andenken/issues/11#issuecomment-5518225008))의 임시 조치가 살아 있다:
+컨테이너 `/home/node/.env.local`에 `ANDENKEN_SESSION_*` / `ANDENKEN_MD_*` 16라인을 직접 넣었다
+(호스트에서 파이프, 값 노출 0, `600 node:node`). 래퍼가 이 파일을 소싱하고
+`readEnvWithFileFallback`(`embedding-provider.ts:576`, `$HOME/.env.local`)도 같은 경로를 읽어서
+**게이트웨이 재시작·recreate 없이** 세션축·가든축 둘 다 산다(2026-09-03 컨테이너 내 실측 통과).
+
+- [ ] **durable 종결 — 다음 gateway recreate 때 `~/openclaw/.env`(env_file)에 같은 블록 추가.**
+      `/home/node`는 컨테이너 로컬이라 stopgap 파일은 recreate에서 사라지고, 봇 시맨틱 스킬이 조용히 죽는다.
+      env_file 변경은 recreate를 수반하므로(가족봇 잠깐 중단) **이미 예정된 recreate에 얹는다** — 따로 재시작하지 말 것.
+      ⚠️ `ANDENKEN_SESSION_PROVIDER`(namespaced)여야 한다 — legacy 전역 슬롯 `ANDENKEN_PROVIDER`는
+      openrouter를 거부하고 조용히 null이 된다(main 봇 진단 + `resolveProviderType` 코드 확인, 2026-09-03).
+
+---
+
 ## 🟢 Emacs 30.2 → 31.1 — thinkpad 완료, 나머지 디바이스는 각자 rebuild (2026-09-02)
 
 **thinkpad switch GREEN.** 결정 배경·근거는 [ROADMAP.md](ROADMAP.md) 운영 결정 이력. 여기는 **남은 것만**.
