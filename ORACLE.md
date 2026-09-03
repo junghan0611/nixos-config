@@ -379,19 +379,19 @@ PY
 
 ### Memory / embedding layers
 
-Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding) but model size differs since 2026-05-08 16:00 — OpenClaw moved to 8B native 4096d, andenken still on 4B 2560d (separate migration cycle).
+Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). **2026-09-02 통합 세션 인덱스 rebuild부터 레이어가 모델까지 같아졌다** — 양쪽 다 8B/4096d. 분리는 *storage*·*corpus*만 남는다(andenken #10/#11).
 
 | Layer | Provider | Model | Dim | Storage | Bot access |
 |---|---|---|---|---|---|
 | OpenClaw session+memory | OpenRouter | `qwen/qwen3-embedding-8b` | **4096** | `~/openclaw/config/memory/{agentId}.sqlite` (sqlite-vec + FTS5 trigram) | native `memorySearch` |
-| andenken (org KB + sessions) | OpenRouter (query) / local vLLM (index) | `qwen/qwen3-embedding-4b` | 2560 | LanceDB (indexing host) | **skill needed — not deployed** |
+| andenken (sessions + md garden) | OpenRouter (query·index 양쪽) | `qwen/qwen3-embedding-8b` | **4096** | LanceDB `~/repos/gh/andenken/data`(sessions 75k chunks / md 10.7k, 2026-09-03 실측) | `semantic-memory` 스킬 **배포 완료**(claude-skills + workspace*) — 컨테이너 env는 [issue #9](https://github.com/junghan0611/nixos-config/issues/9) |
 
 - `agents.defaults.memorySearch.experimental.sessionMemory: true` since 2026-05-08 — sessions transcript indexing finally activated. Before that the `sources: ["sessions"]` line was being silently dropped by `normalizeSources()` because the experimental gate was closed. Verify with `openclaw memory status --agent <id>` showing `Sources: memory, sessions` and a non-zero `sessions ·` row under `By source:`.
 - baseline reindex chunk 수치 이력 (5.2 → 5.7 → 8B 4096d 전환 절차 + chunk 분포 + storage)은 [ROADMAP.md](ROADMAP.md) "임베딩 baseline 전환". 현재 baseline = 8B 4096d, 총 ~4982 chunks. **재현 함정**: 8B 전환 시 `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` 삭제 + restart로 schema 4096d 재생성 후 **reindex 필수**(4B↔8B 임베딩 공간 직교). OpenRouter privacy에서 8B endpoint 허용 필요(default 차단 시 "No endpoints available matching your guardrail restrictions").
 - 진단: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider 별도 진단, `vec0.so` 경로 확인.
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
 - `~/org:/home/node/org:rw` is for file access (denotecli / bibcli / botlog / journal), not embedding. Do not remove.
-- andenken layer is still separate by *storage* (LanceDB vs sqlite), *corpus* (org KB vs OpenClaw sessions/memory), and **since 2026-05-08 16:00 also by *model*** (4B vs 8B) until andenken follows. To give bots semantic org search, deploy the `semantic-memory` skill from `~/repos/gh/agent-config/skills/` with LanceDB reachable from Oracle — but cross-store retrieval will be slightly miscalibrated until both layers share a model again.
+- andenken layer is separate by *storage* (LanceDB vs sqlite) and *corpus* (통합 세션+garden md vs OpenClaw sessions/memory). ~~모델(4B vs 8B)로도 분리~~ — **2026-09-02 통합 rebuild로 해소**, cross-store 보정 부채는 없다. 봇의 `semantic-memory` 스킬은 배포 완료(claude-cli 봇은 `config/claude-skills` 마운트 면, 내장 런타임은 `workspace*/skills` 면)이고, 컨테이너 env·dictcli Layer 3 프로비저닝은 [issue #9](https://github.com/junghan0611/nixos-config/issues/9)에서 종결 중.
 - This baseline is the comparison point for andenken bake-off (first-result precision, freshness, CJK short query, operator trust). OpenClaw is SSOT; andenken follows.
 
 ### Mount permission model (since 2026-04-25)
@@ -575,7 +575,7 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 ### Why symlink
 
 - 공간: workspace×6 + claude-skills 복사본(~700M+) → 심볼릭 디렉터리 수 KB + 바이너리 1벌.
-- 신선도: agent-config SKILL.md/스크립트 수정이 재배포 없이 전 봇·ACP에 즉시 반영 (`skills.load.watch: true`).
+- 신선도: agent-config SKILL.md/스크립트 수정이 재배포 없이 전 봇·claude-cli에 즉시 반영 (`skills.load.watch: true`).
 - OpenClaw `skills.load.allowSymlinkTargets`에 SSOT 경로를 열어 심볼릭 following 허용.
 
 ### Exclude (봇 미배포)
@@ -609,10 +609,10 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 **고정 형태**: 호스트 `~/.claude/skills` = **실 디렉터리** + per-skill 심볼릭.
 `run.sh k)`와 무관하게 이 형태를 유지할 것. 깨지면 gateway recreate 전에 복구.
 
-### Workspace skills vs Claude ACP skills
+### Workspace skills vs claude-cli skills
 
-- `workspace*/skills/` — OpenClaw workspace skill system (심볼릭 → agent-config).
-- 컨테이너 `~/.claude/skills` — `config/claude-skills/` 마운트 (같은 심볼릭 세트). Claude ACP가 여기를 본다.
+- `workspace*/skills/` — OpenClaw workspace skill system (심볼릭 → agent-config). 내장 런타임 봇(gpt, gemini)이 여기를 본다.
+- 컨테이너 `~/.claude/skills` — `config/claude-skills/` 마운트 (같은 심볼릭 세트). **claude-cli 런타임**(`claude -p` spawn: main/glg/bbot/mini)이 여기를 본다. ~~Claude ACP~~ — ACP는 2026-06-10 제거, 이 면을 보는 주체가 바뀌었다.
 - `~/.claude` 자체는 **rw** (Claude `session-env/`·`projects/` 기록).
 
 ### gogcli(gog) — 바이너리만 스킬 트리 밖

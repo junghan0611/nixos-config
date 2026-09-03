@@ -12,6 +12,25 @@
 
 ## 활성
 
+### 컨테이너 소비자는 호스트 env·nix 바이너리를 그대로 못 본다 (2026-09-03)
+
+andenken 통합 인덱스 검수에서 **같은 모양이 두 번** 나왔다. 호스트에서 되는 스킬이 봇 위치에서 죽는다.
+
+1. **env** — 호스트 `~/.env.local`의 `ANDENKEN_SESSION_*`/`ANDENKEN_MD_*`가 컨테이너에 없다.
+   `cli.ts`는 process env + `$HOME/.env.local`만 읽고, 컨테이너 `HOME=/home/node`.
+   증상: `No sessions embedding provider available`.
+2. **nix ELF** — `dictcli`(GraalVM native-image)의 인터프리터·RUNPATH가 `/nix/store/…glibc-2.40` + `gcc-14.3.0-lib` 절대경로.
+   컨테이너에는 emacs용 store 4경로만 bind되어 있어 `existsSync`는 통과하고 exec에서 exit 127
+   (`/bin/sh: 1: ./dictcli: not found`). Debian glibc 2.36은 **관여하지 않는다** — 로더·libc는 전부 nix 경로.
+
+처방 (둘 다 **다음 예정 recreate에 얹음**, 따로 창을 열지 않는다 — [issue #9](https://github.com/junghan0611/nixos-config/issues/9)):
+
+- env → `~/openclaw/.env`(env_file)에 namespaced 블록. legacy `ANDENKEN_PROVIDER`는 openrouter를 거부하고 조용히 null.
+- dictcli → compose에 store 2경로 ro bind (emacs 패턴 복제). 해시 고정 skew 부채. 근본안은 compose 주석이 이미 지목한 `+/nix/store:ro`.
+
+지금 봇은 컨테이너 로컬 stopgap으로 산다 (`/home/node/.env.local` + `docker cp` 스테이징). recreate가 지운다.
+
+
 ### claude-cli 가 **자기 스스로** 모델을 갈아탄다 — OpenClaw fallback 이 아니다 (2026-09-02)
 
 봇이 설정과 다른 모델로 답하는데 OpenClaw 쪽엔 아무 흔적이 없다면 **런타임 CLI 자체의 fallback** 이다.
