@@ -156,7 +156,7 @@ andenken 통합 인덱스 소비자 검수(andenken [#11](https://github.com/jun
 - [x] 회수 상향 측정: `golden-queries.ts --compare` — **상향 0** (31/33 동일, 하락 4 / 상승 3). 설계 대표 `보편 학문`이 최대 하락(확장어 9개). 가설: 확장 폭 희석. 다음 작업(폭 제한·FHS 아티팩트)은 agent-config 라인. #9 프로비저닝은 닫힘.
 
 **후속 (2026-09-03 10:3x)** — dictcli portable 전환(`4a3afd6`). compose store 2줄은 live+백업에서 **이미 제거**. 적용은 마운트 변경이라 recreate.
-- [ ] **다음 예정 recreate에 dictcli bind 제거분 적용** — 빠지고 나서야 마운트 없이 봇 위치 검증. 새 창 열지 않음. 검증: 컨테이너 `./dictcli expand "하네스"` exit 0 + `/nix/store`에 qqx8w6hd/rrd22q5c 없음.
+- [x] **다음 예정 recreate에 dictcli bind 제거분 적용** — 2026-09-03 10:36 gateway recreate. `/nix/store` 에 qqx8w6hd/rrd22q5c **NONE**, `./dictcli expand "하네스"` → `["harness"]` exit 0, `search-sessions` `expanded: ['harness']`, `not found` 0. skew 부채 소멸.
 
 GLG 2026-09-03: 턴이 잠잠하면 **이 창에서 recreate 한다.** 아래 "OpenClaw 기억망 열기"는 이 창의 일이 아니다.
 
