@@ -74,6 +74,8 @@ Do not use `br`. Use agenda stamps instead. This repo prefers flexible shared fl
 
 원칙: **복제 없음 · 한 목록/한 창고 · 중앙 통제.**
 
+**`broken` 마커는 2층 사유가 아니다** (2026-09-04, datasette 선례). nixpkgs가 broken이라고 하면 먼저 *무엇이 왜 깨지는지*를 재고, 우리 용도가 그 경로에 닿지 않으면 **사유·경계·회수조건을 적은 오버레이로 1층에 담는다**(`flake.nix` 의 `datasette` 블록이 그 틀). 2층으로 내려가는 순간 선언 밖이 되고 기기마다 수동 설치가 되므로, 내려갈 때는 그 이유를 `scripts/external-packages.sh` 헤더에 남긴다 — 이유 없이 내려온 것은 영원히 2층에 남는다.
+
 **JS/pnpm 개발 규율 (중요)**: `package.json`의 `packageManager:` 핀으로 전역과 싸우지 않는다 — 그건 반(反)-nixos다. 전역 pnpm은 nix 단일(11.x, `manage-package-manager-versions=false` — `users/junghan/modules/shell.nix`). repo가 특정 pnpm을 꼭 원하면 **3층 devShell로 격리**, 아니면 **전역으로 이관**(핀 제거 + CI pnpm 버전 lockstep + lockfile 재생성을 한 커밋으로).
 
 정직한 이음새 둘: (a) 2층은 물리적으로 nix store 밖 — 스크립트 규율로만 강제. (b) CI 버전은 Nix와 별도 SSOT라 수동 lockstep bump 필요.

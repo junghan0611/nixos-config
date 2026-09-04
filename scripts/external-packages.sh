@@ -39,6 +39,12 @@
 #        실행 실패한다(2026-07-15 확정 — 봇 배포가 이래서 막혔다). 릴리즈 정적본은 양쪽 OK.
 #     → ~/.local/bin/gog. 봇도 이 정적본을 공유(스킬 번들, agent-config/skills/gogcli/gog).
 #
+# [uv tool]  파이썬 앱. 현재 **비어 있다** — 아래 UV_TOOLS 참고.
+#   nixpkgs가 `broken` 마킹했다는 사실만으로는 여기로 내려오지 않는다. 무엇이 왜 깨지는지
+#   먼저 재고, 우리 용도가 그 경로에 닿지 않으면 사유를 적은 오버레이로 1층에 담는다.
+#   선례: datasette (2026-09-04) — asgi-csrf broken 이었으나 실패 지점이 multipart POST
+#   파싱 한 곳뿐임을 확인하고 flake.nix 오버레이 + home.packages 로 갔다.
+#
 # 제거됨(2026-07-02, 쓰레기 정리 — 이제 안 씀):
 #   gt/bd/bv/br (gastown+beads, 멀티에이전트/이슈트래킹) — plane/incidentcli 로 대체
 #   CLIProxyAPI (Anthropic ToS 위반 소지) / gemini / ccr / cline /
@@ -74,6 +80,10 @@ declare -A PNPM_CHECK=(
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
     [copilot]="@github/copilot"
 )
+
+# uv tool SSOT — 이 배열이 곧 `uv tool install` 대상 집합이다. 지금은 비어 있다.
+# 1층(nixpkgs)이 담을 수 있으면 1층이다. 여기는 정말 못 담을 때만.
+UV_TOOLS=()
 
 # ── preflight ────────────────────────────────────────────────────────────────
 # pnpm 은 global-bin-dir(~/.config/pnpm/rc) 이 PATH 에 없으면 `add -g`/`list -g` 를
@@ -211,13 +221,28 @@ install_gog() {
 }
 
 install_uv() {
-    if command -v uv >/dev/null 2>&1; then
-        info "uv tools 업그레이드..."
-        uv tool upgrade --all 2>/dev/null || warn "uv tool upgrade 실패"
-        success "uv tools updated"
-    else
+    if ! command -v uv >/dev/null 2>&1; then
         warn "uv 없음 — 건너뜀"
+        return 0
     fi
+    # 선언 우선: SSOT 배열에 있는데 안 깔린 것을 먼저 깐다. 예전엔 upgrade --all 만
+    # 있어서 "선언은 있는데 이 기기엔 없는" 상태를 영영 고치지 못했다(설치된 게 0개면
+    # upgrade --all 은 조용한 no-op 다).
+    if [[ ${#UV_TOOLS[@]} -eq 0 ]]; then
+        info "uv tools: 선언된 것이 없다 (SSOT 0개) — 건너뜀"
+        return 0
+    fi
+    info "uv tools (SSOT ${#UV_TOOLS[@]}개) 설치/업그레이드..."
+    local fails=""
+    for tool in "${UV_TOOLS[@]}"; do
+        if uv tool install "$tool"; then
+            success "$tool"
+        else
+            warn "$tool 설치 실패"; fails+=" $tool"
+        fi
+    done
+    uv tool upgrade --all >/dev/null 2>&1 || warn "uv tool upgrade 실패"
+    if [[ -z "$fails" ]]; then success "uv tools updated"; else warn "uv 실패:$fails"; fi
 }
 
 # ── check ────────────────────────────────────────────────────────────────────
@@ -279,18 +304,32 @@ check() {
     echo ""
     echo -e "${YELLOW}[uv tools]${NC}"
     if command -v uv >/dev/null 2>&1; then
-        uv tool list 2>/dev/null | grep -E '^\w' | while read -r line; do
-            echo -e "  ${GREEN}✓${NC} $line"
-        done || echo "  (설치된 uv tool 없음)"
+        # 설치된 것을 나열하는 게 아니라 "선언된 것이 있는가"를 본다 —
+        # 나열만 하면 SSOT에 있는데 이 기기에 없는 상태가 초록으로 안 보이고 그냥 사라진다.
+        local ulist
+        ulist=$(uv tool list 2>/dev/null || true)
+        [[ ${#UV_TOOLS[@]} -eq 0 ]] && echo "  (선언된 uv tool 없음 — 전부 1층에 있다)"
+        for tool in "${UV_TOOLS[@]:-}"; do
+            [[ -z "$tool" ]] && continue
+            local uver
+            uver=$(grep -m1 "^$tool " <<< "$ulist" | awk '{print $2}' || true)
+            if [[ -n "$uver" ]]; then
+                echo -e "  ${GREEN}✓${NC} $tool: $uver"
+            else
+                echo -e "  ${RED}✗${NC} $tool: not installed (install uv)"
+                has_update=1
+            fi
+        done
     else
         echo -e "  ${RED}✗${NC} uv not found"
+        has_update=1
     fi
 
     echo ""
     if [[ $has_update -eq 1 ]]; then
-        warn "업데이트 가능한 pnpm 패키지가 있습니다: install pnpm"
+        warn "미설치/업데이트 대상이 있습니다: install <pnpm|uv|all> (위 ✗/⬆ 참고)"
     else
-        success "pnpm 패키지 최신."
+        success "외부 패키지 최신."
     fi
 }
 

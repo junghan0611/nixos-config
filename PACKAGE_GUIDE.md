@@ -22,9 +22,24 @@ This guide explains how to add packages to this NixOS configuration, especially 
 - **Use for**: System-wide tools, services, libraries
 - **Example**: vim, wget, curl, htop, gcc, etc.
 
+### External Packages (nix가 담지 못하는 것만)
+- **File**: `scripts/external-packages.sh` — 목록 SSOT. 진입점은 `run.sh` `e)` / `E)`.
+- **Use for**: npm 글로벌, 벤더 self-updater, 릴리즈 정적 바이너리.
+- **먼저 1층을 시도한다.** 1층이 안 되는 *이유*를 스크립트 헤더 주석에 남기고 내려온다 —
+  이유 없이 2층에 있는 항목은 영원히 2층에 남는다.
+- **Example**: codex, pi, claude(curl), gog.
+- 전체 3층 모델은 [AGENTS.md](AGENTS.md) §2.5.
+
+### `broken` 패키지를 만났을 때 (datasette 선례, 2026-09-04)
+`meta.broken` 은 "nix가 못 담는다"가 아니라 "upstream이 경고한다"이다. 순서:
+1. **무엇이 왜 깨지는지 잰다** — 그 패키지의 테스트를 돌려 실패 지점을 특정한다.
+2. **우리 용도가 그 경로에 닿는지 본다.** 안 닿으면 오버라이드가 정당하다.
+3. `flake.nix` 오버레이에 **사유 · 경계(무엇을 하면 부족해지는가) · 회수조건**을 적고 1층에 담는다.
+4. 닿으면 오버라이드하지 않는다. 그때가 2층이거나, 그냥 기다릴 때다.
+
 ## Adding Packages from Stable Channel
 
-For packages from the stable nixpkgs (25.05), simply add them to the appropriate package list:
+For packages from the stable nixpkgs (현재 26.05 — `flake.nix` 가 정본), simply add them to the appropriate package list:
 
 ```nix
 home.packages = with pkgs; [

@@ -63,6 +63,32 @@
         # programs.emacs.finalPackage 로 옮겼다.
         emacs-gtk = unstable.emacs31-gtk3;   # desktop: GTK3 + X11 (i3wm)
         emacs-nox = unstable.emacs31-nox;    # headless + machines/shared.nix
+
+        # datasette — 로컬 sqlite를 브라우저 표로 여는 read-only 뷰어.
+        # 주 소비처: Magit Forge 로컬 DB(~/doomemacs/.local/etc/forge/forge-database.sqlite).
+        #
+        # 왜 오버라이드가 필요한가(2026-09-04 실측): 26.05·unstable 양쪽 모두
+        # `pkgs.datasette` 가 평가부터 거부된다. 의존 `asgi-csrf` 가
+        # `meta.broken = python-multipart >= 0.0.26` 이고 nixpkgs의 multipart는 0.0.29다
+        # (upstream simonw/asgi-csrf#38, asgi-csrf 최신도 0.11로 미해결).
+        #
+        # 마커를 그냥 지우지 않고 "무엇이 깨지는지"를 먼저 재봤다. asgi-csrf 테스트를
+        # 돌리면 실패는 정확히 한 곳이다:
+        #   asgi_csrf.py:291  TypeError: FormParser.__init__() got an unexpected keyword 'FileClass'
+        # 즉 깨지는 것은 **multipart/form-data POST 파싱**뿐이다. 우리 용도(읽기 전용
+        # 브라우징)는 GET 경로라 그 줄에 닿지 않는다 — forge DB 사본으로 실측 통과
+        # (issue 164 rows / state='open' 57, query ~1.3ms).
+        # 그래서 doCheck 을 끄고(위 한 테스트가 유일한 실패) broken 을 내린다.
+        #
+        # ⚠️ 경계: datasette 에서 **쓰기/폼 POST를 쓰는 순간 이 오버라이드는 부족하다**
+        #    (write 플러그인, 로그인 폼 등). 그때는 오버라이드를 지우고 upstream 수정을 기다린다.
+        # 회수 조건: `asgi-csrf` 의 broken 이 풀리면 이 블록을 통째로 지운다.
+        datasette = prev.datasette.override {
+          asgi-csrf = prev.python3Packages.asgi-csrf.overridePythonAttrs (o: {
+            doCheck = false;
+            meta = o.meta // { broken = false; };
+          });
+        };
       })
     ];
 

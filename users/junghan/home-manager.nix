@@ -206,6 +206,14 @@ in {
     google-chrome   # Browser (x86_64 only)
     # zotero        # Reference manager → 8.x manual install (scripts/install-zotero.sh)
 
+    # 로컬 데이터 뷰어 — 브라우저로 여는 read-only sqlite 표.
+    # 주 대상: Magit Forge 로컬 DB(이슈판을 네트워크 0으로 훑는다).
+    # nixpkgs가 broken 마킹한 asgi-csrf 때문에 flake.nix 오버레이를 거쳐 온다(사유는 그 주석).
+    # 실행은 기본 모드로: `datasette <db>` — **`--immutable`/`-i` 금지**.
+    # 그 파일은 Emacs가 forge-pull 로 쓰는 살아 있는 DB고, immutable 은 락·변경 감지를
+    # 끄는 선언이라 잘못된 결과나 SQLITE_CORRUPT 가 된다(SQLite 문서 / datasette#1870).
+    datasette
+
     # Editors & IDEs (GUI, excluded from Oracle VM)
     # zed-editor
     vscode

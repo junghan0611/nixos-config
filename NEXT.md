@@ -32,6 +32,58 @@
 
 ---
 
+## 🟢 datasette 도입 — 1층(nixpkgs + 오버레이) 착지 (2026-09-04)
+
+GLG 요청(sorge 담당자 경유): Magit Forge 로컬 sqlite를 브라우저에서 훑는 면.
+대상 DB `~/doomemacs/.local/etc/forge/forge-database.sqlite` (3.6MB · 20 repos · issues 164 / open 57).
+
+**어디에 넣었나**: `flake.nix` 오버레이(broken 우회) + `users/junghan/home-manager.nix` `home.packages`
+의 `isLinux && !isOracle` 블록. **oracle 제외**(대상 DB가 없다). rebuild 한 번이면 각 기기에 따라온다.
+
+**왜 1층인가 — 2층(uv tool)을 거쳐 돌아온 경로다.**
+처음엔 `pkgs.datasette` 가 평가부터 거부돼(26.05·unstable 양쪽 동일) 2층 `uv tool` 로 내려놨다.
+GLG가 *"nixos에 있는데 기다려봐봐"* 라고 짚어서 다시 쟀고, 결론이 뒤집혔다:
+
+| | nix 1층 | uv 2층 |
+|---|---|---|
+| datasette | 0.65.2 | 0.65.3 |
+| python-multipart | 0.0.29 | 0.0.32 |
+| asgi-csrf 비호환 | 있음 | **똑같이 있음** |
+
+**uv 가 문제를 피해가는 게 아니었다.** uv도 같은 비호환을 안고 있고, broken 게이트가 없어 조용히
+설치될 뿐이다. 버전 차이는 패치 하나. 그 하나 때문에 선언 밖으로 나가고 기기마다 수동 설치할 이유가 없다.
+
+**막힌 원인(실측)**: `asgi-csrf` 0.11 이 `python-multipart` 0.0.26+ 의 API 변경을 못 따라간다.
+nixpkgs가 `meta.broken = python-multipart >= 0.0.26` 으로 마킹 → datasette 평가 거부.
+테스트를 돌려 실패 지점을 특정했다: `asgi_csrf.py:291`
+`TypeError: FormParser.__init__() got an unexpected keyword argument 'FileClass'` — **multipart POST 파싱 한 곳뿐**.
+읽기 전용 브라우징은 GET 경로라 닿지 않는다. 그래서 `doCheck=false` + broken 내림으로 오버라이드했다.
+
+- [ ] **⚠️ 경계**: datasette 에서 **쓰기/폼 POST를 쓰면 이 오버라이드는 부족하다**(write 플러그인, 로그인 폼).
+      그땐 오버레이를 지우고 upstream(`simonw/asgi-csrf#38`) 수정을 기다린다.
+- [ ] **회수 조건**: `asgi-csrf` broken 이 풀리면 `flake.nix` 의 datasette 블록을 통째로 지운다.
+      확인: `nix eval .#nixosConfigurations.thinkpad.pkgs.datasette.version` 이 오버레이 없이 통과하는지.
+- [ ] **rebuild 필요** — 이 세션에서 `switch` 는 하지 않았다(eval/build 검증까지). uv 사본을 지웠으므로
+      `sudo nixos-rebuild switch --flake .#thinkpad` 전까지 thinkpad 에 datasette 이 없다. nuc/laptop 은 각자 다음 rebuild.
+- [x] ~~thinkpad uv 설치본 제거~~ — GLG 지시로 `uv tool uninstall datasette` 완료(2026-09-04).
+      확인: `uv tool list` → `No tools installed`, `~/.local/bin/datasette` 없음,
+      `~/.local/share/uv/tools/` 디렉토리 자체가 사라짐. PATH 그림자 함정 해소.
+      **따라서 switch 전까지 이 기기에 datasette 이 없다** — 아래 rebuild 항목이 곧 복구다.
+
+**띄우는 플래그 — 결론 났다**(sorge 가 문서 원문으로 확정, 나에게 전달):
+```
+datasette /home/junghan/doomemacs/.local/etc/forge/forge-database.sqlite
+```
+**`--immutable` / `-i` 금지.** 그 파일은 Emacs 가 `forge-pull` 로 쓰는 살아 있는 DB고,
+immutable 은 락·변경 감지를 끄는 선언이라 잘못된 결과나 `SQLITE_CORRUPT` 가 될 수 있다
+(SQLite 공식 문서 · datasette PR #1870 · `doomemacs-config` 담당자가 sqlite CLI 쪽에서 준 조건과 같은 함정).
+행 수 캐시 이득을 잃지만 3.6MB 규모에선 무의미하다.
+
+**실측 근거(2026-09-04, thinkpad)**: nix 빌드본 0.65.2 로 forge DB **사본**(`/tmp`, 원본 미접촉)에서
+`datasette --get` → `issue` 164 rows, `state='open'` 57, query ~1.3ms. 사본은 삭제함.
+
+---
+
 ## 🔴 8.1 회귀 — 비주력 경로가 죽은 codex 런타임으로 떨어진다 (2026-09-01, 진행 중)
 
 **오늘 아침 두 개가 동시에 터졌고 뿌리는 하나다.** 경위·코드 근거·재현은
