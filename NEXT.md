@@ -348,11 +348,22 @@ INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 �
       ① `upgrade-lab/8.1-…/evidence`(26M) + `TARGET-CONFIG-SHA256` 을 `backups/pre-8.1-cutover-20260831T203708/lab-evidence/` 로 먼저 구조(`diff -rq` 검증) → ② `rm -rf ~/openclaw/upgrade-lab`(8.2G) →
       ③ `openclaw-custom:8.1-candidate`·`candidate2` 이미지 삭제 + `8.1-candidate3` 태그 해제(같은 id 를 `8.1-rollback` 이 계속 든다) + `docker builder prune -af`.
       ④ **유지**: `pre-8.1-20260831T190622`(837M cold tar, 트랜스크립트 포함) + `pre-8.1-cutover-20260831T203708`(1.8G, 마이그레이션 대상 + gate 증거 + lab-evidence). 둘이 합쳐져야 온전한 롤백면이다.
-- [ ] **남은 회수 후보 — GLG 판단 대기.** ① 7.1 롤백면 3.4G(`openclaw-custom:7.1-rollback`=`pre-8.1-20260831T190622` 2.23G + `ghcr…:2026.7.1-2` 1.15G): 8.1 이 agent DB 를 v19 로 올려 7.1 로의 실질 롤백은 이미 불가에 가깝고 롤백면은 8.1 이다 — 은퇴시킬지. ② 옛 백업 3벌 145M(`20260507T…-pre-qwen3` 59M · `openclaw-agent.sqlite.bak-copilot-purge-20260816` 69M · `dream-cleanup-20260503` 17M). ③ `config/openclaw.json.bak-2026042x` 계열 8개(4월, 각 10K).
+- [x] **롤백면 은퇴 — 2026-09-06 (GLG: "롤백은 안해").** `backups/` **2.8G → 27M**(gate 증거 17벌 + lab-evidence 26M 만 남김): `pre-8.1-cutover/config` 1.8G · `pre-8.1/config-state-cold.tar.zst` 836M · 옛 백업 3벌 145M · 4월 `openclaw.json.bak-2026042x` 11개 삭제.
+      이미지도 7.1 면 전체 은퇴(`7.1-rollback`·`pre-8.1-…` 태그·`ghcr…:2026.7.1-2`) → docker 12.62GB → **9.77GB**.
+      **`openclaw-custom:8.1-rollback` 하나는 남겼다** — 우리 커스텀 빌드라 재현하려면 npm 설치 단계를 다시 타야 하고, 11겹 사고의 10번이 정확히 거기서 났다. 2.41G 짜리 보험.
+      누적: `/home` 94% → **75%**, `/` 94% → **91%**.
+- [ ] **아직 못 지우는 두 덩이 — 유일본 가능성.** ① `session-sqlite-import-archive` **417M**: `update cleanup` 이 스스로 `verification-required / historical-manifest-without-import-proof` 라고 판정한다. 확인해보니 `agents/glg/sessions/` 에 **살아 있는 `.jsonl` 이 0개** — 원본이 이 archive 뿐일 수 있다. ② `*.pre-doctor-*.bak` 67M + `*.jsonl.bak-N` 24M + `*.migrated` 4M, 같은 이유. **도구가 "증명 못 했다"고 말한 것을 눈대중으로 지우지 않는다** — 지우려면 sqlite 안에 해당 전사가 있다는 증명이 먼저다.
 - [ ] **`openclaw update cleanup` 은 지금 아무것도 회수하지 않는다 (2026-09-06 실측).** `--dry-run` 결과 **`Candidates: 0 bytes`**, `verification-required: 434MB`(`session-sqlite-import-archive/*.imported-*`, 사유 `historical-manifest-without-import-proof`), `protected: 75MB`(`*.migrated`·`*.pre-doctor-*.bak`, 사유 `unmanifested-recovery-original`). **즉 `--yes` 를 눌러도 0바이트다** — CLI 정규 경로가 우리 잔재를 아직 못 집는다. `.migrated`/`.bak` 수동 청소는 이 판정을 알고 하는 것이지, 그 명령으로 되는 일이 아니다.
 - [x] **[sorge#1](https://github.com/junghan0611/sorge/issues/1) 의 이 리포 몫 — 호스트별 authority · writable 계약 선언.** ORACLE.md §"호스트별 기억축 authority" 에 `writer | read-only consumer | absent` 표로 박았다.
       **부수 발견이 본체였다**: ORACLE.md mount 표가 `~/repos/gh` 를 **rw** 로 적고 있었는데 실물은 **2026-08-12 부터 ro** 다(compose:72–73, `docker inspect … rw=false`). sorge#1 의 `openclaw.lance` EROFS 는 권한 사고가 아니라 **계약대로**였고, 그 축은 oracle 에 **absent** 다. 표를 실물에 맞췄다.
       **금지**: 그 EROFS 를 이유로 bind 를 rw 로 되돌리는 것. 필요한 건 consumer 쪽 absent 응답(= `agent-config` 몫)이다.
+- [ ] **🟠 OpenClaw 임베딩 저장 부피 — A층은 우리 몫이다 (2026-09-06 최초 계량).** `agents/` 3.7G 중 기억축 1.53G 이고 **그 62% 가 인덱스가 아니라 캐시**다(`dbstat`):
+      `memory_embedding_cache` 11,079행 **948MB**(그중 **6,955행=63% orphan** — `memory_index_chunks` 에 같은 `hash` 없음) · `memory_index_chunks` 4,909행 419MB · vec 160MB.
+      원인 ① `embedding` 이 **TEXT** — 4096 float 를 JSON 문자열로 저장해 행당 **86KB**(blob 이면 16KB). ② 캐시 상한이 config 에 안 보인다(glg 5,783행 vs mini 201행).
+      `freelist_count` 6봇 전부 **0** → DB 팽창이 아니라 실데이터. 캐시 행은 전부 현행 모델(8B/4096d)이라 옛 모델 걸러내기 식 청소는 없다.
+      **다음 한 수**: orphan 삭제 + `VACUUM` ≈ **600MB** 회수. 배타 락이라 **게이트웨이 정지 창 필요** → 8.2 soak 더 보고 GLG 승인 후. 상류엔 `embedding TEXT` 를 리포트 대상으로 본다.
+      **소유권 (GLG 2026-09-06)**: OpenClaw 임베딩 품질·설정은 이 집 몫, `andenken` 은 결과물을 쓰는 쪽. 소스 실측은 [andenken#13](https://github.com/junghan0611/andenken/issues/13#issuecomment-5557290434) 로, 층 분리는 [sorge#1](https://github.com/junghan0611/sorge/issues/1#issuecomment-5557292984) 로 넘겼다 — **export 는 `memory_index_chunks` 에서만(415MB), 캐시엔 `path`·`text` 컬럼이 아예 없다.**
+- [ ] **sorge#1 5번(GPT OpenClaw memory dirty + timeout)은 이 집이 받는다** — A층이라 oracle 에서 재는 게 맞다. 미착수.
 - [ ] **Skill Workshop 잔여 2건** — `off` 인데도 6/15 부터 살아 있던 glg 제안 `next-current-pointer-20260615-958582b72f` 을 **사람이 처리**해야 한다(`apply`/`reject`/`quarantine`). 쓰기 경로 질문은 닫혔다(ORACLE.md §Skill Workshop: 대상은 워크스페이스 실디렉터리, SSOT 는 mount ro 로 2차 방어 — probe 로 확인). 남은 미해결은 **scanner 의 `clean` 판정 근거**와 **제안 3개 상한 도달 시 동작**.
 - [ ] **별건 2개 (업그레이드 이전부터 있던 간극)**: bbot workspace에 skills 미배포(`run.sh k)` 재실행 필요) / bbot·mini `IDENTITY.md` 형식이 달라 `agents list`에 Identity 줄이 안 뜬다(봇 본인은 자기 정체성을 정확히 안다 — 실턴으로 확인).
 
