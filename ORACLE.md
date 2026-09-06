@@ -183,7 +183,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 | **bbot** | **`xhigh`** | **유일한 이탈.** fable-5 승격 때 "thinking=high 강제"의 잔재로 보인다 — 세션에 붙어있어 config 변경으로 안 내려간다 |
 | glg / gpt / gemini | 플래그 없음 | 해상도 기본값을 그대로 탐 |
 
-upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORTS`): **sol = `low`, terra = `medium`, luna = `medium`**. ⚠️ 그래서 `thinkingDefault=medium`은 **gpt 봇(sol)에겐 인하가 아니라 인상이다**(low → medium). 턴이 느려지면 되돌릴 곳은 per-agent `agents.list.<gpt>.thinkingDefault = "low"`다.
+upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORTS`): **sol = `low`, terra = `medium`, luna = `medium`**. ⚠️ 그래서 `thinkingDefault=medium`은 **gpt 봇(sol)에겐 인하가 아니라 인상이다**(low → medium). 턴이 느려지면 되돌릴 곳은 per-agent `agents.entries.gpt.thinkingDefault = "low"`다(8.1 이후 키드 맵).
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
@@ -313,7 +313,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 > **⚠️ auto-fallback catch-all 함정 — primary 실패 시 봇 정체성 훼손 (2026-06-13)**: OpenClaw 모델 해상도는 `primary → model.fallbacks(순서) → auto-fallback`. configured primary가 실패(서빙 불가/overload)하고 `fallbacks`가 비어있으면, auto-fallback이 **글로벌 allowlist(`agents.defaults.models`) 첫 작동모델**로 떨어진다(`modelOverrideSource: "auto"`). **user `/model` 선택만 fail-closed**(도달 불가 시 가시적 실패), configured primary는 항상 이 체인을 탄다. **2026-06-13 사건**: bbot을 fable-5로 올렸다가 Fable 5 서빙 실패 → allowlist 1번이던 `deepseek/deepseek-v4-pro`가 catch-all로 잡혀 **bbot이 deepseek로 응답**(정체성 훼손, "차라리 무응답이 낫다"). **조치**: allowlist에서 deepseek pro/flash **제거**(참조 봇 0) → `openai/gpt-5.5`(=default·1번)가 catch-all. **원칙**: ① allowlist 1번은 "정체성 훼손이 가장 덜한 catch-all"이어야 한다 — **2026-08-04 gpt-5.5 전면 제거로 catch-all은 `openai/gpt-5.4`, `defaults.model.primary`는 `openai/gpt-5.6-terra`로 이동**(둘 다 codex 구독, 5.5와 같은 훼손 프로파일). ⚠️ allowlist **키 순서는 `config set --replace`로 지정해도 안 먹는다** — OpenClaw가 기존 순서를 유지하며 정규화하므로, 1번 자리를 바꾸려면 순서가 아니라 *구성*을 바꿔야 한다. ② 서빙 미보장 모델(fable 등)을 **primary로 박지 말 것** — `/model`로 세션에서 시험하고, 살아나면 그때 primary 승격. ③ deepseek은 어떤 봇 정체성에도 안 맞아 allowlist에서 영구 제외(필요 시 `config set agents.defaults.models '{"deepseek/deepseek-v4-pro":{}}' --strict-json --merge`로 한시 추가, 단 catch-all 1번 자리는 피한다). **(2026-07-12 갱신)**: fable-5는 upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개**돼 bbot primary로 재승격됨 — "fable-5 서빙 실패" 전제는 이 버전에선 해소. 단 원칙 ②(서빙 미보장 모델을 primary로 박지 말 것)는 여전히 유효 — 이번에도 primary=opus 유지한 채 `agent --model` 오버라이드 격리 probe로 서빙(`fallbackUsed=false`)을 먼저 확인한 뒤에만 promote했다. fable을 `defaults.models` 끝(catch-all 아닌 자리)에 등록해 오버라이드 probe + `/model fable` 전 봇 개방.
 >
-> **(2026-08-07 갱신 — codex 제거로 catch-all 재배치)**: `openai/gpt-5.4` 삭제로 1번 자리가 비어 gemini(403 DOWN)→fable-5로 밀릴 뻔했다. allowlist를 **`terra, sol, luna, gemini, fable-5, opus-5, sonnet-5`** 순으로 재정렬해 catch-all을 `openai/gpt-5.6-terra`(= `defaults.model.primary`와 동일, ChatGPT 구독, 정체성 중립)로 고정. **순서 지정 방법 정정**: "`config set --replace`로 순서가 안 먹는다"는 여전히 맞지만, **`~/openclaw/config/openclaw.json`을 직접 편집하면 순서가 그대로 선다**(이번에 그렇게 했고 `config validate` 통과). 단 OpenClaw가 config를 스스로 재작성하는 경로(`doctor --fix`, 업그레이드 마이그레이션)를 타면 다시 정규화될 수 있으니, **그런 작업 뒤에는 1번 자리를 재확인**한다. **(2026-08-31 8.1 갱신 — 자리가 이사했다)**: catch-all은 이제 `agents.defaults.models` 키 순서가 아니라 **`agents.defaults.modelPolicy.allow` 배열 순서**다. 8.1 마이그레이션이 legacy 맵을 그 배열로 복사하며 순서를 보존했고 1번은 `openai/gpt-5.6-terra` 그대로였다(실측). 앞으로 1번을 바꾸려면 **배열을 직접 편집**한다.
+> **(2026-08-07 갱신 — codex 제거로 catch-all 재배치)**: `openai/gpt-5.4` 삭제로 1번 자리가 비어 gemini(403 DOWN)→fable-5로 밀릴 뻔했다. allowlist를 **`terra, sol, luna, gemini, fable-5, opus-5, sonnet-5`** 순으로 재정렬해 catch-all을 `openai/gpt-5.6-terra`(= `defaults.model.primary`와 동일, ChatGPT 구독, 정체성 중립)로 고정. **순서 지정 방법 정정**: "`config set --replace`로 순서가 안 먹는다"는 여전히 맞지만, **`~/openclaw/config/openclaw.json`을 직접 편집하면 순서가 그대로 선다**(이번에 그렇게 했고 `config validate` 통과). 단 OpenClaw가 config를 스스로 재작성하는 경로(`doctor --fix`, 업그레이드 마이그레이션)를 타면 다시 정규화될 수 있으니, **그런 작업 뒤에는 1번 자리를 재확인**한다. **(2026-08-31 8.1 갱신 — 자리가 이사했다)**: catch-all은 이제 `agents.defaults.models` 키 순서가 아니라 **`agents.defaults.modelPolicy.allow` 배열 순서**다. 8.1 마이그레이션이 legacy 맵을 그 배열로 복사하며 순서를 보존했고 1번은 `openai/gpt-5.6-terra` 그대로였다(실측). 앞으로 1번을 바꾸려면 **배열을 직접 편집**한다. **(2026-09-06 8.2 재측정)**: 배열은 7개 → **8개**로 늘었다(끝에 `anthropic/claude-fable-5-1` 추가). **1번은 여전히 `openai/gpt-5.6-terra`** — 추가는 끝자리라 catch-all 자리를 건드리지 않았다.
 
 보조 모델 (`/model <id>`로 in-thread 전환):
 
@@ -394,16 +394,49 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). 
 - andenken layer is separate by *storage* (LanceDB vs sqlite) and *corpus* (통합 세션+garden md vs OpenClaw sessions/memory). ~~모델(4B vs 8B)로도 분리~~ — **2026-09-02 통합 rebuild로 해소**, cross-store 보정 부채는 없다. 봇의 `semantic-memory` 스킬은 배포 완료(claude-cli 봇은 `config/claude-skills` 마운트 면, 내장 런타임은 `workspace*/skills` 면)이고, 컨테이너 env·dictcli Layer 3 프로비저닝은 [issue #9](https://github.com/junghan0611/nixos-config/issues/9)에서 종결 중.
 - This baseline is the comparison point for andenken bake-off (first-result precision, freshness, CJK short query, operator trust). OpenClaw is SSOT; andenken follows.
 
-### Mount permission model (since 2026-04-25)
+#### 호스트별 기억축 authority — `writer | read-only consumer | absent` (2026-09-06 선언)
 
-The `ro`/`rw` boundary was widened to reduce host-hop friction for agent edits. Rollback safety relies on git, not on filesystem enforcement.
+[sorge#1](https://github.com/junghan0611/sorge/issues/1) 완료조건 중 **이 리포의 몫**이다: 호스트별 authority 와 데이터 경로의 writable/read-only 계약을 선언한다. 인덱스 구현·harvest 증거는 `andenken`, consumer 오류 계약은 `agent-config` 몫이라 여기서 대신 고치지 않는다.
 
-| Area | Mode | Rollback surface |
+| 축 | oracle 호스트 | oracle 컨테이너(gateway) | authority |
+|---|---|---|---|
+| `sessions.lance` | **read-only consumer** — 실물은 있으나 여기서 색인하지 않는다(`sync-sessions.sh` 가 rsync 로 채운다) | read-only consumer | thinkpad |
+| `md.lance` (가든) | read-only consumer | read-only consumer | thinkpad |
+| `openclaw.lance` | **absent** | **absent** | thinkpad |
+| OpenClaw 자체 memory (`config/memory/*.sqlite`) | — | **writer** (봇 native `memorySearch`) | oracle |
+
+**실측 (2026-09-06, 이 호스트에서)**:
+
+```
+$ ls ~/repos/gh/andenken/data
+md.lance  md-manifest.json  recalls.jsonl  session-manifest.json  sessions.lance
+#   → openclaw.lance 없음
+
+$ docker inspect openclaw-gateway --format '…{{.Source}} -> {{.Destination}} rw={{.RW}}…'
+bind /home/junghan/repos/gh -> /home/node/repos/gh rw=false
+```
+
+**따라서 sorge#1 §1 의 EROFS 는 권한 사고가 아니라 계약대로다.** `/home/node/repos/gh` 는 ro 이고 `openclaw.lance` 는 이 호스트에 **absent** 다. 소비자가 없는 dataset 을 암묵 생성하려 한 것이 오류이지, mount 를 rw 로 넓혀야 할 사안이 **아니다** — 넓히면 봇이 authority 아닌 호스트에서 인덱스를 쓰기 시작하고, sorge#1 이 금지한 "여러 호스트 동시 쓰기" 로 곧장 간다.
+
+- **금지**: 이 EROFS 를 이유로 `~/repos/gh` bind 를 rw 로 되돌리는 것. 필요한 건 consumer 쪽의 absent 응답이다.
+- **oracle 이 writer 가 되는 유일한 기억축은 OpenClaw 자체 memory sqlite** 뿐이고, 그건 `~/openclaw/config/` (컨테이너 전용 볼륨) 안에 있어 `repos/gh` 경계와 무관하다.
+- **미검증(상속)**: "authority = thinkpad" 는 sorge#1 본문에서 받은 서술이고 이 호스트에서 확인할 수 없다. thinkpad 쪽 receipt 는 `andenken` 담당자 몫.
+
+### Mount permission model — 이 표가 봇의 쓰기 경계 SSOT다
+
+**선언 SSOT는 `~/openclaw/docker-compose.yml`**, 판정은 `docker inspect openclaw-gateway --format '{{range .Mounts}}{{.Source}} rw={{.RW}}{{"\n"}}{{end}}'`. 아래는 2026-09-06 실측이다.
+
+| Area | Mode | 근거 / 롤백 표면 |
 |---|---|---|
-| `~/repos/gh` | **rw** | git (each repo). `git status` surfaces unintended writes immediately. |
+| `~/repos/gh` | **ro** | **2026-08-12 기본 ro 로 좁혔다** — 봇이 임의 리포를 고치지 못하게. compose:72–73(`/home/node/…` + `/home/junghan/…` 두 경로 노출) |
+| ↳ `~/repos/gh/aionsclubs` | rw | 예외. compose:74–75 |
+| ↳ `~/repos/gh/self-tracking-data` | rw | 예외. compose:82 |
 | `~/repos/3rd` | rw | git + "third-party, disposable" nature |
 | `~/repos/work` | ro | intentional — company code never modified through bot hand |
 | `~/org` | **rw** | whole tree (2026-08-27, GLG). Includes `diary.org`, `archives/`, `authinfo.gpg`. Rollback = git on `~/org`. |
+| `~/.pi/agent` · `~/.codex` · `~/.gemini` · `config/claude-skills` | rw | 에이전트 런타임 상태 |
+
+> **2026-09-06 정정**: 이 표는 `~/repos/gh` 를 **rw** 로 적고 있었다(2026-04-25 "경계를 넓혔다" 시절 문장). 실물은 **2026-08-12 부터 ro** 이고, 그 어긋남이 [sorge#1](https://github.com/junghan0611/sorge/issues/1) 의 `openclaw.lance` EROFS 로 드러났다 — 문서를 믿은 소비자가 컨테이너 안에서 인덱스를 만들려다 read-only 에 부딪힌 것이다. **rw 는 이제 예외 목록이지 기본이 아니다.**
 
 **Post-deploy habit**: after a rw-expanding change, monitor `~/org` `git status` for the first hour. Unintended writes are possible now — git is the rollback surface, not the mount.
 
@@ -589,7 +622,7 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 | Agent | Workspace | Notes |
 |---|---|---|
 | main | `workspace/` | allowlist 없음 |
-| glg | `workspace-glg/` | `agents.list[].skills` allowlist 있음 — 신규 스킬 추가 시 allowlist도 갱신 |
+| glg | `workspace-glg/` | `agents.entries.glg.skills` allowlist 있음 — 신규 스킬 추가 시 allowlist도 갱신 |
 | gpt/gemini/mini/bbot | `workspace-*` | allowlist 없음 |
 
 ### Deployment rules
@@ -614,6 +647,43 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 - `workspace*/skills/` — OpenClaw workspace skill system (심볼릭 → agent-config). 내장 런타임 봇(gpt, gemini)이 여기를 본다.
 - 컨테이너 `~/.claude/skills` — `config/claude-skills/` 마운트 (같은 심볼릭 세트). **claude-cli 런타임**(`claude -p` spawn: main/glg/bbot/mini)이 여기를 본다. ~~Claude ACP~~ — ACP는 2026-06-10 제거, 이 면을 보는 주체가 바뀌었다.
 - `~/.claude` 자체는 **rw** (Claude `session-env/`·`projects/` 기록).
+
+### Skill Workshop — 봇이 자기 스킬을 제안하는 레인 (2026-09-06 실측)
+
+**`autonomous.mode: "off"` 는 자동 *적용*을 끈 것이지, 제안 레인 자체를 끈 게 아니다.** 8.1 릴리즈 노트가 예고한 대로(#106182 *"keep up to three pending proposals, even with autonomous self-learning off"*) 제안은 계속 쌓인다 — 실제로 쌓여 있었다:
+
+```
+$ docker exec openclaw-gateway openclaw skills workshop list --agent glg
+next-current-pointer-20260615-958582b72f  pending  create  next-current-pointer
+#   → 나머지 5봇은 "No skill proposals". off 상태에서 6/15 에 생긴 제안이 3개월 살아 있었다
+```
+
+라이브 설정(실측): `skills.workshop = {autonomous.mode:"off", approvalPolicy:"pending", allowSymlinkTargetWrites:false}`.
+
+**#7 §7(나) 최우선 미확인 항목이었던 "자동 생성 스킬의 쓰기 대상 경로" 는 이것으로 닫힌다.** `inspect` 가 대상 경로를 그대로 찍는다:
+
+```
+Target:  /home/node/.openclaw/workspace-glg/skills/next-current-pointer/SKILL.md
+Scanner: clean
+```
+
+즉 **워크스페이스 안**이지 `agent-config` SSOT 가 아니다. 정확히 말하면:
+
+- `workspace*/skills/` 는 **실디렉터리**이고, 그 안에 스킬 이름마다 `→ ~/repos/gh/agent-config/skills/<name>` **심볼릭이 개별로** 걸려 있다.
+- 따라서 **새 이름** 제안(`propose-create`)은 심링크가 없는 자리에 실디렉터리를 만든다 → SSOT 무관.
+- 위험한 것은 **기존 스킬 이름과 겹치는 `propose-update`** 뿐이다 — 그 경로는 심링크를 타고 SSOT 로 나간다. `allowSymlinkTargetWrites:false` 가 그 자리의 1차 방어다.
+
+**그리고 2차 방어가 따로 있다 — mount 다.** SSOT 는 컨테이너에서 **쓸 수 없다**(2026-09-06 probe):
+
+```
+$ docker exec openclaw-gateway touch /home/node/repos/gh/agent-config/skills/.write-probe
+touch: cannot touch '…': Read-only file system      # /home/junghan/… 면도 동일
+```
+
+`~/repos/gh` 가 2026-08-12 부터 ro 이므로(§Mount permission model), `allowSymlinkTargetWrites` 가 뒤집히더라도 SSOT 오염은 EROFS 로 막힌다. **두 방어는 독립이다 — 어느 하나를 이유로 다른 하나를 풀지 마라.**
+
+- **운영**: 제안은 사람이 처리한다 — `skills workshop inspect --agent <id> <proposalId>` 로 읽고 `apply` / `reject` / `quarantine`. `--agent` 없이 치면 `ownership=explicit` 때문에 "no explicit owner" 로 거절된다(정상).
+- **미해결**: scanner 가 무엇을 근거로 `clean` 을 주는지, 3개 상한에 도달하면 어떻게 되는지는 아직 서술 안 됨.
 
 ### gogcli(gog) — 바이너리만 스킬 트리 밖
 

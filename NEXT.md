@@ -330,22 +330,30 @@ INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 �
 
 ---
 
-## 🟡 OpenClaw 8.1 컷오버 완료 — soak + 후속 (2026-08-31 21:15 KST)
+## 🟢 OpenClaw — `2026.8.2` 로 안정화 고정 (2026-09-06 GLG 결정)
+
+> **9.x 로 올라가지 않는다.** upstream 은 `v2026.9.1`(9/03) · `v2026.9.2`(9/05) 까지 나왔고 latest 는 9.2 다(`gh release list` 2026-09-06 실측). **지금 있는 버전으로 안정화하는 것이 이번 판의 목표**이므로 그 둘은 읽지도 않는다 — 조망은 다음 릴리즈 판에서 한 칸에 몰아 본다.
+> 라이브 = `OpenClaw 2026.8.2 (0965053)` · `openclaw-custom:latest` · Up 3일 healthy · 핀 `docker/openclaw/Dockerfile:200`. 롤백면 = `openclaw-custom:8.1-rollback`.
 
 **라이브 = `2026.8.1` (ea80657), healthy.** 컷오버 경위·3층 검수 결과·폐기된 반사신경 3건은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31`로 이관했다. 11겹 함정표·재현 절차는 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md), 버전 이력은 [ROADMAP.md](ROADMAP.md). 여기는 **남은 것만**.
 
 증거 사슬: `~/openclaw/backups/pre-8.1-cutover-20260831T203708/` (cold 백업 1.8G + gate4~16 stdout/stderr/status + `ROLLBACK.sh`).
 
-- [ ] **ORACLE.md 재작성** — 8.1로 사실이 바뀐 자리들. ① `doctor --fix 금지`(:265,:280) → **8.1에선 필수 절차**로 성격이 바뀌었다(단 gemini는 이미 Copilot 레일이라 겨눌 대상 없음). ② config 키 이름: `agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, catch-all 규율은 `agents.defaults.models` 키 순서 → **`agents.defaults.modelPolicy.allow` 배열 순서**. ③ 런타임 지형표에서 codex 행 삭제(=2026-08-07 GLG 결정이 이번에 완결됨). ④ `agents.ownership=explicit` + `bindings` 6개 명시가 새 baseline.
-- [ ] **issue #7 닫기** — 결과/receipt 코멘트 달고 close.
-- [ ] **레거시 잔재 청소 (비긴급)** — `config/agents/*/sessions/*.migrated` 다수 + `sessions.json.bak*`. 마이그레이션이 남긴 원본이라 soak 통과 후 지운다. `backups/…/isolated-orphans/telegram-deepseek-allowFrom.json`도 그때 판단.
+- [x] **ORACLE.md 재작성** — 2026-09-06 완결(① 8/31 · ②③④ 이번 세션). ① `doctor --fix 금지`(:265,:280) → **8.1에선 필수 절차**로 성격이 바뀌었다(단 gemini는 이미 Copilot 레일이라 겨눌 대상 없음). ② config 키 이름: `agents.list`→`agents.entries`, `agents.defaults.memorySearch`→`memory.search`, `tools.exec.security/ask`→`tools.exec.mode`, catch-all 규율은 `agents.defaults.models` 키 순서 → **`agents.defaults.modelPolicy.allow` 배열 순서**. ③ 런타임 지형표에서 codex 행 삭제(=2026-08-07 GLG 결정이 이번에 완결됨). ④ `agents.ownership=explicit` + `bindings` 6개 명시가 새 baseline.
+- [x] **issue #7 닫기** — 2026-09-06 receipt 코멘트 + close.
+- [ ] **레거시 잔재 청소 (비긴급)** — `config/agents/*/sessions/*.migrated` 다수 + `sessions.json.bak*`(gpt 한 세션의 `pre-doctor-openai-codex-repair` 계열만 60M+). soak 는 통과했으나 **`update cleanup` 이 못 집는다**(위 항목) → 지운다면 수동이고, 그건 롤백 원본 포기 선언이다. `backups/…/isolated-orphans/telegram-deepseek-allowFrom.json`도 그때 판단.
 - **오해 방지 3건 (정상이다)**: ① boot 라인이 `11 plugins`인데 `plugins list`는 `12/66 enabled` — 차이는 `google`이고 8.1이 provider를 **lazy-load**한다(설치·enabled 상태 정상, `stock:google/index.js`). ② `AgentSelectionRequiredError`는 `--agent` 없이 CLI를 친 **내 호출** 탓이지 봇 문제가 아니다(ownership=explicit의 정상 동작). ③ telegram `menu text exceeded … 5700-character budget` — 명령 101개라 설명만 줄인다, 기능 영향 없음.
 - [ ] **⚠️ 백업 범위 정직하게 — 내 컷오버 백업에는 트랜스크립트가 없다.** `pre-8.1-cutover-20260831T203708/`(1.8G)은 *마이그레이션 대상*(agent/state/plugin-state sqlite, cron, tasks, openclaw.json, sessions.json)만 담았다 — `.jsonl` **0개**(실측). 트랜스크립트를 든 pre-8.1 스냅샷은 **형제가 19:06에 뜬 `pre-8.1-20260831T190622/config-state-cold.tar.zst`(837M, main만 `.jsonl` 276개)** 쪽이다. 즉 **두 디렉터리가 합쳐져야 온전한 롤백면**이다 — soak 통과 전에는 둘 다 지우지 말 것.
-- [ ] **디스크 회수 (soak 통과 후 = 2026-09-01 21:15 이후).** 실측 2026-08-31 22:3x, `/home` 82%(18G 여유)라 급하지 않다. **순서를 지켜라 — `upgrade-lab`을 통째로 지우면 유일본 26M이 같이 날아간다.**
-  - **① 먼저 구하고**: `~/openclaw/upgrade-lab/8.1-20260831T190622/evidence/`(26M) + `TARGET-CONFIG-SHA256`은 **lab 단계 유일본**이다(`doctor-fix-pass2/3/4` · `gateway-startup-repair` · `openclaw.before.json`). 컷오버 백업은 `gate4`~`gate17` = **라이브 단계만** 담는다. gotchas의 *"리스 상실은 lab·라이브 양쪽 재현"* 주장의 lab 쪽 receipt가 여기뿐이므로 `backups/pre-8.1-cutover-20260831T203708/lab-evidence/`로 옮긴 뒤 지운다.
-  - **② 그다음 지운다**: `rm -rf ~/openclaw/upgrade-lab` → **8.2G**. 내역은 `config/` 4.6G + `fresh-cold-pre-migrated-config/` 3.7G(둘 다 cold tar 837M가 담은 것의 사본) + `auth-profile-secrets/` 8K(백업 쪽과 `diff -rq` 동일 확인).
-  - **③ 이미지는 기대만큼 안 준다** — 태그만 다른 같은 이미지가 두 쌍이다: `ed2a67c2f90b` = `8.1-candidate3` **= `latest`(라이브)**, `7548f90058dd` = `7.1-rollback` **= `pre-8.1-20260831T190622`**. 진짜 회수원은 `8.1-candidate`(`337db932f010`)와 `candidate2`(`6f82a2b3ff32`) 둘뿐이고, `docker system df` 실측 **reclaimable 2.837GB**(명목 4.8G 아님 — `latest`와 레이어 공유). **`8.1-candidate3`는 라이브 별칭이라 이미지를 지우면 안 된다.**
-  - **④ 유지**: `7.1-rollback` 이미지 + 백업 2종(`pre-8.1-20260831T190622` 837M cold tar + `pre-8.1-cutover-20260831T203708` 1.8G). 둘이 합쳐져야 온전한 롤백면이다.
+- [x] **디스크 회수 — 2026-09-06 실행.** `/home` **87% → 78%(+8.2G)**, docker **build cache 3.72GB + 중간 이미지 2벌** 회수.
+      ① `upgrade-lab/8.1-…/evidence`(26M) + `TARGET-CONFIG-SHA256` 을 `backups/pre-8.1-cutover-20260831T203708/lab-evidence/` 로 먼저 구조(`diff -rq` 검증) → ② `rm -rf ~/openclaw/upgrade-lab`(8.2G) →
+      ③ `openclaw-custom:8.1-candidate`·`candidate2` 이미지 삭제 + `8.1-candidate3` 태그 해제(같은 id 를 `8.1-rollback` 이 계속 든다) + `docker builder prune -af`.
+      ④ **유지**: `pre-8.1-20260831T190622`(837M cold tar, 트랜스크립트 포함) + `pre-8.1-cutover-20260831T203708`(1.8G, 마이그레이션 대상 + gate 증거 + lab-evidence). 둘이 합쳐져야 온전한 롤백면이다.
+- [ ] **남은 회수 후보 — GLG 판단 대기.** ① 7.1 롤백면 3.4G(`openclaw-custom:7.1-rollback`=`pre-8.1-20260831T190622` 2.23G + `ghcr…:2026.7.1-2` 1.15G): 8.1 이 agent DB 를 v19 로 올려 7.1 로의 실질 롤백은 이미 불가에 가깝고 롤백면은 8.1 이다 — 은퇴시킬지. ② 옛 백업 3벌 145M(`20260507T…-pre-qwen3` 59M · `openclaw-agent.sqlite.bak-copilot-purge-20260816` 69M · `dream-cleanup-20260503` 17M). ③ `config/openclaw.json.bak-2026042x` 계열 8개(4월, 각 10K).
+- [ ] **`openclaw update cleanup` 은 지금 아무것도 회수하지 않는다 (2026-09-06 실측).** `--dry-run` 결과 **`Candidates: 0 bytes`**, `verification-required: 434MB`(`session-sqlite-import-archive/*.imported-*`, 사유 `historical-manifest-without-import-proof`), `protected: 75MB`(`*.migrated`·`*.pre-doctor-*.bak`, 사유 `unmanifested-recovery-original`). **즉 `--yes` 를 눌러도 0바이트다** — CLI 정규 경로가 우리 잔재를 아직 못 집는다. `.migrated`/`.bak` 수동 청소는 이 판정을 알고 하는 것이지, 그 명령으로 되는 일이 아니다.
+- [x] **[sorge#1](https://github.com/junghan0611/sorge/issues/1) 의 이 리포 몫 — 호스트별 authority · writable 계약 선언.** ORACLE.md §"호스트별 기억축 authority" 에 `writer | read-only consumer | absent` 표로 박았다.
+      **부수 발견이 본체였다**: ORACLE.md mount 표가 `~/repos/gh` 를 **rw** 로 적고 있었는데 실물은 **2026-08-12 부터 ro** 다(compose:72–73, `docker inspect … rw=false`). sorge#1 의 `openclaw.lance` EROFS 는 권한 사고가 아니라 **계약대로**였고, 그 축은 oracle 에 **absent** 다. 표를 실물에 맞췄다.
+      **금지**: 그 EROFS 를 이유로 bind 를 rw 로 되돌리는 것. 필요한 건 consumer 쪽 absent 응답(= `agent-config` 몫)이다.
+- [ ] **Skill Workshop 잔여 2건** — `off` 인데도 6/15 부터 살아 있던 glg 제안 `next-current-pointer-20260615-958582b72f` 을 **사람이 처리**해야 한다(`apply`/`reject`/`quarantine`). 쓰기 경로 질문은 닫혔다(ORACLE.md §Skill Workshop: 대상은 워크스페이스 실디렉터리, SSOT 는 mount ro 로 2차 방어 — probe 로 확인). 남은 미해결은 **scanner 의 `clean` 판정 근거**와 **제안 3개 상한 도달 시 동작**.
 - [ ] **별건 2개 (업그레이드 이전부터 있던 간극)**: bbot workspace에 skills 미배포(`run.sh k)` 재실행 필요) / bbot·mini `IDENTITY.md` 형식이 달라 `agents list`에 Identity 줄이 안 뜬다(봇 본인은 자기 정체성을 정확히 안다 — 실턴으로 확인).
 
 ---
