@@ -374,6 +374,71 @@ INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 �
       **설정 노출 0**: `busy_timeout`(5s)·`journal_mode`·`wal_autocheckpoint`(1000p)·checkpoint(30분 PASSIVE)·`journal_size_limit`(64MB)·`onSearch`·**검색 데드라인 15s**·DB 경로 전부 하드코드. gpt 의 241MB WAL 도 같은 자리.
       **철회한 내 주장 3개**: ~~latency 가 크기에 선형(0.5초/MB)~~ → 에이전트를 크기 오름차순으로 루프 돌며 잰 **측정 산물**이었다(4 vCPU·load 4.8). ~~vec0 가 안 쓰인다~~ → `status --deep` 이 `ready` 를 찍고 있었다. ~~`embedding TEXT` 파싱이 속도의 축~~ → node 로 1초.
       ⚠️ **이 호스트에서 latency 를 잴 때**: 4 vCPU 다. 직렬로, 샘플 사이 간격을 두고, 부하를 같이 기록하고, 중앙값으로 본다. 병렬로 재면 큐 대기를 재는 것이다. `docker exec` 를 연달아 치면 앞 워커와 겹친다.
+## 🔴 봇 기억축을 **세션만**으로 좁힌다 — 깨끗한 베이스로 재출발 (GLG 결정 2026-09-06)
+
+**결정**: `memory.search.sources` 를 `["memory","sessions"]` → **`["sessions"]`** 로. 다시 임베딩하더라도 **깨끗한 베이스에서** 시작한다.
+
+**왜 — 지금 memory 축의 절반이 우리가 꺼둔 기능의 4월 화석이다** (2026-09-06 실측, `mode=ro` 직접 조회):
+
+| bot | total | memory | 그중 **dreaming** | 그중 MEMORY/USER | sessions | 그중 deleted |
+|---|---|---|---|---|---|---|
+| glg | 1,946 | 903 | **445** | 154 | 1,043 | 12 |
+| gpt | 1,068 | 543 | **313** | 61 | 525 | 5 |
+| bbot | 1,149 | 472 | 0 | 6 | 677 | 10 |
+| main | 430 | 233 | 21 | 104 | 197 | 0 |
+| gemini | 165 | 130 | 46 | 21 | 35 | 2 |
+| mini | 157 | 81 | **68** | 12 | 76 | 3 |
+| **합** | **4,915** | **2,362** | **893** | **358** | **2,553** | **32** |
+
+`memory/dreaming/light/2026-04-2x.md` — **dreaming 은 라이브에서 `false` 로 꺼져 있는데** 그 4월 산출물 893청크가 아직 검색 상위를 다툰다(mini 는 memory 축의 84%). 삭제된 세션(`.deleted.*`) 32청크도 인덱스에 남아 있다.
+
+**세션만 남기면 4,915 → 2,553 청크(-48%), embedding 텍스트 214MB.**
+
+### ⚠️ 대가 — 이건 공짜가 아니다
+
+`sources:["sessions"]` 는 dreaming 만 빼는 게 아니라 **`MEMORY.md` · `USER.md` · `memory/YYYY-MM-DD.md` 를 통째로 뺀다(358청크가 MEMORY/USER)**. 봇의 **장기 기억 정본이 의미 검색에서 사라진다**. 파일은 그대로 있고 봇이 직접 읽을 수는 있지만, `memory_search` 로는 안 잡힌다.
+→ **GLG 확인 필요**: 이 대가를 받는 게 맞나, 아니면 dreaming 만 빼는 길(아래 대안 B)을 먼저 볼 것인가.
+
+### 절차 (라이브 쓰기 — 승인 후 실행)
+
+- [ ] **0. 백업** — `openclaw.json` + 6봇 `memory_index_chunks` 청크 수 스냅샷. 롤백선은 `sources` 한 줄 되돌리기.
+- [ ] **1. 기준선 고정** — 봇 실경로 latency 를 지금 값으로 박는다: `mini 14.7s 성공 / glg 27.7s 타임아웃`(`openclaw agent --session-key probe-memlat-…`). **이게 성공 판정의 분모다.**
+- [ ] **2. config** — `memory.search.sources = ["sessions"]`. ⚠️ `agents.defaults.models` 처럼 키 순서가 걸린 자리가 아니므로 `config set` 으로 충분하나, 편집 후 `config validate` 필수.
+- [ ] **3. 죽은 청크 회수** — `sources` 만 바꾸면 기존 memory 청크가 인덱스에 남을 수 있다. `memory index` 증분이 지우는지 먼저 확인하고, 안 지우면 `memory forget` 경로를 **`--dry-run` 으로 먼저** 본다. **`--force` 재색인은 금지**(전량 재임베딩 = 비용).
+- [ ] **4. 검증** — ① 청크 수 4,915 → ~2,553 ② `Dirty: no` 6봇 ③ **봇 실경로 latency 재측정, glg 가 15초 게이트를 통과하는가** ④ 회수 품질 스모크: 봇에게 최근 대화 한 건을 기억 검색으로 찾게 시킨다.
+- [ ] **5. 되돌림 조건** — glg 가 여전히 타임아웃이면 이 변경은 **latency 문제를 못 고친 것**이다(아래 참조). 그때는 품질 이득만 남으므로 유지할지 되돌릴지 다시 판단.
+
+### 정직하게 — 이건 latency 의 근본 처방이 아니다
+
+latency 의 원인은 코퍼스 크기가 아니라 **검색 경로가 DB 를 RW 로 열고 쓰기를 한다는 것**이다(아래 sorge#1 5번 항목). 라이브 파일을 `mode=ro` 로 열면 같은 시각 같은 쿼리가 **0.047초**다. 그러니 이 작업의 1차 성과는 **검색 품질**(죽은 4월 dreaming 이 상위에서 빠짐)이고, latency 개선은 부수효과로 기대할 뿐 보장이 아니다.
+
+### 대안 B — dreaming 만 빼기. **길을 찾았고, 대가가 없다** (2026-09-06 확인)
+
+`memory forget` 은 **세션 단위**다(`--session`/`--participant`/`--hook-source`/`--since`) — **경로 지정이 안 된다.** 그래서 그 길은 막혔다. 대신 **파일 쪽이 열려 있다**:
+
+```
+workspace/memory/dreaming/        100K · 21파일 · 최신 2026-04-27
+workspace-glg/…                   328K · 21파일 · 최신 2026-04-27
+workspace-gpt/…                   264K · 21파일 · 최신 2026-04-27
+workspace-gemini/…                112K · 21파일 · 최신 2026-04-27
+workspace-mini/…                  136K · 21파일 · 최신 2026-04-27
+   (bbot 은 없다 — 그래서 bbot 만 dreaming 청크 0)
+plugins.entries.memory-core.config.dreaming.enabled = false
+```
+
+**전부 2026-04-21~27 한 주치다.** dreaming 을 끈 뒤로 4개월간 한 줄도 안 늘었고, 그동안 계속 색인돼 검색 상위를 다퉜다.
+
+**인덱스는 파일을 따라간다.** 그 디렉터리를 `~/openclaw/backups/dreaming-april-<stamp>/` 로 **옮기고 증분 재색인**하면 893청크가 빠진다 — config 변경 0, 재임베딩 0, `MEMORY.md`/`USER.md` 보존.
+
+- [ ] **B-1. dreaming 디렉터리 5개를 backups 로 이동** (약 940K, 삭제 아님)
+- [ ] **B-2. `memory index --agent <id>` 6봇 증분** → 청크 4,915 → ~4,022 확인
+- [ ] **B-3. 봇 실경로 latency 재측정** (기준선 mini 14.7s / glg 27.7s)
+- [ ] **B-4. 되돌리려면** 디렉터리를 제자리에 놓고 다시 증분 색인. 완전 가역.
+
+**순서 제안**: B 를 먼저 한다. 대가가 없고 가역이며, A(세션만)가 정말 필요한지는 B 뒤에 다시 보면 된다.
+
+---
+
 - [ ] **⏸ GLG 판단 — `memory.search.provider: "none"`(FTS-only) 을 한 봇에 시험할지.** 유일하게 남은 설정 탈출구다: embedQuery 왕복과 KNN 자식 스폰이 사라지고 5ms FTS 만 남는다. 대가는 의미 검색 상실(키워드만). 라이브 쓰기라 승인 전 보류. 되돌리기는 쉽다 — 후보는 gpt 나 bbot.
 - [ ] **상류 리포트 후보 2건** — ① 메모리 인덱스와 세션 전사가 한 파일이고 검색 매니저가 RW 로 연다(바쁜 봇에서 검색이 락에 갇힌다) ② `embedding` 을 TEXT 로 저장한다(행당 88KB = 텍스트의 138배). 우리가 못 고치는 층이다.
 - [ ] **정기 작업으로 승격 검토** — `memory index` 는 dirty 가 뜰 때마다 필요하다(6봇 순회 1분 이내). cron 에 얹을지, 사람이 볼 때 돌릴지 판단. 얹는다면 [docs/openclaw-automations.md](docs/openclaw-automations.md) 가 SSOT.
