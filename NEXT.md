@@ -11,16 +11,18 @@
 - [x] **1. OpenClaw `2026.8.2` 안정화 고정** — 9.1/9.2 미채택(GLG 2026-09-06). 라이브 healthy · 롤백면 `8.1-rollback` 하나만 유지
 - [x] **2. 컷오버 잔재 회수** — `/home` 94%→75%, docker 12.6→9.8GB. 롤백면 은퇴 완료
 - [x] **3. 기억축 청소** — dreaming 4월 화석 880 + 세션 아카이브 835 = **1,715청크 회수(4,915→3,202, -35%)**. 6봇 `dirty:no`
-- [ ] **4. 지배 세션 압축** ← CURRENT: **GLG 가 직접 gpt DM 을 압축한다.** 끝나면 에이전트가 `memory index --agent gpt` 증분만 돌린다
-- [ ] **5. 상류 리포트** ← PAUSED: 4 이후. 우리 설정으로 못 고치는 6건이 모였다(아래 §상류)
+- [x] **4. 지배 세션 압축 — 압축할 게 아니었다.** gpt DM 무응답의 원인은 컨텍스트가 아니라 **rate-limit 로 죽은 run 이 남긴 세션 락**이었다(`lastRunError: API rate limit reached`, `endedAt` 2026-09-05T14:20, 이후 run 0회). 실제 창은 `route=fits` 185,615/272,000. `sessions.abort` 한 줄로 복구(첫 턴 5초, 텔레그램 `messageId=3595`). 전사 미절단. 함정 전문 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 첫 항목
+- [ ] **5. 봇 무응답을 사람이 먼저 알아채는 구조** ← CURRENT (GLG 2026-09-06: *"이런 문제 발생했는데 뭘 알려주는 게 없네"*). gpt 가 **하루 넘게 죽어 있는 동안 알림이 0건**이었다 — GLG 가 말을 걸어보고서야 발견했다. 로그에는 3분마다 같은 에러가 찍혔고, health-monitor 의 `stuck session recovery` 는 `reason=active_reply_work` 로 매분 **skip** 했다(락 잡힌 세션을 "일하는 중"으로 본다). 필요한 것: ① 세션 `status=failed` 가 N 분 이상 지속되면 main/운영 채널로 통지 ② `spooled update … keeping for retry` 가 반복되면 같은 통지 ③ 그 판정이 upstream 몫인지 우리 cron 한 줄인지 결정([docs/openclaw-automations.md](docs/openclaw-automations.md) 에 얹을 자리)
+- [ ] **6. 상류 리포트** ← PAUSED: 5 이후. 우리 설정으로 못 고치는 6건이 모였다(아래 §상류). **7번째 후보 추가**: rate-limit 종료 run 이 세션 락을 놓지 않아 `sessions compact` 까지 막는다(복구 수단이 같이 잠긴다)
 
-현재 좌표: 1·2·3 완료 → **4 는 GLG 손에 있다** → 5 는 그다음
+현재 좌표: 1·2·3·4 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
 
 # NOW
 
-- **Current**: OpenClaw 8.2 로 고정하고 기억축을 깨끗한 베이스로 만드는 판. 오늘 청소 두 판이 끝났고 라이브는 무사하다(`2026.8.2` healthy, config 변경 0).
-- **Next**: (1) GLG 가 gpt DM(`agent:gpt:telegram:gpt:direct:123861330`, 컨텍스트 118%) 압축 → (2) `docker exec openclaw-gateway openclaw memory index --agent gpt` → (3) 청크 수와 봇 실경로 latency 재측정.
-- **Blocker**: 없음(에이전트 몫). gpt 압축은 GLG 소관 — 에이전트가 시도했다가 `openai` 프로필 일시 불가로 2회 실패했고, 재시도하지 않기로 했다.
+- **Current**: OpenClaw 8.2 로 고정하고 기억축을 깨끗한 베이스로 만드는 판. 청소 두 판이 끝났고 라이브는 무사하다(`2026.8.2` healthy, config 변경 0). gpt DM 은 `sessions.abort` 로 복구됐다 — **압축이 아니라 락이 문제였다**.
+- **Next**: (1) 무응답 통지 설계(RAIL 5) → (2) `docker exec openclaw-gateway openclaw memory index --agent gpt` 증분 → (3) 청크 수와 봇 실경로 latency 재측정.
+- **Blocker**: 없음. gpt DM 은 살아있다(`status=done`, `route=fits` 62,540/272,000, msgs 4).
+- **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
 - **Read**: 아래 §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
 - **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지.

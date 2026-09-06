@@ -12,6 +12,46 @@
 
 ## 활성
 
+### rate-limit 로 죽은 run 이 락을 남기고, 증상은 "auth profile temporarily unavailable" 로 나온다 (2026-09-06)
+
+gpt 봇(`@glg_gpt_bot`)이 **하루 넘게 무응답**이었고, 그동안 **아무 알림도 없었다**. 텔레그램 로그에는 3분마다 같은 문장만 찍혔다:
+
+```
+error="Error: Auth profile "openai:junghanacs@gmail.com" is temporarily unavailable for openai/gpt-5.6-sol."
+spooled update 140340656 failed; keeping for retry
+```
+
+**이 문장을 믿으면 안 된다.** auth 는 멀쩡했다 — `models auth list --agent gpt` 는 `openai/oauth; expires 2026-09-14`, cooldown 표기 없음. 같은 봇·같은 모델로 격리 세션 한 턴을 돌리니 **성공, `fallbackUsed=false`**. 죽은 것은 프로필이 아니라 **그 DM 세션 하나**였다.
+
+진짜 상태는 `sessions.describe` 에만 있었다:
+
+```
+gateway call sessions.describe --params '{"key":"agent:gpt:telegram:gpt:direct:123861330"}'
+  status: failed
+  lastRunError: "⚠️ API rate limit reached. Please try again later."
+  endedAt: 2026-09-05T14:20:19   ← 하루 전. 이후 새 run 0회
+  contextBudgetStatus: route=fits shouldCompact=false 185,615/272,000
+```
+
+**두 가지 함정이 겹친다:**
+
+1. **rate limit 로 종료된 run 이 세션 락을 놓지 않는다.** 이후 모든 인바운드가 튕기고, `sessions compact` 조차 `has an active run; retry after it finishes` 로 거부된다 — 복구 수단까지 같이 막힌다.
+2. **`sessions list` 의 `ctx %` 를 컨텍스트 초과로 읽으면 오진한다.** 이 세션은 `237k/200k (118%)` 로 표시됐지만 실제 창은 **272k**였고 `route=fits`·`shouldCompact=false` 였다. 표에 뜨는 %는 세션 누적 토큰을 200k 표기창에 댄 값이다. **창이 넘쳤는지는 `sessions.describe` 의 `contextBudgetStatus` 만이 답한다.** 이 오진으로 두 세션 연속(9/6 저녁, 9/6 밤) 엉뚱한 처방(압축·잘라내기)을 준비했다.
+
+**처방 — 압축도 삭제도 아니라 abort 한 줄이다:**
+
+```bash
+docker exec openclaw-gateway openclaw gateway call sessions.abort \
+  --params '{"key":"agent:gpt:telegram:gpt:direct:123861330"}'
+# → {"ok": true, "status": "aborted"}
+```
+
+락이 풀리면 스풀돼 있던 메시지가 즉시 배달된다(실측: abort 후 첫 턴 5초, 텔레그램 `messageId=3595`). **전사를 자를 필요가 없다.**
+
+⚠️ **대가**: 락 해제 시점에 진행 중이던 compaction 이 `user_abort` 로 끝나면서 라이브 창이 **91 → 4 메시지**로 축소됐다(훅이 `workspace-gpt/memory/2026-09-06-2121.md` 에 컨텍스트를 저장한 뒤). 전사 원본은 sqlite 에 남는다.
+
+**파라미터 함정**: `sessions.describe` 는 `key` 만 받는다. `agentId`/`agent` 를 같이 주면 `unexpected property` 로 거부된다.
+
 ### 컨테이너 소비자는 호스트 env·nix 바이너리를 그대로 못 본다 (2026-09-03)
 
 andenken 통합 인덱스 검수에서 **같은 모양이 두 번** 나왔다. 호스트에서 되는 스킬이 봇 위치에서 죽는다.
