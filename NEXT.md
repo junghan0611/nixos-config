@@ -8,27 +8,37 @@
 
 # RAIL — 현재 좌표
 
-- [x] **1. Emacs 31.1 베이스 결정 + thinkpad 이관** — switch GREEN, `doom sync`, face 순환 해소, `v2026.9.2-emacs.1`
-- [x] **2. oracle 이관** — 2026-09-02 완료. client-first(컨테이너 먼저 → switch → `doom sync` → 데몬) · 31↔31 전 경로 GREEN
-- [ ] **3. nuc / laptop 이관** ← CURRENT: 급하지 않다. 각자 다음 rebuild에 따라온다
-- [ ] **4. emacs31 클로저 두 벌 정리** ← PAUSED: doomemacs-config 쪽 판단 대기(preview flake 은퇴 여부)
+- [x] **1. OpenClaw `2026.8.2` 안정화 고정** — 9.1/9.2 미채택(GLG 2026-09-06). 라이브 healthy · 롤백면 `8.1-rollback` 하나만 유지
+- [x] **2. 컷오버 잔재 회수** — `/home` 94%→75%, docker 12.6→9.8GB. 롤백면 은퇴 완료
+- [x] **3. 기억축 청소** — dreaming 4월 화석 880 + 세션 아카이브 835 = **1,715청크 회수(4,915→3,202, -35%)**. 6봇 `dirty:no`
+- [ ] **4. 지배 세션 압축** ← CURRENT: **GLG 가 직접 gpt DM 을 압축한다.** 끝나면 에이전트가 `memory index --agent gpt` 증분만 돌린다
+- [ ] **5. 상류 리포트** ← PAUSED: 4 이후. 우리 설정으로 못 고치는 6건이 모였다(아래 §상류)
 
-현재 좌표: 1·2 완료 → 3 대기(각자 다음 rebuild) → 4는 doomemacs-config 판단 대기
+현재 좌표: 1·2·3 완료 → **4 는 GLG 손에 있다** → 5 는 그다음
 
 # NOW
 
-- **Hot group**: 없음. oracle Emacs 31.1 이관이 2026-09-02 끝났다. nuc/laptop은 30.2지만 급하지 않다.
-- **Next**: oracle 31.1 soak 관측. `./scripts/emacs-skew-check.sh` 가 전 경로(호스트·geworfen·gateway) 판정.
-  판정은 고정 20000자 프로브로 한다 — day 왕복은 크기가 경계 근처에서 진동해 "어떤 날은 깨지고 어떤 날은 멀쩡"하게 보인다.
-- **Blocker**: 없음.
-- **Read**: 아래 "🟢 Emacs 30.2 → 31.1" 절 / `~/repos/gh/geworfen/ops/README.md`(데몬 운영 SSOT).
-- **Do not touch**: `machines/shared.nix`의 `emacs-nox` 전역 제거 금지. `pkgs.emacs` 전역 override 금지(`pkgs.mu` 재빌드).
-- **자동복구 없음 (2026-09-02, GLG 방침)**: geworfen의 autoheal 라벨을 뗐고 `agent-emacs.service`는 `disable`이다.
-  **재부팅하면 emacs 데몬이 안 뜬다** — 사람이 `~/repos/gh/geworfen/ops/tmux/agent-emacs.sh start` 로 띄운다.
-  뭔가 죽으면 그냥 죽는다. 화면이 안 뜨는 게 재시도 루프보다 낫다는 판단.
-- **소유권**: emacs 데몬 수명은 **geworfen 담당자 소관**이다(`ops/tmux/agent-emacs.sh`가 정본). 이 리포는 안 건드린다.
-- **병행 레인(이 세션 소관 아님)**: 🔴 8.1 cron 런타임 회귀 + 🟢 8.2 soak는 오라클/openclaw 레인 SSOT.
-  bbot Fable 5.1 지원 조사는 별도 형제가 들고 있다(2026-09-02 개시).
+- **Current**: OpenClaw 8.2 로 고정하고 기억축을 깨끗한 베이스로 만드는 판. 오늘 청소 두 판이 끝났고 라이브는 무사하다(`2026.8.2` healthy, config 변경 0).
+- **Next**: (1) GLG 가 gpt DM(`agent:gpt:telegram:gpt:direct:123861330`, 컨텍스트 118%) 압축 → (2) `docker exec openclaw-gateway openclaw memory index --agent gpt` → (3) 청크 수와 봇 실경로 latency 재측정.
+- **Blocker**: 없음(에이전트 몫). gpt 압축은 GLG 소관 — 에이전트가 시도했다가 `openai` 프로필 일시 불가로 2회 실패했고, 재시도하지 않기로 했다.
+- **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
+- **Read**: 아래 §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
+- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지.
+- **병행 레인(이 세션 소관 아님)**: Emacs 31.1 nuc/laptop 이관(급하지 않다, 아래 §Emacs) · 🔴 8.1 cron 런타임 회귀 · bbot Fable 5.1 조사(별도 형제).
+
+# 상류 리포트 — 우리 설정으로 못 고치는 것 (2026-09-06 확정, RAIL 5)
+
+속도 2건:
+1. **읽기 질의가 RW 세션으로 구현돼 있다** — 매니저가 `readOnly` 없이 열고 열 때마다 스키마 수렴(쓰기). 같은 파일에 세션 전사 writer 가 붙어 바쁜 봇에서 timeout 이 된다. **read-only 리더는 같은 시각 같은 쿼리가 0.047초다.**
+2. **`embedding` 을 TEXT 로 저장한다** — 행당 88KB = 원문의 138배. vec0 blob 인덱스는 따로 정상 존재.
+
+품질 4건:
+3. **세션은 mtime 으로 감쇠한다** — 경로 날짜가 없어서. append 되는 세션은 영원히 새것.
+4. **세션당 캡·다양성 보정이 없다** — MMR 은 스니펫 Jaccard 만 보고 sessionId 를 안 본다.
+5. **deleted/reset 아카이브를 고의로 색인한다** — 필터가 `conversationRecall` 일 때만 건다.
+6. **`chunkTokens:400` 이 토큰이 아니다** — `maxChars=tokens×4`, 한글은 글자당 ×4 로 세는 휴리스틱. 하한이 없어 6자 청크도 생긴다.
+
+증거: gpt `q='임베딩'` 8칸 중 **1위가 3일 전 삭제된 세션**, 6칸이 세션 하나. 조사는 형제 grok-4.6 의 `/app` 번들 독해 + 이 호스트 실측.
 
 ---
 
@@ -185,7 +195,7 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🟡 OpenClaw 9.1 릴리즈 확인 — 반영 보류, 후보만 (2026-09-04)
+## 🟡 다음에 올릴 때 챙길 것 — 9.1 후보 (2026-09-04 조사, 8.2 고정 결정으로 보류 확정)
 
 라이브는 여전히 `2026.8.2`(0965053, Dockerfile `FROM ghcr.io/openclaw/openclaw:2026.8.2`). [v2026.9.1](https://github.com/openclaw/openclaw/releases/tag/v2026.9.1) 릴리즈 노트 확인 — 정규 순서(8.1→8.2→9.1)이지 별도 레일 아니다. **GLG 지시로 지금은 안 올린다** — 다음에 올릴 때 챙길 후보만 남긴다.
 
