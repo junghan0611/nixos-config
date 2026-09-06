@@ -392,7 +392,7 @@ INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 �
 
 `memory/dreaming/light/2026-04-2x.md` — **dreaming 은 라이브에서 `false` 로 꺼져 있는데** 그 4월 산출물 893청크가 아직 검색 상위를 다툰다(mini 는 memory 축의 84%). 삭제된 세션(`.deleted.*`) 32청크도 인덱스에 남아 있다.
 
-**세션만 남기면 4,915 → 2,553 청크(-48%), embedding 텍스트 214MB.**
+**세션만 남기면 (B 실행 후 기준) 4,035 → 2,553 청크, embedding 텍스트 214MB.**
 
 ### ⚠️ 대가 — 이건 공짜가 아니다
 
@@ -412,32 +412,39 @@ INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 �
 
 latency 의 원인은 코퍼스 크기가 아니라 **검색 경로가 DB 를 RW 로 열고 쓰기를 한다는 것**이다(아래 sorge#1 5번 항목). 라이브 파일을 `mode=ro` 로 열면 같은 시각 같은 쿼리가 **0.047초**다. 그러니 이 작업의 1차 성과는 **검색 품질**(죽은 4월 dreaming 이 상위에서 빠짐)이고, latency 개선은 부수효과로 기대할 뿐 보장이 아니다.
 
-### 대안 B — dreaming 만 빼기. **길을 찾았고, 대가가 없다** (2026-09-06 확인)
+### ✅ B 실행 완료 — dreaming 4월 화석 880청크 회수 (2026-09-06 18:3x, GLG 승인)
 
-`memory forget` 은 **세션 단위**다(`--session`/`--participant`/`--hook-source`/`--since`) — **경로 지정이 안 된다.** 그래서 그 길은 막혔다. 대신 **파일 쪽이 열려 있다**:
+`memory forget` 은 **세션 단위**라(`--session/--participant/--hook-source/--since`) 경로 지정이 안 된다. 그래서 **파일 쪽**으로 갔다 — **인덱스는 파일을 따라간다**.
 
-```
-workspace/memory/dreaming/        100K · 21파일 · 최신 2026-04-27
-workspace-glg/…                   328K · 21파일 · 최신 2026-04-27
-workspace-gpt/…                   264K · 21파일 · 최신 2026-04-27
-workspace-gemini/…                112K · 21파일 · 최신 2026-04-27
-workspace-mini/…                  136K · 21파일 · 최신 2026-04-27
-   (bbot 은 없다 — 그래서 bbot 만 dreaming 청크 0)
-plugins.entries.memory-core.config.dreaming.enabled = false
-```
+**한 일**: 워크스페이스 5곳의 `memory/dreaming/{deep,light}/2026-04-2x.md`(21파일씩, 합 984K)를
+`~/openclaw/backups/dreaming-april-20260906T183253/<workspace>/memory/dreaming/` 로 **이동**(삭제 아님) → 6봇 증분 `memory index`(각 6~7초).
+`DREAMS.md` 와 `memory/.dreams/` 는 **인덱스에 없어서 안 건드렸다**(실측 0청크).
 
-**전부 2026-04-21~27 한 주치다.** dreaming 을 끈 뒤로 4개월간 한 줄도 안 늘었고, 그동안 계속 색인돼 검색 상위를 다퉜다.
+**결과** — 정확히 예측대로다:
 
-**인덱스는 파일을 따라간다.** 그 디렉터리를 `~/openclaw/backups/dreaming-april-<stamp>/` 로 **옮기고 증분 재색인**하면 893청크가 빠진다 — config 변경 0, 재임베딩 0, `MEMORY.md`/`USER.md` 보존.
+| bot | 청크 | dreaming 잔여 | embedMB | dirty |
+|---|---|---|---|---|
+| glg | 1,959 → **1,514** | 0 | 127.1 | no |
+| gpt | 1,068 → **755** | 0 | 63.3 | no |
+| main | 430 → **409** | 0 | 34.3 | no |
+| gemini | 165 → **119** | 0 | 10.0 | no |
+| mini | 157 → **89** | 0 | 7.5 | no |
+| bbot | 1,149 → 1,149 | 0 (원래 없음) | 96.4 | no |
+| **합** | **4,915 → 4,035** | | | |
 
-- [ ] **B-1. dreaming 디렉터리 5개를 backups 로 이동** (약 940K, 삭제 아님)
-- [ ] **B-2. `memory index --agent <id>` 6봇 증분** → 청크 4,915 → ~4,022 확인
-- [ ] **B-3. 봇 실경로 latency 재측정** (기준선 mini 14.7s / glg 27.7s)
-- [ ] **B-4. 되돌리려면** 디렉터리를 제자리에 놓고 다시 증분 색인. 완전 가역.
+config 변경 0 · 재임베딩 0 · 게이트웨이 정지 0 · 완전 가역(디렉터리 되돌리고 증분 색인).
 
-**순서 제안**: B 를 먼저 한다. 대가가 없고 가역이며, A(세션만)가 정말 필요한지는 B 뒤에 다시 보면 된다.
+**latency 는 안 고쳐졌다 — 그리고 그게 진단이 맞았다는 증거다.** 봇 실경로 재측정:
 
----
+| | 기준선(정리 전) | 정리 후 |
+|---|---|---|
+| mini | 14.7s 성공 | **12.0s 성공** |
+| glg | 27.7s **타임아웃** | **26.1s 타임아웃** |
+
+glg 는 청크가 23% 줄었는데 1.6초 줄었다. **코퍼스 크기는 원인이 아니다** — 원인은 검색 경로가 DB 를 RW 로 열고 쓰기를 한다는 것이고(read-only 로는 같은 쿼리가 0.047초), 그건 우리 설정 밖이다.
+
+**얻은 것**: 죽은 4월 dreaming 이 검색 상위에서 사라졌다(mini 는 memory 축의 84%가 그거였다). 재임베딩할 일이 생겨도 이제 깨끗한 베이스에서 시작한다.
+- [ ] **회수 확인 후 backups 정리** — 한 달쯤 두고 아무도 안 찾으면 `dreaming-april-20260906T183253` 삭제(984K).
 
 - [ ] **⏸ GLG 판단 — `memory.search.provider: "none"`(FTS-only) 을 한 봇에 시험할지.** 유일하게 남은 설정 탈출구다: embedQuery 왕복과 KNN 자식 스폰이 사라지고 5ms FTS 만 남는다. 대가는 의미 검색 상실(키워드만). 라이브 쓰기라 승인 전 보류. 되돌리기는 쉽다 — 후보는 gpt 나 bbot.
 - [ ] **상류 리포트 후보 2건** — ① 메모리 인덱스와 세션 전사가 한 파일이고 검색 매니저가 RW 로 연다(바쁜 봇에서 검색이 락에 갇힌다) ② `embedding` 을 TEXT 로 저장한다(행당 88KB = 텍스트의 138배). 우리가 못 고치는 층이다.
