@@ -359,13 +359,19 @@ INTERP 는 `readelf -p .interp` 로 봐라. **`ldd` 는 자기 `RTLDLIST` 를 �
       **금지**: 그 EROFS 를 이유로 bind 를 rw 로 되돌리는 것. 필요한 건 consumer 쪽 absent 응답(= `agent-config` 몫)이다.
 - [ ] **🟠 OpenClaw 임베딩 저장 부피 — A층은 우리 몫이다 (2026-09-06 최초 계량).** `agents/` 3.7G 중 기억축 1.53G 이고 **그 62% 가 인덱스가 아니라 캐시**다(`dbstat`):
       `memory_embedding_cache` 11,079행 **948MB**(그중 **6,955행=63% orphan** — `memory_index_chunks` 에 같은 `hash` 없음) · `memory_index_chunks` 4,909행 419MB · vec 160MB.
-      원인 ① `embedding` 이 **TEXT** — 4096 float 를 JSON 문자열로 저장해 행당 **86KB**(blob 이면 16KB). ② 캐시 상한이 config 에 안 보인다(glg 5,783행 vs mini 201행).
+      원인 ① `embedding` 이 **TEXT** — 4096 float 를 JSON 문자열로 저장해 행당 **86KB**(blob 이면 16KB). ② **상한은 있다 — `Cache cap: 50000`**(`status --deep` 이 찍는다, 6봇 공통. 앞서 "안 보인다"고 적은 것은 틀렸다). 다만 **행수** 상한이라 86KB/행이면 50,000행 = **4.3GB** 다. 현재 최대 glg 5,783행 = 상한의 12%.
       `freelist_count` 6봇 전부 **0** → DB 팽창이 아니라 실데이터. 캐시 행은 전부 현행 모델(8B/4096d)이라 옛 모델 걸러내기 식 청소는 없다.
-      **다음 한 수**: orphan 삭제 + `VACUUM` ≈ **600MB** 회수. 배타 락이라 **게이트웨이 정지 창 필요** → 8.2 soak 더 보고 GLG 승인 후. 상류엔 `embedding TEXT` 를 리포트 대상으로 본다.
+      **디스크만의 문제가 아니다** — 2026-09-06 latency 측정에서 검색 속도도 이 `embedding TEXT` 바이트에 선형(0.5초/MB)임이 드러났다. 5번과 한 뿌리다.
+      **다음 한 수**: orphan 삭제 + `VACUUM` ≈ **600MB** 회수, **성공 기준에 검색 latency 재측정을 포함한다**. 배타 락이라 **게이트웨이 정지 창 필요** → 8.2 soak 더 보고 GLG 승인 후. 상류엔 `embedding TEXT` 를 리포트 대상으로 본다.
       **소유권 (GLG 2026-09-06)**: OpenClaw 임베딩 품질·설정은 이 집 몫, `andenken` 은 결과물을 쓰는 쪽. 소스 실측은 [andenken#13](https://github.com/junghan0611/andenken/issues/13#issuecomment-5557290434) 로, 층 분리는 [sorge#1](https://github.com/junghan0611/sorge/issues/1#issuecomment-5557292984) 로 넘겼다 — **export 는 `memory_index_chunks` 에서만(415MB), 캐시엔 `path`·`text` 컬럼이 아예 없다.**
 - [x] **[sorge#1](https://github.com/junghan0611/sorge/issues/1#issuecomment-5557531010) 7번 oracle receipt — 2026-09-06 다섯 줄 전부 통과.** `andenken 1e61698` + `agent-config ad347ef` 기준. **§1 의 `os error 30` 이 사라졌다** — 컨테이너에서도 `state:absent, authority:thinkpad` + exit 4 로 답한다. 축을 세 경로로 읽었는데도 `openclaw.lance` 는 안 생겼다(그게 요점). 회귀: `verify openclaw`=not found · `verify bogus`=exit 1 · `test:absent` 26 passed · `search:md` 대조군 1건 회수.
       ⚠️ **측정 함정**: `./run.sh verify bogus | tail -5` 로 재면 `$?` 가 tail 것이라 exit 0 으로 보인다. 파이프 걷고 재야 exit 1 이 나온다.
-- [ ] **sorge#1 5번(GPT OpenClaw memory dirty + timeout)은 이 집이 받는다** — A층이라 oracle 에서 재는 게 맞다. 미착수.
+- [x] **[sorge#1](https://github.com/junghan0611/sorge/issues/1#issuecomment-5557641038) 5번 — dirty 해소 완료, timeout 은 진단이 뒤집혔다 (2026-09-06).**
+      **dirty**: gpt 만이 아니라 main·glg·gpt 셋이었다(glg 는 `109/108` off-by-one 까지). 해소 절차는 **증분 재색인 `openclaw memory index --agent <id>`** — main 25s(콜드)·gpt 5s·glg 6s, **6봇 전부 `Dirty: no`**, glg 는 `108/108` 로 정상화. 새 청크분만 임베딩한다(main 423→430, 캐시 +7). `--force` 는 전량 재임베딩이라 **쓰지 않는다.**
+      **timeout**: gpt 특유도, "첫 검색" 도 아니다. 같은 질의 반복·다른 질의·캐시 웜 전부 평평하다(gpt 30~33s 고정). 에이전트를 바꾸니 축이 드러났다 — **mini 8.0s(156청크) · gpt 32.5s(1,068) · bbot 43.3s(1,149) · glg 85.4s(1,945)**. **embedding 텍스트 바이트에 선형(약 0.5초/MB)** 이고 `[sqlite/transaction] slow SQLite` 건수도 같이 는다(0→10). **봇 도구의 15초 게이트를 통과하는 건 mini 하나뿐이다.**
+      **둘은 무관하다** — dirty 를 전부 지운 뒤 다시 재도 latency 동일(gpt 31.9→32.5 · glg 84.5→85.4), bbot 은 처음부터 clean 인데 43초다.
+      → latency 는 설정으로 못 고친다. 아래 6번과 **같은 뿌리(`embedding TEXT`)** 이므로 한 판에 묶는다.
+- [ ] **정기 작업으로 승격 검토** — `memory index` 는 dirty 가 뜰 때마다 필요하다(6봇 순회 1분 이내). cron 에 얹을지, 사람이 볼 때 돌릴지 판단. 얹는다면 [docs/openclaw-automations.md](docs/openclaw-automations.md) 가 SSOT.
 - [ ] **Skill Workshop 잔여 2건** — `off` 인데도 6/15 부터 살아 있던 glg 제안 `next-current-pointer-20260615-958582b72f` 을 **사람이 처리**해야 한다(`apply`/`reject`/`quarantine`). 쓰기 경로 질문은 닫혔다(ORACLE.md §Skill Workshop: 대상은 워크스페이스 실디렉터리, SSOT 는 mount ro 로 2차 방어 — probe 로 확인). 남은 미해결은 **scanner 의 `clean` 판정 근거**와 **제안 3개 상한 도달 시 동작**.
 - [ ] **별건 2개 (업그레이드 이전부터 있던 간극)**: bbot workspace에 skills 미배포(`run.sh k)` 재실행 필요) / bbot·mini `IDENTITY.md` 형식이 달라 `agents list`에 Identity 줄이 안 뜬다(봇 본인은 자기 정체성을 정확히 안다 — 실턴으로 확인).
 
