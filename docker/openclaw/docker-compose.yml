@@ -66,16 +66,14 @@ services:
       # 컨테이너 ephemeral에 두면 매 recreate마다 새 key 생성 → 기존 OAuth profile decrypt 실패 → harness 미등록.
       - ./auth-profile-secrets:/home/node/.config/openclaw
       # workspace는 config/workspace/로 통합 (별도 마운트 불필요)
-      # 지식베이스/코드베이스
-      # repos/gh 기본 ro — 봇이 임의 리포를 고치지 못하게 (2026-08-12)
-      # 예외 rw: aionsclubs(B 본진), self-tracking-data(lifetract.db — 아래 오버라이드)
-      - ~/repos/gh:/home/node/repos/gh:ro
-      - ~/repos/gh:/home/junghan/repos/gh:ro  # ~/.claude absolute symlink compatibility
+      # 지식베이스/코드베이스 — GLG 승인: 모든 GitHub·회사 리포 rw (2026-09-07).
+      - ~/repos/gh:/home/node/repos/gh:rw
+      - ~/repos/gh:/home/junghan/repos/gh:rw  # ~/.claude absolute symlink compatibility
       - ~/repos/gh/aionsclubs:/home/node/repos/gh/aionsclubs:rw
       - ~/repos/gh/aionsclubs:/home/junghan/repos/gh/aionsclubs:rw
       # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
-      - ~/repos/work:/home/node/repos/work:ro
+      - ~/repos/work:/home/node/repos/work:rw
       - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:rw  # 2026-08-27 전체 rw (GLG). diary/archives/authinfo.gpg 포함. git이 롤백 표면.
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
@@ -165,16 +163,14 @@ services:
       - ./config:/home/node/.openclaw
       # 5.12 신규: OAuth profile secret key persistence (XDG, gateway와 공유)
       - ./auth-profile-secrets:/home/node/.config/openclaw
-      # 지식베이스/코드베이스
-      # repos/gh 기본 ro — 봇이 임의 리포를 고치지 못하게 (2026-08-12)
-      # 예외 rw: aionsclubs(B 본진), self-tracking-data(lifetract.db — 아래 오버라이드)
-      - ~/repos/gh:/home/node/repos/gh:ro
-      - ~/repos/gh:/home/junghan/repos/gh:ro  # ~/.claude absolute symlink compatibility
+      # 지식베이스/코드베이스 — GLG 승인: 모든 GitHub·회사 리포 rw (2026-09-07).
+      - ~/repos/gh:/home/node/repos/gh:rw
+      - ~/repos/gh:/home/junghan/repos/gh:rw  # ~/.claude absolute symlink compatibility
       - ~/repos/gh/aionsclubs:/home/node/repos/gh/aionsclubs:rw
       - ~/repos/gh/aionsclubs:/home/junghan/repos/gh/aionsclubs:rw
       # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
-      - ~/repos/work:/home/node/repos/work:ro
+      - ~/repos/work:/home/node/repos/work:rw
       - ~/repos/3rd:/home/node/repos/3rd:rw
       - ~/org:/home/node/org:rw  # 2026-08-27 전체 rw (GLG). diary/archives/authinfo.gpg 포함. git이 롤백 표면.
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)

@@ -413,32 +413,29 @@ md.lance  md-manifest.json  recalls.jsonl  session-manifest.json  sessions.lance
 #   → openclaw.lance 없음
 
 $ docker inspect openclaw-gateway --format '…{{.Source}} -> {{.Destination}} rw={{.RW}}…'
-bind /home/junghan/repos/gh -> /home/node/repos/gh rw=false
+bind /home/junghan/repos/gh -> /home/node/repos/gh rw=true
 ```
 
-**따라서 sorge#1 §1 의 EROFS 는 권한 사고가 아니라 계약대로다.** `/home/node/repos/gh` 는 ro 이고 `openclaw.lance` 는 이 호스트에 **absent** 다. 소비자가 없는 dataset 을 암묵 생성하려 한 것이 오류이지, mount 를 rw 로 넓혀야 할 사안이 **아니다** — 넓히면 봇이 authority 아닌 호스트에서 인덱스를 쓰기 시작하고, sorge#1 이 금지한 "여러 호스트 동시 쓰기" 로 곧장 간다.
+`openclaw.lance` 는 이 호스트에 **absent** 다. 그러나 **2026-09-07 GLG가 `~/repos/gh`·`~/repos/work` 전체 rw를 승인**했으므로, EROFS는 더 이상 authority를 강제하지 않는다. consumer는 absent dataset 생성을 명시적으로 거절해야 하며, oracle에서의 LanceDB 쓰기 금지는 코드·운영 계약으로 지킨다.
 
-- **금지**: 이 EROFS 를 이유로 `~/repos/gh` bind 를 rw 로 되돌리는 것. 필요한 건 consumer 쪽의 absent 응답이다.
 - **oracle 이 writer 가 되는 유일한 기억축은 OpenClaw 자체 memory sqlite** 뿐이고, 그건 `~/openclaw/config/` (컨테이너 전용 볼륨) 안에 있어 `repos/gh` 경계와 무관하다.
 - **미검증(상속)**: "authority = thinkpad" 는 sorge#1 본문에서 받은 서술이고 이 호스트에서 확인할 수 없다. thinkpad 쪽 receipt 는 `andenken` 담당자 몫.
 
 ### Mount permission model — 이 표가 봇의 쓰기 경계 SSOT다
 
-**선언 SSOT는 `~/openclaw/docker-compose.yml`**, 판정은 `docker inspect openclaw-gateway --format '{{range .Mounts}}{{.Source}} rw={{.RW}}{{"\n"}}{{end}}'`. 아래는 2026-09-06 실측이다.
+**선언 SSOT는 `~/openclaw/docker-compose.yml`**, 판정은 `docker inspect openclaw-gateway --format '{{range .Mounts}}{{.Source}} rw={{.RW}}{{"\n"}}{{end}}'`. 아래는 2026-09-07 실측이다.
 
 | Area | Mode | 근거 / 롤백 표면 |
 |---|---|---|
-| `~/repos/gh` | **ro** | **2026-08-12 기본 ro 로 좁혔다** — 봇이 임의 리포를 고치지 못하게. compose:72–73(`/home/node/…` + `/home/junghan/…` 두 경로 노출) |
-| ↳ `~/repos/gh/aionsclubs` | rw | 예외. compose:74–75 |
-| ↳ `~/repos/gh/self-tracking-data` | rw | 예외. compose:82 |
+| `~/repos/gh` | **rw** | **2026-09-07 GLG 승인**. `/home/node/…` + `/home/junghan/…` 두 경로 모두 rw — git이 롤백 표면. |
 | `~/repos/3rd` | rw | git + "third-party, disposable" nature |
-| `~/repos/work` | ro | intentional — company code never modified through bot hand |
+| `~/repos/work` | **rw** | **2026-09-07 GLG 승인**. 회사 리포도 봇이 수정 가능하며 git이 롤백 표면. |
 | `~/org` | **rw** | whole tree (2026-08-27, GLG). Includes `diary.org`, `archives/`, `authinfo.gpg`. Rollback = git on `~/org`. |
 | `~/.pi/agent` · `~/.codex` · `~/.gemini` · `config/claude-skills` | rw | 에이전트 런타임 상태 |
 
-> **2026-09-06 정정**: 이 표는 `~/repos/gh` 를 **rw** 로 적고 있었다(2026-04-25 "경계를 넓혔다" 시절 문장). 실물은 **2026-08-12 부터 ro** 이고, 그 어긋남이 [sorge#1](https://github.com/junghan0611/sorge/issues/1) 의 `openclaw.lance` EROFS 로 드러났다 — 문서를 믿은 소비자가 컨테이너 안에서 인덱스를 만들려다 read-only 에 부딪힌 것이다. **rw 는 이제 예외 목록이지 기본이 아니다.**
+> **2026-09-07 변경**: GLG가 `~/repos/gh`와 `~/repos/work`의 기본 ro 경계를 풀었다. 모든 OpenClaw 봇이 두 트리를 수정할 수 있다. 특정 하위경로 예외가 아니라 전체 mount의 계약이다.
 
-**Post-deploy habit**: after a rw-expanding change, monitor `~/org` `git status` for the first hour. Unintended writes are possible now — git is the rollback surface, not the mount.
+**Post-deploy habit**: after a rw-expanding change, monitor `~/repos/gh`, `~/repos/work`, and `~/org` with `git status` for the first hour. Unintended writes are possible now — git is the rollback surface, not the mount.
 
 ---
 
@@ -673,14 +670,7 @@ Scanner: clean
 - 따라서 **새 이름** 제안(`propose-create`)은 심링크가 없는 자리에 실디렉터리를 만든다 → SSOT 무관.
 - 위험한 것은 **기존 스킬 이름과 겹치는 `propose-update`** 뿐이다 — 그 경로는 심링크를 타고 SSOT 로 나간다. `allowSymlinkTargetWrites:false` 가 그 자리의 1차 방어다.
 
-**그리고 2차 방어가 따로 있다 — mount 다.** SSOT 는 컨테이너에서 **쓸 수 없다**(2026-09-06 probe):
-
-```
-$ docker exec openclaw-gateway touch /home/node/repos/gh/agent-config/skills/.write-probe
-touch: cannot touch '…': Read-only file system      # /home/junghan/… 면도 동일
-```
-
-`~/repos/gh` 가 2026-08-12 부터 ro 이므로(§Mount permission model), `allowSymlinkTargetWrites` 가 뒤집히더라도 SSOT 오염은 EROFS 로 막힌다. **두 방어는 독립이다 — 어느 하나를 이유로 다른 하나를 풀지 마라.**
+`~/repos/gh` 전체는 **2026-09-07부터 rw**다(§Mount permission model). 따라서 `allowSymlinkTargetWrites:false`가 SSOT 오염을 막는 유일한 방어이며, 이 값을 풀지 않는다.
 
 - **운영**: 제안은 사람이 처리한다 — `skills workshop inspect --agent <id> <proposalId>` 로 읽고 `apply` / `reject` / `quarantine`. `--agent` 없이 치면 `ownership=explicit` 때문에 "no explicit owner" 로 거절된다(정상).
 - **미해결**: scanner 가 무엇을 근거로 `clean` 을 주는지, 3개 상한에 도달하면 어떻게 되는지는 아직 서술 안 됨.
