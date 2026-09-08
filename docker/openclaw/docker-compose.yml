@@ -69,8 +69,6 @@ services:
       # 지식베이스/코드베이스 — GLG 승인: 모든 GitHub·회사 리포 rw (2026-09-07).
       - ~/repos/gh:/home/node/repos/gh:rw
       - ~/repos/gh:/home/junghan/repos/gh:rw  # ~/.claude absolute symlink compatibility
-      - ~/repos/gh/aionsclubs:/home/node/repos/gh/aionsclubs:rw
-      - ~/repos/gh/aionsclubs:/home/junghan/repos/gh/aionsclubs:rw
       # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:rw
@@ -166,8 +164,6 @@ services:
       # 지식베이스/코드베이스 — GLG 승인: 모든 GitHub·회사 리포 rw (2026-09-07).
       - ~/repos/gh:/home/node/repos/gh:rw
       - ~/repos/gh:/home/junghan/repos/gh:rw  # ~/.claude absolute symlink compatibility
-      - ~/repos/gh/aionsclubs:/home/node/repos/gh/aionsclubs:rw
-      - ~/repos/gh/aionsclubs:/home/junghan/repos/gh/aionsclubs:rw
       # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:rw

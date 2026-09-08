@@ -9,6 +9,25 @@
 
 ## Unreleased
 
+## v2026.9.8 — OpenClaw 안정화·관측·작업공간 경계
+
+### Added
+
+- **silent model demotion 감지면**을 추가했다. claude-cli 봇의 모델 거절이 다른 모델로 조용히 떨어지는 상황을 운영자가 구별할 수 있게 했고, bbot은 Fable 5.1로 승격했다.
+- **Datasette를 1층 Nix 오버레이로 수용**했다. `asgi-csrf`의 multipart POST 비호환 경계는 명시하고, Forge SQLite의 읽기 전용 탐색은 선언 환경에서 가능하게 했다.
+- **Oracle Emacs 31.1 client/server 스큐 검사**를 추가하고 OpenClaw 컨테이너 client를 31.1로 맞췄다. 큰 agenda 응답이 조용히 깨질 수 있는 구형 client 경로와 geworfen autoheal을 제거했다.
+
+### Changed
+
+- **OpenClaw 8.2를 안정화 baseline으로 고정**하고, 9.x 업그레이드는 다음 판으로 보류했다. dreaming 4월 화석과 reset/deleted 세션 아카이브를 인덱스에서 분리해 **1,715 청크(35%)**를 회수했고 6봇을 `dirty:no`로 정렬했다.
+- **`~/repos/gh`·`~/repos/work`를 OpenClaw의 두 절대경로에 RW로 열었다**(GLG 승인). 가족봇과 작업공간이 실제 리포지터리를 수선·발행할 수 있게 하되, 기록된 작업공간 규율은 그대로 둔다.
+- **aionsclubs의 옛 host clone 전용 bind mount를 제거**했다. B의 정본 clone은 `workspace-bbot/aionsclubs`이고, publish는 그 clone의 HEAD를 `docker-data/aions` release로 원자 전환한다.
+
+### Fixed
+
+- **Android Control UI의 tailnet 연결을 복구**했다. Docker network 재생성 뒤 Tailscale Serve proxy(`172.19.0.1`)를 `gateway.trustedProxies`에 좁게 추가하고, 문서의 죽은 SSH tunnel 경로를 tailnet URL로 바꿨다.
+- rate-limit으로 끝난 GPT run이 세션 락을 남겨 무응답이 되던 상황을 `sessions.abort`로 복구하고, 압축이 원인이 아니라는 진단과 다음 알림 설계의 기준을 남겼다.
+
 ## v2026.9.2-emacs.1 — Emacs 31.1 베이스 이관 (thinkpad GREEN)
 
 ### Emacs 30.2 → 31.1 — unstable 오버레이 예외 세 번째
