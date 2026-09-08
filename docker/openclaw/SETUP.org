@@ -6,7 +6,7 @@
 [[https://openclaw.ai][OpenClaw]] 개인 AI 어시스턴트 게이트웨이.
 Oracle Cloud ARM VM에서 Docker로 운영, Telegram으로 모바일 상시 접근.
 
-- Gateway: =ws://127.0.0.1:18789= (SSH 터널 접근)
+- Gateway: =https://oracle.tailb0e905.ts.net= (Tailscale Serve, tailnet 전용)
 - 채널: Telegram Bot, Mattermost (https://chat.junghanacs.com)
 - 이미지: =openclaw-custom:latest= (Dockerfile로 빌드, 기반: =ghcr.io/openclaw/openclaw:latest=)
 - 모델: =anthropic/claude-opus-4-6= (setup-token: Claude 구독 직통, 비용 별도 없음)
@@ -488,13 +488,25 @@ Gateway 재시작하면 각 사용자별 독립 세션이 자동 생성된다.
 
 * SSH 터널링 + 대시보드 접속
 
-** SSH 터널 (로컬 머신에서)
+** Control UI 접근 — Tailscale Serve (로컬 머신에서)
+
+tailnet 에 든 기기(thinkpad·안드로이드 앱)면 그냥 연다:
 
 #+begin_src bash
+# 브라우저: https://oracle.tailb0e905.ts.net/
+#+end_src
+
+*** ⚠️ 옛 SSH 터널은 이제 403 이다 (2026-09-08)
+
+#+begin_src bash
+# 아래는 더 이상 동작하지 않는다 — 기록용
 ssh -N -L 18789:127.0.0.1:18789 <user>@<oracle-vm-ip>
 #+end_src
 
-브라우저: =http://127.0.0.1:18789/=
+터널과 호스트 루프백 트래픽은 도커 NAT 를 거쳐 컨테이너에 =172.19.0.1= 로 도착하는데,
+그 IP 가 =gateway.trustedProxies= 항목이라 forwarded 클라이언트 헤더 없는 요청이
+=403 proxy_attribution_required= 로 거부된다. =/32= 로 좁혀도 tailscale serve 와
+같은 IP 로 뭉개져 분리되지 않는다. 전문은 =docs/openclaw-gotchas.md= 첫 항목.
 
 ** Device Pairing (첫 접속 시 필수)
 
