@@ -23,17 +23,23 @@
   앱 연결 확인(`Connected 1`), 재승인 대기는 앱 재연결로 자동 해소. 함정 전문 →
   [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 첫 항목
 
-현재 좌표: 1·2·3·4·7 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
+- [x] **8. entwurf ↔ OpenClaw 다리 — 유보로 닫았다.** GLG 가 다리를 건너는 대신 **B 를 컨테이너
+  밖으로 꺼냈다**(`workspace-bbot` 독립 리포, 호스트 pi 시민 `20260908T181437-30802a`). 그래서
+  `.assembled` ro 마운트 + Dockerfile node 심볼릭은 **실행하지 않는다**(취소 아닌 유보 — GLG
+  발화가 "일단"). 오늘 잰 것은 [entwurf#109](https://github.com/junghan0611/entwurf/issues/109)
+  에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
+
+현재 좌표: 1·2·3·4·7·8 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
 
 # NOW
 
-- **Current**: OpenClaw 8.2 로 고정하고 기억축을 깨끗한 베이스로 만드는 판. 청소 두 판이 끝났고 라이브는 무사하다(`2026.8.2` healthy, config 변경 0). gpt DM 은 `sessions.abort` 로 복구됐다 — **압축이 아니라 락이 문제였다**.
+- **Current**: 8.2 고정 + 기억축 정리 판이 계속된다. 2026-09-08 은 여기에 두 판이 얹혔다 — 안드로이드 앱 연결 복구(RAIL 7)와 entwurf 다리 유보(RAIL 8). 라이브 무사(`2026.8.2` healthy, 6봇 polling 정상). **트리는 clean 이고 push 까지 끝났다**(`6c8b1fb`).
 - **Next**: (1) 무응답 통지 설계(RAIL 5) → (2) `docker exec openclaw-gateway openclaw memory index --agent gpt` 증분 → (3) 청크 수와 봇 실경로 latency 재측정.
 - **Blocker**: 없음. gpt DM 은 살아있다(`status=done`, `route=fits` 62,540/272,000, msgs 4).
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
 - **Read**: 아래 §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
-- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다.
+- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.19.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
 
 # 앱 후속 (2026-09-08, RAIL 7 에서 파생)
 
@@ -47,7 +53,22 @@
   403 이 됐다(도커 NAT 가 터널과 tailscale serve 를 같은 172.19.0.1 로 뭉갠다 — `/32` 로도 분리
   불가). 지금은 경고 + tailnet 경로 안내로 남겨뒀다. thinkpad 도 tailnet 에 있으니 **터널 자체를
   은퇴시킬지** 판단이 필요하다.
-- **병행 레인(이 세션 소관 아님)**: Emacs 31.1 nuc/laptop 이관(급하지 않다, 아래 §Emacs) · 🔴 8.1 cron 런타임 회귀 · bbot Fable 5.1 조사(별도 형제).
+- [ ] **공유 `~/.claude` 가 rw 라 컨테이너가 호스트에 쓴다** — 컨테이너 Claude 가 호스트
+  `~/.claude/plugins/` 에 `.orphaned_at` 을 썼다(2026-09-08 13:41:48 KST, uid 1000). 지금 호스트는
+  여전히 `enabled` 라 실해는 없었지만 **컨테이너가 호스트 플러그인 상태를 건드릴 수 있는 자리**다.
+  좁힐지 알고 둘지 판단 필요 — 봇이 skills 를 쓰므로 단순 ro 는 깨진다(하위 경로별로 갈라야 한다).
+
+# 시계 — 되살아날 축 (2026-09-08, RAIL 8 에서 파생)
+
+- [ ] **컨테이너 cron 이 호스트 시민을 깨울 수 있는가** — entwurf#109 를 급하게 만든 진짜 이유는
+  "이 계에서 cron `agentTurn` 을 가진 스택은 OpenClaw 하나"였다. **B 가 컨테이너를 나오면서 그
+  도어벨을 두고 나왔다** — 지금 B 를 깨우는 것은 GLG 의 손이거나 형제 메시지뿐이다. 다시 문제가
+  되면 이 질문으로 바뀌고, 오늘 판 것보다 훨씬 싸다(호스트 pi 시민의 control socket 은 garden-id
+  이름 `<dir>/<gardenId>.sock` 이라 디렉터리만 보이면 유효). 두 가지가 걸린다 — `gcStaleSockets`
+  가 다른 ns 의 살아 있는 소켓을 `dead` 로 읽고 **unlink** 할 수 있고(파괴적), **호스트 쪽 타이머가
+  경계를 아예 안 넘는 더 싼 답일 수 있다.** 지금 재지 않는다.
+
+- **병행 레인(이 세션 소관 아님)**: Emacs 31.1 nuc/laptop 이관(급하지 않다, 아래 §Emacs) · 🔴 8.1 cron 런타임 회귀 · B 는 이제 `workspace-bbot` 리포의 호스트 시민이다(별도 형제, 이 리포 소관 아님).
 
 # 상류 리포트 — 우리 설정으로 못 고치는 것 (2026-09-06 확정, RAIL 5)
 
