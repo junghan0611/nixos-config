@@ -102,7 +102,7 @@ show_menu() {
     echo "    P) Install peon-ping (사운드 설치)"
     echo ""
     echo -e "  ${YELLOW}Remote (Oracle VM)${NC}"
-    echo "    t) OpenClaw 터널 시작/종료 (→ http://127.0.0.1:18789/)"
+    echo "    t) OpenClaw 터널 시작/종료 (레거시 — Control UI는 tailscale 경로를 쓴다)"
     echo "    r) Oracle Docker 서비스 재시작"
     echo "    s) Oracle Docker 서비스 상태"
     echo "    a) OpenClaw 페어링 승인"
@@ -328,7 +328,11 @@ main() {
                     sleep 1
                     NEW_PID=$(pgrep -f "ssh.*-L 18789" 2>/dev/null || true)
                     success "터널 시작됨 (PID: $NEW_PID)"
-                    info "대시보드: http://127.0.0.1:18789/"
+                    warn "터널로 연 Control UI 는 403 이다 (proxy_attribution_required)."
+                    warn "터널·호스트 루프백은 컨테이너에 172.19.0.1 로 도착하는데, 그 IP 가"
+                    warn "gateway.trustedProxies 라서 forwarded 헤더 없는 요청이 거부된다."
+                    info "Control UI 는 tailnet 으로 연다: https://oracle.tailb0e905.ts.net/"
+                    info "이 터널은 18789 를 쓰는 다른 용도에만 남겨둔다."
                 fi
                 ;;
             r)

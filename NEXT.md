@@ -15,7 +15,15 @@
 - [ ] **5. 봇 무응답을 사람이 먼저 알아채는 구조** ← CURRENT (GLG 2026-09-06: *"이런 문제 발생했는데 뭘 알려주는 게 없네"*). gpt 가 **하루 넘게 죽어 있는 동안 알림이 0건**이었다 — GLG 가 말을 걸어보고서야 발견했다. 로그에는 3분마다 같은 에러가 찍혔고, health-monitor 의 `stuck session recovery` 는 `reason=active_reply_work` 로 매분 **skip** 했다(락 잡힌 세션을 "일하는 중"으로 본다). 필요한 것: ① 세션 `status=failed` 가 N 분 이상 지속되면 main/운영 채널로 통지 ② `spooled update … keeping for retry` 가 반복되면 같은 통지 ③ 그 판정이 upstream 몫인지 우리 cron 한 줄인지 결정([docs/openclaw-automations.md](docs/openclaw-automations.md) 에 얹을 자리)
 - [ ] **6. 상류 리포트** ← PAUSED: 5 이후. 우리 설정으로 못 고치는 6건이 모였다(아래 §상류). **7번째 후보 추가**: rate-limit 종료 run 이 세션 락을 놓지 않아 `sessions compact` 까지 막는다(복구 수단이 같이 잠긴다)
 
-현재 좌표: 1·2·3·4 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
+- [x] **7. 안드로이드 앱이 tailnet 으로 못 붙던 것** — 원인은 버전업도 페어링도 아니었다.
+  `openclaw_default` 도커 네트워크가 2026-09-02 에 새로 생기면서 `gateway.trustedProxies` 의
+  `172.18.0.0/16`(caddy 경로)만으로는 tailscale serve 경로(**172.19.0.1**)가 신뢰 밖에 남았다 —
+  **설정은 그대로인데 그 아래 네트워크가 움직인 화석.** `/health` 는 무인증이라 200 이고 `/` 만
+  403(`proxy_attribution_required`)이던 비대칭이 진단을 갈랐다. `/32` 로 좁게 더하고 restart →
+  앱 연결 확인(`Connected 1`), 재승인 대기는 앱 재연결로 자동 해소. 함정 전문 →
+  [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 첫 항목
+
+현재 좌표: 1·2·3·4·7 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
 
 # NOW
 
@@ -25,7 +33,20 @@
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
 - **Read**: 아래 §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
-- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지.
+- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다.
+
+# 앱 후속 (2026-09-08, RAIL 7 에서 파생)
+
+- [ ] **안드로이드 앱을 `2026.8.x` 로 올린다** — 앱 ui 가 `v2026.7.1` 이라 페어링 scope 에
+  `operator.questions` 가 없고, 게이트웨이 로그가 30초마다
+  `[ws] ✗ question.list FORBIDDEN missing scope: operator.questions` 를 뱉는다. 앱의 질문/승인
+  화면이 비어 보인다. **CLI 로 못 고친다** — `devices` 에 scope 편집 서브커맨드가 없고
+  (`approve/rotate/revoke/rename/remove/clear/join-code` 뿐) `openclaw.json` 에도 device scope
+  기본값이 없다. 앱을 올린 뒤 재페어링해야 풀린다.
+- [ ] **`run.sh t)` SSH 터널의 운명 결정** — trustedProxies 변경의 대가로 터널 경유 Control UI 가
+  403 이 됐다(도커 NAT 가 터널과 tailscale serve 를 같은 172.19.0.1 로 뭉갠다 — `/32` 로도 분리
+  불가). 지금은 경고 + tailnet 경로 안내로 남겨뒀다. thinkpad 도 tailnet 에 있으니 **터널 자체를
+  은퇴시킬지** 판단이 필요하다.
 - **병행 레인(이 세션 소관 아님)**: Emacs 31.1 nuc/laptop 이관(급하지 않다, 아래 §Emacs) · 🔴 8.1 cron 런타임 회귀 · bbot Fable 5.1 조사(별도 형제).
 
 # 상류 리포트 — 우리 설정으로 못 고치는 것 (2026-09-06 확정, RAIL 5)

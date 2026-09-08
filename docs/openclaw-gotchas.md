@@ -12,6 +12,71 @@
 
 ## 활성
 
+### 도커 네트워크가 갈리면 `gateway.trustedProxies` 가 조용히 화석이 된다 — 증상은 앱의 "Gateway에 연결할 수 없음" (2026-09-08)
+
+안드로이드 앱(`SM-S942N`, app `2026.8.2`)이 `https://oracle.tailb0e905.ts.net` 에 붙지 못했다.
+**버전업 때문이 아니었다.** 페어링·TLS·주소·포트 전부 정상이었고, 게이트웨이도 healthy 였다.
+
+진단을 가른 것은 **`/health` 는 통과하는데 `/` 는 403** 이라는 비대칭이다. `/health` 는 무인증
+라우트라 proxy attribution 검사를 받지 않는다. 그래서 "게이트웨이는 살아있는데 앱만 못 붙는"
+모양이 된다. 403 본문이 원인을 직접 말한다:
+
+```json
+{"error":{"message":"Proxy client attribution is required. Configure gateway.trustedProxies narrowly...",
+          "type":"proxy_attribution_required"}}
+```
+
+**원인**: `openclaw-gateway` 는 두 네트워크에 붙어 있다.
+
+| 네트워크 | 서브넷 | 생성 | 누가 쓰나 |
+|---|---|---|---|
+| `proxy` | 172.18.0.0/16 | 2026-02-17 | caddy → `claw.junghanacs.com` |
+| `openclaw_default` | **172.19.0.0/16** | **2026-09-02** | 호스트 루프백 포워딩(=tailscale serve, SSH 터널) |
+
+`trustedProxies` 에는 `172.18.0.0/16` 만 있었다. caddy 경로를 뚫을 때 넣은 값이고,
+`openclaw_default` 가 9월에 새로 생기면서 **tailscale serve 경로만 신뢰 밖에 남았다.**
+설정 파일은 그대로인데 그 아래 네트워크가 움직인, 전형적인 화석이다.
+
+**실측하는 법** — 추측하지 말고 컨테이너가 보는 소스 IP를 직접 잡는다:
+
+```bash
+( for i in $(seq 1 40); do docker exec openclaw-gateway sh -c "cat /proc/net/tcp"; sleep 0.2; done > /tmp/conn.txt ) &
+sleep 1; curl -sS -m 8 -o /dev/null https://oracle.tailb0e905.ts.net/ ; wait
+# /proc/net/tcp 의 remote 주소를 리틀엔디언 hex 로 디코딩 → 172.19.0.1 이 나온다
+```
+
+**처방**: 넓히지 말고 `/32` 로 좁게 더한다.
+
+```bash
+docker exec openclaw-gateway openclaw config set gateway.trustedProxies \
+  '["172.18.0.0/16","172.19.0.1/32"]' --strict-json --dry-run   # 먼저 dry-run
+docker restart openclaw-gateway                                  # restart 면 충분, recreate 아님
+```
+
+**⚠️ 되돌아오는 대가 — 호스트 루프백 직접 접근이 이제 403이다.** 도커 NAT 는 tailscale serve
+트래픽과 호스트 루프백 트래픽을 **같은 172.19.0.1 로 뭉갠다.** 그래서 그 IP 를 신뢰하는 순간
+"이 출처는 프록시다 → forwarded 헤더를 내놔라" 가 양쪽에 걸린다:
+
+| 경로 | 변경 전 | 변경 후 |
+|---|---|---|
+| `https://oracle.tailb0e905.ts.net/` (serve) | 403 | **200** |
+| `http://127.0.0.1:18789/` (호스트 · SSH 터널) | 200 | **403** |
+| 컨테이너 내부 `127.0.0.1` (NAT 미경유) | 200 | 200 |
+
+`/32` 로 좁혀도 분리되지 않는다 — 두 경로가 같은 IP 로 도착하기 때문이다. 그래서
+**`run.sh t)` SSH 터널로 Control UI 를 보던 길이 막혔다.** 대체는 이미 있다: thinkpad 도
+tailnet 에 있으므로 `https://oracle.tailb0e905.ts.net/` 를 그냥 연다. `run.sh` 와 `README.md`
+는 이 판정에 맞춰 정정했다.
+
+**곁가지로 드러난 것**: 연결된 뒤 로그가 30초마다
+`[ws] ✗ question.list FORBIDDEN missing scope: operator.questions` 를 뱉는다. 앱의 페어링
+scope 에 `operator.questions` 가 없다 — 앱(ui `v2026.7.1`)이 게이트웨이(`2026.8.2`)보다
+낡아서 그 scope 를 요청한 적이 없기 때문이다. **CLI 로 고칠 수 없다**: `devices` 에는
+`approve/rotate/revoke/rename/remove/clear/join-code` 뿐이고 scope 를 편집하는 서브커맨드가
+없으며, `openclaw.json` 에도 device scope 기본값이 없다. 앱을 올린 뒤 재페어링해야 한다.
+**지금 붙어 있는 페어링을 지워서 해결하려 들지 말 것** — 앱이 낡은 동안에는 재페어링해도
+같은 scope 가 나오고, 연결만 잃는다.
+
 ### rate-limit 로 죽은 run 이 락을 남기고, 증상은 "auth profile temporarily unavailable" 로 나온다 (2026-09-06)
 
 gpt 봇(`@glg_gpt_bot`)이 **하루 넘게 무응답**이었고, 그동안 **아무 알림도 없었다**. 텔레그램 로그에는 3분마다 같은 문장만 찍혔다:

@@ -1,6 +1,6 @@
 ---
 name: nixos-config
-description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드(Dockerfile FROM 한 줄 + doctor read-only), caddy 변경 시 8-세트 검수, 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리'."
+description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드(Dockerfile FROM 한 줄 + doctor read-only), 공개면 변경 시 서빙 URL 전수 검수(caddy 8-세트 + CF Tunnel + Tailscale Serve), 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리', 'tailscale', '터널', '안드로이드 앱', '앱이 안 붙어', 'trustedProxies', '403', '페어링'."
 user_invocable: true
 ---
 
@@ -85,9 +85,43 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
 
 ## 5. 반사신경 — 다시 당하지 말 것
 
-- **caddy 변경 = 8-세트 검수 필수**: `docker/caddy/Caddyfile` 건드리면(특히 `docker restart
-  caddy`) caddy-fronted 전부를 세트로 확인 — comments/analytics/agenda/ha/forge/map/ax/claw.
-  하나만 보고 넘기지 마라. (`docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수" 참조)
+- **공개면 변경 = 서빙 URL 전수 검수**: `docker/caddy/Caddyfile` 이든 gateway 설정이든
+  공개면을 건드렸으면 **caddy 8-세트 + 밖의 3개**를 한 번에 확인한다. 하나만 보고 넘기지 마라.
+  (`docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수" 참조)
+
+  ```bash
+  for h in agenda analytics ax claw comments forge ha map; do
+    printf '%-28s %s\n' "$h" "$(curl -sS -m 12 -o /dev/null -w '%{http_code}' https://$h.junghanacs.com/)"
+  done
+  curl -sS -m 12 -o /dev/null -w 'aionsclubs %{http_code}\n' https://aionsclubs.org/          # CF Tunnel
+  curl -sS -m 10 -o /dev/null -w 'tailnet    %{http_code}\n' https://oracle.tailb0e905.ts.net/ # Tailscale Serve
+  ```
+
+  **기대값을 알고 봐야 한다 — 200 이 아닌 게 셋이고 전부 정상이다** (2026-09-08 실측):
+
+  | 기대 | 호스트 | 왜 |
+  |---|---|---|
+  | 200 | agenda · analytics · ax · forge · ha · aionsclubs · tailnet | |
+  | **302** | claw · map | authelia forward_auth 게이트. 설계대로 |
+  | **404** | comments | remark42 는 루트에 페이지가 없다. **장애 아님** — `/api/v1/ping` 이 `pong` 이면 정상 |
+
+  caddy 밖의 두 경로(`aionsclubs.org` CF Tunnel, `oracle.tailb0e905.ts.net` Tailscale Serve)는
+  caddy 를 안 타므로 Caddyfile 검수에서 빠지기 쉽다. **세트에 넣어라.**
+- **`/health` 200 은 게이트웨이가 멀쩡하다는 증거가 아니다**: `/health` 는 무인증 라우트라
+  proxy attribution·토큰 검사를 **건너뛴다**. 그래서 `/health` 는 200 인데 `/` 는 403 인
+  비대칭이 나오고, 이 비대칭 자체가 "네트워크·프로세스는 살아있고 **인증 계층**에서 막혔다"는
+  진단이다. 앱/UI 가 못 붙을 때 `/health` 만 보고 "게이트웨이 정상"이라 결론내지 마라 —
+  **인증이 걸리는 `/` 를 같이 찍고, 403 이면 본문(JSON `type`)을 읽어라.** 본문이 원인을
+  이름으로 말해준다(`proxy_attribution_required` 등).
+- **도커 네트워크가 갈리면 `gateway.trustedProxies` 가 조용히 화석이 된다**: gateway 는 두
+  네트워크에 붙어 있다 — `proxy`(172.18, caddy 경로) 와 `openclaw_default`(172.19, 호스트
+  루프백 포워딩 = tailscale serve·SSH 터널). 네트워크가 재생성되면 서브넷이 밀리는데
+  `trustedProxies` 는 안 따라간다. **설정 파일은 그대로인데 그 아래 땅이 움직인 화석이다.**
+  추측하지 말고 컨테이너가 보는 소스 IP 를 실측한다(`/proc/net/tcp` 를 폴링하며 요청을 흘린다 —
+  전문은 gotchas). 넓히지 말고 `/32` 로 좁게 더하고, **config 변경이므로 restart 로 충분**.
+  ⚠️ **대가를 알고 하라**: 도커 NAT 는 tailscale serve 와 호스트 루프백을 **같은 IP 로 뭉갠다.**
+  그 IP 를 신뢰하는 순간 `run.sh t)` SSH 터널로 Control UI 를 보던 길이 403 이 된다. `/32` 로도
+  분리되지 않는다. 대체는 tailnet URL 직행(thinkpad 도 tailnet 에 있다).
 - **claw.junghanacs.com = 인증 뒤에 원격 셸이 있는 유일한 vhost**: OpenClaw Control UI 공개면.
   자물쇠 3겹(Authelia forward_auth → gateway token → device pairing)을 전부 유지한다.
   **`gateway.auth.mode`를 `trusted-proxy`로 바꾸지 마라** — gateway가 `proxy` 도커 네트에 붙어

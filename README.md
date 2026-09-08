@@ -74,7 +74,7 @@ Self-hosted services running on Oracle Cloud ARM VM:
 | [Caddy](https://caddyserver.com) | reverse proxy | Auto HTTPS (Let's Encrypt) for all services |
 | [Remark42](https://remark42.com) | `comments.junghanacs.com` | Self-hosted comment system |
 | [Mattermost](https://mattermost.com) | `chat.junghanacs.com` | Team chat + OpenClaw integration hub |
-| [OpenClaw](https://openclaw.ai) | `localhost:18789` (SSH tunnel) | AI assistant gateway |
+| [OpenClaw](https://openclaw.ai) | `oracle.tailb0e905.ts.net` (Tailscale Serve) | AI assistant gateway |
 | [Umami](https://umami.is) | self-hosted | Privacy-focused web analytics |
 
 **OpenClaw features:**
@@ -84,7 +84,7 @@ Self-hosted services running on Oracle Cloud ARM VM:
 - Custom Dockerfile: gh CLI, ripgrep, fd, jq, tree, skills support
 - **claude-cli native (2026-05-26)**: `main`/`mini` agents run on the `claude-cli` provider — OpenClaw spawns Anthropic's official `claude` Code CLI directly (via `@anthropic-ai/claude-code` package). Uses the host's Claude Pro/Max OAuth (`~/.claude/.credentials.json`), so usage draws from the Max **20x rate tier** instead of the per-token *extra usage* pool that third-party harnesses get throttled to. Comes with **1M context window** (same as the desktop Claude Code surface), workspace-aware skill discovery, and shared session JSONLs under `~/.claude/projects/`. See `AGENTS.md §3 → claude-cli provider` for the full mechanism.
 - **ACP route**: bbot (Claude opus-4-7) / gemini agents run through the [`pi-shell-acp`](https://github.com/junghan0611/pi-shell-acp) OpenClaw plugin — third-party native ACP plugin path with its own pi backend (not `@openclaw/acpx`). bbot/gemini are candidates for migration to `claude-cli` after further validation. See `AGENTS.md §2 → ACP route` for the architectural position.
-- Web UI (Control UI): SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 oracle` → `http://127.0.0.1:18789/`
+- Web UI (Control UI): **Tailscale Serve** → `https://oracle.tailb0e905.ts.net/` (tailnet only). The old SSH tunnel (`ssh -N -L 18789:127.0.0.1:18789 oracle`) now returns **403 `proxy_attribution_required`**: tunnel and host-loopback traffic reaches the container as `172.19.0.1`, which is a `gateway.trustedProxies` entry, so requests without forwarded client headers are rejected. The Android app uses the same tailnet URL.
 - Config managed in private repo: [openclaw-config](https://github.com/junghan0611/openclaw-config) (Oracle VM agent workspace)
 
 **run.sh shortcuts** (from laptop):
