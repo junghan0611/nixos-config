@@ -9,6 +9,38 @@
 
 ## Unreleased
 
+## v2026.9.9 — 하트비트를 사실로 만지기, 그리고 그 방법을 스킬로
+
+### Added
+
+- **`openclaw` 스킬**(`.claude/skills/openclaw/`)을 만들었다. OpenClaw 런타임을 기억이 아니라 **그 버전의 사실**로 만지는 절차다 — 첫 수는 upstream 의 `openclaw docs` / `config schema`, 소스는 라이브와 같은 태그로 고정한 클론에서만 인용, dist 번들 경로는 인용 금지(해시가 버전마다 바뀐다), `config set` 은 `--merge` 가 기본이 아니다. `nixos-config` 스킬과 **일부러 분리**했다: 그쪽은 디바이스·rebuild·배포, 이쪽은 런타임 자체다. 전역이 아니라 이 리포 스코프인 이유도 적었다 — 런타임은 oracle 하나에만 있고 담당자는 이 리포의 에이전트다.
+- **[docs/openclaw-reference-map.md](docs/openclaw-reference-map.md)** — 주제별 소스 좌표표(설정 스키마 루트·agents·bindings·heartbeat·cron payload·delivery·gateway·plugins/skills/memory)를 `src/…:줄` 로 정리했다. `~/repos/3rd/openclaw` 를 라이브와 같은 커밋(`v2026.8.2` = `0965053`)으로 고정하고 작성했다. 미확인 항목은 미확인이라고 적혀 있다. **문서는 저절로 안 읽히므로** `AGENTS.md` 와 `nixos-config` 스킬에 라우팅 줄을 함께 넣었다.
+- **`dm` 스킬**(agent-config) — 세션을 아무도 안 보고 있을 때 에이전트가 GLG 에게 텔레그램으로 한 통 보내는 경로. 양식은 `DM <기기> <리포> <하네스/모델>` + 본문. 유휴 봇의 Bot API 에 직접 POST 라 **게이트웨이가 죽어도 나가고**, 어느 봇 세션에도 쌓이지 않는다.
+
+### Changed
+
+- **bbot 하트비트를 `30m` → `3h`** 로 늘렸다(하루 48턴 → 8턴). cadence 는 config 에서만 바뀐다 — `cron list` 의 `heartbeat-bbot` 은 그 투영이라 `cron edit` 으로 박은 값은 다음 reconcile 에서 되돌아간다. restart 는 불필요하고(hot reload), `anchorMs` 는 `sha256(seed:agentId) % intervalMs` 라 interval 이 위상 입력이므로 위상이 옮겨간다.
+- **하트비트 배달 계정을 `accountId: "bbot"` 으로 고정**했다. 그전에는 `agent:bbot:main` 세션에 채널이 없어 채널 기본 계정으로 떨어져 **B 의 하트비트가 main 봇 방으로 갔다**. 14:41 비트 실측: `[heartbeat] using explicit accountId` → `outbound send ok accountId=bbot messageId=2775`.
+- 소스 클론 `~/repos/3rd/openclaw` 를 5월 HEAD(+5월부터 멈춘 rebase)에서 **라이브와 같은 `v2026.8.2`** 로 맞췄다. 낡은 클론을 읽고 라이브 배선을 판정하는 사고가 실제로 났었다.
+
+### Fixed
+
+- **문서가 실은 지뢰를 제거했다.** 하트비트 주기 변경 예시가 `--merge` 없이 객체를 통째로 `config set` 하는 형태여서, 그대로 실행하면 `accountId` 가 조용히 사라져 방금 고친 것을 되돌린다. 교차검수(`openai-codex/gpt-5.6-terra`)가 잡았다.
+- 자동화 SSOT 의 낡은 서술 정정: 모델명 `claude-fable-5` → `claude-fable-5-1`, 기준 시각 8.1 → 8.2, `agents.list` → `agents.entries`, 그리고 **"매번 sentinel 만 반환한다"** 는 이제 거짓이다(scratch 로 판단 순서를 주자 같은 하트비트가 도구를 쓰고 커밋을 떨어뜨렸다).
+- `docs/openclaw-gotchas.md` 의 "config-only 변경이면 compose restart 로 충분" 을 정밀화했다. `heartbeat.every` 는 restart 없이 붙는다(실측). 등록 자체가 바뀌는 경우까지 hot reload 가 덮는지는 **재보지 않았다**고 적었다.
+
+### 문서화한 배관 (그동안 코드로만 있던 것)
+
+- 하트비트 배달은 cron 잡의 `delivery` 와 **무관한 러너 자체 경로**다 — 잡이 `deliveryStatus: not-requested` 인데도 배달된다.
+- `heartbeat.target` 이 undefined 면 owner DM. 계정 해석 순서는 `heartbeat.accountId` → (채널이 같을 때) 세션 accountId → 채널 기본 계정.
+- upstream 이 **첫 배달 한 번에만** 붙이는 안내문(`agents.defaults.heartbeat.target:"none"` 을 걸라는 것)은 따르면 안 된다 — defaults 에 걸면 유일하게 살아 있는 배달까지 죽는다.
+- 깨움 문장의 계약면은 `HEARTBEAT.md` 가 아니라 **cron scratch** 다. 손을 썼는지의 지표는 트랜스크립트가 아니라 **비트 시각 안의 커밋**이다(이 런타임의 전사는 tool 이벤트를 안 남긴다).
+
+### 상류 후보 추가
+
+- **안드로이드 앱이 heartbeat automation 의 상세를 못 연다.** `apps/android/…/CronJobDetail.kt:160` 의 payload kind 화이트리스트가 `systemEvent/agentTurn/command/script` 넷만 받고 `heartbeat` 를 빼서, 상세 파서가 null 을 돌려주고 앱이 자기 에러를 낸다. 목록 파서는 kind 를 안 걸러서 **목록엔 뜨고 상세만 깨진다**.
+
+
 ## v2026.9.8 — OpenClaw 안정화·관측·작업공간 경계
 
 ### Added

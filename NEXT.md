@@ -29,10 +29,15 @@
   발화가 "일단"). 오늘 잰 것은 [entwurf#109](https://github.com/junghan0611/entwurf/issues/109)
   에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
 
-- [x] **9. bbot 하트비트 운영면** — 주기 `30m`→`3h`(하루 48턴→8턴), 배달 계정을 `accountId:"bbot"` 으로 고정(그전엔 `main` 세션에 채널이 없어 채널 기본 계정 = main 봇 방으로 갔다). 14:41 비트 실측 `outbound send ok accountId=bbot messageId=2775`. 배관·함정 전문은 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. 교차검수 gpt-5.6-terra 가 문서의 `config set` 예시가 `--merge` 없이 형제 키를 지우는 것을 잡아냈다.
-  - **불충분 2건(닫힌 것처럼 쓰지 말 것)**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 위 상류 후보 ⑧ 참조.
+- [x] **9. bbot 하트비트 운영면** — 주기 `3h` + `accountId:"bbot"`, 배관·함정 전문은 [CHANGELOG.md](CHANGELOG.md) `v2026.9.9` 와 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**(닫힌 것처럼 쓰지 말 것): ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
 
-현재 좌표: 1·2·3·4·7·8·9 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
+- [ ] **10. doctor 가 찾아낸 것 셋** ← 2026-09-09 첫 전수 점검(`openclaw config validate` + `doctor` read-only). **`config validate` 는 통과했다** — 스키마 위반 0, 경고는 우리가 9/1 에 일부러 끈 `active-memory` 하나뿐. 문제는 스키마가 아니라 선언과 배포다.
+  - [ ] **glg 봇 `USER.md` 가 29% 잘려서 주입된다** — `5,668 raw / 3,999 injected`. 전체 bootstrap 예산은 `31,322/60,000`(52%)로 여유가 있는데 **파일당 상한**에 걸렸다. 가족봇이 GLG 정보를 3분의 1 잘린 채 읽고 있다는 뜻. 처방은 `agents.entries.glg.bootstrapMaxChars`(doctor 가 이 키를 직접 알려준다). **셋 중 사람에게 실제로 닿고 있는 유일한 것이라 먼저다.**
+  - [ ] **`summarize`·`tmux` 가 5봇 전부에서 번들본을 덮는다** — `winner=openclaw-workspace … loser=openclaw-bundled`. 의도한 것이면 정상이지만 **의도했는지 확인된 바 없다.** 확인 안 하면 버전업으로 내장본이 개선돼도 우리 사본이 계속 이긴다.
+  - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
+  - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
+
+현재 좌표: 1·2·3·4·7·8·9 완료 → **5(무응답 통지)가 다음 한 수** → 10(doctor 셋) → 6(상류)
 
 # NOW
 
