@@ -308,7 +308,7 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 **그래서 실턴이 0 인 heartbeat 도 typing 을 낸다.** main/glg/gpt/mini 는 `agent:<id>:main` 세션이
 없어 heartbeat 가 6~19ms no-op 였는데도 매시간 typing 1 회와 `task_runs` 행 1 개를 만들고 있었다.
 2026-09-01 에 네 봇의 heartbeat 를 config 에서 제거했다. bbot 만 남았다(의도된 루프,
-2026-09-09 에 `30m` → `3h`).
+2026-09-09 에 `30m` → `3h` + `accountId: bbot`).
 
 ⚠️ heartbeat 잡은 **system-owned 라 `cron disable` 이 거부된다**
 (`system-owned monitor jobs cannot be edited by cron clients`). config 에서 빼야 한다:
@@ -329,6 +329,12 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 | `none` | 아무 데도 안 보낸다. **하트비트는 계속 돌고 기록도 남는다** — 입만 막는다 (`=== "none" \|\| !delivery.to) return delivery`) |
 
 ⚠️ **`agents.defaults.heartbeat.target: "none"` 은 금지다 — bbot 을 죽인다.**
+
+**upstream 이 직접 이걸 시킨다는 게 함정의 핵심이다.** `target` 미지정 라우트의 **첫 배달
+한 번**에만 안내문이 붙는데(`resolveHeartbeatDeliveryTarget` 의 `implicitDefaultRoute` +
+`prevHeartbeatAt === undefined`), 그 문장이 *"Set agents.defaults.heartbeat.target: \"none\"
+to keep these internal."* 다. 2026-09-09 에 실제로 GLG 화면에 떴다. 그대로 따르면 아래 이유로
+살아 있는 배달이 죽는다.
 지금 등록된 하트비트는 bbot 하나이고 **그 배달은 의도된 라이브 기능**이다(GLG 확인 2026-09-02).
 나머지 4 봇이 조용한 건 고장이 아니라 **GLG 가 검수 목적으로 일부러 꺼둔 것**이고, 검수가 끝나면 다시 켠다.
 따라서 소음을 막아야 할 일이 생기면 **defaults 가 아니라 `agents.entries.<id>.heartbeat.target`** 으로
@@ -497,13 +503,25 @@ list 안에 heartbeat 블록을 가진 에이전트가 하나라도 있나?
 `{ every: "30m" }`을 넣으면 bbot만 돌고 main/glg/gpt/mini는 에러도 경고도 없이 멈춘다 — 로그에
 "안 도는 봇"은 안 찍히니 한참 뒤에나 눈치챈다.
 
-처방: **heartbeat를 쓰는 봇 전원에게 블록을 명시한다.** 그 순간부터 `agents.list`가 진짜 SSOT이고
-`defaults`는 죽은 폴백이 된다 — **새 봇을 추가할 때 블록을 빼먹으면 그 봇은 heartbeat 없이
-태어난다.** 반대로 특정 봇을 끄고 싶으면 블록을 안 주면 된다(2026-08-12 gemini가 이 경로로 OFF).
+처방: **heartbeat를 쓰는 봇 전원에게 블록을 명시한다.** 그 순간부터 엔트리(`agents.entries`)가
+진짜 SSOT이고 `defaults`는 죽은 폴백이 된다 — **새 봇을 추가할 때 블록을 빼먹으면 그 봇은
+heartbeat 없이 태어난다.** 반대로 특정 봇을 끄고 싶으면 블록을 안 주면 된다(2026-08-12 gemini가
+이 경로로 OFF).
 
 주기 해석 순서는 `overrideEvery ?? agent.heartbeat.every ?? defaults.heartbeat.every ?? "30m"`.
-config-only 변경이라 **`docker compose restart openclaw-gateway`면 충분**(recreate 불필요),
-restart 뒤 memory prewarm은 평소대로.
+
+⚠️ **엔트리의 heartbeat 블록을 객체째로 `config set` 하지 마라 — 형제 키가 날아간다.**
+`--merge`는 기본이 아니다(`config set --help`: *"Merge object/map values instead of replacing
+the target path (default: false)"*). `agents.entries.bbot.heartbeat`에는 `every` 말고
+`accountId`도 들어 있어서, 주기만 바꾸려고 객체를 통째로 주면 배달 계정 지정이 조용히
+사라진다. 하위 경로(`…heartbeat.every`)로 바꾸거나 `--merge`를 붙여라.
+
+**restart 여부는 무엇을 바꿨느냐에 달렸다.** `heartbeat.every` 변경은 **restart 없이 붙는다** —
+config hot reload가 `reconcileHeartbeatJobs` → `heartbeatRunner.updateConfig`를 차례로 부른다
+(실측 2026-09-09: 로그 `config hot reload applied (agents.entries.bbot.heartbeat.every)`,
+다음 예정 시각에 정시 발화). 블록을 새로 만들거나 없애는 등 등록 자체가 바뀌는 경우까지
+hot reload가 덮는지는 **재보지 않았다** — 그때는 `docker compose restart openclaw-gateway`
+(recreate 불필요)가 안전하고, restart 뒤 memory prewarm은 평소대로.
 
 ### 컨테이너에 전역 gitconfig가 없다 — 봇의 push는 막히고 안전레일은 통째로 빠진다 (2026-08-12)
 

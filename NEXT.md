@@ -13,7 +13,7 @@
 - [x] **3. 기억축 청소** — dreaming 4월 화석 880 + 세션 아카이브 835 = **1,715청크 회수(4,915→3,202, -35%)**. 6봇 `dirty:no`
 - [x] **4. 지배 세션 압축 — 압축할 게 아니었다.** gpt DM 무응답의 원인은 컨텍스트가 아니라 **rate-limit 로 죽은 run 이 남긴 세션 락**이었다(`lastRunError: API rate limit reached`, `endedAt` 2026-09-05T14:20, 이후 run 0회). 실제 창은 `route=fits` 185,615/272,000. `sessions.abort` 한 줄로 복구(첫 턴 5초, 텔레그램 `messageId=3595`). 전사 미절단. 함정 전문 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 첫 항목
 - [ ] **5. 봇 무응답을 사람이 먼저 알아채는 구조** ← CURRENT (GLG 2026-09-06: *"이런 문제 발생했는데 뭘 알려주는 게 없네"*). gpt 가 **하루 넘게 죽어 있는 동안 알림이 0건**이었다 — GLG 가 말을 걸어보고서야 발견했다. 로그에는 3분마다 같은 에러가 찍혔고, health-monitor 의 `stuck session recovery` 는 `reason=active_reply_work` 로 매분 **skip** 했다(락 잡힌 세션을 "일하는 중"으로 본다). 필요한 것: ① 세션 `status=failed` 가 N 분 이상 지속되면 main/운영 채널로 통지 ② `spooled update … keeping for retry` 가 반복되면 같은 통지 ③ 그 판정이 upstream 몫인지 우리 cron 한 줄인지 결정([docs/openclaw-automations.md](docs/openclaw-automations.md) 에 얹을 자리)
-- [ ] **6. 상류 리포트** ← PAUSED: 5 이후. 우리 설정으로 못 고치는 6건이 모였다(아래 §상류). **7번째 후보 추가**: rate-limit 종료 run 이 세션 락을 놓지 않아 `sessions compact` 까지 막는다(복구 수단이 같이 잠긴다)
+- [ ] **6. 상류 리포트** ← PAUSED: 5 이후. 우리 설정으로 못 고치는 **확정 6건 + 후보 2건**이 모였다(아래 §상류). 후보는 ⑦ rate-limit 종료 run 이 세션 락을 놓지 않아 `sessions compact` 까지 막는 것, ⑧ 안드로이드 앱이 heartbeat automation 상세를 못 여는 것(앱 확정은 미검증)
 
 - [x] **7. 안드로이드 앱이 tailnet 으로 못 붙던 것** — 원인은 버전업도 페어링도 아니었다.
   `openclaw_default` 도커 네트워크가 2026-09-02 에 새로 생기면서 `gateway.trustedProxies` 의
@@ -29,7 +29,10 @@
   발화가 "일단"). 오늘 잰 것은 [entwurf#109](https://github.com/junghan0611/entwurf/issues/109)
   에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
 
-현재 좌표: 1·2·3·4·7·8 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
+- [x] **9. bbot 하트비트 운영면** — 주기 `30m`→`3h`(하루 48턴→8턴), 배달 계정을 `accountId:"bbot"` 으로 고정(그전엔 `main` 세션에 채널이 없어 채널 기본 계정 = main 봇 방으로 갔다). 14:41 비트 실측 `outbound send ok accountId=bbot messageId=2775`. 배관·함정 전문은 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. 교차검수 gpt-5.6-terra 가 문서의 `config set` 예시가 `--merge` 없이 형제 키를 지우는 것을 잡아냈다.
+  - **불충분 2건(닫힌 것처럼 쓰지 말 것)**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 위 상류 후보 ⑧ 참조.
+
+현재 좌표: 1·2·3·4·7·8·9 완료 → **5(무응답 통지)가 다음 한 수** → 6(상류)은 그다음
 
 # NOW
 
@@ -83,6 +86,13 @@
 6. **`chunkTokens:400` 이 토큰이 아니다** — `maxChars=tokens×4`, 한글은 글자당 ×4 로 세는 휴리스틱. 하한이 없어 6자 청크도 생긴다.
 
 증거: gpt `q='임베딩'` 8칸 중 **1위가 3일 전 삭제된 세션**, 6칸이 세션 하나. 조사는 형제 grok-4.6 의 `/app` 번들 독해 + 이 호스트 실측.
+
+후보 2건 더 (아직 확정 아님):
+
+7. **rate-limit 로 끝난 run 이 세션 락을 놓지 않는다** — 복구 수단인 `sessions compact` 까지 함께 잠긴다(2026-09-06, RAIL 4 참조).
+8. **안드로이드 앱(node)이 `payload.kind:"heartbeat"` automation 의 상세를 못 연다** — 목록에는 `ok` 로 뜨는데 눌러보면 *"gateway returned an invalid automation"*. 같은 화면에서 `morning-family-schedule-reminder`(`agentTurn`)는 정상 표시된다(권한만 `admin access required`). 두 잡의 차이: heartbeat 는 `payload.kind:"heartbeat"` 이고 `delivery`/`description`/`sessionKey` 가 없고 `wakeMode:"next-heartbeat"`, `declarationKey` 있음(system-owned).
+   - 확인된 것: 그 문자열이 게이트웨이 이미지 dist 전체에 **없다**(grep 0건), 같은 잡을 CLI 는 온전히 읽는다 → 게이트웨이가 뱉은 에러가 아니다.
+   - **불충분**: 앱 단독 버그로 확정하려면 안드로이드 DTO/RPC payload 대조가 필요하다(교차검수 gpt-5.6-terra, 2026-09-09). 앱 버전과 에러 화면도 아직 안 봤다.
 
 ---
 

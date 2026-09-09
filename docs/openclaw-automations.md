@@ -6,7 +6,7 @@
 > **동기화 방법 (한 줄)**: `./run.sh` → `w)` 또는 `./scripts/turnwatch.sh`
 > 그 출력의 §1·§1b가 이 문서의 표와 같아야 한다. 다르면 이 문서를 갱신한다.
 
-기준 시각: **2026-09-01 08:5x KST** · OpenClaw **2026.8.1** (ea80657)
+기준 시각: **2026-09-09 14:4x KST** · OpenClaw **2026.8.2** (0965053)
 
 관련: [ORACLE.md](../ORACLE.md) (운영 핸드북) · [openclaw-gotchas.md](openclaw-gotchas.md) (함정) · [NEXT.md](../NEXT.md) (후속)
 
@@ -30,7 +30,7 @@
 | **gpt** | `openai/gpt-5.6-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `github-copilot/gemini-3.7-flash` | **없음** (원래 없었음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
-| **bbot** (B) | `anthropic/claude-fable-5` | **3h** | 없음 | 예 — 의도된 루프 |
+| **bbot** (B) | `anthropic/claude-fable-5-1` | **3h** (`accountId: bbot`) | 없음 | 예 — 의도된 루프 |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 **아무에게도 적용되지 않는다.**
 `heartbeat-config-*.js`(`resolveHeartbeatConfig`) — 엔트리에 `heartbeat`를 명시한 봇만 등록된다.
@@ -66,27 +66,86 @@ defaults 레벨 억제는 그걸 죽이므로 금지. "왜 네 봇이 조용하�
 
 ### bbot 3h — 의도된 예외 (2026-09-09에 30m에서 늘림)
 
-GLG가 일부러 유지한 루프다. fable-5 실턴이 돌고 **매번 sentinel만 반환한다**
-(8/30까지 `HEARTBEAT_OK`, 8.1 이후 `NO_REPLY` — 8.1이 토큰만 바꿨고 하는 일은 같다).
-그 턴이 Claude 구독을 쓰고 `agent:bbot:main` 세션이 계속 자라므로
-(2026-09-01 30m 시절 76k/200k) **2026-09-09에 `30m` → `3h`로 늘렸다** — 하루 48턴 → 8턴.
+GLG가 일부러 유지한 루프다. `claude-fable-5-1` 실턴이 돈다. 그 턴이 Claude 구독을 쓰고
+`agent:bbot:main` 세션이 계속 자라므로 (2026-09-01 30m 시절 76k/200k)
+**2026-09-09에 `30m` → `3h`로 늘렸다** — 하루 48턴 → 8턴.
 **bbot 방에는 3시간마다 typing이 뜬다 — 이건 정상이다.** 30분마다 안 뜬다고 고장으로 재조사하지 마라.
 
-**cadence는 config에서만 바꾼다 — cron 잡을 고치지 마라.**
+**"매번 sentinel만 반환한다"는 이제 사실이 아니다.** 8/30까지 `HEARTBEAT_OK`, 8.1 이후
+`NO_REPLY` 를 돌려주던 것은 맞지만, 그건 **깨움 문장이 판단보다 먼저 닫았기 때문**이지
+하트비트가 그런 물건이어서가 아니었다. 2026-09-09 에 B 가 cron scratch 로 판단 순서를
+넣자 같은 하트비트가 도구를 쓰고 커밋을 떨어뜨리고 배달까지 했다(아래 §scratch).
+
+#### cadence 는 config 에서만 바꾼다 — cron 잡을 고치지 마라
 
 ```bash
-openclaw config set agents.entries.bbot.heartbeat '{"every":"3h"}'
+# ⚠️ 하위 경로로 바꿔라. 객체 통째로 set 하면 accountId 같은 형제 키가 함께 날아간다.
+openclaw config set agents.entries.bbot.heartbeat.every '"3h"'
+
+# 객체째로 줘야 한다면 --merge 를 반드시 붙인다 (기본이 replace 다)
+openclaw config set agents.entries.bbot.heartbeat '{"every":"3h"}' --merge
 ```
 
-`cron list`의 `heartbeat-bbot`은 config의 **투영**이다. `resolveHeartbeatMonitorPlan`
-(`dist/heartbeat-monitor-*.js`)이 config에서 `everyMs`를 재계산해 다르면 `kind:"update"`로 덮으므로,
-`cron edit`으로 박은 값은 다음 reconcile에서 되돌아간다(애초에 system-owned라 거부된다 — 아래 §함정).
-restart는 필요 없다: 설정 hot reload가 `reconcileHeartbeatJobs` → `heartbeatRunner.updateConfig`를
-차례로 부르고, `updateConfig`가 `cooldownUntilMs = lastRunStartedAtMs + 새 interval`로 다시 잡아
-**여분의 턴이 즉시 튀지 않는다**. 단 `anchorMs`는 interval을 입력으로 재계산되므로 위상이 옮겨간다.
+`config set --help` 가 말한다: `--merge  Merge object/map values instead of replacing
+the target path (default: false)`. **기본이 교체다.** 이 문서의 이전 판이 `--merge` 없이
+객체를 통째로 주는 명령을 실었는데, 그대로 실행하면 `accountId: "bbot"` 이 조용히 사라져
+하트비트가 다시 main 봇 방으로 간다(교차검수 gpt-5.6-terra, 2026-09-09).
 
-실측(2026-09-09 12:03 KST): 로그 `config hot reload applied (agents.entries.bbot.heartbeat.every)`,
-`cron list` → `everyMs 10800000`, `anchorMs` 702682 → 6102682, 다음 실행 14:41 KST.
+`cron list` 의 `heartbeat-bbot` 은 config 의 **투영**이다. `resolveHeartbeatMonitorPlan`
+(`src/cron/heartbeat-monitor.ts`)이 config 에서 `everyMs` 를 재계산해 다르면 `kind:"update"`
+로 덮으므로, `cron edit` 으로 박은 값은 다음 reconcile 에서 되돌아간다(애초에 system-owned
+라 거부된다 — 아래 §함정).
+
+restart 는 필요 없다: 설정 hot reload 가 `reconcileHeartbeatJobs` → `heartbeatRunner.updateConfig`
+를 차례로 부르고, `updateConfig` 가 `cooldownUntilMs = lastRunStartedAtMs + 새 interval` 로
+다시 잡아 **여분의 턴이 즉시 튀지 않는다**. 단 `anchorMs` 는
+`sha256(schedulerSeed:agentId) % intervalMs` 라 **interval 이 위상 입력**이므로 위상이 옮겨간다.
+
+실측(2026-09-09): 12:03 로그 `config hot reload applied (agents.entries.bbot.heartbeat.every)`,
+`cron list` → `everyMs 10800000`, `anchorMs` 702682 → 6102682. **다음 예정 시각 14:41 에 정시
+발화**했다 — hot reload 가 스케줄에 반영됐다는 증거는 이 정시 발화이지, 그 사이 수동 실행
+(`runId=manual`)이 아니다.
+
+#### 하트비트 배달은 cron 잡의 delivery 와 무관하다
+
+`cron list` 의 `heartbeat-bbot` 은 `deliveryStatus: not-requested` 인데도 **배달된다.**
+그 필드는 cron 잡 자신의 배달 설정이고, 하트비트 산출은 **러너가 자기 경로로** 내보낸다
+(`src/infra/heartbeat-runner-delivery.ts`). 둘을 같은 것으로 읽으면 "배달 경로가 없다" 는
+잘못된 결론이 나온다.
+
+배달 대상은 `resolveHeartbeatDeliveryTarget` (`src/infra/targets.ts`) 이 정한다:
+
+```text
+heartbeat.target 이 undefined  → "owner" (GLG DM). 명시가 없으면 이쪽이다.
+계정 해석 순서                  → heartbeat.accountId
+                                → (세션 채널이 같을 때) 그 세션의 accountId
+                                → 채널 기본 계정
+```
+
+**`agent:bbot:main` 세션에는 채널이 없다.** 그래서 명시가 없던 2026-09-09 12:07 에는 채널
+기본 계정(`default` = main 봇)으로 떨어져, B 의 하트비트가 **main 봇 방으로 갔다**. `accountId`
+를 박아 고쳤다 — 14:41 비트 실측: 로그 `[heartbeat] using explicit accountId` →
+`outbound send ok accountId=bbot messageId=2775`, GLG 화면에 `@glg_b_bot` 으로 도착.
+
+⚠️ 첫 배달에는 upstream 안내문이 한 번 붙는다 —
+*"Set agents.defaults.heartbeat.target: \"none\" to keep these internal."*
+**따르지 마라.** defaults 에 걸면 유일하게 살아 있는 bbot 배달까지 죽는다(§함정, gotchas).
+
+#### scratch — 하트비트의 계약면
+
+깨움 문장은 `HEARTBEAT.md` 가 아니라 **cron scratch** 다.
+
+```bash
+openclaw cron scratch <jobId>                          # 현재 내용 읽기
+openclaw cron scratch <jobId> --file <path>            # 교체
+```
+
+2026-09-09 실측: scratch 를 넣은 뒤 프롬프트가 885자(rev1) → 1218자(rev2, 임시 단락 포함)로
+늘었고, 그 비트 안에서 B 가 커밋을 떨어뜨렸다(`5ac4c09`, `2d3dc9e`).
+
+**손을 썼는지의 지표는 트랜스크립트가 아니라 비트 시각 안의 커밋이다.** 이 런타임의
+OpenClaw 트랜스크립트는 message 행만 남기고 tool 이벤트를 적지 않으므로, "도구 사용 0회"
+는 측정이 아니라 형식 산물이다(B 가 자기 주장을 이 근거로 은퇴시켰다, 2026-09-09).
 
 ---
 
@@ -94,7 +153,7 @@ restart는 필요 없다: 설정 hot reload가 `reconcileHeartbeatJobs` → `hea
 
 | 이름 | 봇 | 스케줄 | 대상 | 모델 |
 |---|---|---|---|---|
-| `heartbeat-bbot` | bbot | every 3h | 자기 main 세션 | (defaults) |
+| `heartbeat-bbot` | bbot | every 3h | 자기 main 세션 (배달은 `accountId: bbot`) | (defaults) |
 | `morning-family-schedule-reminder` | glg | `0 23 * * *` UTC = **08:00 KST** | GLG DM | `anthropic/claude-sonnet-5` |
 | `baron-kindergarten-dropoff-2026-09-02` | glg | 1회성 2026-09-01 23:00Z | GLG DM | `anthropic/claude-sonnet-5` |
 
