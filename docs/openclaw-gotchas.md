@@ -307,7 +307,8 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 
 **그래서 실턴이 0 인 heartbeat 도 typing 을 낸다.** main/glg/gpt/mini 는 `agent:<id>:main` 세션이
 없어 heartbeat 가 6~19ms no-op 였는데도 매시간 typing 1 회와 `task_runs` 행 1 개를 만들고 있었다.
-2026-09-01 에 네 봇의 heartbeat 를 config 에서 제거했다. bbot 30m 만 남았다(의도된 루프).
+2026-09-01 에 네 봇의 heartbeat 를 config 에서 제거했다. bbot 만 남았다(의도된 루프,
+2026-09-09 에 `30m` → `3h`).
 
 ⚠️ heartbeat 잡은 **system-owned 라 `cron disable` 이 거부된다**
 (`system-owned monitor jobs cannot be edited by cron clients`). config 에서 빼야 한다:

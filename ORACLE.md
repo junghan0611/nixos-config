@@ -187,9 +187,11 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
-### heartbeat — bbot 하나만 (2026-09-01)
+### heartbeat — bbot 하나만 (2026-09-01, 주기 2026-09-09)
 
-`agents.entries.<id>.heartbeat`를 명시한 봇만 등록된다. 현재 **bbot(30m) 하나**다.
+`agents.entries.<id>.heartbeat`를 명시한 봇만 등록된다. 현재 **bbot(3h) 하나**다
+(2026-09-09에 `30m`→`3h`; cadence는 config에서만 바꾼다 — cron 잡은 그 투영이라 되돌아간다.
+상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) "bbot 3h").
 main/glg/gpt/mini는 모델 턴을 0회 돌면서 매시간 typing과 task 행만 만들어 2026-09-01에 제거했다.
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 아무에게도 적용되지 않는다.
 main은 같은 날 `agents.entries.main.typingMode="never"`로 사용자 가시 typing을 억제했다.

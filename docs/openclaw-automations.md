@@ -30,7 +30,7 @@
 | **gpt** | `openai/gpt-5.6-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `github-copilot/gemini-3.7-flash` | **없음** (원래 없었음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
-| **bbot** (B) | `anthropic/claude-fable-5` | **30m** | 없음 | 예 — 의도된 루프 |
+| **bbot** (B) | `anthropic/claude-fable-5` | **3h** | 없음 | 예 — 의도된 루프 |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 **아무에게도 적용되지 않는다.**
 `heartbeat-config-*.js`(`resolveHeartbeatConfig`) — 엔트리에 `heartbeat`를 명시한 봇만 등록된다.
@@ -64,12 +64,29 @@ defaults 레벨 억제는 그걸 죽이므로 금지. "왜 네 봇이 조용하�
 잠시 사라졌던 typing이 다시 관측되어, `active-memory → 죽은 codex 런타임 → typing` 인과는
 현재 증명되지 않았다. 8.1 soak 동안 재발 시각과 `audit_events`의 main run을 함께 기록한다.
 
-### bbot 30m — 의도된 예외
+### bbot 3h — 의도된 예외 (2026-09-09에 30m에서 늘림)
 
-GLG가 일부러 유지한 루프다. 매 30분 fable-5 실턴이 돌고 **매번 sentinel만 반환한다**
+GLG가 일부러 유지한 루프다. fable-5 실턴이 돌고 **매번 sentinel만 반환한다**
 (8/30까지 `HEARTBEAT_OK`, 8.1 이후 `NO_REPLY` — 8.1이 토큰만 바꿨고 하는 일은 같다).
-하루 48턴이 Claude 구독을 쓰고 `agent:bbot:main` 세션이 계속 자란다(2026-09-01 76k/200k).
-**bbot 방에는 30분마다 typing이 뜬다 — 이건 정상이다.**
+그 턴이 Claude 구독을 쓰고 `agent:bbot:main` 세션이 계속 자라므로
+(2026-09-01 30m 시절 76k/200k) **2026-09-09에 `30m` → `3h`로 늘렸다** — 하루 48턴 → 8턴.
+**bbot 방에는 3시간마다 typing이 뜬다 — 이건 정상이다.** 30분마다 안 뜬다고 고장으로 재조사하지 마라.
+
+**cadence는 config에서만 바꾼다 — cron 잡을 고치지 마라.**
+
+```bash
+openclaw config set agents.entries.bbot.heartbeat '{"every":"3h"}'
+```
+
+`cron list`의 `heartbeat-bbot`은 config의 **투영**이다. `resolveHeartbeatMonitorPlan`
+(`dist/heartbeat-monitor-*.js`)이 config에서 `everyMs`를 재계산해 다르면 `kind:"update"`로 덮으므로,
+`cron edit`으로 박은 값은 다음 reconcile에서 되돌아간다(애초에 system-owned라 거부된다 — 아래 §함정).
+restart는 필요 없다: 설정 hot reload가 `reconcileHeartbeatJobs` → `heartbeatRunner.updateConfig`를
+차례로 부르고, `updateConfig`가 `cooldownUntilMs = lastRunStartedAtMs + 새 interval`로 다시 잡아
+**여분의 턴이 즉시 튀지 않는다**. 단 `anchorMs`는 interval을 입력으로 재계산되므로 위상이 옮겨간다.
+
+실측(2026-09-09 12:03 KST): 로그 `config hot reload applied (agents.entries.bbot.heartbeat.every)`,
+`cron list` → `everyMs 10800000`, `anchorMs` 702682 → 6102682, 다음 실행 14:41 KST.
 
 ---
 
@@ -77,7 +94,7 @@ GLG가 일부러 유지한 루프다. 매 30분 fable-5 실턴이 돌고 **매�
 
 | 이름 | 봇 | 스케줄 | 대상 | 모델 |
 |---|---|---|---|---|
-| `heartbeat-bbot` | bbot | every 30m | 자기 main 세션 | (defaults) |
+| `heartbeat-bbot` | bbot | every 3h | 자기 main 세션 | (defaults) |
 | `morning-family-schedule-reminder` | glg | `0 23 * * *` UTC = **08:00 KST** | GLG DM | `anthropic/claude-sonnet-5` |
 | `baron-kindergarten-dropoff-2026-09-02` | glg | 1회성 2026-09-01 23:00Z | GLG DM | `anthropic/claude-sonnet-5` |
 
