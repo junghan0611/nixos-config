@@ -31,7 +31,7 @@ TZ='Asia/Seoul' date '+%Y%m%dT%H%M%S'
 
 | 작업 맥락 | 펼칠 문서 |
 |---|---|
-| **OpenClaw 런타임 자체를 만짐** (봇 설정·heartbeat·cron·채널·배달·스키마) | → **`openclaw` 스킬** (별개 스킬). 기억으로 찍지 말고 그 버전의 사실로 만지는 절차 |
+| **OpenClaw 런타임 자체를 만짐** (봇 설정·heartbeat·cron·채널·배달·스키마) | → **`openclaw` 스킬** (`.claude/skills/openclaw/` — 같은 리포, 별개 스킬). 기억으로 찍지 말고 그 버전의 사실로 만지는 절차 |
 | OpenClaw 주제별 소스 좌표 (`src/…:줄`) | `docs/openclaw-reference-map.md` (v2026.8.2 기준, 미확인은 미확인이라 적힘) |
 | oracle 디바이스 또는 OpenClaw 관련 | `ORACLE.md` (ownership·model routing·env/secret·업그레이드·함정) |
 | thinkpad 로컬 AI (Ollama) | `THINKPAD.md` |
