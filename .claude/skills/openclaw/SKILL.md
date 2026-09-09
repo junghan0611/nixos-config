@@ -109,10 +109,11 @@ openclaw config set … --dry-run                   # 먼저 이걸로
 - heartbeat 스키마 `src/config/zod-schema.agent-runtime.ts` (`HeartbeatSchema`, **`.strict()`** —
   문서에 없는 필드는 전부 거부된다)
 
-## 6. 앱·웹도 같은 스키마를 읽는다 — 그리고 갭이 있다
+## 6. 앱·웹의 automation 계약 — Android 갭을 구분한다
 
-안드로이드 앱과 Control UI는 게이트웨이가 주는 automation을 **자기 파서로 다시 검증한다.**
-그래서 게이트웨이가 멀쩡해도 앱에서만 깨질 수 있다.
+안드로이드 앱은 게이트웨이가 주는 automation을 **자기 파서로 다시 검증한다.** 그래서 게이트웨이가
+멀쩡해도 Android에서만 깨질 수 있다. Control UI는 현재 지원하는 payload kind를 모두 읽기 전용으로
+렌더하므로, Android의 파서 갭을 웹에도 일반화하지 마라.
 
 실례(2026-09-09, v2026.8.2): `apps/android/app/src/main/java/ai/openclaw/app/CronJobDetail.kt:160`
 

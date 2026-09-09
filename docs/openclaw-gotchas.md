@@ -307,13 +307,13 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 
 **그래서 실턴이 0 인 heartbeat 도 typing 을 낸다.** main/glg/gpt/mini 는 `agent:<id>:main` 세션이
 없어 heartbeat 가 6~19ms no-op 였는데도 매시간 typing 1 회와 `task_runs` 행 1 개를 만들고 있었다.
-2026-09-01 에 네 봇의 heartbeat 를 config 에서 제거했다. bbot 만 남았다(의도된 루프,
-2026-09-09 에 `30m` → `3h` + `accountId: bbot`).
+2026-09-10부터 bbot도 heartbeat가 아니라 isolated memento cron으로 이관했다.
 
 ⚠️ heartbeat 잡은 **system-owned 라 `cron disable` 이 거부된다**
-(`system-owned monitor jobs cannot be edited by cron clients`). config 에서 빼야 한다:
-`openclaw config unset agents.entries.<id>.heartbeat`.
-등록 조건은 `heartbeat-config-Z4gqDu5K.js:33` — 엔트리에 `heartbeat` 를 명시한 봇만 등록된다.
+(`system-owned monitor jobs cannot be edited by cron clients`). 이 설치본은 `agents.defaults.heartbeat`
+가 남아 있으므로 `config unset agents.entries.bbot.heartbeat`도 금지다 — defaults를 상속해 **6봇 전원의**
+monitor가 되살아난다(bbot 1건은 07:29 실측, 6봇 팬아웃은 `src/infra/heartbeat-config.ts:70-76` 분기 판독).
+bbot은 `agents.entries.bbot.heartbeat = {"every":"0m"}`로 명시 disable한다.
 
 봇별 현황 SSOT 는 [openclaw-automations.md](openclaw-automations.md).
 
@@ -328,17 +328,9 @@ on/off 관측으로 단정하지 말고 **되돌릴 수 있는 변수를 하나�
 | `last` | 그 봇이 마지막으로 대화한 방으로 |
 | `none` | 아무 데도 안 보낸다. **하트비트는 계속 돌고 기록도 남는다** — 입만 막는다 (`=== "none" \|\| !delivery.to) return delivery`) |
 
-⚠️ **`agents.defaults.heartbeat.target: "none"` 은 금지다 — bbot 을 죽인다.**
-
-**upstream 이 직접 이걸 시킨다는 게 함정의 핵심이다.** `target` 미지정 라우트의 **첫 배달
-한 번**에만 안내문이 붙는데(`resolveHeartbeatDeliveryTarget` 의 `implicitDefaultRoute` +
-`prevHeartbeatAt === undefined`), 그 문장이 *"Set agents.defaults.heartbeat.target: \"none\"
-to keep these internal."* 다. 2026-09-09 에 실제로 GLG 화면에 떴다. 그대로 따르면 아래 이유로
-살아 있는 배달이 죽는다.
-지금 등록된 하트비트는 bbot 하나이고 **그 배달은 의도된 라이브 기능**이다(GLG 확인 2026-09-02).
-나머지 4 봇이 조용한 건 고장이 아니라 **GLG 가 검수 목적으로 일부러 꺼둔 것**이고, 검수가 끝나면 다시 켠다.
-따라서 소음을 막아야 할 일이 생기면 **defaults 가 아니라 `agents.entries.<id>.heartbeat.target`** 으로
-그 봇만 걸어라. cron 발송은 이 스위치와 무관하다 — 잡이 자기 `delivery.to` 를 따로 들고 있다.
+현재 bbot은 heartbeat를 `every:"0m"`로 껐고 memento cron이 명시 delivery를 소유한다. 따라서
+`agents.defaults.heartbeat.target`은 memento를 제어하지 않는다. 이 절의 `target` 규칙은 heartbeat를
+다시 켤 때만 적용하며, cron 발송은 언제나 job의 `delivery.to`를 따른다.
 
 **파일명이 아니라 심볼로 찾아라.** 번들 해시는 빌드마다 바뀐다 —
 같은 러너가 8.1 에선 `heartbeat-runner-BAMpymke.js`, 8.2 에선 `heartbeat-runner-jhGs3jbv.js` 다
@@ -487,8 +479,9 @@ node openclaw.mjs doctor --session-sqlite validate  # legacy 0 확인
 
 ### heartbeat를 한 봇에만 주면 나머지 봇이 조용히 꺼진다 (2026-08-12)
 
-> 🔻 **2026-09-01 현재 이 판정 규칙을 의도적으로 이용하고 있다** — bbot 하나만 `heartbeat` 블록을
-> 가지므로 나머지 5봇은 전원 OFF다. 그게 지금 원하는 상태다. [자동화 SSOT](openclaw-automations.md).
+> 🔻 **2026-09-10 현재 bbot도 heartbeat를 쓰지 않는다.** `agents.entries.bbot.heartbeat = {every:"0m"}`는
+> defaults 상속을 막는 명시 disable이고, 사람에게 닿는 유일한 bbot 자동화는 isolated memento cron이다.
+> 현재 상태는 [자동화 SSOT](openclaw-automations.md).
 
 한 봇의 주기만 바꾸려고 `agents.list[]`에 `heartbeat` 블록을 하나 넣는 순간 **스케줄러가 모드를
 바꾼다**. `isHeartbeatEnabledForAgent()`가 이렇게 판정하기 때문이다:
@@ -503,25 +496,12 @@ list 안에 heartbeat 블록을 가진 에이전트가 하나라도 있나?
 `{ every: "30m" }`을 넣으면 bbot만 돌고 main/glg/gpt/mini는 에러도 경고도 없이 멈춘다 — 로그에
 "안 도는 봇"은 안 찍히니 한참 뒤에나 눈치챈다.
 
-처방: **heartbeat를 쓰는 봇 전원에게 블록을 명시한다.** 그 순간부터 엔트리(`agents.entries`)가
-진짜 SSOT이고 `defaults`는 죽은 폴백이 된다 — **새 봇을 추가할 때 블록을 빼먹으면 그 봇은
-heartbeat 없이 태어난다.** 반대로 특정 봇을 끄고 싶으면 블록을 안 주면 된다(2026-08-12 gemini가
-이 경로로 OFF).
+처방: heartbeat를 끌 봇도 defaults가 있으면 **`{"every":"0m"}`를 명시**한다. `unset`은
+"없음"이 아니라 defaults 상속이다. 주기 해석 순서는
+`overrideEvery ?? agent.heartbeat.every ?? defaults.heartbeat.every ?? "30m"`.
 
-주기 해석 순서는 `overrideEvery ?? agent.heartbeat.every ?? defaults.heartbeat.every ?? "30m"`.
-
-⚠️ **엔트리의 heartbeat 블록을 객체째로 `config set` 하지 마라 — 형제 키가 날아간다.**
-`--merge`는 기본이 아니다(`config set --help`: *"Merge object/map values instead of replacing
-the target path (default: false)"*). `agents.entries.bbot.heartbeat`에는 `every` 말고
-`accountId`도 들어 있어서, 주기만 바꾸려고 객체를 통째로 주면 배달 계정 지정이 조용히
-사라진다. 하위 경로(`…heartbeat.every`)로 바꾸거나 `--merge`를 붙여라.
-
-**restart 여부는 무엇을 바꿨느냐에 달렸다.** `heartbeat.every` 변경은 **restart 없이 붙는다** —
-config hot reload가 `reconcileHeartbeatJobs` → `heartbeatRunner.updateConfig`를 차례로 부른다
-(실측 2026-09-09: 로그 `config hot reload applied (agents.entries.bbot.heartbeat.every)`,
-다음 예정 시각에 정시 발화). 블록을 새로 만들거나 없애는 등 등록 자체가 바뀌는 경우까지
-hot reload가 덮는지는 **재보지 않았다** — 그때는 `docker compose restart openclaw-gateway`
-(recreate 불필요)가 안전하고, restart 뒤 memory prewarm은 평소대로.
+heartbeat를 다시 도입할 때는 객체째 `config set`의 replace 위험을 재검토하고, live hot reload 뒤
+system-owned monitor의 `enabled`/`nextRunAtMs`를 반드시 확인한다.
 
 ### 컨테이너에 전역 gitconfig가 없다 — 봇의 push는 막히고 안전레일은 통째로 빠진다 (2026-08-12)
 
@@ -681,7 +661,11 @@ done
 - **볼륨을 새로 붙이거나 뺄 땐 `docker restart caddy`로 안 먹는다** — compose 볼륨 변경은 `up -d --force-recreate` 필요(이게 ax 추가 때 6개 blip의 원인). Caddyfile 텍스트만 고치는 평시 변경은 여전히 `docker restart caddy`.
 - **향후**: umami + remark42를 ax에 붙일 예정. 단 스니펫은 **정본(apply/ax 소스)에 넣어 publish**로 흘린다 — **caddy에서 주입 금지**(정본과 라이브가 갈라짐). ax 관련 요청은 이 오퍼레이터 레인이 대응한다.
 
-**claw.junghanacs.com은 유일하게 "인증 뒤에 원격 셸이 있는" vhost다** (2026-08-06 추가). OpenClaw Control UI를 공개면에 올린 자리 — 자물쇠 3겹(Authelia forward_auth → gateway token → HTTPS device pairing)을 **전부 유지**해야 한다. 세 가지가 이 vhost의 함정이다:
+**claw.junghanacs.com은 유일하게 "인증 뒤에 원격 셸이 있는" vhost다** (2026-08-06 추가). OpenClaw Control UI를 공개면에 올린 자리 — 자물쇠 3겹(Authelia forward_auth → gateway token → HTTPS device pairing)을 **전부 유지**해야 한다.
+
+Android node의 **`Admin access required`는 설정 오류가 아니라 automation mutation gate**다. 조회와 run history는 가능하지만 편집·수동실행은 `operator.admin`이 필요하다(`CronJobManagementPanel.kt:117,163-183`). config file을 SSOT로 두는 운영에서는 node에서 설정을 바꾸지 않는다. 정말 node 관리가 필요할 때만 gateway shared token/password로 재연결하거나 admin client에서 scope upgrade를 승인한다.
+
+세 가지가 이 vhost의 함정이다:
 
 - **바깥 자물쇠는 컨테이너 평면에서 우회된다.** `openclaw-gateway`가 `proxy` 도커 네트워크에 붙어 있어(172.18.0.10) 같은 네트의 다른 컨테이너(umami/remark42/forge/ha/butler-viewer/geworfen/authelia)는 Authelia를 건너뛰고 18789에 직결한다. 실측: caddy 컨테이너에서 `http://openclaw-gateway:18789/` → **200(Control UI HTML 무인증 서빙)**, `/control-ui-config.json` → 401. 즉 **진짜 경계는 token + device pairing이지 forward_auth가 아니다.** → `gateway.auth.mode`를 **`trusted-proxy`로 바꾸지 마라**. 바꾸는 순간 저 우회 경로가 곧 인증 우회가 된다. `dangerouslyDisableDeviceAuth`도 마찬가지.
 - **Authelia ACL은 first-match이고 no-match는 `default_policy`로 떨어진다.** `default_policy: one_factor`이므로 claw에 operator 규칙만 추가하면 `family` 계정이 그 규칙에 불일치한 뒤 default로 떨어져 **결국 통과한다.** 그래서 claw 규칙은 반드시 3단이다: (a) 포털 bypass → (b) `subject: [['group:operator']]` one_factor → (c) **deny catch-all**. 적용 전 검증은 `authelia access-control check-policy --url ... --username ... --groups ...`로 operator=one_factor / family=deny를 확인하고, `authelia config validate`(4.39 canonical; legacy `validate-config`도 아직 동작)로 파싱을 본다. **mount 경로는 `/config/configuration.yml`·`/config/users.yml` 그대로여야 한다** — `authentication_backend.file.path`가 `/config/users.yml`이라 다른 경로에 stage하면 users DB를 못 찾는다.

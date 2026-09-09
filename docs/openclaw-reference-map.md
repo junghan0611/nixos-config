@@ -81,13 +81,12 @@
 | `none` | runner fallback 배달 없음 |
 | (`deliver`) | 레거시 CLI 표기, 런타임에서 `announce`로 정규화됨(스키마가 직접 변환) |
 
-지금 라이브 3개 활성 cron(`cron list --all` 실측, 2026-09-09):
+지금 라이브 2개 활성 cron(`cron list --all` 실측, 2026-09-10):
 
 | 이름 | kind | delivery | 비고 |
 |---|---|---|---|
-| `heartbeat-bbot` | `heartbeat` | not requested | system-owned, `agents.entries.bbot.heartbeat.every="3h"`의 투영 |
+| `bbot-memento-autopilot` | `agentTurn` | `announce -> telegram:123861330 (explicit, bbot)` | isolated fresh session, `anthropic/claude-opus-5`; heartbeat monitor는 `every:"0m"`로 disabled |
 | `morning-family-schedule-reminder` | `agentTurn`(추정 — `sessions.describe`류로 미교차검증, model 컬럼이 `anthropic/claude-...`인 것만 실측) | `announce -> telegram:123861330 (explicit)` | glg 에이전트, 매일 08:00 KST |
-| `baron-kindergarten-dropoff-2026-09-02` | 미확인(one-shot) | 유사 announce | [openclaw-automations.md](openclaw-automations.md) 표에서만 확인, 이번 세션에서 `cron show`로 직접 안 열어봄 |
 
 ---
 

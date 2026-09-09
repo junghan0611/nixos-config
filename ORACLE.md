@@ -56,12 +56,10 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 마지막 ACP 사용처였던 gemini가 **네이티브 `google-gemini-cli` provider(OAuth, Pro 쿼터)로 전환**되면서, `pi-shell-acp` plugin은 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거(acpx와 동일 패턴, 런타임 plugin 목록에서 빠짐). main의 죽은 `pi-shell-acp/*` picker 엔트리도 제거. acpx도 여전히 disabled(`plugins.entries.acpx.enabled=false` + `acp.enabled=false`).
 
 - **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), openclaw 내장(gpt), google-gemini-cli(gemini).
-- **bbot = `anthropic/claude-fable-5-1`** (2026-09-02 승격, 그 전엔 fable-5). 승격 절차는 셋을 함께 만졌다:
-  `agents.defaults.models` 에 runtime 명시(`{"agentRuntime":{"id":"claude-cli"}}`) → `modelPolicy.allow` **배열 맨 끝** append
-  (0번 자리 `openai/gpt-5.6-terra` catch-all 사수) → `agents.entries.bbot.model.primary` 전환.
-  bbot 은 자기 `modelPolicy` 가 없어 defaults 를 상속하므로 **`allow` 밖 모델은 `/model` 이 fail-closed** 다.
-  적용은 `config validate` → gateway **restart**(recreate 아님). 검수는 설정이 아니라 봇 자기보고 +
-  트랜스크립트 `"model"` 실측 — 4층(config/자기보고/트랜스크립트/게이트웨이) 일치를 봐야 한다. third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
+- **bbot = `anthropic/claude-opus-5`** (2026-09-10 config primary 전환). 새 memento cron도 이 모델을 명시한다.
+  기존 main/direct 세션의 fable-5-1 pin은 별개로 남아 있어, config와 라이브 세션을 혼동하지 않는다.
+  bbot은 자기 `modelPolicy`가 없어 defaults를 상속하므로 **`allow` 밖 모델은 `/model`이 fail-closed**다.
+  검수는 설정이 아니라 새 job run/세션의 model 실측까지 본다. third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
 - **codex 런타임 의존성 제거 완료 (2026-08-07)** — `plugins.entries.codex.enabled=false`, `gpt-5.4`/`gpt-5.4-mini` 카탈로그 전면 제거, subagents·active-memory를 `openclaw` 내장 런타임으로 이관. 상세는 아래 §"런타임 지형".
 - 전환 서사 / 옛 pi-shell-acp stance(backend 자치권 등) / 빈응답 사건은 [ROADMAP.md](ROADMAP.md) 운영 결정 이력으로 이관.
 - **호스트 측 `acp-zombie-reaper` 은퇴 (2026-09-01)** — 4월 acpx 누수 대응 user timer. 보호 대상이 6월에 사라진 뒤에도 돌면서 argv 부분문자열로 남의 agent 세션을 저격했다. `disable --now` 완료, 스크립트·유닛은 화석 보존, **재활성 금지**. 상세 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) §활성 최상단.
@@ -104,7 +102,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 3. nested git에 `origin` = 그 private HTTPS URL. 컨테이너는 이미 `gh auth git-credential` + `~/.config/gh` ro 마운트라 PAT를 워크스페이스에 넣지 않는다.
 4. `config/workspace-<id>/.git-hooks-mode` 한 줄 `loose`. 봇이 자기 author로 커밋한다.
 5. `agent-config/git-hooks/_scan.sh` private allowlist에 `junghan0611/workspace-<id>`를 **이름 단위로** 추가 (와일드카드 금지 — 졸업은 호스트 행위). origin이 `junghan0611/*`면 기본이 strict라 가족·인연 서사가 identity-term에 걸린다. secret 스캔은 유지.
-6. 레일 검증: 첫 `git push -u origin main`이 hook loose + gh credential로 통과하는지. 이후 커밋/푸시는 봇 (bbot은 heartbeat 루프).
+6. 레일 검증: 첫 `git push -u origin main`이 hook loose + gh credential로 통과하는지. 이후 커밋/푸시는 봇 (bbot은 memento loop).
 
 **봇이 하는 일**
 
@@ -141,7 +139,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 
 **LLM 호출 — 분기** (2026-08-04 기준):
 - **main**: Anthropic Max via canonical `anthropic/claude-opus-5` + `agentRuntime claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
-- **glg / mini / bbot**: 같은 Anthropic Max claude-cli 경로 (glg=`claude-sonnet-5`, mini=`claude-sonnet-5`, bbot=`claude-fable-5`)
+- **glg / mini / bbot**: 같은 Anthropic Max claude-cli 경로 (glg=`claude-sonnet-5`, mini=`claude-sonnet-5`, bbot=`claude-opus-5`)
 - **gpt**: Codex OAuth ($100 plan) — `openai/gpt-5.6-sol`
 - **gemini**: 네이티브 `google-gemini-cli` provider OAuth (Pro 쿼터, **API 아님** — `google/` api-key와 별개 provider). 2026-06-10 ACP→네이티브 전환
 
@@ -187,16 +185,18 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
-### heartbeat — bbot 하나만 (2026-09-01, 주기·배달계정 2026-09-09)
+### autopilot — bbot memento 하나만 (2026-09-10)
 
-`agents.entries.<id>.heartbeat`를 명시한 봇만 등록된다. 현재 **bbot 하나**이고 값은
-`{"every":"3h","accountId":"bbot"}`다. cadence는 config에서만 바꾼다 — cron 잡은 그 투영이라
-되돌아가고, **객체째 `config set` 하면 `accountId`가 날아간다**(`--merge`가 기본이 아니다).
-하트비트 배달은 cron 잡의 `delivery`와 무관한 러너 자체 경로이며, `accountId`를 안 박으면
-`main` 세션에 채널이 없어 채널 기본 계정(main 봇)으로 떨어진다.
-상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) "bbot 3h".
-main/glg/gpt/mini는 모델 턴을 0회 돌면서 매시간 typing과 task 행만 만들어 2026-09-01에 제거했다.
-`agents.defaults.heartbeat = {every:"1h"}`는 남아 있지만 아무에게도 적용되지 않는다.
+bbot autopilot은 `heartbeat`가 아니라 operator-owned cron `bbot-memento-autopilot`
+(`declarationKey: autopilot:bbot-memento`)이다. 매 3시간 `isolated` `agentTurn`으로 새 transcript/session을
+열고 `anthropic/claude-opus-5`를 명시하며, Telegram `123861330` / `accountId:"bbot"`에 `announce`로 최종 텍스트를 배달한다.
+깨움 문장은 B 소유 `workspace-bbot/scripts/heartbeat-wake-message.md`가 job payload에 들어간다 —
+일반 cron scratch는 agentTurn에 주입되지 않는다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md).
+
+`agents.defaults.heartbeat = {every:"1h"}`가 남아 있으므로 bbot 엔트리는 반드시
+`heartbeat: {every:"0m"}`를 명시해 system-owned main-session monitor를 꺼야 한다. **`unset`하면
+기본값을 상속해 6봇 전원의 heartbeat가 재생성된다**(bbot 1건 재생성은 2026-09-10 07:29 실측,
+6봇 팬아웃은 `src/infra/heartbeat-config.ts:70-76` `resolveHeartbeatAgents` 분기 판독). 현재 남은 것은 bbot의 retained disabled monitor row 하나다.
 main은 같은 날 `agents.entries.main.typingMode="never"`로 사용자 가시 typing을 억제했다.
 원인은 아직 확정하지 않고 8.1 soak에서 관측한다.
 
@@ -250,7 +250,7 @@ if (value === "codex-app-server") return "codex";
 | **main** | `anthropic/claude-opus-5` | `workspace/` | off | ~~✓~~ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context. **2026-08-04 opus-4-8→opus-5 승격** — 카탈로그 미등재 모델이라 `defaults.models`에 `agentRuntime claude-cli`로 등록 후 격리 probe(`winnerModel=claude-opus-5`, `fallbackUsed=false`)로 서빙 확인하고 승격. opus-4-8은 per-agent 카탈로그에 롤백용 보존 |
 | glg (가족) | `anthropic/claude-sonnet-5` | `workspace-glg/` | partial | — | `@glg_junghanacs_bot`. **claude-cli runtime**(Codex 아님). **2026-07-16 `gpt-5.6-terra`→`claude-sonnet-5` 이동** — 가족 DM에서 화자 프레임을 승인하는 사이코팬시("두 에코챔버")가 모델 스왑만으론 안 풀려 USER.md 대칭 규칙과 함께 처방. 정한·미례 **동일 모델**(대칭 보호). terra는 per-agent 카탈로그에 롤백용 보존. ※ 이력: 2026-07-14 5.5→5.6-terra, 2026-06-13 5.4→5.5 재승격, 2026-06-10 5.5→5.4 강등. **DM 3개 전부 sonnet-5 정렬 확인(2026-08-04)**. active-memory 제외(응답성 우선) |
 | gpt | `openai/gpt-5.6-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
-| **bbot** | `anthropic/claude-fable-5` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
+| **bbot** | `anthropic/claude-opus-5` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. **2026-09-10 config primary + fresh memento job을 opus-5로 전환**; 기존 direct/main fable-5-1 pin은 별도 세션 사실이다. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
 | **gemini** | `github-copilot/gemini-3.7-flash` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. **2026-08-27 Copilot 레일** — 격리 probe `winnerModel=gemini-3.7-flash fallbackUsed=false` + 텔레그램 DM `/model` 정렬. Google Gemini 구독·gemini-cli·agy 안 씀. **fallback 없음**. `google/` api-key 금지(나노바나나 전용). catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
 | subagents | `openai/gpt-5.6-terra` | — | — | — | **2026-08-07 codex 제거로 `gpt-5.4`에서 이동** (runtime=openclaw 내장). per-agent 오버라이드 0 — 6봇 전체가 이 하나를 공유한다. active-memory recall lane은 `openai/gpt-5.6-luna`로 분리 (main lane quota 보호) |

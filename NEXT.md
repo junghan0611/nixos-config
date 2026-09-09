@@ -29,7 +29,7 @@
   발화가 "일단"). 오늘 잰 것은 [entwurf#109](https://github.com/junghan0611/entwurf/issues/109)
   에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
 
-- [x] **9. bbot 하트비트 운영면** — 주기 `3h` + `accountId:"bbot"`, 배관·함정 전문은 [CHANGELOG.md](CHANGELOG.md) `v2026.9.9` 와 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**(닫힌 것처럼 쓰지 말 것): ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
+- [x] **9. bbot 메멘토 autopilot** — 2026-09-10 heartbeat(main 누적)에서 3h isolated `agentTurn`으로 이관. `anthropic/claude-opus-5`와 explicit Telegram `accountId:"bbot"` delivery, 첫 fresh run delivered 검증. bbot heartbeat는 `{every:"0m"}`를 명시 유지한다 — `unset`하면 defaults cadence가 되살아난다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
 
 - [ ] **10. doctor 가 찾아낸 것 셋** ← 2026-09-09 첫 전수 점검(`openclaw config validate` + `doctor` read-only). **`config validate` 는 통과했다** — 스키마 위반 0, 경고는 우리가 9/1 에 일부러 끈 `active-memory` 하나뿐. 문제는 스키마가 아니라 선언과 배포다.
   - [ ] **glg 봇 `USER.md` 가 29% 잘려서 주입된다** — `5,668 raw / 3,999 injected`. 전체 bootstrap 예산은 `31,322/60,000`(52%)로 여유가 있는데 **파일당 상한**에 걸렸다. 가족봇이 GLG 정보를 3분의 1 잘린 채 읽고 있다는 뜻. 처방은 `agents.entries.glg.bootstrapMaxChars`(doctor 가 이 키를 직접 알려준다). **셋 중 사람에게 실제로 닿고 있는 유일한 것이라 먼저다.**
