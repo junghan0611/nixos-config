@@ -65,7 +65,7 @@
 
 GLG 결정: autopilot은 누적 main heartbeat가 아니라 **매 비트 fresh isolated session**이다.
 `bbot-memento-autopilot` (`declarationKey: autopilot:bbot-memento`)은 `agentTurn`이며
-`--model anthropic/claude-opus-5`, explicit Telegram `accountId:"bbot"` delivery를 갖는다.
+`--model anthropic/claude-opus-5`, `--thinking xhigh`, explicit Telegram `accountId:"bbot"` delivery를 갖는다.
 첫 **강제** run은 fresh session key `agent:bbot:cron:<job>:run:<id>`, 113,123ms,
 `deliveryStatus: delivered`로 확인했다. 이 기록은 scheduled 발화 증거가 아니다 — 첫 scheduled 시각은
 2026-09-10 10:26:59 KST다.
@@ -74,7 +74,9 @@ GLG 결정: autopilot은 누적 main heartbeat가 아니라 **매 비트 fresh i
 B 파일을 고친 뒤에는 설정 담당자가 그 내용을 `cron edit <job-id> --message ...`로 재동기화한다.
 일반 cron scratch는 저장만 될 뿐 agentTurn prompt에는 주입되지 않고, heartbeat scratch만
 `heartbeat-runner-prompt`가 읽는다. B 파일은 B만 고친다. 현재 job은 operator-created
-`toolsAllow:["*"]` / `scheduledToolPolicy:"trusted"`다; 이 권한 범위는 GLG의 별도 정책 결정 전까지 넓히지 않는다.
+`toolsAllow:["*"]` / `scheduledToolPolicy:"trusted"`다. 이는 cron의 전체-tool 기본을 명시한 것이며,
+GLG 결정(2026-09-10): 3시간 memento라는 **깨움 면만** 운영자가 소유하고, 벽돌을 포함한 실행 규칙은
+B와 GLG가 고친다 — 여기서 강제·축소하지 않는다.
 
 #### cadence·배달은 cron job이 소유한다
 
@@ -86,6 +88,11 @@ openclaw cron enable e94ed49d-847e-4c1e-b127-c914171d5c5b
 이 job은 일반 operator-owned cron이다. delivery·model·schedule 변경은 job을 읽고 `cron edit`으로
 처리한다. `agents.entries.bbot.heartbeat`는 `{ "every": "0m" }`를 유지한다 — `unset`은
 `agents.defaults.heartbeat`를 다시 상속해 6봇의 main-session heartbeat를 되살린다.
+
+**gateway restart 는 이 상태를 흔들지 않는다**(2026-09-10 실측, skill §4의 "등록이 바뀌는 변경까지
+hot reload 가 덮는지 미확인" 중 restart 쪽을 닫는다). restart·recreate 전후로 cron 12건/활성 2건,
+memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가 모두 동일했고
+부팅 로그도 `[heartbeat] disabled` 였다. 즉 **명시 disable 은 재기동을 건너 살아남는다.**
 
 ---
 
@@ -114,7 +121,7 @@ openclaw cron enable e94ed49d-847e-4c1e-b127-c914171d5c5b
 | 스위치 | 값 | 비고 |
 |---|---|---|
 | `skills.workshop.autonomous.mode` | `off` | 켜면 `skill-collection-review` 6개가 살아난다 |
-| `plugins.entries.memory-core.config.dreaming.enabled` | `false` | |
+| `plugins.entries.memory-core.config.dreaming.enabled` | `false` | GLG: 아직 안정화된 기술이 아니다. 스위치를 끈 것으로 끝내지 않고 **4월 산출물 880청크도 회수**했다(2026-09-06, [NEXT.md](../NEXT.md) §B 실행 완료). 켜지 말 것 |
 | `plugins.entries.active-memory.enabled` | **`false`** | 2026-09-01 typing 조사 중 비활성; 원인 인과는 미확정 |
 | `hooks.internal` | `enabled` (`boot-md`, `session-memory`) | 턴을 스스로 만들진 않지만 인벤토리에 포함 |
 | `plugins.entries.codex.enabled` | `false` | 2026-08-07 GLG 결정 |

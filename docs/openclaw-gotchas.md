@@ -12,6 +12,24 @@
 
 ## 활성
 
+### 부팅이 헬스체크보다 느리다 — 재시작마다 3분간 `health: starting` (2026-09-10)
+
+이미지 `HEALTHCHECK` 의 `start_period` 는 **15s** 인데 oracle(느린 aarch64 VM)에서 게이트웨이가
+`ready` 까지 **~40s** 걸린다. 실측: restart 08:37:34 → `[gateway] ready` 08:38:14.
+그래서 부팅 창의 프로브가 start period 를 넘겨 `FailingStreak` 로 잡히고, `interval` 이 180s 라
+**다음 성공까지 최대 3분간 `Up N minutes (health: starting)`** 으로 보인다. 그 사이
+`docker exec … node dist/docker-healthcheck.js` 를 손으로 돌리면 **exit 0** 이다 — 고장이 아니다.
+
+처방(2026-09-10 GLG 결정, 적용 완료): `~/openclaw/docker-compose.yml` 에 healthcheck 를 덮어
+`start_period: 50s`. `test`/`interval`/`timeout`/`retries` 는 이미지 값(180s/10s/3)과 동일하게
+**전부 명시**한다 — compose 는 미지정 필드를 이미지에서 물려받지 않고 도커 기본으로 떨어뜨린다.
+적용은 restart 가 아니라 **recreate**(`docker compose up -d openclaw-gateway`)다. healthcheck 는
+컨테이너 생성 시 굳는 설정이라 restart 로는 안 바뀐다. 검증: recreate 08:58:41 → `healthy` 08:59:03(22초).
+
+⚠️ **이 파일은 nixos-config 선언 밖이다.** `~/openclaw/docker-compose.yml` 은 리포에 없다
+(`docker/openclaw/` 에는 `openclaw.json.example`·`.reference` 뿐). 그래서 이 값은 호스트에만 있고
+백업(`docker-compose.yml.bak-healthcheck-startperiod-*`)과 이 항목이 유일한 기록이다.
+
 ### 도커 네트워크가 갈리면 `gateway.trustedProxies` 가 조용히 화석이 된다 — 증상은 앱의 "Gateway에 연결할 수 없음" (2026-09-08)
 
 안드로이드 앱(`SM-S942N`, app `2026.8.2`)이 `https://oracle.tailb0e905.ts.net` 에 붙지 못했다.
