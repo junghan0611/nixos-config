@@ -72,8 +72,11 @@ services:
       # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:rw
+      - ~/repos/work:/home/junghan/repos/work:rw  # host-path compatibility mirror
       - ~/repos/3rd:/home/node/repos/3rd:rw
+      - ~/repos/3rd:/home/junghan/repos/3rd:rw  # host-path compatibility mirror
       - ~/org:/home/node/org:rw  # 2026-08-27 전체 rw (GLG). diary/archives/authinfo.gpg 포함. git이 롤백 표면.
+      - ~/org:/home/junghan/org:rw  # host-path compatibility mirror
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (rw — gog v0.34+가 keyring lock write 필요.
@@ -167,8 +170,11 @@ services:
       # B publish: live web root (releases + current). Do not edit cloudflared/ credentials.
       - ~/docker-data/aions:/home/node/docker-data/aions:rw
       - ~/repos/work:/home/node/repos/work:rw
+      - ~/repos/work:/home/junghan/repos/work:rw  # host-path compatibility mirror
       - ~/repos/3rd:/home/node/repos/3rd:rw
+      - ~/repos/3rd:/home/junghan/repos/3rd:rw  # host-path compatibility mirror
       - ~/org:/home/node/org:rw  # 2026-08-27 전체 rw (GLG). diary/archives/authinfo.gpg 포함. git이 롤백 표면.
+      - ~/org:/home/junghan/org:rw  # host-path compatibility mirror
       # lifetract DB는 SQLite WAL 필요 → rw 오버라이드 (ro 하위경로)
       - ~/repos/gh/self-tracking-data:/home/node/repos/gh/self-tracking-data:rw
       # Google Workspace CLI (gogcli) 인증 (rw — gog v0.34+가 keyring lock write 필요.
