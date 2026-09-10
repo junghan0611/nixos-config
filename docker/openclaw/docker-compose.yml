@@ -221,5 +221,12 @@ services:
       - /run/user/1000/emacs:/run/emacs:ro
 
 networks:
+  # Tailscale Serve → localhost published port traverses this bridge. Keep its
+  # gateway stable so gateway.trustedProxies can trust one narrow /32 instead
+  # of drifting whenever Docker recreates the default network.
+  default:
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
   proxy:
     external: true   # Caddy가 생성한 네트워크

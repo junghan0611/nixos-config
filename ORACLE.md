@@ -363,6 +363,21 @@ for aid, a in c.get('agents', {}).get('entries', {}).items():
 PY
 ```
 
+### Tailscale node path — fixed bridge gateway (2026-09-10)
+
+Android nodes reach the gateway through Tailscale Serve → host loopback port →
+Docker's default bridge. OpenClaw must trust that immediate bridge gateway to
+accept its forwarded client attribution; the Tailnet IP is not the source the
+container sees. The default network therefore pins `172.26.0.0/16` in compose,
+and `gateway.trustedProxies` trusts only `172.26.0.1/32` (alongside Caddy's
+`172.18.0.0/16`). Never widen this to the bridge `/16`.
+
+A container restart does not move this address; a Docker network recreation did
+when IPAM was implicit. The fixed IPAM declaration removes that drift. Tailscale
+Serve and the SSH tunnel share this bridge source, so trusting it restores the
+Tailnet Android node but makes the SSH Control UI tunnel an unauthenticated 403
+path; use the Tailnet URL for Control UI instead.
+
 ### Active memory — **2026-09-01 비활성** (typing 조사 중)
 
 > 🔻 **현재 `plugins.entries.active-memory.enabled = false`.** 8.1 컷오버 후 실행 0건과 main
