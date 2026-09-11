@@ -253,21 +253,19 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🟡 다음에 올릴 때 챙길 것 — 9.1 후보 (2026-09-04 조사, 8.2 고정 결정으로 보류 확정)
+## 🟡 OpenClaw 9.4 업그레이드 — 검증 완료, 컷오버 승인 대기 (2026-09-11)
 
-라이브는 여전히 `2026.8.2`(0965053, Dockerfile `FROM ghcr.io/openclaw/openclaw:2026.8.2`). [v2026.9.1](https://github.com/openclaw/openclaw/releases/tag/v2026.9.1) 릴리즈 노트 확인 — 정규 순서(8.1→8.2→9.1)이지 별도 레일 아니다. **GLG 지시로 지금은 안 올린다** — 다음에 올릴 때 챙길 후보만 남긴다.
+라이브는 `2026.8.2`(0965053, Dockerfile `FROM ghcr.io/openclaw/openclaw:2026.8.2`) 그대로다. 후보 `v2026.9.4`(3a9d69d)는 raw와 **실제 Dockerfile 레이어** 양쪽에서 열었다: `openclaw-custom:9.4-preflight` 빌드 성공, OpenClaw `2026.9.4`·Claude CLI `2.1.268` 확인. **아직 Dockerfile/라이브 config/state를 바꾸지 않았다.**
 
-### 8.2 → 9.1에서 새로 생긴 것
+- shared state는 `v15 → v17`의 실제 migration이다. WAL-aware 라이브 사본에서 9.4 Doctor가 `Workshop ownership v16`과 `prepared worker v17`를 완료했고 canonical state index 1개도 재구성했다. `worker_environments=0`이라 prepared-worker 데이터 이관은 없다. 따라서 8.2로의 rollback은 이미지 tag만으로 불가하며 **사전 전체 state 복원**이 필요하다.
+- 7개 agent DB는 schema `19` 유지지만 모두 `idx_agent_session_nodes_active` same-version index repair가 필요하다. 사본 Doctor는 완료했고 lint에 agent-schema 실패가 남지 않았다.
+- config는 retired `skills.workshop.allowSymlinkTargetWrites` 때문에 9.4에서 처음엔 거부된다. Doctor가 이를 제거하고 `agents.defaults.systemAgent.agentId=main`을 추가한 사본은 `config validate` 통과했다. `active-memory` disabled·OpenRouter env 경고는 기존 상태다.
+- Workshop pending 2건 중 **`next-current-pointer` 1건은 glg agent Workshop 경로로 retarget**, **`butlercli` 1건은 외부 symlink 대상이라 stale** 처리된다. 후자는 기존 skill을 지우지 않지만 Workshop proposal로는 더 이상 관리하지 않는다 — 수락 전 GLG가 stale 처리(거절/보존)를 승인할 것.
+- 사본 lint의 `claude`/skills/gateway 경고는 raw image에 compose PATH·외부 mounts·실행 gateway를 주지 않은 격리 환경 산물이다. 실제 custom 후보 이미지에는 Claude CLI가 있다. Google profile expired 경고와 plaintext SecretRefs 권고는 컷오버 blocker가 아닌 기존 운영 부채다.
 
-- **Mermaid 다이어그램 렌더링** — Control UI + macOS/iOS/Android 채팅에서 렌더
-- **`openclaw skills library`** — 개인 스킬 ZIP import/공유. 아래 "★ 스킬 심볼릭 배포 전환"과 겹치는 영역이라 대조 필요
-- **`agents.defaults.cwd` / `worktreeRoot` / managed checkout 100개** — worktree 운영 강화
-- **`cron.skipMissedJobs`**, SSRF **`blockedHostnames`** — cron/geworfen 자동화에 바로 쓸 설정 플래그
-- **Fable 5.1 모델 메타데이터 지원** — bbot이 이미 씀(별도 형제가 fable 5.1 지원 조사 중, 2026-09-02 개시)
-- **`openclaw update` 자동 롤백 강화** — post-update Doctor 실패 시 npm 후보 롤백, 서비스 매니저 없어도 진행
-
-- [ ] **9.1로 올릴 때 위 6개 재확인** — 특히 skills library가 심볼릭 배포와 충돌하는지, worktreeRoot가 entwurf worktree 흐름과 겹치는지.
-- [ ] **컷오버 체크리스트는 8.1→8.2 절차 재사용** — [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) *"bump가 '한 줄'인지 '마이그레이션'인지는 릴리즈 노트로 판정하지 마라"*.
+- [ ] **컷오버 승인 후에만**: (1) gateway를 idle로 만들고 config root+7 agent DB+shared DB를 WAL-aware 전체 백업(외부 `auth-profile-secrets` 포함) → (2) 현재 `openclaw-custom:latest`를 `8.2-rollback`으로 tag → (3) Dockerfile 9.4 bump/build, 새 이미지의 `doctor --fix` → (4) gateway 기동, `doctor --json`·7 agent DB index·Workshop 상태 확인 → (5) GPT bot 먼저 smoke turn 후 가족봇 확대.
+- [ ] **사전 용량 재확인**: 현재 `/` 4.9GB(95%)라 9.4 preflight image가 있는 상태에서 무심코 새 build/backup을 겹치지 말 것. Docker reclaimable 4.28GB와 `/home` 18GB를 측정한 뒤 GLG 승인 아래 필요한 것만 정리한다.
+- **Do not touch**: live `config/openclaw.json`을 미리 손수 삭제·state schema marker 하향·`8.2` image만으로 rollback 시도 금지. 실패 시 8.2 image + verified pre-upgrade state/auth backup을 함께 복원한다.
 
 ---
 
