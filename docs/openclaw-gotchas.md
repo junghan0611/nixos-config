@@ -32,6 +32,11 @@
 
 ### 도커 네트워크가 갈리면 `gateway.trustedProxies` 가 조용히 화석이 된다 — 증상은 앱의 "Gateway에 연결할 수 없음" (2026-09-08)
 
+> **현재 상태 정정(2026-09-10~)**: 아래 `172.19.0.1`은 이 사건 당시의 관측값이다. 현 gateway는
+> `openclaw-config_default`의 고정 `172.26.0.0/16`에 붙고 `trustedProxies`는
+> `172.18.0.0/16` + `172.26.0.1/32`다. 아래 처방을 현재값으로 복사하지 말고,
+> `docker inspect openclaw-gateway`로 attach된 네트워크부터 재측정한다.
+
 안드로이드 앱(`SM-S942N`, app `2026.8.2`)이 `https://oracle.tailb0e905.ts.net` 에 붙지 못했다.
 **버전업 때문이 아니었다.** 페어링·TLS·주소·포트 전부 정상이었고, 게이트웨이도 healthy 였다.
 

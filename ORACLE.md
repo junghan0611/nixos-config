@@ -665,9 +665,9 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 - 컨테이너 `~/.claude/skills` — `config/claude-skills/` 마운트 (같은 심볼릭 세트). **claude-cli 런타임**(`claude -p` spawn: main/glg/bbot/mini)이 여기를 본다. ~~Claude ACP~~ — ACP는 2026-06-10 제거, 이 면을 보는 주체가 바뀌었다.
 - `~/.claude` 자체는 **rw** (Claude `session-env/`·`projects/` 기록).
 
-### Skill Workshop — 봇이 자기 스킬을 제안하는 레인 (2026-09-06 실측)
+### Skill Workshop — 봇이 자기 스킬을 제안하는 레인
 
-**`autonomous.mode: "off"` 는 자동 *적용*을 끈 것이지, 제안 레인 자체를 끈 게 아니다.** 8.1 릴리즈 노트가 예고한 대로(#106182 *"keep up to three pending proposals, even with autonomous self-learning off"*) 제안은 계속 쌓인다 — 실제로 쌓여 있었다:
+**현재 `autonomous.mode: "propose"`** — GLG가 2026-09-13 변경·확인했다. 2026-09-06의 `off` 상태에서도 8.1 릴리즈 노트(#106182 *"keep up to three pending proposals, even with autonomous self-learning off"*)대로 제안은 쌓였고, 실제로 아래처럼 남아 있었다:
 
 ```
 $ docker exec openclaw-gateway openclaw skills workshop list --agent glg
@@ -675,7 +675,7 @@ next-current-pointer-20260615-958582b72f  pending  create  next-current-pointer
 #   → 나머지 5봇은 "No skill proposals". off 상태에서 6/15 에 생긴 제안이 3개월 살아 있었다
 ```
 
-라이브 설정(실측): `skills.workshop = {autonomous.mode:"off", approvalPolicy:"pending", allowSymlinkTargetWrites:false}`.
+라이브 설정(2026-09-13 확인): `skills.workshop = {autonomous.mode:"propose", approvalPolicy:"pending", allowSymlinkTargetWrites:false}`.
 
 **#7 §7(나) 최우선 미확인 항목이었던 "자동 생성 스킬의 쓰기 대상 경로" 는 이것으로 닫힌다.** `inspect` 가 대상 경로를 그대로 찍는다:
 

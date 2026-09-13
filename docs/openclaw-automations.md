@@ -112,7 +112,7 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 | `daily_real_estate_auction_study_brief_miir` | glg | 이전부터 off. ⚠️ **model 미지정** — 켜기 전에 model을 박아야 한다 |
 | `SK브로드밴드 인터넷 이사 신청 리마인더` | glg | 2026-09-07 one-shot이 disabled로 보존됨. **model 미지정** |
 | `heartbeat-bbot` | bbot | system-owned retained disabled row (`everyMs:3600000`); bbot `{every:"0m"}`의 정상 투영. 편집/삭제 금지 |
-| `skill-collection-review-{main,glg,gpt,gemini,mini,bbot}` | 6봇 각 1개 | 8.1이 심은 자율 스킬 검토 자동화. `skills.workshop.autonomous.mode=off`가 누르고 있다 |
+| `skill-collection-review-{main,glg,gpt,gemini,mini,bbot}` | 6봇 각 1개 | 8.1이 심은 자율 스킬 검토 자동화. 라이브 job은 모두 disabled 상태(2026-09-13 turnwatch 실측) |
 
 ---
 
@@ -120,7 +120,7 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 
 | 스위치 | 값 | 비고 |
 |---|---|---|
-| `skills.workshop.autonomous.mode` | `off` | 켜면 `skill-collection-review` 6개가 살아난다 |
+| `skills.workshop.autonomous.mode` | `propose` | GLG가 변경·확인(2026-09-13). `skill-collection-review` 6개 job은 현재 disabled 상태 |
 | `plugins.entries.memory-core.config.dreaming.enabled` | `false` | GLG: 아직 안정화된 기술이 아니다. 스위치를 끈 것으로 끝내지 않고 **4월 산출물 880청크도 회수**했다(2026-09-06, [NEXT.md](../NEXT.md) §B 실행 완료). 켜지 말 것 |
 | `plugins.entries.active-memory.enabled` | **`false`** | 2026-09-01 typing 조사 중 비활성; 원인 인과는 미확정 |
 | `hooks.internal` | `enabled` (`boot-md`, `session-memory`) | 턴을 스스로 만들진 않지만 인벤토리에 포함 |

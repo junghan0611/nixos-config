@@ -138,6 +138,18 @@ in
       22000  # Syncthing QUIC
       # mosh: 22번 포트로 사용 중, 외부 UDP 불필요
     ];
+
+    # OpenClaw gateway 컨테이너(172.26.0.2 — openclaw-config_default 유일 컨테이너, 서브넷 고정)이
+    # 호스트 Translation Server(bibcli URL 입수, 0.0.0.0:1969)에 닿는 유일한 구멍.
+    # 원칙: 새 sidecar 금지 — 호스트 단일 인스턴스 재사용. Docker socket/host networking 불필요.
+    # 브리지 이름(br-<netid>)은 docker network 재생성 시 흔들리므로 source /32 + 단일 포트로만 연다.
+    # ordering 근거(firewall-iptables.nix, nixpkgs 8b8c811c7c25): start script는 소유 chain을
+    # -F/-X flush 후 재생성하고 extraCommands(라인 235)를 terminal refuse(라인 238) **이전에**
+    # 실행 — accept 룰이 살고, rebuild마다 재생성되어 누적되지 않는다.
+    # 컨테이너 쪽 짝: openclaw-config/docker-compose.yml 의 ZOTERO_TRANSLATION_SERVER.
+    extraCommands = ''
+      iptables -A nixos-fw -s 172.26.0.2/32 -p tcp --dport 1969 -j nixos-fw-accept
+    '';
   };
 
   # Oracle Cloud Volume management
@@ -306,6 +318,32 @@ in
 
   # Headless VM에 vconsole 불필요 — 물리 콘솔 없어 setfont 실패
   systemd.services.systemd-vconsole-setup.enable = false;
+
+  # Translation Server (bibcli URL 입수, tcp/1969) — 2026-09-13까지 nohup npm start
+  # (PID 1 직하, 인터랙티브 shell env 통째로 상속)로 떠 있었다. systemd 전환 사유:
+  # 부팅 시 자동 기동 + minimal env(호스트 인터랙티브 키 미상속) + crash 자동 재기동.
+  # 실행체는 upstream 클론(~/repos/3rd/translation-server) 그대로 — nix는 감쌀 뿐 수정하지 않는다.
+  # nodejs-slim 24.18.1 = 전환 당시 프로세스가 쓰던 런타임과 동일(의존성 전부 pure JS).
+  # 로그는 기존 파일에 append — zotero-config `run.sh server log` 호환 유지.
+  # 전환 절차/rollback: NEXT.md (nohup stop → switch → 검증; rollback 시 unit 소멸 후 legacy start).
+  systemd.services.translation-server = {
+    description = "Zotero Translation Server (bibcli URL intake, :1969)";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      User = "junghan";
+      Group = "users";
+      WorkingDirectory = "/home/junghan/repos/3rd/translation-server";
+      ExecStart = "${pkgs.nodejs-slim}/bin/node src/server.js";
+      Environment = [ "HOME=/home/junghan" ];
+      StandardOutput = "append:/home/junghan/repos/3rd/translation-server/translation-server.log";
+      StandardError = "inherit";
+      Restart = "on-failure";
+      RestartSec = "5";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+    };
+  };
 
   # Oracle Cloud specific notes
   system.nixos.tags = [ "oracle-cloud" "arm64" ];

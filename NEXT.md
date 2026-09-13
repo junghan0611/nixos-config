@@ -17,9 +17,10 @@
 
 - [x] **7. 안드로이드 앱이 tailnet 으로 못 붙던 것** — 원인은 버전업도 페어링도 아니었다.
   `openclaw_default` 도커 네트워크가 2026-09-02 에 새로 생기면서 `gateway.trustedProxies` 의
-  `172.18.0.0/16`(caddy 경로)만으로는 tailscale serve 경로(**172.19.0.1**)가 신뢰 밖에 남았다 —
+  `172.18.0.0/16`(caddy 경로)만으로는 당시 tailscale serve 경로(**172.19.0.1**)가 신뢰 밖에 남았다 —
   **설정은 그대로인데 그 아래 네트워크가 움직인 화석.** `/health` 는 무인증이라 200 이고 `/` 만
-  403(`proxy_attribution_required`)이던 비대칭이 진단을 갈랐다. `/32` 로 좁게 더하고 restart →
+  403(`proxy_attribution_required`)이던 비대칭이 진단을 갈랐다. 이후 2026-09-10 compose IPAM을
+  `openclaw-config_default`의 고정 `172.26.0.0/16`으로 바꾸고 `/32`를 `172.26.0.1/32`로 갱신했다.
   앱 연결 확인(`Connected 1`), 재승인 대기는 앱 재연결로 자동 해소. 함정 전문 →
   [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 첫 항목
 
@@ -49,7 +50,7 @@
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
 - **Read**: 아래 §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
-- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.19.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
+- **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.26.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
 
 # 앱 후속 (2026-09-08, RAIL 7 에서 파생)
 
@@ -60,7 +61,7 @@
   (`approve/rotate/revoke/rename/remove/clear/join-code` 뿐) `openclaw.json` 에도 device scope
   기본값이 없다. 앱을 올린 뒤 재페어링해야 풀린다.
 - [ ] **`run.sh t)` SSH 터널의 운명 결정** — trustedProxies 변경의 대가로 터널 경유 Control UI 가
-  403 이 됐다(도커 NAT 가 터널과 tailscale serve 를 같은 172.19.0.1 로 뭉갠다 — `/32` 로도 분리
+  403 이 됐다(도커 NAT 가 터널과 tailscale serve 를 같은 172.26.0.1 로 뭉갠다 — `/32` 로도 분리
   불가). 지금은 경고 + tailnet 경로 안내로 남겨뒀다. thinkpad 도 tailnet 에 있으니 **터널 자체를
   은퇴시킬지** 판단이 필요하다.
 - [ ] **공유 `~/.claude` 가 rw 라 컨테이너가 호스트에 쓴다** — 컨테이너 Claude 가 호스트

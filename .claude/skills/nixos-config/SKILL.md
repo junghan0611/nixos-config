@@ -60,7 +60,8 @@ tunnel/restart/status/pairing, skill deploy(`k)`). 상세 oracle helper는 `ORAC
 sudo nixos-rebuild switch --flake .#<profile>   # profile = oracle|nuc|laptop|thinkpad
 ```
 문제 시 rollback: `run.sh` 또는 `sudo nixos-rebuild switch --rollback`. NixOS는 generation이
-롤백 표면이다. 디스크 여유 부족하면(oracle 특히) 정리부터 — `run.sh C)` prune.
+롤백 표면이다. 디스크 여유 부족하면(oracle 특히) 정리부터 — 먼저 `run.sh c)` safe로 재고,
+여유가 부족할 때만 `run.sh C)` deep을 고른다.
 
 ## 4. oracle / openclaw 작업 (safety-critical)
 
@@ -113,6 +114,10 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
 
   caddy 밖의 두 경로(`aionsclubs.org` CF Tunnel, `oracle.tailb0e905.ts.net` Tailscale Serve)는
   caddy 를 안 타므로 Caddyfile 검수에서 빠지기 쉽다. **세트에 넣어라.**
+- **계획 재부팅 뒤에는 재기동만 보고 끝내지 마라**: `systemctl --failed`·`docker ps`로 실패/health를
+  먼저 보고, `emacsclient -s server --eval '(+ 1 1)'`로 agenda의 호스트 socket을 확인한다. 이어 위
+  **8+3 URL 세트**와 `comments /api/v1/ping`, `./scripts/turnwatch.sh 24`를 통과해야 복구 완료다.
+  caddy 443 선점과 emacs socket ownership은 과거에 재부팅에서만 드러난 레이스다.
 - **`/health` 200 은 게이트웨이가 멀쩡하다는 증거가 아니다**: `/health` 는 무인증 라우트라
   proxy attribution·토큰 검사를 **건너뛴다**. 그래서 `/health` 는 200 인데 `/` 는 403 인
   비대칭이 나오고, 이 비대칭 자체가 "네트워크·프로세스는 살아있고 **인증 계층**에서 막혔다"는
@@ -120,14 +125,16 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
   **인증이 걸리는 `/` 를 같이 찍고, 403 이면 본문(JSON `type`)을 읽어라.** 본문이 원인을
   이름으로 말해준다(`proxy_attribution_required` 등).
 - **도커 네트워크가 갈리면 `gateway.trustedProxies` 가 조용히 화석이 된다**: gateway 는 두
-  네트워크에 붙어 있다 — `proxy`(172.18, caddy 경로) 와 `openclaw_default`(172.19, 호스트
-  루프백 포워딩 = tailscale serve·SSH 터널). 네트워크가 재생성되면 서브넷이 밀리는데
-  `trustedProxies` 는 안 따라간다. **설정 파일은 그대로인데 그 아래 땅이 움직인 화석이다.**
-  추측하지 말고 컨테이너가 보는 소스 IP 를 실측한다(`/proc/net/tcp` 를 폴링하며 요청을 흘린다 —
-  전문은 gotchas). 넓히지 말고 `/32` 로 좁게 더하고, **config 변경이므로 restart 로 충분**.
-  ⚠️ **대가를 알고 하라**: 도커 NAT 는 tailscale serve 와 호스트 루프백을 **같은 IP 로 뭉갠다.**
-  그 IP 를 신뢰하는 순간 `run.sh t)` SSH 터널로 Control UI 를 보던 길이 403 이 된다. `/32` 로도
-  분리되지 않는다. 대체는 tailnet URL 직행(thinkpad 도 tailnet 에 있다).
+  네트워크에 붙어 있다 — `proxy`(`172.18.0.0/16`, caddy 경로) 와
+  `openclaw-config_default`(`172.26.0.0/16`, 호스트 루프백 포워딩 = tailscale serve·SSH 터널).
+  후자는 compose IPAM으로 고정했고 `trustedProxies` 는 **`172.18.0.0/16` + `172.26.0.1/32`**다
+  (2026-09-13 실측). 남아 있을 수 있는 옛 `openclaw_default`/`172.19.0.0/16`를 다시 믿지 마라.
+  compose project/default network를 다시 만들었으면 추측하지 말고 `docker inspect openclaw-gateway`와
+  컨테이너가 보는 소스 IP(`/proc/net/tcp`를 폴링하며 요청을 흘린다 — 전문은 gotchas)를 재측정한다.
+  넓히지 말고 `/32`로 좁게 더하고, **config 변경이므로 restart로 충분**. ⚠️ **대가를 알고 하라**:
+  도커 NAT 는 tailscale serve 와 호스트 루프백을 **같은 IP 로 뭉갠다.** 그 IP 를 신뢰하는 순간
+  `run.sh t)` SSH 터널로 Control UI 를 보던 길이 403 이 된다. `/32` 로도 분리되지 않는다. 대체는
+  tailnet URL 직행(thinkpad 도 tailnet 에 있다).
 - **claw.junghanacs.com = 인증 뒤에 원격 셸이 있는 유일한 vhost**: OpenClaw Control UI 공개면.
   자물쇠 3겹(Authelia forward_auth → gateway token → device pairing)을 전부 유지한다.
   **`gateway.auth.mode`를 `trusted-proxy`로 바꾸지 마라** — gateway가 `proxy` 도커 네트에 붙어
@@ -150,8 +157,12 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
 - **봇 스킬은 심볼릭 배포** — workspace 스킬을 sibling repo SSOT(예: butlercli)로 절대 심볼릭.
   봇이 고친 게 SSOT로 흐르고 SSOT 수정이 봇에 즉시 반영(redeploy 불필요). 이중 마운트 덕에
   `/home/junghan/...` 절대경로가 host·container 양쪽 resolve. (`NEXT.md` "스킬 심볼릭 배포")
-- **디스크 보수적으로** — oracle storage 빠듯. 업글 사이클마다 dangling image + build cache
-  누적 → `run.sh C)` 정기 prune (`docker system df` 명목치 ≠ 실 회수량, builder prune이 본 회수원).
+- **디스크 보수적으로** — oracle storage 빠듯. 압박의 첫 수는 `run.sh c)` safe(14일 generation
+  보존, docker·pnpm 제외) → 여유를 재측정하는 것이다. `run.sh C)` deep/docker prune은 그 다음
+  선택지다(`docker system df` 명목치 ≠ 실 회수량, builder prune이 본 회수원). safe의 `--yes`는
+  스크립트 확인만 넘긴다. root GC·journal 같은 `sudo` 단계는 비대화형에서 건너뛸 수 있으므로,
+  출력의 실패를 확인하고 필요하면 visible terminal에서 sudo 인증 후 처리한다. 현재 journal은
+  선언적 1GiB 상한으로 사후 진단 여지를 보존한다.
 - **restart vs recreate — "무엇을 바꿨느냐"로 가른다** (매번 까먹는 지점):
   - **env/mount 변경 → `up -d --force-recreate`**. `docker compose restart`는 기존 env 재사용, recreate만 새 env·볼륨 픽업.
   - **config 파일(`~/openclaw/config/openclaw.json`) 변경 → `docker compose restart openclaw-gateway`로 충분.** restart도 gateway 프로세스·manager cache·Node compile state를 콜드 리셋한다. config-only에 recreate는 과하다(느리고 불필요하게 더 깊은 콜드). recreate는 env/mount일 때만.
