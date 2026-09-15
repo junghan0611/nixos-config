@@ -89,7 +89,11 @@ docker compose restart caddy
   - Password: 강한 패스워드
   - Email: =junghanacs@gmail.com=
 
-=Install Forgejo= 클릭 → app.ini 자동 생성, =INSTALL_LOCK=true= 박힘.
+=Install Forgejo= 클릭 → app.ini 자동 생성, =INSTALL_LOCK=true= 박힘. 이 파일에는 서비스 secret이 있으므로 host와 컨테이너 UID 1000만 읽게 즉시 권한을 좁힌다:
+
+#+begin_src bash
+chmod 600 ~/docker-data/forge/data/gitea/conf/app.ini
+#+end_src
 
 * 봇 계정 생성 — =glg-bot=
 

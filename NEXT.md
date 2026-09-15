@@ -765,7 +765,7 @@ GLG 결정으로 6봇 모델을 싹 맞췄다. **`config primary` ↔ `라이브
 
 ## 0. Forge — 포지 레이어 인프라 (활성, 2026-05-27 가동)
 
-`forge.junghanacs.com` (Forgejo 15.0.2 LTS, postgres 16-alpine, Caddy + Let's Encrypt) Oracle 가동. 봇멘트의 코드면 확장. 설계: 노트 `20260527T073823`.
+`forge.junghanacs.com` (Forgejo **15.0.8** LTS, postgres 16-alpine, Caddy + Let's Encrypt) Oracle 가동. 봇멘트의 코드면 확장. 설계: 노트 `20260527T073823`.
 
 ### 운영 책임 경계
 

@@ -28,7 +28,8 @@ services:
       retries: 5
 
   forge:
-    image: codeberg.org/forgejo/forgejo:15
+    # 2026-09-15: pin the 15.0.8 LTS security release; upgrade deliberately, not via a floating major tag.
+    image: codeberg.org/forgejo/forgejo:15.0.8
     container_name: forge
     hostname: forge
     restart: unless-stopped

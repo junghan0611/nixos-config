@@ -407,6 +407,10 @@ OpenRouter `qwen/qwen3-embedding-4b`(2560d) → `qwen3-embedding-8b`(4096d). 가
 
 `forge.junghanacs.com`(Forgejo 15.0.2 LTS, postgres 16-alpine, Caddy + Let's Encrypt) Oracle 가동 + alskdjf work forge. 봇멘트의 코드면 확장. 운영 ownership은 forge-config repo, 이 repo는 `docker/forge/` 인프라만. 검증: 30초 인증서 발급, glg-bot 응답 OK, round-trip sandbox 검증, 함정 3개(`INSTALL_LOCK=false` env / `write:user` scope / 단일 파일 bind mount inode caching) 봇로그 박제. 진행 중 후속은 [NEXT.md §0](NEXT.md).
 
+### Forgejo 15.0.8 LTS 보안 패치 (2026-09-15)
+
+15.0.2 → **15.0.8**로 올렸다. 9월 10일 upstream security release의 템플릿 확장 경로 RCE 및 restricted API token 권한 우회 수정이 포함된다. 배포 전 PostgreSQL dump와 `/data/gitea` archive를 mode 0700 backup directory에 남기고 checksum을 검증했다. `docker/forge/docker-compose.yml`은 floating `:15` 대신 `:15.0.8`로 pin했고, secret을 담는 generated `app.ini` 권한도 0644→0600으로 좁혔다. 배포 뒤 API version·Forge REST CLI·DB row count·Caddy 8개와 외부 2개 URL 세트가 모두 정상, startup WARN/ERROR 0.
+
 ---
 
 ## 이력 작성 원칙
