@@ -264,6 +264,7 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 - Workshop pending 2건 중 **`next-current-pointer` 1건은 glg agent Workshop 경로로 retarget**, **`butlercli` 1건은 외부 symlink 대상이라 stale** 처리된다. 후자는 기존 skill을 지우지 않지만 Workshop proposal로는 더 이상 관리하지 않는다 — 수락 전 GLG가 stale 처리(거절/보존)를 승인할 것.
 - 사본 lint의 `claude`/skills/gateway 경고는 raw image에 compose PATH·외부 mounts·실행 gateway를 주지 않은 격리 환경 산물이다. 실제 custom 후보 이미지에는 Claude CLI가 있다. Google profile expired 경고와 plaintext SecretRefs 권고는 컷오버 blocker가 아닌 기존 운영 부채다.
 
+- [ ] **[#10](https://github.com/junghan0611/nixos-config/issues/10) mini heartbeat 확장**: 9.4 컷오버와 섞지 않는다. 안정화 뒤 mini만 `every:1h`로 24시간 관측(typing·무단 outbound·실패 반복 없음)하고, 통과 후 별도 결정으로 weekly Skill Workshop review를 `propose` 모드에서 열지 판단한다. 모델 교체·자동 apply는 이 좌표 밖이다.
 - [ ] **컷오버 승인 후에만**: (1) gateway를 idle로 만들고 config root+7 agent DB+shared DB를 WAL-aware 전체 백업(외부 `auth-profile-secrets` 포함) → (2) 현재 `openclaw-custom:latest`를 `8.2-rollback`으로 tag → (3) Dockerfile 9.4 bump/build, 새 이미지의 `doctor --fix` → (4) gateway 기동, `doctor --json`·7 agent DB index·Workshop 상태 확인 → (5) GPT bot 먼저 smoke turn 후 가족봇 확대.
 - [ ] **사전 용량 재확인**: 현재 `/` 4.9GB(95%)라 9.4 preflight image가 있는 상태에서 무심코 새 build/backup을 겹치지 말 것. Docker reclaimable 4.28GB와 `/home` 18GB를 측정한 뒤 GLG 승인 아래 필요한 것만 정리한다.
 - **Do not touch**: live `config/openclaw.json`을 미리 손수 삭제·state schema marker 하향·`8.2` image만으로 rollback 시도 금지. 실패 시 8.2 image + verified pre-upgrade state/auth backup을 함께 복원한다.

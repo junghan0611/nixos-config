@@ -23,6 +23,8 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **봇별 크론/heartbeat — 무엇이 사람 없이 도는가** | [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**. 동기화 `./run.sh w)` |
 
 > **핵심 분리 원칙**: nixos-config에서 `oracle`이 아니면 OpenClaw를 볼 필요가 없다. oracle/openclaw 작업이 아니라면 ORACLE.md를 열지 마라 — 이 문서만으로 충분하다.
+>
+> **형제 cwd 원칙**: `~/openclaw`은 라이브 runtime이라 형제를 열지 않는다; OpenClaw 담당 형제도 반드시 이 `nixos-config` 리포에서 열고 runtime은 필요한 범위만 read-only로 본다.
 
 ---
 
