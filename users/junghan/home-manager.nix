@@ -107,6 +107,7 @@ in {
     go
     gopls
     clojure
+    babashka        # fast Clojure scripting; crap4clj `bb crap` launcher
     clojure-lsp
     mitscheme
     janet
