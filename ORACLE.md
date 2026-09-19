@@ -56,8 +56,8 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 마지막 ACP 사용처였던 gemini가 **네이티브 `google-gemini-cli` provider(OAuth, Pro 쿼터)로 전환**되면서, `pi-shell-acp` plugin은 사용처 0 → `plugins.entries.pi-shell-acp.enabled=false`로 제거(acpx와 동일 패턴, 런타임 plugin 목록에서 빠짐). main의 죽은 `pi-shell-acp/*` picker 엔트리도 제거. acpx도 여전히 disabled(`plugins.entries.acpx.enabled=false` + `acp.enabled=false`).
 
 - **현재 모든 봇이 OpenClaw 네이티브 provider/runtime**: claude-cli(main/glg/bbot/mini), openclaw 내장(gpt), google-gemini-cli(gemini).
-- **bbot = `anthropic/claude-opus-5`** (2026-09-10 config primary 전환). 새 memento cron도 이 모델을 명시한다.
-  기존 main/direct 세션의 fable-5-1 pin은 별개로 남아 있어, config와 라이브 세션을 혼동하지 않는다.
+- **bbot = `anthropic/claude-fable-5-1`** (2026-09-19 config primary와 3시간 memento cron을 함께 전환). 격리 probe가 Claude CLI 경로의 서빙을 확인한 뒤 반영했다.
+  bbot main/direct 세션도 fable-5-1이며, 앞으로도 config와 라이브 세션을 함께 확인한다.
   bbot은 자기 `modelPolicy`가 없어 defaults를 상속하므로 **`allow` 밖 모델은 `/model`이 fail-closed**다.
   검수는 설정이 아니라 새 job run/세션의 model 실측까지 본다. third-party ACP harness 의존 0. *(glg는 2026-07-16 가족봇 사이코팬시 대응으로 codex→claude-cli 이동)*
 - **codex 런타임 의존성 제거 완료 (2026-08-07)** — `plugins.entries.codex.enabled=false`, `gpt-5.4`/`gpt-5.4-mini` 카탈로그 전면 제거, subagents·active-memory를 `openclaw` 내장 런타임으로 이관. 상세는 아래 §"런타임 지형".
@@ -139,7 +139,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 
 **LLM 호출 — 분기** (2026-08-04 기준):
 - **main**: Anthropic Max via canonical `anthropic/claude-opus-5` + `agentRuntime claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
-- **glg / mini / bbot**: 같은 Anthropic Max claude-cli 경로 (glg=`claude-sonnet-5`, mini=`claude-sonnet-5`, bbot=`claude-opus-5`)
+- **glg / mini / bbot**: 같은 Anthropic Max claude-cli 경로 (glg=`claude-sonnet-5`, mini=`claude-sonnet-5`, bbot=`claude-fable-5-1`)
 - **gpt**: Codex OAuth ($100 plan) — `openai/gpt-5.6-sol`
 - **gemini**: 네이티브 `google-gemini-cli` provider OAuth (Pro 쿼터, **API 아님** — `google/` api-key와 별개 provider). 2026-06-10 ACP→네이티브 전환
 
@@ -189,7 +189,7 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 bbot autopilot은 `heartbeat`가 아니라 operator-owned cron `bbot-memento-autopilot`
 (`declarationKey: autopilot:bbot-memento`)이다. 매 3시간 `isolated` `agentTurn`으로 새 transcript/session을
-열고 `anthropic/claude-opus-5`와 `thinking:"xhigh"`를 명시하며, Telegram `123861330` / `accountId:"bbot"`에 `announce`로 최종 텍스트를 배달한다.
+열고 `anthropic/claude-fable-5-1`와 `thinking:"xhigh"`를 명시하며, Telegram `123861330` / `accountId:"bbot"`에 `announce`로 최종 텍스트를 배달한다.
 깨움 문장은 B 소유 `workspace-bbot/scripts/heartbeat-wake-message.md`가 job payload에 들어간다 —
 일반 cron scratch는 agentTurn에 주입되지 않는다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md).
 
@@ -250,7 +250,7 @@ if (value === "codex-app-server") return "codex";
 | **main** | `anthropic/claude-opus-5` | `workspace/` | off | ~~✓~~ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context. **2026-08-04 opus-4-8→opus-5 승격** — 카탈로그 미등재 모델이라 `defaults.models`에 `agentRuntime claude-cli`로 등록 후 격리 probe(`winnerModel=claude-opus-5`, `fallbackUsed=false`)로 서빙 확인하고 승격. opus-4-8은 per-agent 카탈로그에 롤백용 보존 |
 | glg (가족) | `anthropic/claude-sonnet-5` | `workspace-glg/` | partial | — | `@glg_junghanacs_bot`. **claude-cli runtime**(Codex 아님). **2026-07-16 `gpt-5.6-terra`→`claude-sonnet-5` 이동** — 가족 DM에서 화자 프레임을 승인하는 사이코팬시("두 에코챔버")가 모델 스왑만으론 안 풀려 USER.md 대칭 규칙과 함께 처방. 정한·미례 **동일 모델**(대칭 보호). terra는 per-agent 카탈로그에 롤백용 보존. ※ 이력: 2026-07-14 5.5→5.6-terra, 2026-06-13 5.4→5.5 재승격, 2026-06-10 5.5→5.4 강등. **DM 3개 전부 sonnet-5 정렬 확인(2026-08-04)**. active-memory 제외(응답성 우선) |
 | gpt | `openai/gpt-5.6-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
-| **bbot** | `anthropic/claude-opus-5` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. **2026-09-10 config primary + fresh memento job을 opus-5로 전환**; 기존 direct/main fable-5-1 pin은 별도 세션 사실이다. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
+| **bbot** | `anthropic/claude-fable-5-1` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. **2026-09-19 config primary + fresh memento job을 fable-5-1로 전환**; 격리 서빙 probe를 통과했고 direct/main도 같은 모델이다. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
 | **gemini** | `github-copilot/gemini-3.7-flash` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. **2026-08-27 Copilot 레일** — 격리 probe `winnerModel=gemini-3.7-flash fallbackUsed=false` + 텔레그램 DM `/model` 정렬. Google Gemini 구독·gemini-cli·agy 안 씀. **fallback 없음**. `google/` api-key 금지(나노바나나 전용). catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
 | subagents | `openai/gpt-5.6-terra` | — | — | — | **2026-08-07 codex 제거로 `gpt-5.4`에서 이동** (runtime=openclaw 내장). per-agent 오버라이드 0 — 6봇 전체가 이 하나를 공유한다. active-memory recall lane은 `openai/gpt-5.6-luna`로 분리 (main lane quota 보호) |
@@ -588,7 +588,7 @@ Discussion-first. Do not upgrade blindly.
 Recreate command:
 
 ```bash
-cd ~/openclaw && docker compose up -d --force-recreate openclaw-gateway
+cd ~/openclaw && docker compose -p openclaw-config up -d --force-recreate openclaw-gateway
 ```
 
 ### Validation after any OpenClaw change
@@ -743,12 +743,13 @@ sudo audit-query recent    # 최근 10분 전부
 sudo audit-query rules     # 로드된 규칙 / status, size
 # auditctl 은 일부러 NOPASSWD 로 안 열었다 — -D(규칙 전삭제)·-e 0(감사 끄기)까지 열린다.
 
+# `~/openclaw` is a symlink; the live Compose project is `openclaw-config`.
 # restart vs recreate
-cd ~/openclaw && docker compose restart openclaw-gateway
-cd ~/openclaw && docker compose up -d --force-recreate openclaw-gateway   # env / mount changes
+cd ~/openclaw && docker compose -p openclaw-config restart openclaw-gateway
+cd ~/openclaw && docker compose -p openclaw-config up -d --force-recreate openclaw-gateway   # env / mount changes
 
 # OpenClaw upgrade (image rebuild + recreate)
-cd ~/openclaw && docker compose build --pull openclaw-gateway && docker compose up -d --force-recreate openclaw-gateway
+cd ~/openclaw && docker compose -p openclaw-config build --pull openclaw-gateway && docker compose -p openclaw-config up -d --force-recreate openclaw-gateway
 
 # upstream release / compare
 # https://github.com/openclaw/openclaw/releases/tag/v<version>
