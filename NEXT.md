@@ -30,7 +30,8 @@
   발화가 "일단"). 오늘 잰 것은 [entwurf#109](https://github.com/junghan0611/entwurf/issues/109)
   에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
 
-- [x] **9. bbot 메멘토 autopilot** — 2026-09-10 heartbeat(main 누적)에서 3h isolated `agentTurn`으로 이관. `anthropic/claude-opus-5` + `thinking:"xhigh"`, explicit Telegram `accountId:"bbot"` delivery, 첫 fresh run delivered 검증. bbot heartbeat는 `{every:"0m"}`를 명시 유지한다 — `unset`하면 6봇 defaults cadence가 되살아난다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
+- [x] **9. bbot 메멘토 autopilot** — 2026-09-10 heartbeat(main 누적)에서 3h isolated `agentTurn`으로 이관. bbot heartbeat는 `{every:"0m"}`를 명시 유지한다 — `unset`하면 6봇 defaults cadence가 되살아난다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
+- [ ] **bbot fable-5-1 정기 scheduler receipt** — 10:26 정기 run은 per-agent `claude-cli` 등록 누락으로 API auth 실패했다. 등록 보강 뒤 11:00 manual catch-up은 572.9초 성공·Telegram delivered. **13:26 KST 정기 run**이 `claude-cli` / fable-5-1 / delivered인지 확인한 뒤 이 항목을 지운다.
 
 - [ ] **bbot Android admin scope 판단** — 현재 폰은 cron 목록·상세·run history 읽기 전용이고 mutation은 `Admin access required`(정상). 폰에서 직접 cron 편집/수동 실행이 정말 필요할 때만 shared token/password 재연결 또는 admin scope upgrade를 승인한다. 필요 없으면 현 상태 유지; [gotchas](docs/openclaw-gotchas.md) claw 항목 참고.
 
