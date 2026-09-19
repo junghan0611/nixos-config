@@ -65,7 +65,10 @@
 
 GLG 결정: autopilot은 누적 main heartbeat가 아니라 **매 비트 fresh isolated session**이다.
 `bbot-memento-autopilot` (`declarationKey: autopilot:bbot-memento`)은 `agentTurn`이며
-`--model anthropic/claude-fable-5-1`, `--thinking xhigh`, explicit Telegram `accountId:"bbot"` delivery를 갖는다. 2026-09-19에는 격리 probe가 Claude CLI 경로의 fable-5-1 서빙을 확인한 뒤 config primary와 이 job을 함께 전환했다.
+`--model anthropic/claude-fable-5-1`, `--thinking xhigh`, explicit Telegram `accountId:"bbot"` delivery를 갖는다. **cron의 모델 런타임은 defaults 카탈로그만으로 충분하지 않다.** bbot의 `models["anthropic/claude-fable-5-1"].agentRuntime.id="claude-cli"`도 명시한다.
+
+2026-09-19의 격리 probe는 Claude CLI 서빙을 통과했지만, bbot 전용 카탈로그 엔트리가 없던 첫 scheduled run(10:26)은 API `anthropic` provider로 풀려 `missing-provider-auth`로 996ms 만에 실패했다. 해당 엔트리를 추가한 뒤 manual catch-up은 `claude-cli` / fable-5-1로 572,900ms 성공·Telegram delivered를 확인했다. 다음 **정기** fable run은 13:26 KST다.
+
 첫 **강제** run은 fresh session key `agent:bbot:cron:<job>:run:<id>`, 113,123ms,
 `deliveryStatus: delivered`로 확인했다. 이 기록은 scheduled 발화 증거가 아니다 — 첫 scheduled 시각은
 2026-09-10 10:26:59 KST다.
@@ -149,7 +152,7 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
   typing 소실이 한 차례 함께 관측됐지만 뒤에 typing이 재관측됐다. 원인으로 기록하지 않고
   비활성 상태에서 soak한다.
 
-**대응**: cron `agentTurn`에는 `--model anthropic/claude-sonnet-5`처럼 **model을 명시**한다.
+**대응**: cron `agentTurn`에는 `--model anthropic/claude-sonnet-5`처럼 **model을 명시**한다. claude-cli 모델은 해당 agent의 `agents.entries.<id>.models["<model>"].agentRuntime.id="claude-cli"` 등록도 확인한다 — defaults만 등록된 fable-5-1은 bbot cron에서 API provider로 잘못 해상돼 auth 실패했다(2026-09-19).
 `agents.defaults.model.primary`를 바꾸는 건 권하지 않는다 — blast radius가 넓고 회귀 원인을 숨긴다.
 
 ```bash
