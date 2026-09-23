@@ -25,6 +25,7 @@ Correctness starts with location awareness. On `oracle`, that awareness extends 
 | Private runtime SSOT | `~/openclaw/` | live `openclaw.json`, auth state, workspaces, runtime Docker files (`junghan0611/openclaw-config`, private) |
 | Graduated bot workspace | `~/openclaw/config/workspace-bbot/` | B's own private git `junghan0611/workspace-bbot` — narrative SSOT, not tracked by parent. See § Bot workspace git |
 | Graduated bot workspace | `~/openclaw/config/workspace-glg/` | glg's own private git `junghan0611/workspace-glg` — narrative SSOT, not tracked by parent. See § Bot workspace git |
+| Graduated bot workspace | `~/openclaw/config/workspace-mini/` | mini's own private git `junghan0611/workspace-mini` — personal librarian, not tracked by parent. See § Bot workspace git |
 | Public operator / backup | `~/repos/gh/nixos-config/` | Dockerfile / compose backups, host NixOS context, operator briefs — **mother repo** |
 | Public companion | `~/repos/gh/openglg-config/` | portable service stack (Caddy/Authelia/Postgres/...) + portable home-manager (`home/`) that lands on any Debian/Ubuntu host without NixOS |
 
@@ -78,7 +79,7 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 - `workspace-mini/` → mini
 - `workspace-bbot/` → bbot
 
-Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` and `workspace-glg/` are split-out identity spaces **and graduated narrative gits** (below).
+Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/`, `workspace-glg/`, and `workspace-mini/` are split-out identity spaces **and graduated narrative gits** (below).
 
 ### Bot workspace git — 서사 독립 (호스트 졸업 체크리스트)
 
@@ -92,8 +93,9 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 |---|---|---|
 | `config/workspace-bbot/` | `junghan0611/workspace-bbot` | 2026-08-27 (B 첫 push `78d8f38` 같은 날 확인, visibility=PRIVATE) |
 | `config/workspace-glg/` | `junghan0611/workspace-glg` | 2026-08-27 (glg 첫 커밋 `ce90038` 호스트 첫 push 같은 날 확인, visibility=PRIVATE) |
+| `config/workspace-mini/` | `junghan0611/workspace-mini` | 2026-09-23 (원격 `main`에 첫 커밋 `b54c6da`, visibility=PRIVATE 확인; 개인 사서) |
 
-남은 후보: `workspace/` / `workspace-gpt/` / `workspace-gemini/` / `workspace-mini/`. 그 전까지는 부모 스냅샷 + nested `.git` ignore 기본값.
+남은 후보: `workspace/` / `workspace-gpt/` / `workspace-gemini/` (각각의 실제 부모 추적 상태는 별도 확인). 그 전까지는 부모 스냅샷 + nested `.git` ignore 기본값.
 
 **호스트가 하는 일 (봇이 못 하는 수선)**
 
@@ -117,7 +119,7 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/` an
 - 훅 끄기, public 리포 생성, 다른 봇 workspace 수정
 - gh 토큰은 컨테이너에 마운트되어 있으므로 **허용 remote를 이 표로 고정**하는 게 가드. 토큰 스코프 분리는 아직 없다 — 그 전까지 새 remote는 호스트만 단다.
 
-**아직 부모 추적 중인 봇** (`workspace/`, `workspace-gpt/`, `workspace-gemini/`, `workspace-mini/`): nested `.git`만 ignore, 내용은 부모가 스냅샷. 졸업 전 기본값.
+**아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
 ### Model routing (현재: OpenClaw **2026.8.2** baseline, 2026-09-02 bump)
 

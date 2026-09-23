@@ -45,7 +45,7 @@
 
 # NOW
 
-- **Current**: 8.2 고정 + 기억축 정리 판이 계속된다. 2026-09-08 은 여기에 두 판이 얹혔다 — 안드로이드 앱 연결 복구(RAIL 7)와 entwurf 다리 유보(RAIL 8). 라이브 무사(`2026.8.2` healthy, 6봇 polling 정상). **트리는 clean 이고 push 까지 끝났다**(`6c8b1fb`).
+- **Current**: 8.2 고정 + 기억축 정리 판이 계속된다. 2026-09-08 은 여기에 두 판이 얹혔다 — 안드로이드 앱 연결 복구(RAIL 7)와 entwurf 다리 유보(RAIL 8). 2026-09-08 실측에서 라이브 무사(`2026.8.2` healthy, 6봇 polling 정상). 2026-09-23 mini 졸업: `openclaw-config` 부모 추적 17개 해제 + ignore·문서 수정 `74662bb` push 완료(워킹트리·mini 자체 리포 보존). `agent-config/git-hooks/_scan.sh`의 mini private allowlist 추가는 이 판의 두 리포 커밋에서 제외되어 로컬 미커밋 상태 — 현재 mini는 자체 `.git-hooks-mode=loose`라 훅은 동작하며, 그 리포를 따로 커밋할 때 함께 회수할 것. `~/openclaw`의 기존 `config/gitconfig-system`, `config/openclaw.json`, `config/workspace/memory/…` 변경은 별도 작업이므로 섞지 말 것.
 - **Next**: (1) 무응답 통지 설계(RAIL 5) → (2) `docker exec openclaw-gateway openclaw memory index --agent gpt` 증분 → (3) 청크 수와 봇 실경로 latency 재측정.
 - **Blocker**: 없음. gpt DM 은 살아있다(`status=done`, `route=fits` 62,540/272,000, msgs 4).
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
