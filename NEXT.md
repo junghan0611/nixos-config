@@ -12,7 +12,7 @@
 - [x] **2. 컷오버 잔재 회수** — `/home` 94%→75%, docker 12.6→9.8GB. 롤백면 은퇴 완료
 - [x] **3. 기억축 청소** — dreaming 4월 화석 880 + 세션 아카이브 835 = **1,715청크 회수(4,915→3,202, -35%)**. 6봇 `dirty:no`
 - [x] **4. 지배 세션 압축 — 압축할 게 아니었다.** gpt DM 무응답의 원인은 컨텍스트가 아니라 **rate-limit 로 죽은 run 이 남긴 세션 락**이었다(`lastRunError: API rate limit reached`, `endedAt` 2026-09-05T14:20, 이후 run 0회). 실제 창은 `route=fits` 185,615/272,000. `sessions.abort` 한 줄로 복구(첫 턴 5초, 텔레그램 `messageId=3595`). 전사 미절단. 함정 전문 → [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) 첫 항목
-- [ ] **5. 봇 무응답을 사람이 먼저 알아채는 구조** ← CURRENT (GLG 2026-09-06: *"이런 문제 발생했는데 뭘 알려주는 게 없네"*). gpt 가 **하루 넘게 죽어 있는 동안 알림이 0건**이었다 — GLG 가 말을 걸어보고서야 발견했다. 로그에는 3분마다 같은 에러가 찍혔고, health-monitor 의 `stuck session recovery` 는 `reason=active_reply_work` 로 매분 **skip** 했다(락 잡힌 세션을 "일하는 중"으로 본다). 필요한 것: ① 세션 `status=failed` 가 N 분 이상 지속되면 main/운영 채널로 통지 ② `spooled update … keeping for retry` 가 반복되면 같은 통지 ③ 그 판정이 upstream 몫인지 우리 cron 한 줄인지 결정([docs/openclaw-automations.md](docs/openclaw-automations.md) 에 얹을 자리)
+- [ ] **5. 봇 무응답을 사람이 먼저 알아채는 구조** ← PAUSED: 9.5 컷오버 판정 뒤 복귀 (GLG 2026-09-06: *"이런 문제 발생했는데 뭘 알려주는 게 없네"*). gpt 가 **하루 넘게 죽어 있는 동안 알림이 0건**이었다 — GLG 가 말을 걸어보고서야 발견했다. 로그에는 3분마다 같은 에러가 찍혔고, health-monitor 의 `stuck session recovery` 는 `reason=active_reply_work` 로 매분 **skip** 했다(락 잡힌 세션을 "일하는 중"으로 본다). 필요한 것: ① 세션 `status=failed` 가 N 분 이상 지속되면 main/운영 채널로 통지 ② `spooled update … keeping for retry` 가 반복되면 같은 통지 ③ 그 판정이 upstream 몫인지 우리 cron 한 줄인지 결정([docs/openclaw-automations.md](docs/openclaw-automations.md) 에 얹을 자리)
 - [ ] **6. 상류 리포트** ← PAUSED: 5 이후. 우리 설정으로 못 고치는 **확정 6건 + 후보 2건**이 모였다(아래 §상류). 후보는 ⑦ rate-limit 종료 run 이 세션 락을 놓지 않아 `sessions compact` 까지 막는 것, ⑧ 안드로이드 앱이 heartbeat automation 상세를 못 여는 것(앱 확정은 미검증)
 
 - [x] **7. 안드로이드 앱이 tailnet 으로 못 붙던 것** — 원인은 버전업도 페어링도 아니었다.
@@ -31,7 +31,7 @@
   에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
 
 - [x] **9. bbot 메멘토 autopilot** — 2026-09-10 heartbeat(main 누적)에서 3h isolated `agentTurn`으로 이관. bbot heartbeat는 `{every:"0m"}`를 명시 유지한다 — `unset`하면 6봇 defaults cadence가 되살아난다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
-- [ ] **bbot fable-5-1 정기 scheduler receipt** — 10:26 정기 run은 per-agent `claude-cli` 등록 누락으로 API auth 실패했다. 등록 보강 뒤 11:00 manual catch-up은 572.9초 성공·Telegram delivered. **13:26 KST 정기 run**이 `claude-cli` / fable-5-1 / delivered인지 확인한 뒤 이 항목을 지운다.
+- [ ] **다음 턴: Copilot 레일 제거 (GLG 2026-09-23 결정)** — 이번 9.5 컷오버·bbot run과 섞지 않는다. 현재 `gemini` 봇 primary가 `github-copilot/gemini-3.7-flash`이고 fallback이 **없으므로**, 먼저 GLG와 봇 유지/다른 구독 레일 이관/비활성 중 하나를 결정한다. 운영 config의 `auth.profiles.github-copilot:github`, `agents.defaults.modelPolicy.allow`, `agents.entries.gemini.model.primary`, `plugins.allow`(및 실제 plugin entry)를 함께 검토. 공유·agent SQLite의 Copilot 프로필, 호스트 `~/.copilot` CLI 토큰, `~/openclaw/.env`, 배포 스크립트와 ORACLE.md·docs/openclaw-automations.md·NEXT.md의 화석까지 목록화해 제거. GitHub 권한 revoke는 저장소 정리와 별개 — 오래된 유출 토큰 2개 회전 부채도 확인. 재시작/봇 무응답 없이 준비한 뒤 GLG 승인으로 실행.
 
 - [ ] **bbot Android admin scope 판단** — 현재 폰은 cron 목록·상세·run history 읽기 전용이고 mutation은 `Admin access required`(정상). 폰에서 직접 cron 편집/수동 실행이 정말 필요할 때만 shared token/password 재연결 또는 admin scope upgrade를 승인한다. 필요 없으면 현 상태 유지; [gotchas](docs/openclaw-gotchas.md) claw 항목 참고.
 
@@ -41,21 +41,23 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-현재 좌표: 1·2·3·4·7·8·9 완료 → **5(무응답 통지)가 다음 한 수** → 10(doctor 셋) → 6(상류)
+- [ ] **11. OpenClaw 9.5 컷오버 후 수신 검증** ← CURRENT: 9.5 게이트웨이 healthy, 기본/GPT 봇 구독 OAuth 재승인·격리 턴 성공. bbot 16:26 cron `ok · delivered` 확인. 6계정 실수신·Android 앱 호환성 확인이 남음.
+
+현재 좌표: 1·2·3·4·7·8·9 완료 → **11(9.5 컷오버 후 관측)** → 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 
 # NOW
 
-- **Current**: 8.2 고정 + 기억축 정리 판이 계속된다. 2026-09-08 은 여기에 두 판이 얹혔다 — 안드로이드 앱 연결 복구(RAIL 7)와 entwurf 다리 유보(RAIL 8). 2026-09-08 실측에서 라이브 무사(`2026.8.2` healthy, 6봇 polling 정상). 2026-09-23 mini 졸업: `openclaw-config` 부모 추적 17개 해제 + ignore·문서 수정 `74662bb` push 완료(워킹트리·mini 자체 리포 보존). `agent-config` 훅 allowlist는 이 판의 두 리포 push에 포함하지 않았다(동시 작업에서 로컬 커밋 `534b25b` 생성, 원격 반영은 별도 소관). mini는 자체 `.git-hooks-mode=loose`라 그 전에도 훅이 동작한다. `~/openclaw`의 기존 `config/gitconfig-system`, `config/openclaw.json`, `config/workspace/memory/…` 변경은 별도 작업이므로 섞지 말 것.
-- **Next**: (1) 무응답 통지 설계(RAIL 5) → (2) `docker exec openclaw-gateway openclaw memory index --agent gpt` 증분 → (3) 청크 수와 봇 실경로 latency 재측정.
-- **Blocker**: 없음. gpt DM 은 살아있다(`status=done`, `route=fits` 62,540/272,000, msgs 4).
+- **Current**: 2026-09-23 GLG 승인으로 Oracle OpenClaw 8.2→9.5 컷오버. `openclaw-custom:latest` 9.5, 게이트웨이 healthy, 6개 Telegram 계정 probe 정상. Doctor `--network none`에서 기존 만료 OpenAI OAuth 갱신에 실패해 기본/GPT 봇이 일시 중단됐으나 GLG가 공식 기기 인증으로 **두 저장소 각각 재승인**했고 main/GPT 각각 격리 턴 `확인` 성공. bbot 16:26 cron은 `claude-cli` / fable-5-1로 실행해 16:37:02 `ok · delivered`(608,933ms), Telegram `messageId=2908` 확인. 8.2 전체 cold rollback `/home/junghan/openclaw/backups/pre-9.5-20260923T161549`와 `openclaw-custom:8.2-rollback` 보존. 9.5 이전의 `~/openclaw` 변경은 별도 작업과 섞지 않는다.
+- **Next**: GLG Android 앱 설치 경로·버전·연결 확인 → 6계정 실수신 후 RAIL 5 무응답 통지 설계로 복귀. 다음 턴 Copilot 제거는 별도 결정·실행.
+- **Blocker (observation)**: 9.5 부팅 시 `/dashboard` Telegram 명령 중복 경고와 cron 정책 경고; cron 16:26의 완료·배달은 정상. 9.5 GitHub Release 자산에는 APK 없음(15개 자산 조회); Android 설치 경로·앱 연결은 별도 확인.
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
-- **Read**: 아래 §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
+- **Read**: 아래 §"OpenClaw 9.5 업그레이드"(현재 게이트) · §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
 - **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.26.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
 
 # 앱 후속 (2026-09-08, RAIL 7 에서 파생)
 
-- [ ] **안드로이드 앱을 `2026.8.x` 로 올린다** — 앱 ui 가 `v2026.7.1` 이라 페어링 scope 에
+- [ ] **게이트웨이 9.5와 Android 앱 호환성 확인** — GLG가 앱 설치 예정이지만 9.5 공식 Release에는 APK 없음(15개 자산 확인). 실제 설치 경로·버전·연결을 먼저 확인한다. 기존 앱 ui 가 `v2026.7.1` 이라 페어링 scope 에
   `operator.questions` 가 없고, 게이트웨이 로그가 30초마다
   `[ws] ✗ question.list FORBIDDEN missing scope: operator.questions` 를 뱉는다. 앱의 질문/승인
   화면이 비어 보인다. **CLI 로 못 고친다** — `devices` 에 scope 편집 서브커맨드가 없고
@@ -255,20 +257,18 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🟡 OpenClaw 9.4 업그레이드 — 검증 완료, 컷오버 승인 대기 (2026-09-11)
+## 🟡 OpenClaw 9.5 업그레이드 — 컷오버 완료, 수신 관측 중 (2026-09-23)
 
-라이브는 `2026.8.2`(0965053, Dockerfile `FROM ghcr.io/openclaw/openclaw:2026.8.2`) 그대로다. 후보 `v2026.9.4`(3a9d69d)는 raw와 **실제 Dockerfile 레이어** 양쪽에서 열었다: `openclaw-custom:9.4-preflight` 빌드 성공, OpenClaw `2026.9.4`·Claude CLI `2.1.268` 확인. **아직 Dockerfile/라이브 config/state를 바꾸지 않았다.**
+라이브 `v2026.9.5`(ec9c1a1, 9/19 공개). 운영 Dockerfile의 격리 빌드 `openclaw-custom:9.5-preflight`를 `latest`로 승격(OpenClaw 9.5·Claude CLI 2.1.280·npm 12.0.2). GLG 승인 후 16:23 KST recreate, 16:24 healthy. 모델 primaries는 기존 설정 유지(모델 업그레이드 아님).
 
-- shared state는 `v15 → v17`의 실제 migration이다. WAL-aware 라이브 사본에서 9.4 Doctor가 `Workshop ownership v16`과 `prepared worker v17`를 완료했고 canonical state index 1개도 재구성했다. `worker_environments=0`이라 prepared-worker 데이터 이관은 없다. 따라서 8.2로의 rollback은 이미지 tag만으로 불가하며 **사전 전체 state 복원**이 필요하다.
-- 7개 agent DB는 schema `19` 유지지만 모두 `idx_agent_session_nodes_active` same-version index repair가 필요하다. 사본 Doctor는 완료했고 lint에 agent-schema 실패가 남지 않았다.
-- config는 retired `skills.workshop.allowSymlinkTargetWrites` 때문에 9.4에서 처음엔 거부된다. Doctor가 이를 제거하고 `agents.defaults.systemAgent.agentId=main`을 추가한 사본은 `config validate` 통과했다. `active-memory` disabled·OpenRouter env 경고는 기존 상태다.
-- Workshop pending 2건 중 **`next-current-pointer` 1건은 glg agent Workshop 경로로 retarget**, **`butlercli` 1건은 외부 symlink 대상이라 stale** 처리된다. 후자는 기존 skill을 지우지 않지만 Workshop proposal로는 더 이상 관리하지 않는다 — 수락 전 GLG가 stale 처리(거절/보존)를 승인할 것.
-- 사본 lint의 `claude`/skills/gateway 경고는 raw image에 compose PATH·외부 mounts·실행 gateway를 주지 않은 격리 환경 산물이다. 실제 custom 후보 이미지에는 Claude CLI가 있다. Google profile expired 경고와 plaintext SecretRefs 권고는 컷오버 blocker가 아닌 기존 운영 부채다.
+- **이미지 실측**: shared state migration ID 15→17개(Workshop ownership v16, prepared worker v17), agent DB schema **19→21**. 8.2로 돌아갈 때 이미지만 돌리면 거부된다. **정지된 시점의 config/state/7 DB/외부 auth-profile-secrets 전체 백업 + 8.2 이미지**가 한 짝이다.
+- **9.5 격리 Doctor**: `~/openclaw-9.5-lab-20260923/`에 라이브 파일 복제 + 공유/7 DB는 `sqlite3.backup` 일관 사본(`--network none`, 실제 서비스 무접촉). `doctor --fix` exit 0: state v16/v17·canonical index 수선, 7 DB 모두 v19→v21, config의 retired Workshop 키 제거 + `systemAgent.agentId=main`. Workshop pending은 1건 retarget·**butlercli 외부 symlink proposal 1건 stale**(실제 skill 파일 삭제 아님). GLG가 이 관측을 듣고 컷오버를 승인했다.
+- **새 발견**: Doctor가 `acp.enabled=false`인데도 `plugins.entries.acpx.enabled=true`를 자동 추가했다. ACP 폐기 정책과 충돌하므로 live Doctor 뒤 **명시적 false**로 되돌려야 한다. 사본에서 false로 설정 후 Doctor 2회차에도 false 유지, `config validate` 통과(`tools.sessions.visibility=all` 되읽기). 또한 3개 tool-bearing 가족 cron에 명시적 `--tools` cap/저장 계정 신원 부재 경고 — restrictive sender policy로 계속 돈다고 하지만 실배달은 업글 뒤 확인해야 한다. **주의: 격리 환경의 OAuth refresh 경고는 무관한 잡음으로 넘길 수 없다.** 실운영 오프라인 Doctor에서도 이미 만료된 OpenAI OAuth(8.2 snapshot 만료 9/20) 갱신이 실패해 expiry=1로 저장됐고 기본/GPT 봇이 `Explicit auth order for openai has no usable profiles`로 응답 불가. GLG 기기 승인을 받아 main/gpt 각각 공식 `models auth login --provider openai --agent <id> --profile-id ... --device-code`로 복구(둘 다 10일 유효); main/GPT 격리 턴 모두 `확인` 수신. Claude CLI 로그인 경고는 인증 마운트 부재 사본에서만 기록됐다.
+- **릴리즈 위험**: upstream 9.5의 stable soak는 인프라/fixture 문제로 면제됐고 Android APK는 8.2에 머물렀다(GitHub 9.5 release verification). 안드로이드·가족 봇 경로의 단일 health 체크만으로 승격 판정 금지.
 
-- [ ] **[#10](https://github.com/junghan0611/nixos-config/issues/10) mini heartbeat 확장**: 9.4 컷오버와 섞지 않는다. 안정화 뒤 mini만 `every:1h`로 24시간 관측(typing·무단 outbound·실패 반복 없음)하고, 통과 후 별도 결정으로 weekly Skill Workshop review를 `propose` 모드에서 열지 판단한다. 모델 교체·자동 apply는 이 좌표 밖이다.
-- [ ] **컷오버 승인 후에만**: (1) gateway를 idle로 만들고 config root+7 agent DB+shared DB를 WAL-aware 전체 백업(외부 `auth-profile-secrets` 포함) → (2) 현재 `openclaw-custom:latest`를 `8.2-rollback`으로 tag → (3) Dockerfile 9.4 bump/build, 새 이미지의 `doctor --fix` → (4) gateway 기동, `doctor --json`·7 agent DB index·Workshop 상태 확인 → (5) GPT bot 먼저 smoke turn 후 가족봇 확대.
-- [ ] **사전 용량 재확인**: 현재 `/` 4.9GB(95%)라 9.4 preflight image가 있는 상태에서 무심코 새 build/backup을 겹치지 말 것. Docker reclaimable 4.28GB와 `/home` 18GB를 측정한 뒤 GLG 승인 아래 필요한 것만 정리한다.
-- **Do not touch**: live `config/openclaw.json`을 미리 손수 삭제·state schema marker 하향·`8.2` image만으로 rollback 시도 금지. 실패 시 8.2 image + verified pre-upgrade state/auth backup을 함께 복원한다.
+- [x] **컷오버**: 16:15 gateway 정지 → 전체 cold backup 5.3GB와 공유/7 DB `quick_check`·해시 검증 → `openclaw-custom:8.2-rollback` 태그 → 운영/공개 Dockerfile FROM 9.5 → 정지된 운영 state Doctor → ACPX false 재차단·config validate → 16:23 recreate → 6계정 polling/healthy. 롤백면: `~/openclaw/backups/pre-9.5-20260923T161549/` + 위 8.2 이미지. 9.5 상태를 8.2 이미지에만 연결하는 롤백 금지.
+- [ ] **남은 관측**: main/GPT 격리 응답 모두 성공. bbot 16:26 자동 cron `ok · delivered`(608,933ms, Telegram `messageId=2908`) 확인. 6계정 실수신, GLG의 Android 앱 설치 경로 확인 및 연결(9.5 공식 APK 없음). `/dashboard` 명령 중복 부팅 경고와 tool-bearing 가족 cron의 `--tools`/저장 계정 신원 경고 별도 판정. 안정화 후에만 [#10](https://github.com/junghan0611/nixos-config/issues/10) mini heartbeat 확장(`every:1h`, 24h 관측)을 판단.
+- **Do not touch**: `acp.enabled=false` 및 `plugins.entries.acpx.enabled=false` 유지. 롤백 시 **검증한 pre-upgrade config/state/auth 전체와 8.2 이미지 함께** 복원(9.5 중 들어온 새 대화는 유실 가능). schema marker만 낮추지 않는다. 업글과 GPT-6 Sol 모델 교체는 별개(이번 범위 밖).
 
 ---
 

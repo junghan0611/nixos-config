@@ -12,6 +12,19 @@
 
 ## 활성
 
+### 9.5 오프라인 Doctor는 만료 OAuth를 복구하지 못한다 — 구독 봇 실응답 검증 (2026-09-23)
+
+8.2→9.5 migration을 정지된 운영 state에 `docker run --network none ... openclaw doctor --fix`로 적용했다.
+공유 및 gpt 에이전트의 OpenAI OAuth는 **컷오버 이전부터 만료**(cold backup `expires` = 2026-09-20)였지만,
+네트워크 차단 상태의 Doctor가 갱신을 시도해 실패했고 두 저장소의 `expires=1`을 기록했다.
+9.5 gateway/Telegram 6계정은 healthy여도 main/GPT 격리 턴은
+`Explicit auth order for openai has no usable profiles`로 실패했다. **이미지·Doctor 성공은 봇 인증 성공이 아니다.**
+
+복구: 실제 소유자가 공식 `openclaw models auth login --agent main --provider openai --profile-id '<기존 ID>' --device-code`를 승인,
+별도 저장소를 쓰는 `--agent gpt`도 각각 승인. `models status --agent <id>`의 OAuth `ok`에 더해
+**각 에이전트의 격리 턴 실제 응답**까지 검증한다. `--force`로 인증을 지우거나 API 키 과금으로 우회하지 않는다.
+`doctor --network none`을 안전한 마이그레이션 수단으로 쓰더라도 만료 OAuth 갱신은 별도 복구 단계로 계획한다.
+
 ### 부팅이 헬스체크보다 느리다 — 재시작마다 3분간 `health: starting` (2026-09-10)
 
 이미지 `HEALTHCHECK` 의 `start_period` 는 **15s** 인데 oracle(느린 aarch64 VM)에서 게이트웨이가

@@ -196,8 +196,9 @@
 # (릴리즈 노트 전문 grep: agentRuntime 0건 / model polic 0건). --model 명시 우회는 계속 필요하다.
 # 규모 대조 — 7.1-2→8.1: 27일 19,750커밋 Changes149/Fixes349 breaking2 · 8.1→8.2: 1.5일 794커밋
 # Changes12/Fixes92 breaking0. 롤백 이미지: openclaw-custom:8.1-rollback (sha ed2a67c2f90b).
-# 롤백용: FROM ghcr.io/openclaw/openclaw:2026.8.1
-FROM ghcr.io/openclaw/openclaw:2026.8.2
+# 9.5→8.2 rollback: openclaw-custom:8.2-rollback + full pre-9.5 cold state backup (image-only rollback forbidden).
+# 2026.9.5: state v15→v17 + agent DB v19→v21; cold backup and stopped-writer doctor required.
+FROM ghcr.io/openclaw/openclaw:2026.9.5
 
 USER root
 
