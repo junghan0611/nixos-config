@@ -35,6 +35,10 @@ in {
   home.sessionVariables = {
     # GUI Emacs는 "user" 소켓, agent daemon은 "server" 소켓
     EDITOR = "emacsclient -s user";
+    # Jinx compiles its module at first use. Nix keeps Enchant's .pc/header
+    # and Emacs's module header out of the runtime profiles by default.
+    PKG_CONFIG_PATH = "${pkgs.enchant.dev}/lib/pkgconfig";
+    C_INCLUDE_PATH = "${emacsPackage}/include";
   };
 
   # Add Doom Emacs bin to PATH
