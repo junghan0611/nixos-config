@@ -123,7 +123,9 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.8.2** baseline, 2026-09-02 bump)
+### Model routing (현재: OpenClaw **2026.9.6** baseline, 2026-09-28 bump)
+
+> 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 Copilot `403 not authorized to use this Copilot feature`로 **서빙 실패** — 원인이 9.6인지 기존 구독 권한인지 미확정. GLG 9/28: Copilot 계정 미사용, **다음 홉에서 제거**(이번 컷오버 범위 밖). `google/` API 키나 자동 fallback으로 우회 금지. 아래 8.2/8.1 판정은 이전 버전 이력이며 현재 모델·auth는 라이브 config/세션이 우선.
 
 > 8.2는 8.1 대비 **마이그레이션 0**인 버그픽스 bump다(state 마이그레이션 ID 15개 동일, `OPENCLAW_AGENT_SCHEMA_VERSION` 19=19, config retired key 0 — 올리기 전 이미지 대조로 확정). 따라서 **아래 8.1 전제 4개는 8.2에서도 그대로 유효하다.** 경위 = [issue #8](https://github.com/junghan0611/nixos-config/issues/8).
 

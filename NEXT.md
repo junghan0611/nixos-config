@@ -41,28 +41,23 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-- [ ] **11. OpenClaw 9.5 컷오버 후 수신 검증** ← CURRENT: 9.5 게이트웨이 healthy, 기본/GPT 봇 구독 OAuth 재승인·격리 턴 성공. bbot 16:26 cron `ok · delivered` 확인. 6계정 실수신·Android 앱 호환성 확인이 남음.
+- [x] **11. OpenClaw 9.5 안정화 확인 → 9.6 컷오버**: GLG 9/28 Android 연결·며칠간 실사용 정상 확인. 9/28 유휴 게이트웨이 정지, cold backup→Doctor state v18·7 DB v23→9.6 기동. 5봇 격리 실응답 성공; gemini는 Copilot 403(별도 결정 필요). 상세는 아래 §9.6.
 
-현재 좌표: 1·2·3·4·7·8·9 완료 → **11(9.5 컷오버 후 관측)** → 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
+현재 좌표: 1·2·3·4·7·8·9·11 완료 → **다음 홉에서 Copilot 계정·레일 제거(GLG 결정)** → 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 
 # NOW
 
-- **Current**: 2026-09-23 GLG 승인으로 Oracle OpenClaw 8.2→9.5 컷오버. `openclaw-custom:latest` 9.5, 게이트웨이 healthy, 6개 Telegram 계정 probe 정상. Doctor `--network none`에서 기존 만료 OpenAI OAuth 갱신에 실패해 기본/GPT 봇이 일시 중단됐으나 GLG가 공식 기기 인증으로 **두 저장소 각각 재승인**했고 main/GPT 각각 격리 턴 `확인` 성공. bbot 16:26 cron은 `claude-cli` / fable-5-1로 실행해 16:37:02 `ok · delivered`(608,933ms), Telegram `messageId=2908` 확인. 8.2 전체 cold rollback `/home/junghan/openclaw/backups/pre-9.5-20260923T161549`와 `openclaw-custom:8.2-rollback` 보존. 9.5 이전의 `~/openclaw` 변경은 별도 작업과 섞지 않는다.
-- **Next**: GLG Android 앱 설치 경로·버전·연결 확인 → 6계정 실수신 후 RAIL 5 무응답 통지 설계로 복귀. 다음 턴 Copilot 제거는 별도 결정·실행.
-- **Blocker (observation)**: 9.5 부팅 시 `/dashboard` Telegram 명령 중복 경고와 cron 정책 경고; cron 16:26의 완료·배달은 정상. 9.5 GitHub Release 자산에는 APK 없음(15개 자산 조회); Android 설치 경로·앱 연결은 별도 확인.
+- **Current**: 2026-09-28 GLG 승인으로 9.5→9.6 컷오버. 정지 전 `tasks.active/queued/running=0`, full cold backup 압축·SHA 검증, Doctor shared state v18·7 agent DB v23, `quick_check=ok`. 9.6 gateway healthy, Telegram 6계정 polling `works`; main/gpt/glg/mini/bbot 격리 실응답 `확인`. gemini 격리 턴은 `403 unauthorized: not authorized to use this Copilot feature`(fallback 없음). 기동 초기에 tini symlink 오류로 1회 재시작 후 healthy; 재발 관측 필요.
+- **Next**: GLG 2026-09-28 결정: Copilot 계정은 안 쓰며 **다음 홉에서 레일 제거**. 제거 전 gemini 봇의 유지·이관·비활성 중 무엇을 택할지 확인하고 함께 정리한다(이번 커밋 범위 아님). 그 전엔 API 키·자동 fallback으로 우회하지 말 것. 다른 5봇은 실수신 및 다음 bbot memento 배달을 관측하고 기동 재시작 수를 확인한다.
+- **관측**: Android 연결·며칠간 9.5 실사용 정상은 9/28 GLG 직접 확인. 9.6 앱 접속은 tailnet `/` 200·`/health` 200(앱 UI 직접 조작은 미검증).
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
-- **Read**: 아래 §"OpenClaw 9.5 업그레이드"(현재 게이트) · §"기억축을 세션만으로" · §"회수 품질" · [sorge#1](https://github.com/junghan0611/sorge/issues/1) 코멘트 5건.
+- **Read**: 아래 §"OpenClaw 9.6 업그레이드"(현재 게이트) · §"OpenClaw 9.5 업그레이드"(이전 컷오버 기록) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) · [sorge#1](https://github.com/junghan0611/sorge/issues/1).
 - **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.26.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
 
 # 앱 후속 (2026-09-08, RAIL 7 에서 파생)
 
-- [ ] **게이트웨이 9.5와 Android 앱 호환성 확인** — GLG가 앱 설치 예정이지만 9.5 공식 Release에는 APK 없음(15개 자산 확인). 실제 설치 경로·버전·연결을 먼저 확인한다. 기존 앱 ui 가 `v2026.7.1` 이라 페어링 scope 에
-  `operator.questions` 가 없고, 게이트웨이 로그가 30초마다
-  `[ws] ✗ question.list FORBIDDEN missing scope: operator.questions` 를 뱉는다. 앱의 질문/승인
-  화면이 비어 보인다. **CLI 로 못 고친다** — `devices` 에 scope 편집 서브커맨드가 없고
-  (`approve/rotate/revoke/rename/remove/clear/join-code` 뿐) `openclaw.json` 에도 device scope
-  기본값이 없다. 앱을 올린 뒤 재페어링해야 풀린다.
+- [x] **게이트웨이 9.5와 Android 앱 연결·실사용** — GLG 2026-09-28 확인: 연결 검증 완료, 며칠간 정상 사용. 앱 설치 경로·버전·`operator.questions` scope 개선 여부는 이 확인에 포함되지 않았으므로 미기록(옛 `v2026.7.1`의 scope 결함을 현재 앱에도 단정하지 않는다).
 - [ ] **`run.sh t)` SSH 터널의 운명 결정** — trustedProxies 변경의 대가로 터널 경유 Control UI 가
   403 이 됐다(도커 NAT 가 터널과 tailscale serve 를 같은 172.26.0.1 로 뭉갠다 — `/32` 로도 분리
   불가). 지금은 경고 + tailnet 경로 안내로 남겨뒀다. thinkpad 도 tailnet 에 있으니 **터널 자체를
@@ -257,9 +252,18 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 
 ---
 
-## 🟡 OpenClaw 9.5 업그레이드 — 컷오버 완료, 수신 관측 중 (2026-09-23)
+## 🟡 OpenClaw 9.6 업그레이드 — 5봇 GREEN, gemini Copilot 403 (2026-09-28)
 
-라이브 `v2026.9.5`(ec9c1a1, 9/19 공개). 운영 Dockerfile의 격리 빌드 `openclaw-custom:9.5-preflight`를 `latest`로 승격(OpenClaw 9.5·Claude CLI 2.1.280·npm 12.0.2). GLG 승인 후 16:23 KST recreate, 16:24 healthy. 모델 primaries는 기존 설정 유지(모델 업그레이드 아님).
+- GLG: 9.5 Android 연결·며칠간 실사용 정상 확인. 유휴 점검 `tasks.active/queued/running=0` 뒤 gateway 정지. 이미지 대조: state migration `github-publication-requester-authority-v18` 추가(9.5의 `historical-transcript-directives-v1`은 목록에서 사라짐), agent DB v21→v23, npm 12.0.2→12.1.0. 9.6 config 유효; 9.6 custom 빌드에서 Claude CLI 2.1.283 실행 확인.
+- rollback = `openclaw-custom:9.5-rollback` **+** `~/openclaw/backups/pre-9.6-20260928T155205/live-state.tar.zst`(full config·secret key·env·Dockerfile·compose, SHA256 검증). **9.6 state에 9.5 이미지만 연결 금지.** 다른 봇의 9.6 이후 대화가 생기면 cold backup 복원 시 그 구간은 유실된다.
+- 정지 Doctor `--fix --non-interactive --network none`: shared state `user_version=18`, 7 agent DB `user_version=23`, 전량 `quick_check=ok`. 격리 환경의 `tmux` 부재를 Doctor가 `enabled:false`로 쓴 건 기존 `true`로 복원했고 `config validate` 통과. `acpx=false`, 기본 모델·allow 첫 항목 유지. Doctor의 GitHub preview allowlist 안내·폐기된 Google auth 경고·기존 cron 권한 경고는 자동 수정하지 않음.
+- `openclaw-custom:9.6-preflight`→`latest`, recreate. 첫 프로세스 `[FATAL tini (7)] exec tini failed: Too many levels of symbolic links`로 **1회 재시작**한 뒤 gateway `ready`, healthy, Telegram 6계정 polling `works`. Control UI claw 302(Authelia), tailnet `/` 200·`/health` 200. 재시작 수는 후속 관측.
+- 격리 실응답(무배달): main/gpt `openai/gpt-5.6-sol`, glg/mini `anthropic/claude-sonnet-5`, bbot `anthropic/claude-fable-5-1` 모두 `확인`. **gemini만 실패**: Copilot `403 unauthorized: not authorized to use this Copilot feature`, auth cooldown 기록. GLG 9/28: Copilot 계정 미사용, 레일 제거는 다음 홉. 이 403이 9.6 회귀인지 Copilot 권한의 기존 상태인지는 pre-9.6 라이브 서빙 표본이 없어 미확정. 자동 fallback이나 `google/` API 키로 우회하지 않는다.
+- 후속: 다음 bbot cron 실배달 확인, 6봇 실수신(텔레그램 inbound) 관측, Android 9.6 앱 UI 직접 접속, tini 재시작 재발 여부. 검수 중 나온 `session-sqlite` 자동 maintenance 경합 경고(`inputs changed before commit`)는 이후 taskAudit=0·gateway healthy, 재발 시 따로 진단.
+
+## 🟢 OpenClaw 9.5 업그레이드 — 9.6 이전 컷오버 기록 (2026-09-23)
+
+당시 라이브 `v2026.9.5`(ec9c1a1, 9/19 공개). 운영 Dockerfile의 격리 빌드 `openclaw-custom:9.5-preflight`를 `latest`로 승격(OpenClaw 9.5·Claude CLI 2.1.280·npm 12.0.2). GLG 승인 후 16:23 KST recreate, 16:24 healthy. 모델 primaries는 기존 설정 유지(모델 업그레이드 아님).
 
 - **이미지 실측**: shared state migration ID 15→17개(Workshop ownership v16, prepared worker v17), agent DB schema **19→21**. 8.2로 돌아갈 때 이미지만 돌리면 거부된다. **정지된 시점의 config/state/7 DB/외부 auth-profile-secrets 전체 백업 + 8.2 이미지**가 한 짝이다.
 - **9.5 격리 Doctor**: `~/openclaw-9.5-lab-20260923/`에 라이브 파일 복제 + 공유/7 DB는 `sqlite3.backup` 일관 사본(`--network none`, 실제 서비스 무접촉). `doctor --fix` exit 0: state v16/v17·canonical index 수선, 7 DB 모두 v19→v21, config의 retired Workshop 키 제거 + `systemAgent.agentId=main`. Workshop pending은 1건 retarget·**butlercli 외부 symlink proposal 1건 stale**(실제 skill 파일 삭제 아님). GLG가 이 관측을 듣고 컷오버를 승인했다.

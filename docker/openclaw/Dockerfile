@@ -198,7 +198,8 @@
 # Changes12/Fixes92 breaking0. 롤백 이미지: openclaw-custom:8.1-rollback (sha ed2a67c2f90b).
 # 9.5→8.2 rollback: openclaw-custom:8.2-rollback + full pre-9.5 cold state backup (image-only rollback forbidden).
 # 2026.9.5: state v15→v17 + agent DB v19→v21; cold backup and stopped-writer doctor required.
-FROM ghcr.io/openclaw/openclaw:2026.9.5
+# 2026.9.6: state migration v18 + agent DB v21→v23; cold backup and stopped-writer doctor required.
+FROM ghcr.io/openclaw/openclaw:2026.9.6
 
 USER root
 
