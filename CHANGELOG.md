@@ -9,6 +9,19 @@
 
 ## Unreleased
 
+## v2026.9.28 — Oracle 9.6, 구독 레일 이관과 워크스페이스 독립
+
+### OpenClaw 운영
+
+- Oracle 게이트웨이를 9.5에서 **2026.9.6**으로 올렸다. 유휴 상태에서 정지·전체 cold backup을 확보하고 Doctor로 shared state v18, agent DB 7개 v23을 이관했다. 5봇 무배달 응답과 Telegram 6계정 연결을 확인했다. 롤백은 `openclaw-custom:9.5-rollback` + `~/openclaw/backups/pre-9.6-20260928T155205/live-state.tar.zst` 전체 상태가 한 짝이며, 새 DB에 구 이미지만 붙이지 않는다. 이전 9.5 컷오버 때도 8.2 상태를 cold backup과 함께 보존했고, 만료된 OpenAI OAuth는 공식 기기 인증으로 복구했다.
+- gemini 방의 Copilot 403 경로를 제거하고 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 바꿨다. 일반 종량제 엔드포인트로 우회하지 않고 두 모델의 격리 실응답을 확인했다. Copilot auth 프로필·agent SQLite 상태를 정지 중 백업 후 제거, 플러그인을 비활성화하고 호스트 CLI를 외부 패키지 목록에서 은퇴시켰다. 재기동 뒤 gateway healthy·6계정 `works`, GLM 텔레그램 실대화도 확인했다. GitHub 측 Copilot 앱 권한 취소는 사람 후속이다.
+- `workspace-gemini`가 private 독립 리포로 이사했다. `openclaw-config` 부모의 추적 61개를 인덱스에서만 해제하고 전체 폴더를 ignore해 봇의 로컬 파일은 보존했다. main·mini·gpt 워크스페이스도 각자 독립 Git 소유권으로 정리했다.
+- bbot 3시간 메멘토를 heartbeat에서 isolated cron으로 옮기고 Fable 5.1 실행 경로를 보강했다. Tailnet 브리지 네트워크를 고정해 Android 연결을 안정화했다.
+
+### 호스트·보안
+
+- Oracle Emacs 31.1 의존성 노출(Jinx 컴파일), Forge 15.0.8 보안 갱신, 번역 서비스 브리지와 babashka 홈 패키지를 반영했다.
+
 ## v2026.9.9 — 하트비트를 사실로 만지기, 그리고 그 방법을 스킬로
 
 ### Added

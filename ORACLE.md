@@ -80,7 +80,7 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 - `workspace-mini/` → mini
 - `workspace-bbot/` → bbot
 
-Invariants: main's runtime path is `workspace/`, but its independent repo is named `workspace-main`. The parent does not track it. `workspace-bbot/`, `workspace-glg/`, and `workspace-mini/` are also **graduated narrative gits** (below).
+Invariants: main's runtime path is `workspace/`, but its independent repo is named `workspace-main`. The parent does not track it. `workspace-bbot/`, `workspace-glg/`, `workspace-gpt/`, `workspace-mini/`, `workspace-gemini/` are also independent narrative gits (below); gemini is no longer tracked by the parent.
 
 ### Bot workspace git — 서사 독립 (호스트 졸업 체크리스트)
 
@@ -95,9 +95,11 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 | `config/workspace-bbot/` | `junghan0611/workspace-bbot` | 2026-08-27 (B 첫 push `78d8f38` 같은 날 확인, visibility=PRIVATE) |
 | `config/workspace-glg/` | `junghan0611/workspace-glg` | 2026-08-27 (glg 첫 커밋 `ce90038` 호스트 첫 push 같은 날 확인, visibility=PRIVATE) |
 | `config/workspace-mini/` | `junghan0611/workspace-mini` | 2026-09-23 (원격 `main`에 첫 커밋 `b54c6da`, visibility=PRIVATE 확인; 개인 사서) |
+| `config/workspace-gpt/` | `junghan0611/workspace-gpt` | 자체 git·원격 존재, 부모 추적 0 확인. 원격 동기화 상태는 별도 확인. |
+| `config/workspace-gemini/` | `junghan0611/workspace-gemini` | 2026-09-28 원격 `master` 커밋 `9d9fdfd`, visibility=PRIVATE 확인. 부모는 `cade315`에서 `git rm --cached` 61개와 `.gitignore`를 커밋·푸시해 워킹트리는 그대로 둔다. |
 | `config/workspace/` | `junghan0611/workspace-main` | 독립 `main` 첫 커밋 `dfc5b03`, 원격 동기화 및 visibility=PRIVATE 확인. 부모 인덱스에서 제외하고 `.gitignore` 등록. |
 
-남은 후보: `workspace-gpt/` / `workspace-gemini/` (각각의 실제 부모 추적 상태는 별도 확인). 그 전까지는 부모 스냅샷 + nested `.git` ignore 기본값.
+남은 부모 추적 후보는 `workspace-deepseek/` 등 실제 `git ls-files`로 확인할 것. `workspace-gemini/`는 자체 원격과 부모의 추적 해제가 모두 완료됐다.
 
 **호스트가 하는 일 (봇이 못 하는 수선)**
 
@@ -125,7 +127,7 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 ### Model routing (현재: OpenClaw **2026.9.6** baseline, 2026-09-28 bump)
 
-> 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 Copilot `403 not authorized to use this Copilot feature`로 **서빙 실패** — 원인이 9.6인지 기존 구독 권한인지 미확정. GLG 9/28: Copilot 계정 미사용, **다음 홉에서 제거**(이번 컷오버 범위 밖). `google/` API 키나 자동 fallback으로 우회 금지. 아래 8.2/8.1 판정은 이전 버전 이력이며 현재 모델·auth는 라이브 config/세션이 우선.
+> 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
 
 > 8.2는 8.1 대비 **마이그레이션 0**인 버그픽스 bump다(state 마이그레이션 ID 15개 동일, `OPENCLAW_AGENT_SCHEMA_VERSION` 19=19, config retired key 0 — 올리기 전 이미지 대조로 확정). 따라서 **아래 8.1 전제 4개는 8.2에서도 그대로 유효하다.** 경위 = [issue #8](https://github.com/junghan0611/nixos-config/issues/8).
 
@@ -160,7 +162,7 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 >
 > **판정 규칙**: `expires`가 오늘/내일이어도 **정상이다.** 손댈 때는 ① `.credentials.json` mtime이 회전 주기(~8h)보다 오래 멈춰 있거나, ② `refreshTokenExpiresAt`이 임박했거나, ③ 실제 서빙이 깨졌을 때다. 그 경우에만 수동 `models auth login`(TTY, GLG)이 필요하다. 매일 만료 알람으로 읽으면 있지도 않은 부채를 만든다.
 
-**과금 경로는 전부 구독이다. 종량제 API 키로 도는 챗 모델은 하나도 없다.** anthropic/openai는 OAuth, **gemini 챗봇만 GitHub Copilot 토큰** (`github-copilot:github`). **2026-08-27 GLG 결정: Google Gemini 구독 안 함, gemini-cli/agy 안 쫓음, Copilot이 제미나이 서빙 레일.** 8/16에 Copilot을 전면 제거했던 결정은 이 날짜로 뒤집힘 — 플러그인 `github-copilot` 재활성 + `plugins.allow` 14개 + 새 device-code 로그인(옛 토큰 재사용 금지). ⚠️ **config에서 프로필을 unset해도 토큰은 sqlite에 남는다** — 제거 절차는 [ROADMAP.md](ROADMAP.md) 2026-08-16 항목. ⚠️ 단 glg/gpt/gemini 3봇에 `anthropic:default [anthropic/**token**]` 프로필이 남아있다 — 유일한 비-OAuth 항목이고, claude-cli OAuth가 실패하면 **구독 밖 종량 과금**으로 흐를 수 있는 자리다(현재 primary 경로로는 미사용).
+**챗봇 서빙 경로는 구독으로 제한한다.** anthropic/openai는 구독 인증, gemini 방은 Z.AI Coding Plan **전용** 엔드포인트(`zai/glm-5.3`)와 SuperGrok OAuth(`xai/grok-4.7`)다. Z.AI는 키 기반이지만 일반 종량제 엔드포인트(`/api/paas/v4`)가 아니라 `/api/coding/paas/v4`에 고정한다. xAI Console API 키는 구독과 다른 청구 풀이라 금지. **Copilot은 2026-09-28 제거**(플러그인 entry는 `enabled:false` 유지 — 없애면 번들 자동 로드 가능). 8/16 제거→8/27 복귀의 경위는 ROADMAP.md 이력으로만 읽는다. ⚠️ config에서 auth 프로필을 지워도 토큰은 SQLite에 남는다. ⚠️ glg/gpt/gemini 등에 남은 `anthropic:default` 토큰 프로필은 별도 부채 — 현재 primary는 사용하지 않는다.
 
 ### Thinking level — 기본 `medium`, 올리는 건 세션에서
 
@@ -232,7 +234,7 @@ if (value === "codex-app-server") return "codex";
 |---|---|---|
 | `openclaw` (구 `pi`) | OpenClaw Default | **agentRuntime 미지정 = 기본**. gpt(sol), gemini 제외 전 openai 모델, subagents, active-memory |
 | `claude-cli` | Claude CLI | main/glg/bbot/mini — Anthropic은 구독 API가 없어 `claude -p` spawn |
-| `google-gemini-cli` | Gemini CLI | gemini (deprecation 경로, §agy 이관 참조) |
+| `google-gemini-cli` | Gemini CLI | **현재 미사용** (옛 gemini 경로; 아래 이력 참조) |
 | ~~`codex`~~ | ~~OpenAI Codex~~ | **2026-08-07 결정 → 2026-08-31 완결.** 8.1이 "플러그인 비활성인데 codex 런타임 선언"을 경고에서 **거부**로 바꿔 gpt 봇이 못 돌았다. `openai/*` 3종의 `agentRuntime`을 `openclaw`로 명시해 해소(doctor 경고 7건 → 0) |
 
 **codex 제거 (2026-08-07, GLG 결정)**: openai는 `openai/oauth` 프로필(ChatGPT 구독)로 **내장 런타임에서 그대로 서빙된다** — codex CLI를 경유할 이유가 없다. 제거 내역:
@@ -249,7 +251,7 @@ if (value === "codex-app-server") return "codex";
 >
 > ⚠️ **codex 제거가 catch-all을 옮긴다 (연쇄 함정)**: `openai/gpt-5.4`는 `defaults.models` **1번 = auto-fallback catch-all**이었다(아래 auto-fallback 함정 블록). 그걸 지우면 1번 자리가 다음 항목으로 밀리는데, 그 자리에 gemini(403 DOWN)나 fable-5(bbot 정체성 모델)가 오면 정체성 훼손 경로가 열린다. **그래서 제거와 동시에 allowlist를 재정렬해 `openai/gpt-5.6-terra`를 1번으로 박았다.** 모델을 지울 때는 항상 "1번이 누가 되는가"를 먼저 계산한다.
 
-**Live model IDs** (provider 접두사: `openai/*` = ChatGPT 구독 OAuth via **openclaw 내장 런타임**, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), **`github-copilot/*` = Copilot 구독 토큰** — gemini 챗봇 전용. `google/*`(api-key env `GEMINI_API_KEY`)는 **나노바나나 이미지 전용**, 챗봇은 `google/` 절대 안 씀. `google-gemini-cli/*`는 deprecated, 쓰지 않음). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix가 과금 경로를 결정(`google/`=api-key vs `google-gemini-cli/`=OAuth):
+**Live model IDs** (provider 접두사: `openai/*` = ChatGPT 구독 OAuth via **openclaw 내장 런타임**, `anthropic/*`+`agentRuntime.id=claude-cli` = Claude Code CLI spawn(구독), `zai/glm-5.3` = Coding Plan 명시 엔드포인트, `xai/grok-4.7` = SuperGrok OAuth. `github-copilot/*`는 제거·비활성, `google/*`(api-key env `GEMINI_API_KEY`)는 **나노바나나 이미지 전용**, 챗봇 금지). **canonical 정공법(5.28, 2026-05-31)**: legacy `claude-cli/*` prefix 폐기 — provider prefix가 과금 경로를 결정(`google/`=api-key vs `google-gemini-cli/`=OAuth):
 
 | Agent | Model | Workspace | Streaming | Active memory<br>*(2026-09-01 전량 비활성)* | 비고 |
 |---|---|---|---|---|---|
@@ -258,7 +260,7 @@ if (value === "codex-app-server") return "codex";
 | gpt | `openai/gpt-5.6-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
 | **bbot** | `anthropic/claude-fable-5-1` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. **2026-09-19 config primary + fresh memento job을 fable-5-1로 전환**; 격리 서빙 probe 뒤 bbot per-agent 카탈로그의 `claude-cli` 등록 누락을 보강하고 manual catch-up이 성공·배달됐다. direct/main도 같은 모델이다. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
-| **gemini** | `github-copilot/gemini-3.7-flash` | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. **2026-08-27 Copilot 레일** — 격리 probe `winnerModel=gemini-3.7-flash fallbackUsed=false` + 텔레그램 DM `/model` 정렬. Google Gemini 구독·gemini-cli·agy 안 씀. **fallback 없음**. `google/` api-key 금지(나노바나나 전용). catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
+| **gemini** | `zai/glm-5.3` (기본) · `xai/grok-4.7` (`/model` 선택) | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. Coding Plan + SuperGrok OAuth, gemini 전용 allow는 두 모델만. **fallback 없음**. 두 모델 모두 격리 실응답 확인(재기동 후 재검수는 NEXT.md). `google/` API 키·Copilot 금지. catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
 | subagents | `openai/gpt-5.6-terra` | — | — | — | **2026-08-07 codex 제거로 `gpt-5.4`에서 이동** (runtime=openclaw 내장). per-agent 오버라이드 0 — 6봇 전체가 이 하나를 공유한다. active-memory recall lane은 `openai/gpt-5.6-luna`로 분리 (main lane quota 보호) |
 
 #### ⚠️ 모델 세팅은 **config ↔ DM 쌍**으로 관리한다 (2026-08-04 확립)
@@ -305,7 +307,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 
 > **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 openclaw 내장 런타임(`openai/gpt-5.6-terra`, ChatGPT OAuth)이라 claude login은 main/bbot/mini 3봇만.
 
-> **2026-08-27 현재 서빙 경로: `github-copilot/gemini-3.7-flash`.** gemini-cli는 deprecated라 복원하지 않는다. 아래 403/`exec: gemini: not found`/agy 블록은 DOWN 시절 화석 — 챗봇을 `google-gemini-cli/`나 `google/`로 되돌리지 말 것. ~~`doctor --fix` 금지는 그대로(누르면 또 `google/`로 쓴다)~~ → **2026-08-31 폐기.** 이 금지는 gemini가 `google-gemini-cli/`였을 때의 방어였다. Copilot 레일로 옮긴 뒤엔 재작성이 겨눌 대상이 없고, 8.1 컷오버에서 `doctor --fix`를 실제로 돌려 **6봇 prefix 드리프트 0**을 확인했다. 8.1에서 이건 금지가 아니라 **필수**다.
+> **이하 2026-08-27 당시의 서빙 경로 이력: `github-copilot/gemini-3.7-flash` — 현재는 제거됨.** gemini-cli는 deprecated라 복원하지 않는다. 아래 403/`exec: gemini: not found`/agy 블록은 DOWN 시절 화석 — 챗봇을 `google-gemini-cli/`나 `google/`로 되돌리지 말 것. ~~`doctor --fix` 금지는 그대로(누르면 또 `google/`로 쓴다)~~ → **2026-08-31 폐기.** 이 금지는 gemini가 `google-gemini-cli/`였을 때의 방어였다. Copilot 레일로 옮긴 뒤엔 재작성이 겨눌 대상이 없고, 8.1 컷오버에서 `doctor --fix`를 실제로 돌려 **6봇 prefix 드리프트 0**을 확인했다. 8.1에서 이건 금지가 아니라 **필수**다.
 >
 > **⚠️ 2026-08-06 실측 — 당시 gemini DOWN의 근인은 403이 아니라 `exec: gemini: not found`다.** prewarm 턴이 `GatewayClientRequestError: FailoverError: gemini: 1: exec: gemini: not found`로 떨어진다. 즉 OAuth 이전에 **CLI 바이너리 자체가 컨테이너에 없다** — 2026-07-01(6.11) node-gyp hang 대응으로 Dockerfile `npm install -g`에서 `@google/gemini-cli`를 뺀 것의 직접적 귀결이다(아래 "이미지 재빌드 node-gyp hang" 항목과 같은 사건). 결론(DOWN 유지)은 그대로지만 **사유는 바뀌었다**: 아래 403 서사는 *바이너리가 있던 시절*의 진단이다. agy 이관으로 부활시킬 땐 Dockerfile 복원이 첫 단계이고, 403이 여전한지는 그 다음에야 확인 가능하다.
 >

@@ -25,7 +25,6 @@
 #                                             (무인증 60/시간)에 걸려 403 나므로 pnpm으로 안전하게.
 #   typescript-language-server + typescript   TS LSP (Claude Code typescript-lsp 플러그인)
 #   @earendil-works/pi-coding-agent           pi — 최초 1회만. 이후 `pi update` 로 self-update.
-#   @github/copilot                           GitHub Copilot CLI (GUI AppImage 아님, 터미널 전용)
 #
 # [curl harness]  벤더 인스톨러 → 설치 후 self-update (우리가 버전에 관여하지 않음).
 #   claude        https://claude.ai/install.sh            → ~/.local/bin/claude
@@ -49,7 +48,7 @@
 #   gt/bd/bv/br (gastown+beads, 멀티에이전트/이슈트래킹) — plane/incidentcli 로 대체
 #   CLIProxyAPI (Anthropic ToS 위반 소지) / gemini / ccr / cline /
 #   @mariozechner gccli·gdcli·gmcli / grammy(라이브러리, 실행 bin 없음)
-#   (copilot 은 2026-08-19 @github/copilot 으로 재도입 — 위 SSOT 참고)
+#   @github/copilot — 구독 레일 미사용으로 외부 패키지 목록에서 제거
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -67,7 +66,6 @@ PNPM_PACKAGES=(
     @openai/codex
     typescript-language-server typescript
     @earendil-works/pi-coding-agent
-    @github/copilot
 )
 
 # check 표시용: "표시 라벨 → npm 패키지명" (버전 비교에 npm view 사용)
@@ -78,7 +76,6 @@ declare -A PNPM_CHECK=(
     [codex]="@openai/codex"
     [typescript-language-server]="typescript-language-server"
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
-    [copilot]="@github/copilot"
 )
 
 # uv tool SSOT — 이 배열이 곧 `uv tool install` 대상 집합이다. 지금은 비어 있다.
@@ -265,7 +262,7 @@ check() {
         echo "$glist" | sed 's/^/      /'
         has_update=1
     fi
-    for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent copilot; do
+    for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent; do
         local pkg="${PNPM_CHECK[$label]}" cur lat
         cur=$(grep "$label" <<< "$glist" | grep -oP '[\d.]+$' || true)
         lat=$(npm view "$pkg" version 2>/dev/null || true)

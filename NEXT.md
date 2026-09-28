@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.9.8`.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.9.28`.
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -31,8 +31,6 @@
   에 정본으로 남겼다(내 코멘트 3건). **tmux 소켓 마운트는 금지 유지.**
 
 - [x] **9. bbot 메멘토 autopilot** — 2026-09-10 heartbeat(main 누적)에서 3h isolated `agentTurn`으로 이관. bbot heartbeat는 `{every:"0m"}`를 명시 유지한다 — `unset`하면 6봇 defaults cadence가 되살아난다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md) §bbot 3h. **불충분 2건**: ① "8/12–9/9 침묵의 원인이 NO_REPLY" 는 전사 대조를 안 했다 ② 앱 건은 상류 후보 ⑧.
-- [ ] **다음 턴: Copilot 레일 제거 (GLG 2026-09-23 결정)** — 이번 9.5 컷오버·bbot run과 섞지 않는다. 현재 `gemini` 봇 primary가 `github-copilot/gemini-3.7-flash`이고 fallback이 **없으므로**, 먼저 GLG와 봇 유지/다른 구독 레일 이관/비활성 중 하나를 결정한다. 운영 config의 `auth.profiles.github-copilot:github`, `agents.defaults.modelPolicy.allow`, `agents.entries.gemini.model.primary`, `plugins.allow`(및 실제 plugin entry)를 함께 검토. 공유·agent SQLite의 Copilot 프로필, 호스트 `~/.copilot` CLI 토큰, `~/openclaw/.env`, 배포 스크립트와 ORACLE.md·docs/openclaw-automations.md·NEXT.md의 화석까지 목록화해 제거. GitHub 권한 revoke는 저장소 정리와 별개 — 오래된 유출 토큰 2개 회전 부채도 확인. 재시작/봇 무응답 없이 준비한 뒤 GLG 승인으로 실행.
-
 - [ ] **bbot Android admin scope 판단** — 현재 폰은 cron 목록·상세·run history 읽기 전용이고 mutation은 `Admin access required`(정상). 폰에서 직접 cron 편집/수동 실행이 정말 필요할 때만 shared token/password 재연결 또는 admin scope upgrade를 승인한다. 필요 없으면 현 상태 유지; [gotchas](docs/openclaw-gotchas.md) claw 항목 참고.
 
 - [ ] **10. doctor 가 찾아낸 것 셋** ← 2026-09-09 첫 전수 점검(`openclaw config validate` + `doctor` read-only). **`config validate` 는 통과했다** — 스키마 위반 0, 경고는 우리가 9/1 에 일부러 끈 `active-memory` 하나뿐. 문제는 스키마가 아니라 선언과 배포다.
@@ -41,18 +39,16 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-- [x] **11. OpenClaw 9.5 안정화 확인 → 9.6 컷오버**: GLG 9/28 Android 연결·며칠간 실사용 정상 확인. 9/28 유휴 게이트웨이 정지, cold backup→Doctor state v18·7 DB v23→9.6 기동. 5봇 격리 실응답 성공; gemini는 Copilot 403(별도 결정 필요). 상세는 아래 §9.6.
-
-현재 좌표: 1·2·3·4·7·8·9·11 완료 → **다음 홉에서 Copilot 계정·레일 제거(GLG 결정)** → 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
+현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **5(무응답 통지 복귀)** → 10(doctor 셋) → 6(상류)
 
 # NOW
 
-- **Current**: 2026-09-28 GLG 승인으로 9.5→9.6 컷오버. 정지 전 `tasks.active/queued/running=0`, full cold backup 압축·SHA 검증, Doctor shared state v18·7 agent DB v23, `quick_check=ok`. 9.6 gateway healthy, Telegram 6계정 polling `works`; main/gpt/glg/mini/bbot 격리 실응답 `확인`. gemini 격리 턴은 `403 unauthorized: not authorized to use this Copilot feature`(fallback 없음). 기동 초기에 tini symlink 오류로 1회 재시작 후 healthy; 재발 관측 필요.
-- **Next**: GLG 2026-09-28 결정: Copilot 계정은 안 쓰며 **다음 홉에서 레일 제거**. 제거 전 gemini 봇의 유지·이관·비활성 중 무엇을 택할지 확인하고 함께 정리한다(이번 커밋 범위 아님). 그 전엔 API 키·자동 fallback으로 우회하지 말 것. 다른 5봇은 실수신 및 다음 bbot memento 배달을 관측하고 기동 재시작 수를 확인한다.
+- **Current**: 2026-09-28 gateway 9.6 healthy, Telegram 6계정 `works`, gemini GLM·Grok 구독 격리 실응답 완료, GLG의 GLM 텔레그램 실대화 정상 확인. `workspace-gemini` 독립 원격 `master`와 부모 `openclaw-config` 분리 커밋·푸시 완료(운영 설정의 다른 미커밋 변경은 제외). 자세한 완료 이력은 CHANGELOG `v2026.9.28`과 비공개 `~/openclaw/README.md`. 9.5 롤백은 이미지와 **pre-9.6 cold state 전체**가 한 짝이다(현재 DB를 9.5 이미지에 붙이지 말 것).
+- **Next**: RAIL 5 봇 무응답 장기 지속·스풀 반복 시 사람에게 통지하는 구조를 설계한다. 별도 후속: GLG가 gemini 방의 `/model` 메뉴에서 Grok을 선택해 실대화 확인(격리 실응답은 이미 성공), GitHub 측 구/신 Copilot 앱 권한 취소, 다른 5봇 실수신·다음 bbot memento 배달·재시작 수 추적.
 - **관측**: Android 연결·며칠간 9.5 실사용 정상은 9/28 GLG 직접 확인. 9.6 앱 접속은 tailnet `/` 200·`/health` 200(앱 UI 직접 조작은 미검증).
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
-- **Read**: 아래 §"OpenClaw 9.6 업그레이드"(현재 게이트) · §"OpenClaw 9.5 업그레이드"(이전 컷오버 기록) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) · [sorge#1](https://github.com/junghan0611/sorge/issues/1).
+- **Read**: [CHANGELOG.md](CHANGELOG.md) `v2026.9.28` · 아래 §"OpenClaw 9.5 업그레이드"(이전 컷오버 기록) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) · [sorge#1](https://github.com/junghan0611/sorge/issues/1).
 - **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.26.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
 
 # 앱 후속 (2026-09-08, RAIL 7 에서 파생)
@@ -251,15 +247,6 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
   읽히는 걸 확인하고 나서야 판정으로 썼다.
 
 ---
-
-## 🟡 OpenClaw 9.6 업그레이드 — 5봇 GREEN, gemini Copilot 403 (2026-09-28)
-
-- GLG: 9.5 Android 연결·며칠간 실사용 정상 확인. 유휴 점검 `tasks.active/queued/running=0` 뒤 gateway 정지. 이미지 대조: state migration `github-publication-requester-authority-v18` 추가(9.5의 `historical-transcript-directives-v1`은 목록에서 사라짐), agent DB v21→v23, npm 12.0.2→12.1.0. 9.6 config 유효; 9.6 custom 빌드에서 Claude CLI 2.1.283 실행 확인.
-- rollback = `openclaw-custom:9.5-rollback` **+** `~/openclaw/backups/pre-9.6-20260928T155205/live-state.tar.zst`(full config·secret key·env·Dockerfile·compose, SHA256 검증). **9.6 state에 9.5 이미지만 연결 금지.** 다른 봇의 9.6 이후 대화가 생기면 cold backup 복원 시 그 구간은 유실된다.
-- 정지 Doctor `--fix --non-interactive --network none`: shared state `user_version=18`, 7 agent DB `user_version=23`, 전량 `quick_check=ok`. 격리 환경의 `tmux` 부재를 Doctor가 `enabled:false`로 쓴 건 기존 `true`로 복원했고 `config validate` 통과. `acpx=false`, 기본 모델·allow 첫 항목 유지. Doctor의 GitHub preview allowlist 안내·폐기된 Google auth 경고·기존 cron 권한 경고는 자동 수정하지 않음.
-- `openclaw-custom:9.6-preflight`→`latest`, recreate. 첫 프로세스 `[FATAL tini (7)] exec tini failed: Too many levels of symbolic links`로 **1회 재시작**한 뒤 gateway `ready`, healthy, Telegram 6계정 polling `works`. Control UI claw 302(Authelia), tailnet `/` 200·`/health` 200. 재시작 수는 후속 관측.
-- 격리 실응답(무배달): main/gpt `openai/gpt-5.6-sol`, glg/mini `anthropic/claude-sonnet-5`, bbot `anthropic/claude-fable-5-1` 모두 `확인`. **gemini만 실패**: Copilot `403 unauthorized: not authorized to use this Copilot feature`, auth cooldown 기록. GLG 9/28: Copilot 계정 미사용, 레일 제거는 다음 홉. 이 403이 9.6 회귀인지 Copilot 권한의 기존 상태인지는 pre-9.6 라이브 서빙 표본이 없어 미확정. 자동 fallback이나 `google/` API 키로 우회하지 않는다.
-- 후속: 다음 bbot cron 실배달 확인, 6봇 실수신(텔레그램 inbound) 관측, Android 9.6 앱 UI 직접 접속, tini 재시작 재발 여부. 검수 중 나온 `session-sqlite` 자동 maintenance 경합 경고(`inputs changed before commit`)는 이후 taskAudit=0·gateway healthy, 재발 시 따로 진단.
 
 ## 🟢 OpenClaw 9.5 업그레이드 — 9.6 이전 컷오버 기록 (2026-09-23)
 
@@ -629,13 +616,13 @@ CLI `--json --max-results 8`, 직렬 측정:
 - [ ] **재부팅 후 점검 체크리스트가 없다.** 이번엔 GLG가 "ax 안 들어가진다"로 발견했다 — 5시간 뒤였다. `run.sh`에 부팅 후 자가진단(전 vhost 8-세트 + 컨테이너 Up + emacs 소켓 2개) 항목을 넣을지 판단. `docs/openclaw-gotchas.md` "caddy 변경 = 8-세트 검수"의 부팅판.
 - [ ] **gotchas 박제** — 위 두 레이스를 `docs/openclaw-gotchas.md`에 영속화. 현재 caddy 항목은 *Caddyfile 편집* 함정만 담고 **부팅 시 포트 선점**은 없다.
 - 봇은 무사했다: 텔레그램 6채널이 **폴링**이라 caddy와 무관하게 5시간 내내 연결 유지(`channels status --probe` 전부 `works`), heartbeat 30분 주기 정상, 08:00 cron 음성 발송 성공. 죽은 건 `claw` Control UI 공개면뿐.
-- 참고 상태: openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내. gemini는 2026-08-27부터 `github-copilot/gemini-3.7-flash` (Google 구독 안 함).
+- 당시 참고 상태(2026-08): openai OAuth ok 8d·168h 92% left, anthropic OAuth 자동갱신 주기 내. gemini는 **당시** `github-copilot/gemini-3.7-flash`였으나 2026-09-28 GLM·Grok 구독으로 이관했다.
 
 ---
 
 ## 🔴 github-copilot 옛 토큰 회전 — 제거(8/16)와 복귀(8/27) 뒤에 남은 부채
 
-경위 3단(8/16 4층 제거 → 8/19 CLI 재도입 → 8/27 gemini 서빙 레일 복귀)과 **`config unset`은 토큰을 안 지운다** 함정은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31` / [ROADMAP.md](ROADMAP.md)로 이관. **현재 사실은 8/27이다** — gemini는 `github-copilot/gemini-3.7-flash`로 서빙 중. 아래 회전 부채는 **8/16에 샌 옛 토큰** 이야기이고 새 로그인 토큰과는 별개다.
+경위 3단(8/16 4층 제거 → 8/19 CLI 재도입 → 8/27 gemini 서빙 레일 복귀)과 **`config unset`은 토큰을 안 지운다** 함정은 [CHANGELOG.md](CHANGELOG.md) `v2026.8.31` / [ROADMAP.md](ROADMAP.md)로 이관. **현재 사실은 9/28 GLM·Grok 이관 + Copilot 운영 프로필 제거**다. 아래 권한 취소 부채는 과거 유출 토큰과 8/27 새 로그인의 GitHub 앱 권한을 포함한다 — 로컬 삭제만으로 GitHub 측 자격증명이 무효화되지는 않는다.
 
 - [ ] **🔴 GitHub 토큰 2개 회전.** 제거 과정에서 평문이 에이전트 세션 트랜스크립트에 남았다: gateway auth store의 `ghu_xJoQ…`(Copilot provider token)와 `~/.copilot/config.json`의 `gho_Ia8n…`(Copilot CLI OAuth). 저장소에서는 지웠으나 **GitHub 쪽에서 revoke해야 실효**한다 — Settings → Applications에서 GitHub Copilot 권한 취소. claw 배포 때 gateway token 건([claw 항목](#clawjunghanacs.com--openclaw-control-ui-공개면--배포-완료-2026-08-06))과 같은 모양의 부채다.
 - [ ] **`plugins.allow` 화이트리스트 회귀 관찰.** allow는 실제 게이트라 목록에서 빼면 그 플러그인이 disabled된다(ROADMAP 2026-06-04 "plugins.allow 명시" 함정). 8/16 당시엔 boot WARN 0·6봇 정상을 확인했지만(그 뒤 8/27 Copilot 복귀와 8.1의 `phone-control` 제거로 목록이 두 번 바뀌었다 — 현재 개수는 재측정 대상), 업그레이드로 새 bundled plugin이 들어오면 allow에 없어서 조용히 꺼진다는 성질은 그대로다.
@@ -843,7 +830,6 @@ claude-cli native(main/bbot/mini) + codex(glg/gpt) + **gemini 네이티브 `goog
 - [x] **pi-shell-acp 엔트리 최종 거취 — 2026-06-22(6.9) 완전 제거.** ~~present + `enabled:false` 영구 유지~~ → **6.9 strict plugin discovery가 죽은 `plugins.load.paths`(pi-shell-acp 경로)를 startup hard-fail로 거부해 crash loop** 발생 → `plugins.load.paths` + `plugins.entries.pi-shell-acp` + `plugins.allow` 전부 제거. **옛 "엔트리 삭제 = 기본 로드 복귀" 함정(2026-06-10)은 6.9에서 무효** — provider 외부화로 pi-shell-acp가 번들에서 완전히 사라져 default-load할 대상 자체가 없음(제거 후 clean boot·warnings 0 확인). workspace-gemini는 네이티브 gemini가 씀, 유지.
 - [ ] **#27 moot 확인** — gemini ACP 빈응답(#27)은 네이티브 전환으로 **우리 운영상 해소**. 이슈 자체는 pi-shell-acp repo에서만 추적. #25 분석은 별건.
 - [~] **bbot turn soak GREEN / Telegram ingress follow-up** — 2026-06-29 무응답 사건: claude-cli/OAuth/session은 정상(probe ok, direct session 3.5s ok), root cause는 bbot isolated polling ingress 유령 connected. 컨테이너 런타임 핫패치로 bbot만 standard polling 전환 후 살아남. **후속**: 핫패치는 recreate/image rebuild 시 사라지므로 Dockerfile/entrypoint patch 또는 upstream config toggle로 영구화할지 결정. 상세는 `docs/openclaw-gotchas.md`.
-- [ ] **Copilot Premium soak (gemini 챗봇)** — 재로그인 직후 Premium 잔량 확인됨. fallback 없으니 쿼터 소진=무응답. `models status`의 Premium % 주시.
 - [ ] **이미지생성(나노바나나) `GEMINI_API_KEY` 경로 미재검증** — gemini 챗봇이 `google-gemini-cli/` OAuth로 전환된 뒤, `GEMINI_API_KEY`(`google` api-key provider) 기반 이미지생성이 여전히 동작하는지 확인. 두 provider가 분리돼 무관할 가능성 큼(추정). **실제 이미지 호출 1회로 검증 전까지 단정 금지.** (`auth.order.google` 핀은 cross-provider라 안 먹어 제거됨 — 자세한 건 ROADMAP 2026-06-10 함정 항목)
 - [ ] **(보류) telega 리치 지원 매트릭스 (T01~T15)** — 2026-06-22 richMessages 전 6봇 글로벌 ON 했다가 **당일 OFF로 되돌림**(telega가 rich message를 "unsupported"로 가려 **봇 대화 복사 불가** → 소통 워크플로 단절. GLG 결정: "핵심은 rich가 아니라 소통"). **baseline = OFF 확정.** 따라서 매트릭스 추적은 더 이상 active task 아님 — **richMessages 재활성을 검토할 때만** 선결조건으로 부활시킨다. 그때는 main 봇 T01~T15(헤딩/표/details/풀쿼트/divider/sup·sub/mark/spoiler/list/task-list/code/footnote/formula/link) 격리 테스트 → telega에서 정상/폴백/unsupported 3분류 → TOOLS.md + doomemacs-config 패치. 현재는 호환모드(굵게/기울임/링크/코드/스포일러/블록인용)만으로 충분.
 
