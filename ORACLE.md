@@ -26,6 +26,7 @@ Correctness starts with location awareness. On `oracle`, that awareness extends 
 | Graduated bot workspace | `~/openclaw/config/workspace-bbot/` | B's own private git `junghan0611/workspace-bbot` — narrative SSOT, not tracked by parent. See § Bot workspace git |
 | Graduated bot workspace | `~/openclaw/config/workspace-glg/` | glg's own private git `junghan0611/workspace-glg` — narrative SSOT, not tracked by parent. See § Bot workspace git |
 | Graduated bot workspace | `~/openclaw/config/workspace-mini/` | mini's own private git `junghan0611/workspace-mini` — personal librarian, not tracked by parent. See § Bot workspace git |
+| Graduated bot workspace | `~/openclaw/config/workspace/` | main's own private git `junghan0611/workspace-main` — not tracked by parent. See § Bot workspace git |
 | Public operator / backup | `~/repos/gh/nixos-config/` | Dockerfile / compose backups, host NixOS context, operator briefs — **mother repo** |
 | Public companion | `~/repos/gh/openglg-config/` | portable service stack (Caddy/Authelia/Postgres/...) + portable home-manager (`home/`) that lands on any Debian/Ubuntu host without NixOS |
 
@@ -79,11 +80,11 @@ OpenClaw upstream is a 1-person project (steipete). Documentation left there doe
 - `workspace-mini/` → mini
 - `workspace-bbot/` → bbot
 
-Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/`, `workspace-glg/`, and `workspace-mini/` are split-out identity spaces **and graduated narrative gits** (below).
+Invariants: main's runtime path is `workspace/`, but its independent repo is named `workspace-main`. The parent does not track it. `workspace-bbot/`, `workspace-glg/`, and `workspace-mini/` are also **graduated narrative gits** (below).
 
 ### Bot workspace git — 서사 독립 (호스트 졸업 체크리스트)
 
-봇 워크스페이스는 런타임 경로로 `~/openclaw/config/workspace-<id>/`에 산다. 서사가 쌓이면 부모 `openclaw-config` 추적에서 **졸업**시키고, 봇이 자기 `.git`으로 커밋·푸시한다. **폴더명 = GitHub 리포명.** 헷갈리게 짓지 않는다.
+봇 워크스페이스는 런타임 경로로 `~/openclaw/config/workspace-<id>/`에 산다(main만 `config/workspace/`). 서사가 쌓이면 부모 `openclaw-config` 추적에서 **졸업**시키고, 봇이 자기 `.git`으로 커밋·푸시한다. 일반적으로 **폴더명 = GitHub 리포명**; main은 런타임 경로 `workspace/`를 유지하고 리포만 `workspace-main`으로 구분한다.
 
 이건 권한 확대가 아니다. 호스트가 레일을 깔고, 봇은 그 레일 위에서만 자기 타임라인을 쓴다. 봇이 못하는 수선(리포 생성, 훅 모드, 부모 gitignore, 공개/비공개)은 **의도적으로 호스트 몫**이다. 관리가 안 보이면 봇은 권한을 달라고 한다.
 
@@ -94,13 +95,14 @@ Invariants: main uses `workspace/` (not `workspace-main/`); `workspace-bbot/`, `
 | `config/workspace-bbot/` | `junghan0611/workspace-bbot` | 2026-08-27 (B 첫 push `78d8f38` 같은 날 확인, visibility=PRIVATE) |
 | `config/workspace-glg/` | `junghan0611/workspace-glg` | 2026-08-27 (glg 첫 커밋 `ce90038` 호스트 첫 push 같은 날 확인, visibility=PRIVATE) |
 | `config/workspace-mini/` | `junghan0611/workspace-mini` | 2026-09-23 (원격 `main`에 첫 커밋 `b54c6da`, visibility=PRIVATE 확인; 개인 사서) |
+| `config/workspace/` | `junghan0611/workspace-main` | 독립 `main` 첫 커밋 `dfc5b03`, 원격 동기화 및 visibility=PRIVATE 확인. 부모 인덱스에서 제외하고 `.gitignore` 등록. |
 
-남은 후보: `workspace/` / `workspace-gpt/` / `workspace-gemini/` (각각의 실제 부모 추적 상태는 별도 확인). 그 전까지는 부모 스냅샷 + nested `.git` ignore 기본값.
+남은 후보: `workspace-gpt/` / `workspace-gemini/` (각각의 실제 부모 추적 상태는 별도 확인). 그 전까지는 부모 스냅샷 + nested `.git` ignore 기본값.
 
 **호스트가 하는 일 (봇이 못 하는 수선)**
 
-1. 부모에서 `git rm -r --cached config/workspace-<id>` + `.gitignore`에 `config/workspace-<id>/`. 워킹트리 삭제 금지.
-2. `gh repo create junghan0611/workspace-<id> --private` — 이름 = 폴더명, **public 금지**. wiki 끔.
+1. 부모에서 `git rm -r --cached config/workspace-<id>` + `.gitignore`에 `config/workspace-<id>/` (main은 둘 다 `config/workspace/`). 워킹트리 삭제 금지.
+2. `gh repo create junghan0611/workspace-<id> --private` — 이름 = 폴더명(main은 `workspace-main`), **public 금지**. wiki 끔.
 3. nested git에 `origin` = 그 private HTTPS URL. 컨테이너는 이미 `gh auth git-credential` + `~/.config/gh` ro 마운트라 PAT를 워크스페이스에 넣지 않는다.
 4. `config/workspace-<id>/.git-hooks-mode` 한 줄 `loose`. 봇이 자기 author로 커밋한다.
 5. `agent-config/git-hooks/_scan.sh` private allowlist에 `junghan0611/workspace-<id>`를 **이름 단위로** 추가 (와일드카드 금지 — 졸업은 호스트 행위). origin이 `junghan0611/*`면 기본이 strict라 가족·인연 서사가 identity-term에 걸린다. secret 스캔은 유지.
