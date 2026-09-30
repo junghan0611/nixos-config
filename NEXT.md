@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.9.28`.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.9.30`.
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -39,14 +39,12 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
-  - [x] 도구 — wrangler·공식 `cf`는 **pnpm 2층**(`scripts/external-packages.sh`, 사유·회수조건은 헤더). nix판 wrangler는 뺐다. 텔레메트리는 `shell.nix` sessionVariables로 끔. 토큰은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`로 호출마다(전역 export 금지). 권한 진단은 agent-config cloudflare 스킬의 `cf-doctor`.
-  - [x] 토큰 — **`glg-cloudflare` 하나**(GLG 2026-09-30), `~/.cf-token-glg`. #11 필요분 전부 부여(DNS·Redirect·Workers Scripts/Routes/CI·Pages·Tunnel·Access·Email Routing, IP 제한 없음) — 판정은 정책 원문 `cf user tokens get <id>`(GLG OAuth)로, probe 응답(GET 통과·403·400)으로 하지 않는다. thinkpad에서 `wrangler deploy` → workers.dev 응답 → delete 실측 통과. GitHub App은 GLG가 `junghan0611`에 연결.
+- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
   - [ ] **oracle 반영** — pull → rebuild(텔레메트리 env) → `run.sh E` pnpm(wrangler·cf) → `~/.cf-token-glg` 존재 확인 → `cf-doctor`. 여기 일을 다 끝낸 뒤 oracle 세션에 넘긴다(GLG).
   - [ ] **2차 점검** — 2026-10-01 17:40 KST 이후, 오라클 `~/web-publish/check.sh`(11개 호스트 기준선 비교) → 통과하면 DNSSEC.
   - [ ] **4단계 apex 전환의 DNS 몫** — homepage가 custom hostname 검증 준비를 알리면: apex의 Netlify CNAME 정리 → Workers custom domain, www → apex Single Redirect(`cf rulesets …`), Netlify 도메인 해제 시점 조율. 사이트 설정·검증은 homepage#3.
   - 비공개 영수증: 오라클 `~/web-publish/`(기준선·1차 점검·BIND·Sol 교차검토). 오라클 IP·보안 메모가 있어 리포·공개 이슈로 옮기지 않는다.
-  - Do not touch: Netlify DNS zone은 2차 점검 전까지 유지 · 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. `cf`는 zone이 둘이라 `CF_ZONE_NAME` 지정.
+  - Do not touch: Netlify DNS zone은 2차 점검 전까지 유지 · 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. 공식 `cf` 쓰기에는 `-z <zone ID>`(`--dry-run`은 도메인을 해석하지 않는다).
 
 현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **11(Cloudflare 이전, 지금)** · 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 

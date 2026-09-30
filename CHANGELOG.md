@@ -9,6 +9,19 @@
 
 ## Unreleased
 
+## v2026.9.30 — Cloudflare 이전을 맡다: 도구와 토큰
+
+### Cloudflare 웹 퍼블리시 ([#11](https://github.com/junghan0611/nixos-config/issues/11))
+
+- homepage#2 "웹 퍼블리시를 Cloudflare 하나로"를 이 리포의 #11로 이관했다(GLG). 계정·토큰·DNS·터널·도구 설치는 nixos-config가, 사이트 설정·실배포·검증은 사이트 리포(homepage#3, garden)가 맡는다. oracle은 상시 배포 플랫폼이고 노트북은 켜져 있을 때의 검수대다.
+- wrangler와 공식 Cloudflare CLI `cf`(beta)를 pnpm 2층에 선언했다(`scripts/external-packages.sh`). 처음에는 nixpkgs 26.05의 wrangler 4.93을 home-manager에 넣었지만, 주 단위 릴리즈를 nixpkgs가 못 따라가(unstable 4.141, npm 4.144) 최신을 쓰기로 하고 내렸다. 사유와 회수조건은 스크립트 헤더에 있다. npm판 workerd는 nix-ld 위에서 `wrangler dev` 응답까지 실측했다.
+- Cloudflare CLI 텔레메트리를 `shell.nix` sessionVariables로 껐다(`CF_SEND_TELEMETRY`, `WRANGLER_SEND_METRICS`). API 토큰은 전역 env에 두지 않고 호출마다 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg)`로 싣는다.
+- 토큰은 `glg-cloudflare` 하나로 정했고(GLG, 관리 비용) #11에 필요한 권한을 다 담았다. 권한 판정은 probe 응답(GET 통과·403·400)이 아니라 정책 원문(`cf user tokens get`)으로 한다 — 이 판정이 두 번 흔들린 경위는 #11 영수증 코멘트에 남겼다. 임시 Worker 배포 → workers.dev 응답 → 삭제를 토큰 하나로 실측했다.
+
+### 도구
+
+- `external-packages.sh check`가 프리릴리즈 버전(`1.0.0-beta.5`)을 `.5`로, 짧은 라벨(`cf`)을 부분일치로 읽던 것을 npm 이름 정확 매칭으로 고쳤다.
+
 ## v2026.9.28 — Oracle 9.6, 구독 레일 이관과 워크스페이스 독립
 
 ### OpenClaw 운영
