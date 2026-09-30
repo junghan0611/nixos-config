@@ -68,3 +68,6 @@ docker/openclaw/openclaw.json
 
 # family-turns 스킬 — 가족 텔레그램 ID/실명이 박혀 공개 리포에 커밋 금지 (로컬 전용 툴)
 .claude/skills/family-turns/
+
+# 공식 Cloudflare CLI(cf)가 실행한 cwd에 쓰는 캐시 — 계정 ID·계정 이름(이메일) 포함
+.cloudflare/
