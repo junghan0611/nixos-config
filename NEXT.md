@@ -39,7 +39,14 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **5(무응답 통지 복귀)** → 10(doctor 셋) → 6(상류)
+- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
+  - [x] wrangler 선언 — nixpkgs 26.05 `4.93.0`, `home-manager.nix` Linux 공통 블록(oracle 포함). thinkpad는 switch 완료, **oracle은 커밋·push 뒤 rebuild 필요**.
+  - [ ] **Workers 배포 인증** — `wrangler login`(GLG 브라우저) 또는 `glg-cloudflare` 토큰에 Workers 권한 추가(지금 범위 미확인). GitHub App 연결은 대시보드(GLG). 준비되면 homepage 담당자에게 **토큰 자리(경로·env 이름)와 권한 범위**를 넘긴다 — homepage#3 첫 체크박스가 이걸 기다린다.
+  - [ ] **2차 점검** — 2026-10-01 17:40 KST 이후, 오라클 `~/web-publish/check.sh`(11개 호스트 기준선 비교) → 통과하면 DNSSEC.
+  - 비공개 영수증: 오라클 `~/web-publish/`(기준선·1차 점검·BIND·Sol 교차검토). 오라클 IP·보안 메모가 있어 리포·공개 이슈로 옮기지 않는다.
+  - Do not touch: Netlify DNS zone은 2차 점검 전까지 유지 · 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. `cf`는 zone이 둘이라 `CF_ZONE_NAME` 지정.
+
+현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **11(Cloudflare 이전, 지금)** · 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 
 # NOW
 
