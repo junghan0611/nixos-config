@@ -32,9 +32,9 @@
 #                                             glibc 동적 바이너리 — nix-ld(machines/shared.nix)로 `wrangler dev`
 #                                             실측 통과. 회수조건: 릴리즈 속도가 가라앉으면 1층으로.
 #   cf                                        공식 Cloudflare CLI(beta, 2026-09 출시, bin: cf·cloudflare).
-#                                             전체 public API. nixpkgs 미패키징. 에이전트는 agent-config
-#                                             cloudflare 스킬의 `{baseDir}/bin/cfkit cf|wrangler …`로 부른다 —
-#                                             개인 토큰을 그 호출의 env 에만 싣는다(전역 export 금지).
+#                                             전체 public API. nixpkgs 미패키징. 개인 토큰은 호출마다
+#                                             `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …` (전역 export
+#                                             금지). 권한 커버리지 진단은 agent-config cloudflare 스킬의 cf-doctor.
 #
 # [curl harness]  벤더 인스톨러 → 설치 후 self-update (우리가 버전에 관여하지 않음).
 #   claude        https://claude.ai/install.sh            → ~/.local/bin/claude
