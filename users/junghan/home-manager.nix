@@ -156,6 +156,9 @@ in {
                       # 캐시 hit이라 oracle headless도 그냥 포함시킨다.
                       # flake.nix 오버레이로 unstable에서 온다 — telega가
                       # 요구하는 하한이 26.05보다 앞선다(현재 >= 1.8.66)
+    wrangler          # Cloudflare Workers CLI. oracle 포함 — 노트북은 닫히면
+                      # 부를 수 없어 oracle이 상시 배포 플랫폼이다. nixpkgs판은
+                      # workerd가 NixOS용으로 패치돼 있다(aarch64 캐시 hit).
   ]) ++ (lib.optionals (isLinux && !isOracle) [
     # Desktop GUI / 주변장치 / 무거운 런타임 — Oracle headless 제외
     firefox
