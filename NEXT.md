@@ -40,7 +40,6 @@
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
 - [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
-  - [ ] **oracle 반영** — pull → rebuild(텔레메트리 env) → `run.sh E` pnpm(wrangler·cf) → `~/.cf-token-glg` 존재 확인 → `cf-doctor`. 여기 일을 다 끝낸 뒤 oracle 세션에 넘긴다(GLG).
   - [ ] **2차 점검** — 2026-10-01 17:40 KST 이후, 오라클 `~/web-publish/check.sh`(11개 호스트 기준선 비교) → 통과하면 DNSSEC.
   - [ ] **4단계 apex 전환의 DNS 몫** — homepage가 custom hostname 검증 준비를 알리면: apex의 Netlify CNAME 정리 → Workers custom domain, www → apex Single Redirect(`cf rulesets …`), Netlify 도메인 해제 시점 조율. 사이트 설정·검증은 homepage#3.
   - 비공개 영수증: 오라클 `~/web-publish/`(기준선·1차 점검·BIND·Sol 교차검토). 오라클 IP·보안 메모가 있어 리포·공개 이슈로 옮기지 않는다.
