@@ -25,6 +25,16 @@
 #                                             (무인증 60/시간)에 걸려 403 나므로 pnpm으로 안전하게.
 #   typescript-language-server + typescript   TS LSP (Claude Code typescript-lsp 플러그인)
 #   @earendil-works/pi-coding-agent           pi — 최초 1회만. 이후 `pi update` 로 self-update.
+#   wrangler                                  Cloudflare Workers CLI. 1층에서 내려온 사유(2026-09-30):
+#                                             릴리즈가 주 단위로 나오는데 nixpkgs 26.05 는 4.93,
+#                                             unstable 도 4.141 로 npm(4.144)을 못 따라간다. Cloudflare
+#                                             기능이 몰려 들어오는 중이라 최신을 쓴다(GLG). npm판 workerd 는
+#                                             glibc 동적 바이너리 — nix-ld(machines/shared.nix)로 `wrangler dev`
+#                                             실측 통과. 회수조건: 릴리즈 속도가 가라앉으면 1층으로.
+#   cf                                        공식 Cloudflare CLI(beta, 2026-09 출시, bin: cf·cloudflare).
+#                                             전체 public API. nixpkgs 미패키징. 에이전트는 agent-config
+#                                             cloudflare 스킬의 `{baseDir}/bin/cfkit cf|wrangler …`로 부른다 —
+#                                             개인 토큰을 그 호출의 env 에만 싣는다(전역 export 금지).
 #
 # [curl harness]  벤더 인스톨러 → 설치 후 self-update (우리가 버전에 관여하지 않음).
 #   claude        https://claude.ai/install.sh            → ~/.local/bin/claude
@@ -66,6 +76,8 @@ PNPM_PACKAGES=(
     @openai/codex
     typescript-language-server typescript
     @earendil-works/pi-coding-agent
+    wrangler
+    cf
 )
 
 # check 표시용: "표시 라벨 → npm 패키지명" (버전 비교에 npm view 사용)
@@ -76,6 +88,8 @@ declare -A PNPM_CHECK=(
     [codex]="@openai/codex"
     [typescript-language-server]="typescript-language-server"
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
+    [wrangler]="wrangler"
+    [cf]="cf"
 )
 
 # uv tool SSOT — 이 배열이 곧 `uv tool install` 대상 집합이다. 지금은 비어 있다.
@@ -262,9 +276,11 @@ check() {
         echo "$glist" | sed 's/^/      /'
         has_update=1
     fi
-    for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent; do
+    for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent wrangler cf; do
         local pkg="${PNPM_CHECK[$label]}" cur lat
-        cur=$(grep "$label" <<< "$glist" | grep -oP '[\d.]+$' || true)
+        # `├── <pkg>@<ver>` 에서 npm 이름으로 정확히 집는다 — 라벨 부분일치(cf)와
+        # 프리릴리즈 버전(1.0.0-beta.5)을 `[\d.]+$` 로는 못 읽는다.
+        cur=$(grep -oP "── \Q$pkg\E@\K\S+" <<< "$glist" | head -1 || true)
         lat=$(npm view "$pkg" version 2>/dev/null || true)
         if [[ -z "$cur" ]]; then
             echo -e "  ${RED}✗${NC} $label: not installed (latest: ${lat:-?})"

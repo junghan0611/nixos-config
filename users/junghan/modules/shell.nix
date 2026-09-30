@@ -46,6 +46,10 @@ in {
   home.sessionVariables = {
     TERM = "xterm-256color";
     PNPM_HOME = "/home/${vars.username}/.local/share/pnpm";
+    # Cloudflare CLI 텔레메트리 끄기 — cfkit 은 호출마다 끄지만 맨손 호출도 덮는다.
+    # 토큰(CLOUDFLARE_API_TOKEN)은 여기 두지 않는다: cfkit 이 호출 단위로 싣는다.
+    CF_SEND_TELEMETRY = "false";
+    WRANGLER_SEND_METRICS = "false";
   };
 
   # Session PATH — ~/.profile에 기록되어 SSH 비인터랙티브에서도 유효
