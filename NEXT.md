@@ -40,15 +40,25 @@
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
 - [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
-  - [ ] **2차 점검** — 2026-10-01 17:40 KST 이후, 오라클 `~/web-publish/check.sh`(DoH 해석 + curl, 11개 호스트 기준선 비교) → 통과하면 DNSSEC. apex·www는 09-30 12:3x Workers로 옮겨 **의도된 diff**다 — 나머지 9개로 판정. ⚠️ thinkpad 네트워크는 UDP 53을 가로챈다(`dig @192.0.2.1`이 답함, TCP는 timeout) — DNS 측정은 오라클·DoH·`dig +tcp`로만.
-  - [x] **3·4·5단계** — apex·www(12:36)·notes(18:06) 모두 Workers로 넘어갔다. 영수증: [#11 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5907984277). Workers Builds는 대시보드 Git 연결, 자동 빌드 토큰 범위는 [#11 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5904596012).
-  - [ ] **6. Netlify 해지** (GLG, 브라우저) — 구독 Free 전환 예약(09-30, 3일 뒤), Netlify DNS 레코드 정리 완료. 남은 것: 사이트 삭제 — homepage(`junghanacs.netlify.app`이 옛 사이트를 200으로 서빙 중)는 언제든, garden은 route 커밋 `d25370a8`의 다음 CI green 확인 뒤. 끝나면 #11 6단계 체크.
+  - [ ] **2차 점검 → DNSSEC → Netlify DNS zone 삭제** ← CURRENT: 2026-10-01 17:40 KST 이후. 오라클 `~/web-publish/check.sh`(DoH 해석 + curl, 11개 호스트 기준선 비교). apex·www·notes는 09-30 Workers로 옮긴 **의도된 diff**다 — 기존 oracle 8개는 기준선 유지, Workers 3개는 새 기대값(HTTPS·www→apex·notes 소문자 Denote URL→대문자 301)으로 따로 판정. 통과 뒤 DNSSEC 활성화(Registrar 버튼은 24시간 이내 자동 처리 안내)·DS 반영/검증 응답 확인, Netlify DNS zone 삭제. ⚠️ thinkpad 네트워크는 UDP 53을 가로챈다 — DNS 측정은 오라클·DoH·`dig +tcp`로만.
+  - **3·4·5단계 완료** — apex·www·notes Workers 배포 영수증: [#11 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5907984277). garden 배포 완료는 GLG가 10-01 이 세션에서도 확인.
+  - **상태 정정 영수증** — [#11 10/01 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5922317409): 아래 보관 선택·등록기관 뒷정리·미확인 인증 기한 폐기의 출처.
+  - **6. Netlify 사이트 삭제는 보류, 보관 선택** — GLG 10-01 직접 확인: 요금제 Free로 내려놓음, 두 사이트 자동 배포 연결 해제, DNS 레코드 전부 삭제, DNS zone만 유지. 사이트 삭제는 필수 후속이 아니다. 구 `*.netlify.app` 사이트는 참고용으로 남기며 즉시 도메인 롤백 수단으로 간주하지 않는다.
+  - **등록기관 뒷정리 완료/추가 조치 없음** — HOSTING.KR 정리는 GLG 10-01 확인. ICANN 등록자 인증 대기 경고는 없다고 GLG 확인; 개인 Gmail(스팸·휴지통 포함) 조회에서도 별도 등록자 인증 요청 없음. 8/12 계정 이메일 확인 요청은 있으나 클릭 완료는 메일만으로 입증 못 함. 기존 “10/14까지 인증 필요”는 미확인 예상이므로 폐기하고, 새 경고가 생길 때만 재진입.
+  - [ ] **7·8단계 준비** — 독립 junghanacs 터널로 oracle 서비스 이동 → ax 정적 호스팅·map 내림 → 마지막에 Caddy·Authelia·80/443 철거. 경로별 접근제어·실제 클라이언트·롤백·`proxy` 네트워크 생성 주체를 먼저 검토. aions 터널은 변경하지 않는다.
   - 비공개 영수증: 오라클 `~/web-publish/`(기준선·1차 점검·BIND·Sol 교차검토). 오라클 IP·보안 메모가 있어 리포·공개 이슈로 옮기지 않는다.
   - Do not touch: Netlify DNS zone은 2차 점검 전까지 유지 · 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. 공식 `cf` 쓰기에는 `-z <zone ID>`(`--dry-run`은 도메인을 해석하지 않는다).
 
 현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **11(Cloudflare 이전, 지금)** · 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 
-# NOW
+# NOW — #11 Cloudflare 이전
+
+- **Current**: DNS·등록기관·homepage·garden 이전 완료. Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다.
+- **Next**: 2026-10-01 17:40 KST 이후 oracle `~/web-publish/check.sh` → oracle 8개 기준선 및 Workers 3개 새 기대값 판정 → 통과하면 DNSSEC 활성화·DS/검증 응답 확인 → Netlify DNS zone 삭제.
+- **Read**: [#11 본문·최신 코멘트](https://github.com/junghan0611/nixos-config/issues/11) · 위 RAIL 11 · 비공개 oracle `~/web-publish/`.
+- **Do not touch**: 2차 점검 전 DNSSEC 활성화·Netlify DNS zone 삭제 금지. aions 터널 변경 금지. ICANN 인증은 새 대기 경고 없이 미처리로 되살리지 않는다. 이번 기록 정리는 서비스 전환 승인이 아니다.
+
+## OpenClaw 후속 — #11 뒤 복귀
 
 - **Current**: 2026-09-28 gateway 9.6 healthy, Telegram 6계정 `works`, gemini GLM·Grok 구독 격리 실응답 완료, GLG의 GLM 텔레그램 실대화 정상 확인. `workspace-gemini` 독립 원격 `master`와 부모 `openclaw-config` 분리 커밋·푸시 완료(운영 설정의 다른 미커밋 변경은 제외). 자세한 완료 이력은 CHANGELOG `v2026.9.28`과 비공개 `~/openclaw/README.md`. 9.5 롤백은 이미지와 **pre-9.6 cold state 전체**가 한 짝이다(현재 DB를 9.5 이미지에 붙이지 말 것).
 - **Next**: RAIL 5 봇 무응답 장기 지속·스풀 반복 시 사람에게 통지하는 구조를 설계한다. 별도 후속: GLG가 gemini 방의 `/model` 메뉴에서 Grok을 선택해 실대화 확인(격리 실응답은 이미 성공), GitHub 측 구/신 Copilot 앱 권한 취소, 다른 5봇 실수신·다음 bbot memento 배달·재시작 수 추적.
