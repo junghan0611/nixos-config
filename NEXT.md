@@ -40,23 +40,25 @@
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
 - [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
-  - [ ] **2차 점검 → DNSSEC → Netlify DNS zone 삭제** ← CURRENT: 2026-10-01 17:40 KST 이후. 오라클 `~/web-publish/check.sh`(DoH 해석 + curl, 11개 호스트 기준선 비교). apex·www·notes는 09-30 Workers로 옮긴 **의도된 diff**다 — 기존 oracle 8개는 기준선 유지, Workers 3개는 새 기대값(HTTPS·www→apex·notes 소문자 Denote URL→대문자 301)으로 따로 판정. 통과 뒤 DNSSEC 활성화(Registrar 버튼은 24시간 이내 자동 처리 안내)·DS 반영/검증 응답 확인, Netlify DNS zone 삭제. ⚠️ thinkpad 네트워크는 UDP 53을 가로챈다 — DNS 측정은 오라클·DoH·`dig +tcp`로만.
+  - **2차 점검·DNSSEC·Netlify DNS zone 삭제 완료 (2026-10-02)** — oracle `check.sh` 11개 호스트: oracle 8개 기준선 동일, Workers 3개 새 기대값(HTTPS·www→apex·notes 소문자 Denote→대문자 301) 통과, 위임은 Cloudflare NS 둘뿐. junghanacs.com DNSSEC `active`(DS key tag 2371, 알고리즘 13)·8.8.8.8/1.1.1.1/9.9.9.9 `AD` 플래그 확인(11:52 켬 → 12:03 DS 반영). Netlify DNS zone은 GLG가 12:3x 삭제했고 직후 `check3` 응답 동일. ⚠️ thinkpad 네트워크는 UDP 53을 가로챈다 — DNS 측정은 오라클·DoH·`dig +tcp`로만.
+  - [ ] **aionsclubs.org DNSSEC DS 반영 확인** — GLG가 12:2x 켰다(Cloudflare `pending`, MX·SPF·DKIM·A는 서명 응답에서도 `NOERROR`). `.org` DS는 12:37 시점 미반영; 안내는 최대 24시간. 반영되면 8.8.8.8·1.1.1.1에서 `dig +tcp DS`·`+dnssec` `AD` 확인. #11 범위 밖(aions 터널은 건드리지 않았다).
+  - **DNSSEC 해제 순서(함정)** — NS를 Cloudflare 밖으로 옮기거나 서명을 끄려면 **DS를 먼저 지우고 TTL(3600s) 뒤에** 한다. 순서를 어기면 검증 resolver에서 도메인이 통째로 SERVFAIL이다. 이관 절차 정리에 넣을 것.
   - **3·4·5단계 완료** — apex·www·notes Workers 배포 영수증: [#11 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5907984277). garden 배포 완료는 GLG가 10-01 이 세션에서도 확인.
   - **상태 정정 영수증** — [#11 10/01 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5922317409): 아래 보관 선택·등록기관 뒷정리·미확인 인증 기한 폐기의 출처.
   - **6. Netlify 사이트 삭제는 보류, 보관 선택** — GLG 10-01 직접 확인: 요금제 Free로 내려놓음, 두 사이트 자동 배포 연결 해제, DNS 레코드 전부 삭제, DNS zone만 유지. 사이트 삭제는 필수 후속이 아니다. 구 `*.netlify.app` 사이트는 참고용으로 남기며 즉시 도메인 롤백 수단으로 간주하지 않는다.
   - **등록기관 뒷정리 완료/추가 조치 없음** — HOSTING.KR 정리는 GLG 10-01 확인. ICANN 등록자 인증 대기 경고는 없다고 GLG 확인; 개인 Gmail(스팸·휴지통 포함) 조회에서도 별도 등록자 인증 요청 없음. 8/12 계정 이메일 확인 요청은 있으나 클릭 완료는 메일만으로 입증 못 함. 기존 “10/14까지 인증 필요”는 미확인 예상이므로 폐기하고, 새 경고가 생길 때만 재진입.
-  - [ ] **7·8단계 준비** — 독립 junghanacs 터널로 oracle 서비스 이동 → ax 정적 호스팅·map 내림 → 마지막에 Caddy·Authelia·80/443 철거. 경로별 접근제어·실제 클라이언트·롤백·`proxy` 네트워크 생성 주체를 먼저 검토. aions 터널은 변경하지 않는다.
+  - [ ] **7·8단계 — 보류, 지금 하지 않는다** (GLG 10-02: 이관 절차를 더 견고하게 정리하는 단계). 독립 junghanacs 터널로 oracle 서비스 이동 → ax 정적 호스팅·map 내림 → 마지막에 Caddy·Authelia·80/443 철거. 착수 전 정리할 것: 경로별 접근제어·실제 클라이언트·롤백·`proxy` 네트워크 생성 주체·DNSSEC 해제 순서. aions 터널은 변경하지 않는다.
   - 비공개 영수증: 오라클 `~/web-publish/`(기준선·1차 점검·BIND·Sol 교차검토). 오라클 IP·보안 메모가 있어 리포·공개 이슈로 옮기지 않는다.
-  - Do not touch: Netlify DNS zone은 2차 점검 전까지 유지 · 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. 공식 `cf` 쓰기에는 `-z <zone ID>`(`--dry-run`은 도메인을 해석하지 않는다).
+  - Do not touch: 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. 공식 `cf` 쓰기에는 `-z <zone ID>`(`--dry-run`은 도메인을 해석하지 않는다).
 
-현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **11(Cloudflare 이전, 지금)** · 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
+현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **11(Cloudflare 이전: 전환 끝, 7·8단계는 절차 정리 후)** · 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 
 # NOW — #11 Cloudflare 이전
 
-- **Current**: DNS·등록기관·homepage·garden 이전 완료. Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다.
-- **Next**: 2026-10-01 17:40 KST 이후 oracle `~/web-publish/check.sh` → oracle 8개 기준선 및 Workers 3개 새 기대값 판정 → 통과하면 DNSSEC 활성화·DS/검증 응답 확인 → Netlify DNS zone 삭제.
+- **Current**: DNS·DNSSEC·등록기관·homepage·garden 이전 완료, Netlify DNS zone 삭제 완료(2026-10-02). Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다. 이제 7·8단계 전의 **이관 절차 정리 단계**.
+- **Next**: ① aionsclubs.org DS 반영·`AD` 확인(위 RAIL 11) ② 이관 절차 정리 — 7·8단계 착수 조건(접근제어·클라이언트·롤백·`proxy` 네트워크·DNSSEC 해제 순서)을 문서로 먼저 굳힌다. 정리가 끝나기 전에는 터널 이전을 시작하지 않는다.
 - **Read**: [#11 본문·최신 코멘트](https://github.com/junghan0611/nixos-config/issues/11) · 위 RAIL 11 · 비공개 oracle `~/web-publish/`.
-- **Do not touch**: 2차 점검 전 DNSSEC 활성화·Netlify DNS zone 삭제 금지. aions 터널 변경 금지. ICANN 인증은 새 대기 경고 없이 미처리로 되살리지 않는다. 이번 기록 정리는 서비스 전환 승인이 아니다.
+- **Do not touch**: 7·8단계 착수 금지(GLG 10-02). aions 터널 변경 금지. ICANN 인증은 새 대기 경고 없이 미처리로 되살리지 않는다. DNSSEC은 DS를 먼저 지우기 전에 끄거나 NS를 옮기지 않는다.
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
