@@ -60,8 +60,18 @@
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
-- **Current**: 2026-09-28 gateway 9.6 healthy, Telegram 6계정 `works`, gemini GLM·Grok 구독 격리 실응답 완료, GLG의 GLM 텔레그램 실대화 정상 확인. `workspace-gemini` 독립 원격 `master`와 부모 `openclaw-config` 분리 커밋·푸시 완료(운영 설정의 다른 미커밋 변경은 제외). 자세한 완료 이력은 CHANGELOG `v2026.9.28`과 비공개 `~/openclaw/README.md`. 9.5 롤백은 이미지와 **pre-9.6 cold state 전체**가 한 짝이다(현재 DB를 9.5 이미지에 붙이지 말 것).
-- **Next**: RAIL 5 봇 무응답 장기 지속·스풀 반복 시 사람에게 통지하는 구조를 설계한다. 별도 후속: GLG가 gemini 방의 `/model` 메뉴에서 Grok을 선택해 실대화 확인(격리 실응답은 이미 성공), GitHub 측 구/신 Copilot 앱 권한 취소, 다른 5봇 실수신·다음 bbot memento 배달·재시작 수 추적.
+- **9.7 현재 영수증**: 2026-10-02 9.6→9.7 완료, state v19·agent DB 7개 v24·무결성 ok,
+  healthy·재시작 0·Telegram 6계정 works. 6봇+Grok 무배달 실응답 성공, bbot 자동 실행
+  10:29:43→10:44:46 ok와 사용자 Telegram 실수신 확인. Android는 기존 등록 재사용·connected
+  (앱 2026.8.2); 페어링 삭제 불필요. 상세 이력은 ROADMAP §2026-10-02.
+  **롤백은 9.6 이미지 + pre-9.7 cold state 전체**, 이전 9.5 롤백 설명과 구분한다.
+- **9.7 다음 검수**: `/dashboard` Telegram 명령 중복의 메뉴 영향 확인; 부모 세션별
+  subagent 동시성 변경에서 호스트 전체 상한 4 의도 유지 여부 확인(숫자만 임의 변경 금지).
+  Doctor 경고의 기존 plaintext secret-bearing config는 SecretRefs 이관을 별도 승인 후 검토;
+  LAN bind는 기존 Caddy/인증 경계라 이번 범위 밖. 디스크 여유 약 2.7GB: 새 롤백 백업·이미지는
+  보존하고, 옛 롤백 세트 은퇴를 승인받아 회수한다. 앱·공개면·모델은 임의 변경하지 않는다.
+- **9.6 이전 영수증**: 2026-09-28 gateway 9.6 healthy, Telegram 6계정 `works`, gemini GLM·Grok 구독 격리 실응답 완료, GLG의 GLM 텔레그램 실대화 정상 확인. `workspace-gemini` 독립 원격 `master`와 부모 `openclaw-config` 분리 커밋·푸시 완료(운영 설정의 다른 미커밋 변경은 제외). 자세한 완료 이력은 CHANGELOG `v2026.9.28`과 비공개 `~/openclaw/README.md`. 9.5 롤백은 이미지와 **pre-9.6 cold state 전체**가 한 짝이다(현재 DB를 9.5 이미지에 붙이지 말 것).
+- **Next**: RAIL 5 봇 무응답 장기 지속·스풀 반복 시 사람에게 통지하는 구조를 설계한다. 별도 후속: GLG가 gemini 방의 `/model` 메뉴에서 Grok을 선택해 실대화 확인(격리 실응답은 이미 성공), GitHub 측 구/신 Copilot 앱 권한 취소, 다른 5봇 Telegram 실수신·장기 재시작 수 추적(bbot 10/02 memento 배달은 확인 완료).
 - **관측**: Android 연결·며칠간 9.5 실사용 정상은 9/28 GLG 직접 확인. 9.6 앱 접속은 tailnet `/` 200·`/health` 200(앱 UI 직접 조작은 미검증).
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.

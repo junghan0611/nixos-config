@@ -125,7 +125,13 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.9.6** baseline, 2026-09-28 bump)
+### Model routing (현재: OpenClaw **2026.9.7** baseline)
+
+> 9.7 운영: shared state v19·agent DB 7개 v24, 무결성 `quick_check=ok`, gateway healthy.
+> 업그레이드 전 라이브 모델·bindings·memory·fallback은 유지했고, Doctor가 기존 xAI provider의
+> `enabled:true`만 명시화했다. main의 현재 primary는 **`openai/gpt-5.6-sol`**이다 — 아래 옛
+> Opus 서빙 설명보다 라이브 설정이 우선한다. 롤백은 `openclaw-custom:9.6-rollback`과
+> **pre-9.7 cold state 전체**를 함께 복원한다. 이관 영수증·함정은 ROADMAP 및 gotchas에 있다.
 
 > 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
 

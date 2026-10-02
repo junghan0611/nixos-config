@@ -199,7 +199,9 @@
 # 9.5→8.2 rollback: openclaw-custom:8.2-rollback + full pre-9.5 cold state backup (image-only rollback forbidden).
 # 2026.9.5: state v15→v17 + agent DB v19→v21; cold backup and stopped-writer doctor required.
 # 2026.9.6: state migration v18 + agent DB v21→v23; cold backup and stopped-writer doctor required.
-FROM ghcr.io/openclaw/openclaw:2026.9.6
+# 2026.9.7: Telegram delivery, Claude CLI auto-compaction and Gateway responsiveness fixes.
+# Keep 9.6 rollback image paired with pre-9.7 cold state; preserve explicit model choices.
+FROM ghcr.io/openclaw/openclaw:2026.9.7
 
 USER root
 

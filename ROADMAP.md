@@ -10,6 +10,24 @@
 
 ---
 
+## 2026-10-02 — OpenClaw 9.6→9.7
+
+- 유휴 전수 확인 후 정지 백업·오프라인 Doctor·재기동. shared state **18→19**, agent DB
+  **7개 23→24**, `quick_check` 전부 `ok`. 롤백은 9.6 이미지와 pre-9.7 cold state 전체가 한 짝이다.
+- 첫 Doctor가 4월의 빈 Telegram thread-bindings 파일 2개를 거부했다. 정확히 빈 배열임을 확인해
+  백업으로 이동하고 재실행. Node 실행의 일시적인 symlink 오류는 절대경로 실행으로 회피했다.
+  자세한 재현·경계는 [gotchas](docs/openclaw-gotchas.md) §9.7.
+- 보호 설정 비교: 모델·bindings·memory·fallback 유지, 기존 xAI provider의 `enabled:true`
+  명시화만 허용. main의 실제 primary는 `openai/gpt-5.6-sol`(이번 업글에서 바꾸지 않음).
+- 10:27:40 gateway ready, healthy·재시작 0, Telegram **6계정 works**. 6봇과 선택 Grok 모두
+  무배달 격리 실응답 성공(약 5–8초). Claude CLI 2.1.287·Python jsonschema 실행 확인.
+- bbot autopilot **10:29:43→10:44:46, ok**. Telegram 답변 실수신은 사용자 확인.
+  Android 기존 기기 등록 재사용·connected 확인, 폰 앱은 node surface 기준 2026.8.2.
+- Doctor JSON은 경고 2건(기존 plaintext secret-bearing config, LAN bind)으로 `ok:false`,
+  오류 finding은 0건. `/dashboard` Telegram 명령 충돌은 별도 후속으로 남긴다.
+- 영수증: 비공개 `~/openclaw/backups/pre-9.7-20261002T101825/`의 전체 cold archive+SHA,
+  Doctor pass1/3 로그 및 `verify/`. 공개 리포에는 인증·DB·설정코드를 넣지 않는다.
+
 ## North Star — 이 repo는 무엇인가
 
 멀티 디바이스 NixOS 저장소(`oracle` / `nuc` / `laptop` / `thinkpad`)이자, **Oracle 클라우드 VM 위 OpenClaw 봇 런타임의 운영 mother repo**.

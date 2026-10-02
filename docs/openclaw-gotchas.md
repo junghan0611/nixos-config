@@ -12,6 +12,27 @@
 
 ## 활성
 
+### 9.7 Doctor — 빈 retired Telegram 파일도 이관을 멈춘다 (2026-10-02)
+
+9.6→9.7은 shared state **18→19**, agent DB **23→24**다. 정지 상태 전체 백업과
+이전 이미지를 함께 보존한다. 이번 실측 영수증은 비공개
+`~/openclaw/backups/pre-9.7-20261002T101825/doctor-fix.log`.
+
+첫 Doctor는 DB 7개를 이관한 뒤 4월의 `telegram/thread-bindings-{bbot,default}.json`
+두 파일을 retired state로 거부했다. **둘 다 정확히 `{version:1, bindings:[]}`임을 확인한 뒤에만**
+백업의 `retired-empty-telegram/`으로 이동하고 재실행했다. 비어 있지 않으면 이 처방을 쓰지 않는다.
+옛 빌드로 새 DB를 열거나 스키마 마커를 낮춰 우회하지 않는다.
+
+- 재실행 시 `tini: exec node failed: Too many levels of symbolic links`가 나면
+  바이너리 자체를 먼저 검사하고, 이번처럼 정상일 때 `--entrypoint /usr/local/bin/node`로
+  Doctor를 실행한다. 원인의 일반화는 미확인이다.
+- Doctor가 기존 Grok 설정의 `plugins.entries.xai.enabled=true`를 명시화했다.
+  보호 설정(agents/bindings/memory/plugins/channels) 비교에서 **이 한 건만**임을 확인하고 유지했다.
+- 게이트웨이는 기동 시 자체 Doctor를 다시 실행해 ready까지 약 103초 걸렸다.
+  Docker healthcheck는 **180초 간격**이라 ready 이후에도 `starting`일 수 있다.
+  HTTP `/health`와 직접 `node dist/docker-healthcheck.js`를 검사하고, 정기 검사에서
+  `healthy`가 되는 것을 확인한다. 대기 스크립트 시간 초과만으로 재시작하지 않는다.
+
 ### 9.5 오프라인 Doctor는 만료 OAuth를 복구하지 못한다 — 구독 봇 실응답 검증 (2026-09-23)
 
 8.2→9.5 migration을 정지된 운영 state에 `docker run --network none ... openclaw doctor --fix`로 적용했다.
