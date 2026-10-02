@@ -50,6 +50,10 @@ Live truth lives in `~/openclaw/`. Public backup / reference lives in nixos-conf
 
 This is container-wide access, not bbot-only isolation, and `:ro` protects the credential file, not HA API permissions. Do not treat the existing HA token as a read-only API credential; this wiring does not authorize new automations or HA writes.
 
+### Journal screenshot paths
+
+Both compose services bind the real host directory `~/sync/screenshot` read-only at `/home/node/screenshot` and `/home/junghan/screenshot`. The former resolves journal `file:~/screenshot/...` links under container `HOME=/home/node`; the latter preserves host absolute links. Host `~/screenshot` is a symlink, not the mount source. Screenshot contents remain outside git; adding these mounts requires gateway recreation with the same idle/suspension gate as above.
+
 ### Why nixos-config owns openclaw operations
 
 OpenClaw upstream is a 1-person project (steipete). Documentation left there does not survive. This repo owns the Oracle machine end-to-end — disk, security, service health, budget incident prevention — so the host-container boundary is stated here:
