@@ -59,6 +59,8 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
+      # HA credential export from host pass; directory 0700, ha.env 0600 (UID 1000).
+      - ~/.lifetract:/home/node/.lifetract:ro
       # 5.12 신규: OAuth profile secret key persistence (XDG 표준 경로)
       # OpenClaw 코드는 두 candidate를 순회: ① $HOME/.config/openclaw/auth-profile-secret-key (XDG, first priority)
       # ② $HOME/.openclaw-auth-profile-secrets/auth-profile-secret-key (fallback)
@@ -162,6 +164,8 @@ services:
 
     volumes:
       - ./config:/home/node/.openclaw
+      # HA credential export from host pass; directory 0700, ha.env 0600 (UID 1000).
+      - ~/.lifetract:/home/node/.lifetract:ro
       # 5.12 신규: OAuth profile secret key persistence (XDG, gateway와 공유)
       - ./auth-profile-secrets:/home/node/.config/openclaw
       # 지식베이스/코드베이스 — GLG 승인: 모든 GitHub·회사 리포 rw (2026-09-07).

@@ -44,6 +44,12 @@ Live truth lives in `~/openclaw/`. Public backup / reference lives in nixos-conf
 | compose file | `~/openclaw/docker-compose.yml` | `docker/openclaw/docker-compose.yml` backup |
 | operational docs | `~/openclaw/README.md` | summarized guidance here |
 
+### Home Assistant credential boundary (lifetract)
+
+`~/.lifetract/ha.env` is a host-local export of the HA token from `pass show 2fa/totp/ha/junghanacs` (directory `0700`, file `0600`, UID `1000`). Both compose services mount `~/.lifetract:/home/node/.lifetract:ro`; the file is outside every repo. Never print its contents or mount the password store/GPG keys. Token rotation requires refreshing this export; directory binding exposes the replacement without recreation. Initial mount changes require gateway recreation, only after a live `gateway.suspend.prepare` receipt says `ready`, `activeCount:0`, no blockers. Use the existing compose project `openclaw-config` explicitly when invoking via `~/openclaw` (symlink name alone can select a different project).
+
+This is container-wide access, not bbot-only isolation, and `:ro` protects the credential file, not HA API permissions. Do not treat the existing HA token as a read-only API credential; this wiring does not authorize new automations or HA writes.
+
 ### Why nixos-config owns openclaw operations
 
 OpenClaw upstream is a 1-person project (steipete). Documentation left there does not survive. This repo owns the Oracle machine end-to-end — disk, security, service health, budget incident prevention — so the host-container boundary is stated here:
