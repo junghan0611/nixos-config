@@ -25,7 +25,7 @@
 
 | 봇 | 모델 | heartbeat | 소유 cron | 사람 없이 도는가 |
 |---|---|---|---|---|
-| **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (`typingMode=never`, 9/1 관찰 중) |
+| **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (typing 기본값 복귀 2026-10-03) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5` | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `github-copilot/gemini-3.7-flash` | **없음** (원래 없었음) | 없음 | **아니오** |

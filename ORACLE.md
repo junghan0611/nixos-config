@@ -222,8 +222,8 @@ bbot autopilot은 `heartbeat`가 아니라 operator-owned cron `bbot-memento-aut
 `heartbeat: {every:"0m"}`를 명시해 system-owned main-session monitor를 꺼야 한다. **`unset`하면
 기본값을 상속해 6봇 전원의 heartbeat가 재생성된다**(bbot 1건 재생성은 2026-09-10 07:29 실측,
 6봇 팬아웃은 `src/infra/heartbeat-config.ts:70-76` `resolveHeartbeatAgents` 분기 판독). 현재 남은 것은 bbot의 retained disabled monitor row 하나다.
-main은 같은 날 `agents.entries.main.typingMode="never"`로 사용자 가시 typing을 억제했다.
-원인은 아직 확정하지 않고 8.1 soak에서 관측한다.
+main은 같은 날 `agents.entries.main.typingMode="never"`로 사용자 가시 typing을 억제했다가, 2026-10-03
+6봇 heartbeat 전부 disabled·active-memory off를 확인하고 unset해 기본값(DM은 모델 루프 시작 즉시)으로 되돌렸다.
 
 봇별 전량은 [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**.
 동기화는 `./run.sh w)` (turnwatch).

@@ -235,7 +235,8 @@ cron 경로가 잃고 disabled인 `codex`로 떨어진다. 일반 세션 경로�
 교차검수가 "typing 경로는 하나가 아니다"를 짚었고, 결국 **한 번에 한 변수만 끄는** 방식으로 잡았다.
 **관측면이 없는 증상(typing은 로그에도 audit에도 안 남는다)은 코드 판독이나 한 번의 on/off로 단정하지 마라.**
 
-- [ ] **7일 8.1 typing soak.** main `typingMode=never`를 유지한다. 재발을 보면 시각·어느 봇의
+- [ ] **typing 재발 관찰.** 2026-10-03 GLG 요청으로 main `typingMode`를 unset(기본값 복귀, 다른 5봇과 동일).
+      되돌리기 `config set agents.entries.main.typingMode '"never"'`. 턴 없는 typing 재발을 보면 시각·어느 봇의
       UI인지·직전 인바운드 여부를 함께 남기고, 그 창의 `audit_events`/gateway 로그와 대조한다.
       active-memory는 이 기간 재활성하지 않는다.
 
