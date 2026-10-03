@@ -62,17 +62,26 @@
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
+- **9.8 현재 영수증** (2026-10-03): 9.7→9.8 마이그레이션 0, healthy·Telegram 6계정 `works`, 6봇 격리
+  실응답 ok. main·gpt primary = **`openai/gpt-6.1-sol`**. 상세는 ROADMAP §2026-10-03, 함정은 gotchas §9.8.
+  **롤백은 `openclaw-custom:9.7-rollback` + `backups/pre-9.8-20261003T165528/`**(state 동일 v19/v24).
+- **9.8 다음 검수**: ① main·gpt Telegram 실대화가 6.1-sol로 도는지 첫 실사용에서 확인(DM엔 사용자 핀 없음 —
+  다음 턴부터 primary). ② Telegram `/model`로 6.1-sol 선택이 되는지(`sessions.patch`는 codex harness 요구로
+  거부 — 같은 검증이면 upstream 이슈 후보). ③ Android node 세션 `agent:main:node-1fd06883a3db`의 옛
+  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP 재발 여부. ⑤ 9.8 Doctor 안내: 새 번들
+  `github` 플러그인이 `plugins.allow`에 없어 꺼져 있다(켤지 GLG 판단, 현재 무변경). ⑥ 9.6 이미지가 사라져
+  `backups/pre-9.7-20261002T101825/`(1.4G)는 더 이상 롤백 짝이 없다 — 은퇴는 GLG 승인 후.
 - **9.7 현재 영수증**: 2026-10-02 9.6→9.7 완료, state v19·agent DB 7개 v24·무결성 ok,
   healthy·재시작 0·Telegram 6계정 works. 6봇+Grok 무배달 실응답 성공, bbot 자동 실행
   10:29:43→10:44:46 ok와 사용자 Telegram 실수신 확인. Android는 기존 등록 재사용·connected
   (앱 2026.8.2); 페어링 삭제 불필요. 상세 이력은 ROADMAP §2026-10-02.
-  **롤백은 9.6 이미지 + pre-9.7 cold state 전체**, 이전 9.5 롤백 설명과 구분한다.
+  (9.7 롤백면은 9.8 컷오버로 대체됐다.)
 - **9.7 다음 검수**: `/dashboard` Telegram 명령 중복의 메뉴 영향 확인; 부모 세션별
   subagent 동시성 변경에서 호스트 전체 상한 4 의도 유지 여부 확인(숫자만 임의 변경 금지).
   Doctor 경고의 기존 plaintext secret-bearing config는 SecretRefs 이관을 별도 승인 후 검토;
   LAN bind는 기존 Caddy/인증 경계라 이번 범위 밖. 옛 롤백 세트(9.5·8.2 이미지, `pre-9.5`·`pre-9.6`
   cold state)와 9.7 기동 마이그레이션 `.bak` 8개는 10-02 GLG 승인으로 은퇴했다(`/` 여유 17GB, `/home` 18GB).
-  남은 롤백면은 9.6 이미지 + `backups/pre-9.7-20261002T101825/`뿐. 앱·공개면·모델은 임의 변경하지 않는다.
+  9.6 이미지 세트는 10-03 9.8 컷오버 후 GLG 지시로 은퇴. 앱·공개면은 임의 변경하지 않는다.
 - **9.6 이전 영수증**: 2026-09-28 gateway 9.6 healthy, Telegram 6계정 `works`, gemini GLM·Grok 구독 격리 실응답 완료, GLG의 GLM 텔레그램 실대화 정상 확인. `workspace-gemini` 독립 원격 `master`와 부모 `openclaw-config` 분리 커밋·푸시 완료(운영 설정의 다른 미커밋 변경은 제외). 자세한 완료 이력은 CHANGELOG `v2026.9.28`과 비공개 `~/openclaw/README.md`. 9.5 롤백면은 10-02 은퇴했다.
 - **Next**: RAIL 5 봇 무응답 장기 지속·스풀 반복 시 사람에게 통지하는 구조를 설계한다. 별도 후속: GLG가 gemini 방의 `/model` 메뉴에서 Grok을 선택해 실대화 확인(격리 실응답은 이미 성공), GitHub 측 구/신 Copilot 앱 권한 취소, 다른 5봇 Telegram 실수신·장기 재시작 수 추적(bbot 10/02 memento 배달은 확인 완료).
 - **관측**: Android 연결·며칠간 9.5 실사용 정상은 9/28 GLG 직접 확인. 9.6 앱 접속은 tailnet `/` 200·`/health` 200(앱 UI 직접 조작은 미검증).

@@ -12,6 +12,31 @@
 
 ## 활성
 
+### 9.8 컷오버 — 심볼릭 compose·기동 ELOOP·6.1-sol 세션 선택 거부 (2026-10-03)
+
+9.7→9.8은 **마이그레이션 0**(두 이미지 dist의 state `toVersion:19`·`OPENCLAW_AGENT_SCHEMA_VERSION=24` 동일)이라
+정지 백업 → 이미지 승격 → recreate로 끝났다. 영수증은 비공개 `~/openclaw/backups/pre-9.8-20261003T165528/`.
+그 과정에서 셋을 밟았다.
+
+- **`cd ~/openclaw && docker compose stop` 이 조용히 no-op 이었다.** `~/openclaw` 는 `repos/gh/openclaw-config`
+  심볼릭이고, Compose 5.1.4 는 *"project has been loaded without an explicit name from a symlink. Using name
+  "openclaw""* 로 프로젝트를 `openclaw` 로 잡는다. 라이브 컨테이너는 `openclaw-config` 프로젝트라 stop 이
+  대상 없이 끝났고, 그대로 "cold" 백업이 라이브 상태를 떴다 — `docker ps` 로 잡아 폐기·재백업했다.
+  같은 이유로 `run.sh` 의 `cd ~/openclaw && docker compose restart` 도 no-op 이었을 수 있고, `up` 이었다면
+  `openclaw_default` 네트워크에 두 번째 게이트웨이를 만들어 `trustedProxies` `172.26.0.1/32` 를 벗어났을 것이다.
+  처방: `docker-compose.yml` 최상단 **`name: openclaw-config`** (적용, `docker compose config` 로 프로젝트·
+  `openclaw-config_default` 확인). **정지 후에는 항상 `docker ps` 로 실제로 멈췄는지 본다.**
+- **기동 직후 `[FATAL tini (7)] exec tini failed: Too many levels of symbolic links` ×3.** 재시작 정책이
+  2초 안에 네 번째 시도로 올렸고 이후 정상(`RestartCount=3` 이 남는다). 9.7 Doctor 때의 `exec node` ELOOP 와
+  같은 계열로 보이며 원인은 여전히 미확인. 반복되면 재시작 수 증가만으로 장애 판정하지 말고 로그 첫 줄부터 본다.
+- **`openai/gpt-6.1-sol` 은 config primary 로는 돌지만 `sessions.patch` 가 거부한다.** main·gpt 를 primary 로
+  바꾼 뒤 무배달 격리 턴은 `harness=openclaw`·`fallbackUsed=false` 로 성공했다. 그런데 세션 모델 선택
+  (`sessions.patch`, `model` 지정이든 `null` 기본값 복귀든)은 *"Model openai/gpt-6.1-sol requires agent harness
+  "codex", but no enabled plugin provides it"* 로 거부한다. 런타임과 선택 검증기가 어긋난 9.8 상태다.
+  Telegram `/model` 이 같은 검증을 타는지는 미측정. 그래서 Android node 세션
+  `agent:main:node-1fd06883a3db` 의 옛 사용자 핀 `gpt-5.6-sol` 은 풀지 못하고 그대로 두었다(5.6-sol 은 allow 에 유지).
+  codex 플러그인을 켜서 우회하지 않는다 — 8.1에서 codex 런타임을 떠난 결정과 충돌한다.
+
 ### 9.7 Doctor — 빈 retired Telegram 파일도 이관을 멈춘다 (2026-10-02)
 
 9.6→9.7은 shared state **18→19**, agent DB **23→24**다. 정지 상태 전체 백업과

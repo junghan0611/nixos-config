@@ -10,6 +10,21 @@
 
 ---
 
+## 2026-10-03 — OpenClaw 9.7→9.8, main·gpt를 GPT-6.1 Sol로
+
+- 9.8(`fc23bc8`)은 **마이그레이션 0**: 두 이미지 dist의 state `toVersion:19`·agent DB 24 동일, 라이브 설정
+  사본 `config validate` 양쪽 valid, 스키마 차이는 `silentReply.internal` 제거뿐(미사용). 그래서 오프라인
+  Doctor 없이 idle 확인 → 정지 → cold backup(1.4G, SHA·zstd 검증) → 이미지 승격 → recreate.
+- 첫 정지가 심볼릭 compose 프로젝트명 때문에 no-op이었다. 라이브 상태를 뜬 백업은 폐기하고,
+  `docker-compose.yml`에 `name: openclaw-config`를 고정한 뒤 다시 했다(gotchas §9.8).
+- 17:02:38 recreate → tini ELOOP 3회 자동 재시도 → 17:04:36 ready. 기동 Doctor 변경은 cron store 정규화뿐이고
+  `openclaw.json` 무변경, cron 2개 그대로. Telegram 6계정 `works`, healthy, claw 302·tailnet 200.
+- 모델: `modelPolicy.allow`에 `openai/gpt-6.1-sol` 추가(1번 catch-all `gpt-5.6-terra` 유지), main·gpt primary
+  교체. 6봇 무배달 격리 실응답 전부 `ok`·`fallbackUsed=false`(main·gpt는 6.1-sol, 4–5초). `sessions.patch`는
+  6.1-sol을 codex harness 요구로 거부해 Android node 세션의 옛 5.6-sol 핀은 남겼다.
+- 9.6 이미지 세트와 중복 9.7 태그를 지우고 빌드캐시를 비워 `/` 여유 12G→16.6G. 남은 롤백면은
+  `openclaw-custom:9.7-rollback` + 비공개 `~/openclaw/backups/pre-9.8-20261003T165528/`.
+
 ## 2026-10-02 — OpenClaw 9.6→9.7
 
 - 유휴 전수 확인 후 정지 백업·오프라인 Doctor·재기동. shared state **18→19**, agent DB

@@ -25,9 +25,9 @@
 
 | 봇 | 모델 | heartbeat | 소유 cron | 사람 없이 도는가 |
 |---|---|---|---|---|
-| **main** (default) | `anthropic/claude-opus-5` | **없음** | 없음 | **아니오** (`typingMode=never`, 9/1 관찰 중) |
+| **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (`typingMode=never`, 9/1 관찰 중) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5` | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
-| **gpt** | `openai/gpt-5.6-sol` | **없음** | 없음 | **아니오** |
+| **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `github-copilot/gemini-3.7-flash` | **없음** (원래 없었음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
 | **bbot** (B) | `anthropic/claude-fable-5-1` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |

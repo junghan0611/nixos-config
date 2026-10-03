@@ -201,7 +201,10 @@
 # 2026.9.6: state migration v18 + agent DB v21→v23; cold backup and stopped-writer doctor required.
 # 2026.9.7: Telegram delivery, Claude CLI auto-compaction and Gateway responsiveness fixes.
 # Keep 9.6 rollback image paired with pre-9.7 cold state; preserve explicit model choices.
-FROM ghcr.io/openclaw/openclaw:2026.9.7
+# 2026.9.8: no state/agent DB migration (state v19, agent DB v24 unchanged); adds openai/gpt-6.1-sol.
+# Internal sessions can no longer end with NO_REPLY; Doctor drops retired silentReply.internal/direct.
+# Rollback: openclaw-custom:9.7-rollback + backups/pre-9.8-20261003T165528 (config + cold state, same v19/v24).
+FROM ghcr.io/openclaw/openclaw:2026.9.8
 
 USER root
 

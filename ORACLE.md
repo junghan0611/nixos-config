@@ -135,13 +135,14 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.9.7** baseline)
+### Model routing (현재: OpenClaw **2026.9.8** baseline)
 
-> 9.7 운영: shared state v19·agent DB 7개 v24, 무결성 `quick_check=ok`, gateway healthy.
-> 업그레이드 전 라이브 모델·bindings·memory·fallback은 유지했고, Doctor가 기존 xAI provider의
-> `enabled:true`만 명시화했다. main의 현재 primary는 **`openai/gpt-5.6-sol`**이다 — 아래 옛
-> Opus 서빙 설명보다 라이브 설정이 우선한다. 롤백은 `openclaw-custom:9.6-rollback`과
-> **pre-9.7 cold state 전체**를 함께 복원한다. 이관 영수증·함정은 ROADMAP 및 gotchas에 있다.
+> 9.8 운영(2026-10-03): 9.7 대비 **마이그레이션 0**(shared state v19·agent DB v24 동일). main·gpt primary는
+> **`openai/gpt-6.1-sol`**(ChatGPT 구독 OAuth, 내장 `openclaw` harness, 무배달 실응답 `fallbackUsed=false`).
+> `modelPolicy.allow`에 6.1-sol을 더했고 5.6-sol은 롤백·기존 세션 핀용으로 남겼다. 9.8은 6.1-sol을
+> `sessions.patch`(세션 모델 선택)에서 "codex harness 필요"로 거부한다(`/model`도 같은 검증일 가능성, 미측정) —
+> config primary로 태운다(gotchas §9.8).
+> 롤백은 `openclaw-custom:9.7-rollback` + `backups/pre-9.8-20261003T165528/` 설정·cold state.
 
 > 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
 
@@ -164,7 +165,7 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 **LLM 호출 — 분기** (2026-08-04 기준):
 - **main**: Anthropic Max via canonical `anthropic/claude-opus-5` + `agentRuntime claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
 - **glg / mini / bbot**: 같은 Anthropic Max claude-cli 경로 (glg=`claude-sonnet-5`, mini=`claude-sonnet-5`, bbot=`claude-fable-5-1`)
-- **gpt**: Codex OAuth ($100 plan) — `openai/gpt-5.6-sol`
+- **gpt**: Codex OAuth ($100 plan) — `openai/gpt-6.1-sol` (2026-10-03, 9.8)
 - **gemini**: 네이티브 `google-gemini-cli` provider OAuth (Pro 쿼터, **API 아님** — `google/` api-key와 별개 provider). 2026-06-10 ACP→네이티브 전환
 
 > ⚠️ **`models auth list`의 `expires`를 자격증명 만료로 읽지 말 것 (2026-08-07 오독 정정)**. 거기 찍히는 건 **액세스 토큰**이고 자동 회전한다. 실제 기한은 **리프레시 토큰** 쪽이며 `models auth list`는 그걸 안 보여준다. 진짜 값은 호스트 자격증명 파일에 있다:
@@ -271,9 +272,9 @@ if (value === "codex-app-server") return "codex";
 
 | Agent | Model | Workspace | Streaming | Active memory<br>*(2026-09-01 전량 비활성)* | 비고 |
 |---|---|---|---|---|---|
-| **main** | `anthropic/claude-opus-5` | `workspace/` | off | ~~✓~~ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context. **2026-08-04 opus-4-8→opus-5 승격** — 카탈로그 미등재 모델이라 `defaults.models`에 `agentRuntime claude-cli`로 등록 후 격리 probe(`winnerModel=claude-opus-5`, `fallbackUsed=false`)로 서빙 확인하고 승격. opus-4-8은 per-agent 카탈로그에 롤백용 보존 |
+| **main** | `openai/gpt-6.1-sol` (2026-10-03; 이전 `gpt-5.6-sol`) — 아래 비고는 opus 시절 이력 | `workspace/` | off | ~~✓~~ | `@junghan_openclaw_bot`. claude-cli runtime, Max 20x, 1M context. **2026-08-04 opus-4-8→opus-5 승격** — 카탈로그 미등재 모델이라 `defaults.models`에 `agentRuntime claude-cli`로 등록 후 격리 probe(`winnerModel=claude-opus-5`, `fallbackUsed=false`)로 서빙 확인하고 승격. opus-4-8은 per-agent 카탈로그에 롤백용 보존 |
 | glg (가족) | `anthropic/claude-sonnet-5` | `workspace-glg/` | partial | — | `@glg_junghanacs_bot`. **claude-cli runtime**(Codex 아님). **2026-07-16 `gpt-5.6-terra`→`claude-sonnet-5` 이동** — 가족 DM에서 화자 프레임을 승인하는 사이코팬시("두 에코챔버")가 모델 스왑만으론 안 풀려 USER.md 대칭 규칙과 함께 처방. 정한·미례 **동일 모델**(대칭 보호). terra는 per-agent 카탈로그에 롤백용 보존. ※ 이력: 2026-07-14 5.5→5.6-terra, 2026-06-13 5.4→5.5 재승격, 2026-06-10 5.5→5.4 강등. **DM 3개 전부 sonnet-5 정렬 확인(2026-08-04)**. active-memory 제외(응답성 우선) |
-| gpt | `openai/gpt-5.6-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
+| gpt | `openai/gpt-6.1-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-10-03 5.6-sol→6.1-sol**(9.8, GLG 결정, 격리 실응답 `fallbackUsed=false`). **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
 | **bbot** | `anthropic/claude-fable-5-1` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. **2026-09-19 config primary + fresh memento job을 fable-5-1로 전환**; 격리 서빙 probe 뒤 bbot per-agent 카탈로그의 `claude-cli` 등록 누락을 보강하고 manual catch-up이 성공·배달됐다. direct/main도 같은 모델이다. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
 | **gemini** | `zai/glm-5.3` (기본) · `xai/grok-4.7` (`/model` 선택) | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. Coding Plan + SuperGrok OAuth, gemini 전용 allow는 두 모델만. **fallback 없음**. 두 모델 모두 격리 실응답 확인(재기동 후 재검수는 NEXT.md). `google/` API 키·Copilot 금지. catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
