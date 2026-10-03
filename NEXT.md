@@ -68,9 +68,8 @@
 - **9.8 다음 검수**: ① main·gpt Telegram 실대화가 6.1-sol로 도는지 첫 실사용에서 확인(DM엔 사용자 핀 없음 —
   다음 턴부터 primary). ② Telegram `/model`로 6.1-sol 선택이 되는지(`sessions.patch`는 codex harness 요구로
   거부 — 같은 검증이면 upstream 이슈 후보). ③ Android node 세션 `agent:main:node-1fd06883a3db`의 옛
-  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP 재발 여부. ⑤ 9.8 Doctor 안내: 새 번들
-  `github` 플러그인이 `plugins.allow`에 없어 꺼져 있다(켤지 GLG 판단, 현재 무변경). ⑥ 9.6 이미지가 사라져
-  `backups/pre-9.7-20261002T101825/`(1.4G)는 더 이상 롤백 짝이 없다 — 은퇴는 GLG 승인 후.
+  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP 재발 여부. ⑤ Control UI에서 GitHub 링크
+  리더 실사용 확인(10-03 `plugins.allow`에 `github` 추가, 핫리로드 적용; 토큰 없이 익명 쿼터).
 - **9.7 현재 영수증**: 2026-10-02 9.6→9.7 완료, state v19·agent DB 7개 v24·무결성 ok,
   healthy·재시작 0·Telegram 6계정 works. 6봇+Grok 무배달 실응답 성공, bbot 자동 실행
   10:29:43→10:44:46 ok와 사용자 Telegram 실수신 확인. Android는 기존 등록 재사용·connected

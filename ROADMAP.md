@@ -24,6 +24,9 @@
   6.1-sol을 codex harness 요구로 거부해 Android node 세션의 옛 5.6-sol 핀은 남겼다.
 - 9.6 이미지 세트와 중복 9.7 태그를 지우고 빌드캐시를 비워 `/` 여유 12G→16.6G. 남은 롤백면은
   `openclaw-custom:9.7-rollback` + 비공개 `~/openclaw/backups/pre-9.8-20261003T165528/`.
+- 후속(GLG 승인): 짝 잃은 `pre-9.7` cold state(1.4G) 은퇴(`/home` 여유 19G). 9.8에서 core에서 번들 플러그인으로
+  옮겨진 `github`(Control UI 공개 GitHub 링크 미리보기·읽기 전용 리더)를 `plugins.allow`에 추가 — 재시작 없이
+  `Plugin replacement applied: github`, Telegram 6계정 `works` 유지.
 
 ## 2026-10-02 — OpenClaw 9.6→9.7
 
