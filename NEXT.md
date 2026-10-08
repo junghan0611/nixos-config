@@ -59,6 +59,8 @@
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
+- **9.9 업데이트 보류 — 패치된 9.8 유지**: 운영자 결정(2026-10-08): “업데이트 하지말자. 기다리자.” [초기 검토·교차검수 반영](docs/openclaw-2026.9.9-review.md) · [Opus 독립 검수](docs/openclaw-2026.9.9-opus-review.md) 완료. 자동 Doctor 수리·디스크 여유·utility 모델 기본값 변경·미해결 memory hotfix·Telegram 통합 검사 면제 조건을 확인하고 보류했다. **재진입**: 운영자가 다시 검토를 요청할 때만 후보 검증/업데이트 판단을 재개한다. 기다리는 동안 image pull/build·Doctor 수리·컷오버·prune·모델/utility/codex/권한 변경을 시작하지 않는다.
+
 - **Telegram DM 토픽 첫 실대화 검수**: 운영자가 새 토픽을 만들고 첫 메시지 → 토픽별 세션·같은 토픽 답변 확인. 6봇 활성화·연결 갱신 영수증은 [운영 문서](docs/openclaw-telegram-topics.md)와 CHANGELOG `v2026.10.8`. 플래그 검증과 실제 대화 성공은 구분하고, 기존 flat DM 맥락의 자동 이관은 보장하지 않는다. 기존 DM reset·모델 변경·privacy 전역 해제 금지; 채널·Telegram bot-to-bot 작업은 별도 요청 전 보류.
 
 - **bbot memory admission 패치 후속**: 다음 정기 memento 후 새 cron 부모도 clean으로 수렴하는지 soak 확인 → 버전업 전 상류 수정 확인·패치 회수/재검토(9.8 외에는 빌드 fail-closed). 배포·청크 보존 영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md)와 CHANGELOG `v2026.10.8`. 노트북의 재수확·prune·verify·발행은 운영자가 agent-config 담당자에게 전달한다. **Do not touch:** 오토B 중지·`--force`·DB 직접 수정·andenken dirty hold 우회 금지.
