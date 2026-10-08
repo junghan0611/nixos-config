@@ -62,6 +62,8 @@
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
+- **Telegram 봇 DM 토픽 — 선택 사항, 활성화 승인 전에는 유지**: 그룹 토픽은 실사용 확인 후 개인 운영으로 전환했고 추가 구성원 검수는 blocker가 아니다. 운영·영수증은 [그룹·토픽 문서](docs/openclaw-telegram-topics.md). DM 토픽이 필요해지면 BotFather Threaded Mode와 기존 flat DM 맥락 연결을 먼저 검토한다(현재 `getMe.has_topics_enabled:false`). 채널 작업은 보류; 기존 DM reset·모델 변경·privacy 전역 해제 금지.
+
 - **bbot memory admission 패치 후속**: 9.8 한정 이미지 패치로 cron 부모 분류 수선,
   bbot `dirty:false / memory 115/115 / sessions 22/22 / 3277 chunks 보존` 반복 확인.
   glg 빈 부모 2개도 증분 정합화(1320 chunks 보존); 최종 **6봇 전원 clean·identity valid**.

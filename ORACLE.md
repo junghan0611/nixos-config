@@ -2,7 +2,7 @@
 
 > **언제 이 문서를 여는가**: `oracle` 디바이스 작업 또는 OpenClaw 관련 작업일 때만. nixos-config의 다른 디바이스(nuc/laptop/thinkpad) 작업에는 불필요 — 그땐 [AGENTS.md](AGENTS.md)만으로 충분하다.
 >
-> 관련: [AGENTS.md](AGENTS.md) (디바이스 공통/식별) · [ROADMAP.md](ROADMAP.md) (OpenClaw 버전·운영 이력) · [NEXT.md](NEXT.md) (후속) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) (함정 카탈로그).
+> 관련: [AGENTS.md](AGENTS.md) (디바이스 공통/식별) · [ROADMAP.md](ROADMAP.md) (OpenClaw 버전·운영 이력) · [NEXT.md](NEXT.md) (후속) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) (함정 카탈로그) · [Telegram 그룹·토픽](docs/openclaw-telegram-topics.md) (호출 권한·토픽 관리·봇 DM).
 
 When a workflow mistake recurs, record it under [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) so the next session does not repeat it. Operational retrieval mistakes count too (e.g. OpenClaw release tags need a `v` prefix).
 
