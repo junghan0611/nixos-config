@@ -274,4 +274,10 @@ RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
+# 9.8-only memory admission hotfix; review/retire when bumping the base version.
+# Cron parents must be classified before the corpus is counted as eligible.
+COPY patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/
+RUN python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \
+ && node /usr/local/lib/openclaw-hotfix/test-memory-cron-parent.mjs
+
 USER node

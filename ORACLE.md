@@ -210,6 +210,14 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
+### Memory admission hotfix (9.8)
+
+현재 9.8 이미지는 `docker/openclaw/patch-memory-cron-parent.py`를 포함한다. cron 부모 세션도
+기억 corpus에서 `cron`으로 분류해, 시스템 메시지뿐인 부모가 `eligible`에만 잡히며 영구
+`dirty`를 만드는 불일치를 막는다. Dockerfile 빌드 시 회귀 테스트 10개를 통과해야 한다.
+버전 가드는 **9.8 외에는 빌드를 거부**한다 — 다음 업그레이드에서 상류 수정 여부를 확인하고
+패치를 회수/재검토한다. 배포·검증 영수증과 rollback은 [gotchas §bbot dirty](docs/openclaw-gotchas.md).
+
 ### autopilot — bbot memento 하나만 (2026-09-10)
 
 bbot autopilot은 `heartbeat`가 아니라 operator-owned cron `bbot-memento-autopilot`

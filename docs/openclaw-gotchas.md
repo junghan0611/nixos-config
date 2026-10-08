@@ -12,6 +12,70 @@
 
 ## 활성
 
+### bbot `dirty` 반복 — cron 부모 세션의 검사/색인 admission 불일치 (2026-10-08)
+
+**"사용자가 대화 중이라 dirty가 계속된다"로 단정하지 않는다.** 9.8 라이브에서 사람이
+턴을 보내지 않아도 `sessions 22/23`, `dirty:true`가 지속되는 구조를 read-only로 확인했다.
+**9.8 한정 이미지 패치로 수선했다.** 오토B 중지·강제 재색인·prune hold 해제는 하지 않았다.
+
+측정 영수증(oracle, 10:55–10:58 KST, `OpenClaw 2026.9.8 (fc23bc8)`):
+
+- `cron_run_receipts`: memento **10:26:52→10:34:55 ok**. 검사 시 이미 종료됐다.
+- `memory status --agent bbot --json`: memory **115/115, dirty:false**,
+  sessions **22 indexed / 23 eligible**, 전체 **dirty:true**, identity **valid**.
+- 라이브 corpus API(`listSessionTranscriptCorpusEntriesForAgent`, `readOnly:true`)와
+  `memory_index_sources`를 대조: 미색인 대상은 정확히 **cron 부모 세션 1개**.
+  세션 ID `073d22db-7e02-46ca-a18c-4c37aa64782e`, key는 memento job의
+  `agent:bbot:cron:<job-id>` (`:run:` 없는 부모 키).
+- 같은 항목을 실제 `buildSessionEntry`로 읽은 결정적 차이:
+  `corpus: {kind:interactive, indexable:true}` →
+  `built: {kind:interactive, indexable:false, lineProvenance:[system,system]}`.
+
+라이브 구현 확인: `manager-session-sync-state.ts`의 `resolveMemorySessionStartupState`는
+source 행이 없는 corpus 항목을 dirty로 잡는다. 반면 `manager-source-sync-ops.ts`의
+`resolveSessionIndexEntry`는 본문을 만든 뒤 `isMemorySessionIndexable`로 다시 검사하여
+**system provenance만 있는 세션을 제외**한다. 이 부모 세션은 검사 때 포함되고 색인 때
+제외되므로 다음 status에서도 다시 dirty가 된다. 논리 소스 이름은 라이브 bundle의 region
+표시에서 처음 확인했고, 이후 **v2026.9.8 / fc23bc86** 클론으로 대조했다.
+정확한 원인은 `packages/memory-host-sdk/src/host/session-transcript-corpus.ts:177–219`의
+`collectCronGeneratedSessionKeys`가 `isCronRunSessionKey`(`:run:` 있는 키만)로 lineage를
+분류하는 것. 정상 parser `src/sessions/session-key-utils.ts:75–81`의 `isCronSessionKey`는
+부모 키도 식별한다.
+
+**수선/배포 영수증 (2026-10-08 KST):**
+
+- `docker/openclaw/patch-memory-cron-parent.py`: corpus classifier의 두 key 판정을 기존
+  `isCronSessionKey`로 바꾼다. 부모·후손을 `generatedByCronRun:true / sessionKind:cron`으로
+  일관되게 제외한다. dirty 플래그나 source 수를 조작하지 않는다.
+- 이미지 빌드와 라이브에서 `test-memory-cron-parent.mjs` **10 assertions 통과**.
+  부모·run·후손·pruned parent·일반 DM·main·cycle·키 형식·순서 독립성 검증.
+  Python patch는 멱등·bundle import/classifier drift 시 거부; **9.8 외 버전도 거부**한다.
+- 배포 게이트 `gateway.suspend.prepare`: **ready, activeCount:0, blockers:[]**.
+  `openclaw-custom:9.8-dirty-fix` → `latest`로 태그하고 기존 compose 프로젝트를 recreate.
+  기존 tini ELOOP 1회 후 자동 회복; startup Doctor/offline maintenance 동안 CLI는 정비 중으로
+  거부됐다. 재생성 반복 없이 `11:20:16 ready`를 확인한 다음 검증을 재실행했다.
+- 증분 `memory index --agent bbot` 성공: **137 files**. 이후 status:
+  **dirty:false / memory 115/115 / sessions 22/22 / identity:valid / 3277 chunks**.
+  백업 DB와 live 비교에서 **3277 chunk IDs 및 137 source path/source/hash 모두 동일**.
+- config 파일은 백업과 **byte-identical**, Telegram **6/6 probe ok·running·connected**.
+  활성 cron 2개의 schedule/payload/delivery/enabled/nextRunAtMs 모두 동일.
+  gateway ready 뒤 **서빙 8+3 기대 응답 전부 통과**(comments `/api/v1/ping` 포함).
+  기동 중 tailnet 502를 보고 검증을 재실행해 200을 확인했다.
+- bbot의 독립 status 재검사(11:22)도 **dirty:false**. 전 봇 검사에서 glg의 기존
+  **빈 cron 부모 2개(본문 0 bytes, chunks 0)**가 stale source로 드러나 별도 DB 백업 후
+  증분 색인으로 정합화했다. glg **sessions 17/15→15/15**, **1320 chunk IDs 전부 보존**.
+  최종 `memory status --json`: **6봇 전원 dirty:false, source별 indexed=eligible, identity:valid**.
+  Gateway Docker health **healthy**, restart count는 기동 ELOOP 회복 1회 그대로.
+- 복구: `openclaw-custom:9.8-pre-dirty-fix` 이미지와 비공개
+  `~/openclaw/backups/dirty-admission-20261008T111716/`(bbot·glg SQLite online backup·config).
+  이미지부터 되돌리고 DB 복원은 정지한 writer에서만 한다. 스키마 변경 없음.
+
+**임베딩 담당자의 다음 수:** 새 export/status로 재수확 → board에서 dirty hold 해소 확인 →
+허용된 sup✓만 prune → verify·발행. 기존 수확의 status는 자동 갱신되지 않는다.
+재발 시 dirty를 대화 중이라고 추정하지 말고 source별 eligible/indexed·identity·missing 항목을
+대조한다. `mem-lag:ok`를 전체 clean으로 읽거나 andenken dirty hold를 우회하지 않는다.
+다음 버전업에서는 상류 corpus의 cron 부모 분류 수정을 확인해 패치를 회수/재검토한다.
+
 ### 9.8 컷오버 — 심볼릭 compose·기동 ELOOP·6.1-sol 세션 선택 거부 (2026-10-03)
 
 9.7→9.8은 **마이그레이션 0**(두 이미지 dist의 state `toVersion:19`·`OPENCLAW_AGENT_SCHEMA_VERSION=24` 동일)이라

@@ -62,6 +62,15 @@
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
+- **bbot memory admission 패치 후속**: 9.8 한정 이미지 패치로 cron 부모 분류 수선,
+  bbot `dirty:false / memory 115/115 / sessions 22/22 / 3277 chunks 보존` 반복 확인.
+  glg 빈 부모 2개도 증분 정합화(1320 chunks 보존); 최종 **6봇 전원 clean·identity valid**.
+  다음: ① 다음 정기 memento 후 새 부모 키도 clean으로 수렴하는지 soak 확인
+  ② 버전업 전 상류 수정 확인·패치 회수/재검토(9.8 외에는 빌드 fail-closed).
+  노트북의 재수확·prune·verify·발행은 운영자가 agent-config 담당자에게 전달한다.
+  [gotchas §bbot dirty](docs/openclaw-gotchas.md)에 배포·복구 영수증 포함.
+  **Do not touch:** 오토B 중지·`--force`·DB 직접 수정·andenken dirty hold 우회 금지.
+
 - **9.8 현재 영수증** (2026-10-03): 9.7→9.8 마이그레이션 0, healthy·Telegram 6계정 `works`, 6봇 격리
   실응답 ok. main·gpt primary = **`openai/gpt-6.1-sol`**. 상세는 ROADMAP §2026-10-03, 함정은 gotchas §9.8.
   **롤백은 `openclaw-custom:9.7-rollback` + `backups/pre-9.8-20261003T165528/`**(state 동일 v19/v24).
