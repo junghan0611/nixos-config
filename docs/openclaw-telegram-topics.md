@@ -39,9 +39,11 @@ OpenClaw 2026.9.8 기준. 라이브 설정·토큰·사용자/방 ID는 private 
 
 ## 봇 DM도 토픽을 지원한다
 
-그룹 토픽과는 별도 기능이다. 봇 소유자가 BotFather의 Threaded Mode를 활성화하고, Bot API `getMe.has_topics_enabled`가 `true`여야 OpenClaw가 DM 토픽별 세션을 사용한다. 일반 DM의 채팅방 설정 메뉴에서 켜는 기능이 아니다. 클라이언트에서도 해당 기능을 지원해야 한다.
+그룹 토픽과는 별도 기능이다. 봇 소유자가 [BotFather Mini App](https://t.me/BotFather?startapp) → Bot Settings → Threads Settings → Threaded Mode를 활성화하고, Bot API `getMe.has_topics_enabled`가 `true`여야 OpenClaw가 DM 토픽별 세션을 사용한다. 일반 DM의 채팅방 설정이나 BotFather `/mybots` 텍스트 메뉴에서 켜는 기능이 아니다. 클라이언트에서도 해당 기능을 지원해야 한다. 메뉴 경로 근거: [hermes-agent #116803](https://github.com/NousResearch/hermes-agent/pull/116803); 기능 근거: [Telegram bots](https://core.telegram.org/bots#natively-integrate-ai-agents-and-chatbots).
 
-2026-10-08 집사봇 `getMe` 실측은 `has_topics_enabled:false`, `allows_users_to_create_topics:false`였다. 기존 가족 DM을 유지하기 위해 이번 작업에서는 변경하지 않았다. 켜려면 기존 flat DM과 새 토픽의 맥락 연결·사용자별 동작을 먼저 검토한다. 폐기된 `dm.threadReplies` 설정을 부활시키지 않는다.
+현재 6봇 전부 DM 토픽·사용자 토픽 생성이 활성화되어 있다. 2026-10-08 운영자가 미니앱에서 설정한 뒤 각 Bot API `getMe`와 OpenClaw probe에서 `has_topics_enabled:true`·`allows_users_to_create_topics:true`를 확인했다. 연결 시작 시 받은 botInfo를 갱신하기 위해 Telegram 플러그인만 새로고침했다(`plugins reload telegram`: `ok:true`, `restartRequired:false`, generation 3; 사전 관측의 active work 0, 이후 6계정 running/probe ok·healthy). 기존 runtime config·DM/session·모델은 그대로다.
+
+실제 DM 토픽 첫 대화의 세션·답변 위치는 별도 실사용 검수다. 기존 flat DM 맥락이 새 토픽에 자동 이어진다고 보장하지 않는다. 폐기된 `dm.threadReplies` 설정을 부활시키지 않는다. 개인 계정 CLI 인증·`/mybots` 텍스트 메뉴는 이 토글에 필요 없으며, 잘못 시작했던 인증 대기 터미널은 정리했다. 상세 전/후·reload 영수증은 private `~/openclaw/backups/dm-topics-20261008T170739/`.
 
 ## 적용·검증 영수증
 

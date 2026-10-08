@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 `v2026.9.30`.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.8](CHANGELOG.md#v2026108--openclaw-98-안정화와-telegram-토픽).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -39,14 +39,11 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 지금. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
-  - **2차 점검·DNSSEC·Netlify DNS zone 삭제 완료 (2026-10-02)** — oracle `check.sh` 11개 호스트: oracle 8개 기준선 동일, Workers 3개 새 기대값(HTTPS·www→apex·notes 소문자 Denote→대문자 301) 통과, 위임은 Cloudflare NS 둘뿐. junghanacs.com DNSSEC `active`(DS key tag 2371, 알고리즘 13)·8.8.8.8/1.1.1.1/9.9.9.9 `AD` 플래그 확인(11:52 켬 → 12:03 DS 반영). Netlify DNS zone은 GLG가 12:3x 삭제했고 직후 `check3` 응답 동일. ⚠️ thinkpad 네트워크는 UDP 53을 가로챈다 — DNS 측정은 오라클·DoH·`dig +tcp`로만.
+- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← CURRENT: 7·8단계 전 이관 절차 정리. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
   - [ ] **aionsclubs.org DNSSEC DS 반영 확인** — GLG가 12:2x 켰다(Cloudflare `pending`, MX·SPF·DKIM·A는 서명 응답에서도 `NOERROR`). `.org` DS는 12:37 시점 미반영; 안내는 최대 24시간. 반영되면 8.8.8.8·1.1.1.1에서 `dig +tcp DS`·`+dnssec` `AD` 확인. #11 범위 밖(aions 터널은 건드리지 않았다).
   - **DNSSEC 해제 순서(함정)** — NS를 Cloudflare 밖으로 옮기거나 서명을 끄려면 **DS를 먼저 지우고 TTL(3600s) 뒤에** 한다. 순서를 어기면 검증 resolver에서 도메인이 통째로 SERVFAIL이다. 이관 절차 정리에 넣을 것.
-  - **3·4·5단계 완료** — apex·www·notes Workers 배포 영수증: [#11 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5907984277). garden 배포 완료는 GLG가 10-01 이 세션에서도 확인.
   - **상태 정정 영수증** — [#11 10/01 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5922317409): 아래 보관 선택·등록기관 뒷정리·미확인 인증 기한 폐기의 출처.
-  - **6. Netlify 사이트 삭제는 보류, 보관 선택** — GLG 10-01 직접 확인: 요금제 Free로 내려놓음, 두 사이트 자동 배포 연결 해제, DNS 레코드 전부 삭제, DNS zone만 유지. 사이트 삭제는 필수 후속이 아니다. 구 `*.netlify.app` 사이트는 참고용으로 남기며 즉시 도메인 롤백 수단으로 간주하지 않는다.
-  - **등록기관 뒷정리 완료/추가 조치 없음** — HOSTING.KR 정리는 GLG 10-01 확인. ICANN 등록자 인증 대기 경고는 없다고 GLG 확인; 개인 Gmail(스팸·휴지통 포함) 조회에서도 별도 등록자 인증 요청 없음. 8/12 계정 이메일 확인 요청은 있으나 클릭 완료는 메일만으로 입증 못 함. 기존 “10/14까지 인증 필요”는 미확인 예상이므로 폐기하고, 새 경고가 생길 때만 재진입.
+  - **6. Netlify 사이트 삭제는 보류, 보관 선택** — GLG 10-01 직접 확인: 요금제 Free로 내려놓음, 두 사이트 자동 배포 연결 해제, DNS 레코드 전부 삭제 후, DNS zone은 10-02 별도 삭제했다. 사이트 삭제는 필수 후속이 아니다. 구 `*.netlify.app` 사이트는 참고용으로 남기며 즉시 도메인 롤백 수단으로 간주하지 않는다.
   - [ ] **7·8단계 — 보류, 지금 하지 않는다** (GLG 10-02: 이관 절차를 더 견고하게 정리하는 단계). 독립 junghanacs 터널로 oracle 서비스 이동 → ax 정적 호스팅·map 내림 → 마지막에 Caddy·Authelia·80/443 철거. 착수 전 정리할 것: 경로별 접근제어·실제 클라이언트·롤백·`proxy` 네트워크 생성 주체·DNSSEC 해제 순서. aions 터널은 변경하지 않는다.
   - 비공개 영수증: 오라클 `~/web-publish/`(기준선·1차 점검·BIND·Sol 교차검토). 오라클 IP·보안 메모가 있어 리포·공개 이슈로 옮기지 않는다.
   - Do not touch: 기존 A 레코드 proxied 금지 · aions 터널에 junghanacs 호스트를 섞지 않는다. 공식 `cf` 쓰기에는 `-z <zone ID>`(`--dry-run`은 도메인을 해석하지 않는다).
@@ -62,42 +59,25 @@
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
-- **Telegram 봇 DM 토픽 — 선택 사항, 활성화 승인 전에는 유지**: 그룹 토픽은 실사용 확인 후 개인 운영으로 전환했고 추가 구성원 검수는 blocker가 아니다. 운영·영수증은 [그룹·토픽 문서](docs/openclaw-telegram-topics.md). DM 토픽이 필요해지면 BotFather Threaded Mode와 기존 flat DM 맥락 연결을 먼저 검토한다(현재 `getMe.has_topics_enabled:false`). 채널 작업은 보류; 기존 DM reset·모델 변경·privacy 전역 해제 금지.
+- **Telegram DM 토픽 첫 실대화 검수**: 운영자가 새 토픽을 만들고 첫 메시지 → 토픽별 세션·같은 토픽 답변 확인. 6봇 활성화·연결 갱신 영수증은 [운영 문서](docs/openclaw-telegram-topics.md)와 CHANGELOG `v2026.10.8`. 플래그 검증과 실제 대화 성공은 구분하고, 기존 flat DM 맥락의 자동 이관은 보장하지 않는다. 기존 DM reset·모델 변경·privacy 전역 해제 금지; 채널·Telegram bot-to-bot 작업은 별도 요청 전 보류.
 
-- **bbot memory admission 패치 후속**: 9.8 한정 이미지 패치로 cron 부모 분류 수선,
-  bbot `dirty:false / memory 115/115 / sessions 22/22 / 3277 chunks 보존` 반복 확인.
-  glg 빈 부모 2개도 증분 정합화(1320 chunks 보존); 최종 **6봇 전원 clean·identity valid**.
-  다음: ① 다음 정기 memento 후 새 부모 키도 clean으로 수렴하는지 soak 확인
-  ② 버전업 전 상류 수정 확인·패치 회수/재검토(9.8 외에는 빌드 fail-closed).
-  노트북의 재수확·prune·verify·발행은 운영자가 agent-config 담당자에게 전달한다.
-  [gotchas §bbot dirty](docs/openclaw-gotchas.md)에 배포·복구 영수증 포함.
-  **Do not touch:** 오토B 중지·`--force`·DB 직접 수정·andenken dirty hold 우회 금지.
+- **bbot memory admission 패치 후속**: 다음 정기 memento 후 새 cron 부모도 clean으로 수렴하는지 soak 확인 → 버전업 전 상류 수정 확인·패치 회수/재검토(9.8 외에는 빌드 fail-closed). 배포·청크 보존 영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md)와 CHANGELOG `v2026.10.8`. 노트북의 재수확·prune·verify·발행은 운영자가 agent-config 담당자에게 전달한다. **Do not touch:** 오토B 중지·`--force`·DB 직접 수정·andenken dirty hold 우회 금지.
 
-- **9.8 현재 영수증** (2026-10-03): 9.7→9.8 마이그레이션 0, healthy·Telegram 6계정 `works`, 6봇 격리
-  실응답 ok. main·gpt primary = **`openai/gpt-6.1-sol`**. 상세는 ROADMAP §2026-10-03, 함정은 gotchas §9.8.
-  **롤백은 `openclaw-custom:9.7-rollback` + `backups/pre-9.8-20261003T165528/`**(state 동일 v19/v24).
 - **9.8 다음 검수**: ① main·gpt Telegram 실대화가 6.1-sol로 도는지 첫 실사용에서 확인(DM엔 사용자 핀 없음 —
   다음 턴부터 primary). ② Telegram `/model`로 6.1-sol 선택이 되는지(`sessions.patch`는 codex harness 요구로
   거부 — 같은 검증이면 upstream 이슈 후보). ③ Android node 세션 `agent:main:node-1fd06883a3db`의 옛
   `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP 재발 여부. ⑤ Control UI에서 GitHub 링크
   리더 실사용 확인(10-03 `plugins.allow`에 `github` 추가, 핫리로드 적용; 토큰 없이 익명 쿼터).
-- **9.7 현재 영수증**: 2026-10-02 9.6→9.7 완료, state v19·agent DB 7개 v24·무결성 ok,
-  healthy·재시작 0·Telegram 6계정 works. 6봇+Grok 무배달 실응답 성공, bbot 자동 실행
-  10:29:43→10:44:46 ok와 사용자 Telegram 실수신 확인. Android는 기존 등록 재사용·connected
-  (앱 2026.8.2); 페어링 삭제 불필요. 상세 이력은 ROADMAP §2026-10-02.
-  (9.7 롤백면은 9.8 컷오버로 대체됐다.)
 - **9.7 다음 검수**: `/dashboard` Telegram 명령 중복의 메뉴 영향 확인; 부모 세션별
   subagent 동시성 변경에서 호스트 전체 상한 4 의도 유지 여부 확인(숫자만 임의 변경 금지).
   Doctor 경고의 기존 plaintext secret-bearing config는 SecretRefs 이관을 별도 승인 후 검토;
-  LAN bind는 기존 Caddy/인증 경계라 이번 범위 밖. 옛 롤백 세트(9.5·8.2 이미지, `pre-9.5`·`pre-9.6`
-  cold state)와 9.7 기동 마이그레이션 `.bak` 8개는 10-02 GLG 승인으로 은퇴했다(`/` 여유 17GB, `/home` 18GB).
-  9.6 이미지 세트는 10-03 9.8 컷오버 후 GLG 지시로 은퇴. 앱·공개면은 임의 변경하지 않는다.
-- **9.6 이전 영수증**: 2026-09-28 gateway 9.6 healthy, Telegram 6계정 `works`, gemini GLM·Grok 구독 격리 실응답 완료, GLG의 GLM 텔레그램 실대화 정상 확인. `workspace-gemini` 독립 원격 `master`와 부모 `openclaw-config` 분리 커밋·푸시 완료(운영 설정의 다른 미커밋 변경은 제외). 자세한 완료 이력은 CHANGELOG `v2026.9.28`과 비공개 `~/openclaw/README.md`. 9.5 롤백면은 10-02 은퇴했다.
+  LAN bind는 기존 Caddy/인증 경계라 이번 범위 밖. 현재 롤백은 `openclaw-custom:9.7-rollback` +
+  `backups/pre-9.8-20261003T165528/` 짝을 유지한다. 앱·공개면은 임의 변경하지 않는다.
 - **Next**: RAIL 5 봇 무응답 장기 지속·스풀 반복 시 사람에게 통지하는 구조를 설계한다. 별도 후속: GLG가 gemini 방의 `/model` 메뉴에서 Grok을 선택해 실대화 확인(격리 실응답은 이미 성공), GitHub 측 구/신 Copilot 앱 권한 취소, 다른 5봇 Telegram 실수신·장기 재시작 수 추적(bbot 10/02 memento 배달은 확인 완료).
 - **관측**: Android 연결·며칠간 9.5 실사용 정상은 9/28 GLG 직접 확인. 9.6 앱 접속은 tailnet `/` 200·`/health` 200(앱 UI 직접 조작은 미검증).
 - **회수 판단 보류**: 락 해제 때 라이브 창이 91→4 메시지로 축소됐다. 착수 전 스토어 백업이 컨테이너 안에 있다 — `~/.openclaw/agents/gpt/agent/openclaw-agent.sqlite.pre-compact-20260906T2120.bak` (226MB). **맥락 회수가 불필요하면 지운다** (oracle 디스크 `/home` 75%).
 - **Verify**: 봇 실경로 기준선 **`mini 12.0s 성공 / glg 26.1s 타임아웃`**(`openclaw agent --session-key probe-memlat-…`). **측정은 직렬로, 부하를 같이 기록하고 중앙값으로** — 4 vCPU 라 병렬로 재면 큐 대기를 잰다.
-- **Read**: [CHANGELOG.md](CHANGELOG.md) `v2026.9.28` · 아래 §"OpenClaw 9.5 업그레이드"(이전 컷오버 기록) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) · [sorge#1](https://github.com/junghan0611/sorge/issues/1).
+- **Read**: [CHANGELOG.md](CHANGELOG.md) `v2026.10.8` · 아래 §"OpenClaw 9.5 업그레이드"(이전 컷오버 기록) · [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) · [sorge#1](https://github.com/junghan0611/sorge/issues/1).
 - **Do not touch**: `--force` 재색인 금지(전량 재임베딩). `~/repos/gh` bind 를 rw 로 되돌리지 말 것. Active Memory·dreaming 켜지 말 것. `machines/shared.nix` 의 `emacs-nox` 전역 제거 금지. **지금 붙어 있는 안드로이드 페어링을 지워서 scope 를 고치려 들지 말 것** — 앱이 낡은 동안엔 재페어링해도 같은 scope 가 나오고 연결만 잃는다. **`gateway.trustedProxies` 에서 `172.26.0.1/32` 를 빼지 말 것** — 앱 연결이 끊긴다. **entwurf `.assembled` 마운트·node 심볼릭을 실행하지 말 것**(RAIL 8 유보). **tmux 소켓은 절대 마운트하지 말 것** — 컨테이너가 호스트에서 임의 프로세스를 실행하게 된다.
 
 # 앱 후속 (2026-09-08, RAIL 7 에서 파생)

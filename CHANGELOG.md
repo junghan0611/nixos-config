@@ -9,6 +9,30 @@
 
 ## Unreleased
 
+## v2026.10.8 — OpenClaw 9.8 안정화와 Telegram 토픽
+
+### OpenClaw 운영·복구
+
+- Oracle 게이트웨이를 9.6 → 9.7 → **2026.9.8**로 올렸다. 9.7에서 shared state v19·agent DB v24로 이관했고, 9.8은 추가 마이그레이션 없이 적용했다. main·gpt 기본 모델은 ChatGPT 구독 경로의 `openai/gpt-6.1-sol`로 전환하고 격리 실응답을 확인했다. 현재 롤백은 9.7 이미지와 대응 cold backup을 함께 사용한다. 업그레이드 영수증·세션 모델 선택의 제한은 [운영 함정](https://github.com/junghan0611/nixos-config/blob/v2026.10.8/docs/openclaw-gotchas.md)에 남겼다.
+- **cron 부모 세션의 기억 admission 분류**를 수선했다. 시스템 메시지만 있는 부모를 일반 대화로 잘못 세어 영구 dirty를 만드는 불일치를, 기존 cron 키 파서와 계보 분류를 사용하는 9.8 한정 이미지 패치로 막았다. 10개 단언의 회귀 검사를 보존했고 6봇의 clean·identity 상태와 기존 청크 보존을 확인했다. 다음 정기 실행의 수렴 관측과 상류 수정 후 패치 회수는 후속으로 남겼다.
+- Home Assistant 자격증명 파일을 저장소 밖에서 read-only 마운트해 lifetract 도구에 연결했다. 저널 스크린샷도 두 HOME 경로에서 읽을 수 있게 했다. read-only 파일 마운트가 외부 API의 쓰기 권한을 제한하는 것은 아니며, 새 자동화 권한을 부여하지 않는다.
+- 익명·읽기 전용 GitHub 링크 리더 플러그인을 활성화하고, main의 typing 표시를 기본값으로 되돌렸다. 쓰지 않는 이전 이미지·cold backup을 정리했으며 현재 복구에 필요한 9.7 롤백 짝은 유지했다.
+
+### Telegram 그룹·DM 토픽
+
+- 기존 사용자별 DM은 유지하면서 별도 가족 그룹에 **호출 시 응답·방별 발신자 허용**을 적용했다. 구성원은 일반 멤버면 되고, 봇의 토픽 관리 권한으로 토픽 생성·수정 도구를 사용할 수 있다. 그룹 토픽 실사용 성공을 확인했으며 Sonnet 5·Claude CLI 경로를 유지했다.
+- **6봇 모두 DM Threaded Mode와 사용자 토픽 생성을 활성화했다.** BotFather Mini App → Bot Settings → Threads Settings 경로를 명확히 했고, 일반 DM 설정이나 `/mybots` 텍스트 메뉴로 활성화할 수 있다는 혼동을 제거했다. 각 Bot API 플래그와 OpenClaw probe를 확인한 뒤 Telegram 플러그인만 새로고침했다. Gateway 재시작·기존 DM 리셋·모델 변경 없이 6계정 정상 연결을 재검수했다.
+- [Telegram 운영 문서](https://github.com/junghan0611/nixos-config/blob/v2026.10.8/docs/openclaw-telegram-topics.md)에 그룹·토픽 세션, Telegram 권한과 OpenClaw 발신 허용의 차이, 토픽 관리 도구 범위, 개인 DM의 비공개 내용 전달 금지 지침을 정리했다. 토픽별 세션 분리는 workspace 기억의 강제 격리가 아니고, 기존 flat DM 맥락의 자동 이관도 보장하지 않는다. 비공개 설정·사용자/방 ID·토큰·원본 백업은 공개 릴리즈에서 제외했다.
+
+### Cloudflare 이전 후속
+
+- apex·www·notes의 Workers 전환과 DNS 검수를 완료했다. junghanacs.com DNSSEC 서명·resolver 검증을 확인하고 Netlify DNS zone을 삭제했다. Netlify 사이트는 Free·자동 배포 해제 상태로 보관하며, 등록기관 정리는 완료 상태로 정정했다. 담당 이슈는 [#11](https://github.com/junghan0611/nixos-config/issues/11)이다.
+- DNS 관측은 Oracle·DoH·TCP를 사용하고, DNSSEC 해제 시 DS를 먼저 제거하는 순서를 기록했다. 독립 터널 이전·기존 프록시 철거는 접근제어·클라이언트·복구 절차를 먼저 굳히기 전까지 보류한다.
+
+### 남긴 검수·보류
+
+- DM 토픽의 첫 실대화 세션·답변 위치 검수, 다음 메멘토 이후 기억 분류 수렴, `gpt-6.1-sol` 세션 선택 경로와 Android 사용자 핀 확인은 NEXT에 남겼다. 채널 운영·Telegram 봇 간 대화는 이번 컷에 포함하지 않았다.
+
 ## v2026.9.30 — Cloudflare 이전을 맡다: 도구와 토큰
 
 ### Cloudflare 웹 퍼블리시 ([#11](https://github.com/junghan0611/nixos-config/issues/11))
