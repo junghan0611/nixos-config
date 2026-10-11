@@ -71,3 +71,6 @@ docker/openclaw/openclaw.json
 
 # 공식 Cloudflare CLI(cf)가 실행한 cwd에 쓰는 캐시 — 계정 ID·계정 이름(이메일) 포함
 .cloudflare/
+
+# Local agent incident reports / handoff notes (not for GitHub)
+.agent-reports/
