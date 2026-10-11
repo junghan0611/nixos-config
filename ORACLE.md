@@ -181,6 +181,20 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **챗봇 서빙 경로는 구독으로 제한한다.** anthropic/openai는 구독 인증, gemini 방은 Z.AI Coding Plan **전용** 엔드포인트(`zai/glm-5.3`)와 SuperGrok OAuth(`xai/grok-4.7`)다. Z.AI는 키 기반이지만 일반 종량제 엔드포인트(`/api/paas/v4`)가 아니라 `/api/coding/paas/v4`에 고정한다. xAI Console API 키는 구독과 다른 청구 풀이라 금지. **Copilot은 2026-09-28 제거**(플러그인 entry는 `enabled:false` 유지 — 없애면 번들 자동 로드 가능). 8/16 제거→8/27 복귀의 경위는 ROADMAP.md 이력으로만 읽는다. ⚠️ config에서 auth 프로필을 지워도 토큰은 SQLite에 남는다. ⚠️ glg/gpt/gemini 등에 남은 `anthropic:default` 토큰 프로필은 별도 부채 — 현재 primary는 사용하지 않는다.
 
+### Utility — 주 대화와 분리된 명시 보조 모델
+
+현재6봇 공통 `agents.defaults.utilityModel = "openai/gpt-6-luna"`,
+`agents.defaults.models["openai/gpt-6-luna"].agentRuntime.id = "openclaw"`다.
+per-agent utility override는 없고 주 대화 모델·modelPolicy.allow·codex disabled 상태는 그대로다.
+인증 config의 OpenAI mode는 OAuth이며, utility 제목 준비 1회에서 실제
+`openclaw-openai-chatgpt-responses-transport` / `gpt-6-luna` / HTTP200을 확인했다.
+새 종량제 key를 추가하지 않았다. 과거 Anthropic 보조 API 호출의 인증/실청구는 이 측정으로 해결되지 않는다.
+
+목적·발동 조건·primary fallback과 미설명 호출 처리의 SSOT는
+[자동화 문서 §Utility](docs/openclaw-automations.md#utility-보조-호출--운영자에게-알려진-목적만)다.
+모델 미설정은 자동 기본값이며, 빈 문자열은 모든 보조 호출을 금지하는 스위치가 아니다.
+목적 없는 새 보조 호출은 먼저 GLG와 논의하고 기록한다.
+
 ### Thinking level — 기본 `medium`, 올리는 건 세션에서
 
 **`agents.defaults.thinkingDefault = "medium"` (2026-08-07 명시 고정, GLG: "기본은 medium이어야 턴이 빠르다. 필요할 때 올린다")**. 그 전까지 이 키는 **미설정**이었고 모델별 카탈로그 기본값에 맡겨져 있었다.
@@ -328,7 +342,7 @@ docker exec openclaw-gateway openclaw sessions list --agent <id>
 > - **처방**: ① provider를 넘는 전환(codex↔claude-cli)은 롤을 **각오하고** 한다 — 피할 방법이 없다. ② 같은 provider 내 교체는 **timeout만 안 나면 세션이 산다** → 큰 컨텍스트일수록 넉넉히(main 기준 540s). ③ 실사용자 DM을 굴리기 전에 GLG에게 알린다. ④ 굴러간 뒤 맥락이 꼭 필요하면 옛 `.jsonl`이 살아있으니 `sessions compact`/수동 요약으로 회수 가능.
 - **`sessions list`의 Model 컬럼이 표와 다르면, 표가 아니라 세션이 진실이다.** 업그레이드·승격 후 이 표와 `sessions list`를 대조하는 것을 체크리스트에 넣는다.
 
-> **claude-cli 결제 분리 원리** (운영 핵심): pi-shell-acp가 같은 Claude SDK를 wrap하면 Anthropic이 **third-party harness로 식별** → extra usage 풀 강제 → 빈 응답. OpenClaw native claude-cli runtime은 same SDK를 direct import → **Pro/Max 한도로 인식 + 1M context**. 같은 SDK라도 import 깊이 한 단계 차이로 결제 풀이 달라진다. **canonical 등록(5.28)**: model.primary/카탈로그를 `anthropic/<id>`로 두고 `{ "agentRuntime": { "id": "claude-cli" } }`를 붙이면 끝 — provider prefix `anthropic/`는 카탈로그 식별자일 뿐, runtime이 `claude-cli`면 구독 경로. legacy `claude-cli/<id>` prefix는 폐기(doctor/update가 canonical로 auto-migrate — profile 먼저 등록 필수). EPIPE·streaming off·전환 타임라인은 [ROADMAP.md](ROADMAP.md).
+> **Claude 실행·도구·인증을 분리한다.** 현재9.8 Claude runtime은 공식 `claude` 바이너리 child process이고 MCP는 도구 연결이다(`extensions/anthropic/cli-backend.ts`, `src/agents/cli-runner/execute-process.ts`). SDK import 깊이만으로 구독/extra-usage를 판정한다는 옛 설명은 소스 근거가 없어 폐기한다. provider 접두사나 CLI 실행 사실만으로 실제 인증 선택·과금·ToS 적합성을 보장하지 않는다. OpenClaw에는 별도 직접 Anthropic API 코드도 있고 과거 Haiku 호출의 credential 종류는 미확인이다. 현재 utility는 위의 명시 OpenAI Luna 경로로 분리했다. native/managed credential 사용과 다중 사용자 계약 조건은 필요할 때 최신 [공식 인증 정책](https://code.claude.com/docs/en/legal-and-compliance#authentication-and-credential-use)을 대조한다. legacy 전환 이력은 [ROADMAP.md](ROADMAP.md).
 
 > **per-agent auth 함정 (oracle Docker 고유, 2026-05-31)**: Claude 쓰는 봇은 공식 login 1회 필요 — `openclaw models auth --agent <id> login --provider anthropic --method cli`(TTY, GLG 수동) → top-level `anthropic:claude-cli` 프로필 + `order.anthropic` 등록. **단 oracle은 `~/.claude`가 전 봇 공유 mount**라, login이 만든 per-agent 프로필 복사본은 frozen → 5.28 doctor가 **stale OAuth shadow**로 판정. `openclaw doctor --fix`가 per-agent 복사본을 제거하고 main의 갱신되는 auth를 inherit시킨다(제거 후에도 GREEN 확인). → 별도 host-native 레퍼런스(공유 mount 없음)의 "봇 수만큼 login 유지"와 **정반대 결론** — oracle은 login으로 기반만 깔고 doctor가 복사본을 정리. subagent는 openclaw 내장 런타임(`openai/gpt-5.6-terra`, ChatGPT OAuth)이라 claude login은 main/bbot/mini 3봇만.
 

@@ -54,12 +54,20 @@
 
 - **Current**: DNS·DNSSEC·등록기관·homepage·garden 이전 완료, Netlify DNS zone 삭제 완료(2026-10-02). Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다. 이제 7·8단계 전의 **이관 절차 정리 단계**.
 - **Next**: ① aionsclubs.org DS 반영·`AD` 확인(위 RAIL 11) ② 이관 절차 정리 — 7·8단계 착수 조건(접근제어·클라이언트·롤백·`proxy` 네트워크·DNSSEC 해제 순서)을 문서로 먼저 굳힌다. 정리가 끝나기 전에는 터널 이전을 시작하지 않는다.
+- **OpenClaw detour**: 현재9.8 utility Luna 지정·idle 재시작·검증·문서화는 완료([자동화 SSOT](docs/openclaw-automations.md)). **10.x 전환 여부는 아직 GLG와 고민 중**이며 다음 대화에서 논의한다. 채택/후보 검증/배포는 미승인이고, 판단하거나 명시적으로 보류하면 기존 stem #11로 복귀한다. 검수 보고서는 `.agent-reports/`의 gitignored 로컬 자료다.
 - **Read**: [#11 본문·최신 코멘트](https://github.com/junghan0611/nixos-config/issues/11) · 위 RAIL 11 · 비공개 oracle `~/web-publish/`.
 - **Do not touch**: 7·8단계 착수 금지(GLG 10-02). aions 터널 변경 금지. ICANN 인증은 새 대기 경고 없이 미처리로 되살리지 않는다. DNSSEC은 DS를 먼저 지우기 전에 끄거나 NS를 옮기지 않는다.
 
 ## OpenClaw 후속 — #11 뒤 복귀
 
-- **9.9 업데이트 보류 — 패치된 9.8 유지**: 운영자 결정(2026-10-08): “업데이트 하지말자. 기다리자.” [초기 검토·교차검수 반영](docs/openclaw-2026.9.9-review.md) · [Opus 독립 검수](docs/openclaw-2026.9.9-opus-review.md) 완료. 자동 Doctor 수리·디스크 여유·utility 모델 기본값 변경·미해결 memory hotfix·Telegram 통합 검사 면제 조건을 확인하고 보류했다. **재진입**: 운영자가 다시 검토를 요청할 때만 후보 검증/업데이트 판단을 재개한다. 기다리는 동안 image pull/build·Doctor 수리·컷오버·prune·모델/utility/codex/권한 변경을 시작하지 않는다.
+- **Utility 후속 — 새 자동 호출은 먼저 설명/기록**: 현재9.8 공통 utility는 명시 `openai/gpt-6-luna` / runtime `openclaw`; known-purpose title RPC 1회가 ChatGPT transport HTTP200으로 성공. 운영 상태·소비자/trigger/fallback은 [자동화 SSOT §Utility](docs/openclaw-automations.md#utility-보조-호출--운영자에게-알려진-목적만)·ORACLE.md에 승격. Next: 다음 자연 실사용/정기 cron에서 helper model/rail·실제 소비자 목적을 관찰(추가 강제 실행/모델 호출 안 함); 새 미설명 소비자는 GLG와 먼저 논의. title/transcript primary fallback은 기존 동작이고 전체 목적별 hard deny는 아직 구현하지 않았다. 과거 Haiku key/OAuth·실청구는 별도 미확인이다.
+
+- **9.9 업데이트 보류 — 패치된 9.8 유지**: 운영자 결정(2026-10-08): “업데이트 하지말자. 기다리자.” 검수 완료(로컬 gitignored `.agent-reports/openclaw-2026.9.9-review.md`, `.agent-reports/openclaw-2026.9.9-opus-review.md`). 자동 Doctor 수리·디스크 여유·utility 모델 기본값 변경·미해결 memory hotfix·Telegram 통합 검사 면제 조건을 확인하고 보류했다. **재진입**: 운영자가 다시 검토를 요청할 때만 후보 검증/업데이트 판단을 재개한다. 후보 검증 승인이 없으면 image pull/build·Doctor 수리·컷오버·prune·codex/권한 변경을 시작하지 않는다. 현재9.8 utility는 위의 별도 운영 승인으로만 바뀌었다.
+
+- **10.x 전환은 아직 고민 중 — 결정·배포 승인 없음**(GLG 2026-10-11): 10.1 기술 검토는 완료했지만 채택/후보 검증/업데이트를 승인한 것은 아니다. 현재9.8 utility 변경은 독립 운영 결정이다. 로컬 보고서 `.agent-reports/openclaw-2026.10.1-review.md` · `.agent-reports/openclaw-2026.10.1-opus-review.md`(gitignore, 공개 링크 아님). state19→20·memory patch 재작성·Claude managed exec·utility CLI fallback을 확인. upstream 9.8 직행/Telegram E2E는 success지만 우리 image/state 실기는 미검증.
+  - **Next**: 검수 결과를 바탕으로 **10.x로 넘어갈지 GLG와 논의**한다. 결론 전에는 후보 build/pull·마이그레이션·컷오버를 시작하지 않는다. GLG의 구독 ToS 우려에 따라 **공식 Claude Code CLI 실행 / MCP 도구 / ACP / utility API 경로**를 구분하고 최신 공식 정책과 실제 인증 선택 조건을 교차 확인. 공식 문서·Opus F13 완료: MCP 전환은 ACP 아님. **과거 경로의 별도 조회는 GLG 승인 대기**(현재 utility는 OpenAI로 분리): 과거 Anthropic direct API의 credential type/선택 메타데이터만 공식 read-only 수단으로 확인(비밀값·DB 직접조회·refresh/probe·모델호출 금지). Haiku API 15건은 Sonnet CLI 시작 직후의 자동 보조 호출로 분리됐지만 key/OAuth·실청구는 구분 불가; GLG의 수동 API 사용이라는 뜻이 아님. native CLI 정황은 인증 선택 확정이 아님. CLI를 쓴다는 사실만으로 허용 판정하지 않는다.
+  - **결정 게이트**: ToS/구독 인증 경로 → 공간/cold rollback → hotfix 재작성·CC 핀·utility 정책. 9.8 유지; 이번 utility 운영 변경을 넘어서는 후보 pull/build·Doctor·컷오버·인증/모델/권한 변경은 별도 승인 전 금지.
+  - **부작용 회수 완료**: Opus가 GLG 직접 요청으로 고아 pack 하나만 회수했다고 보고; coordinator가 파일 부재·9.8 clean·`/home`94%·6.2G 재확인. 삭제 승인 대기 아님. scratch는 baseline objects를 빌리므로 3rd gc/prune 금지.
 
 - **Telegram DM 토픽 첫 실대화 검수**: 운영자가 새 토픽을 만들고 첫 메시지 → 토픽별 세션·같은 토픽 답변 확인. 6봇 활성화·연결 갱신 영수증은 [운영 문서](docs/openclaw-telegram-topics.md)와 CHANGELOG `v2026.10.8`. 플래그 검증과 실제 대화 성공은 구분하고, 기존 flat DM 맥락의 자동 이관은 보장하지 않는다. 기존 DM reset·모델 변경·privacy 전역 해제 금지; 채널·Telegram bot-to-bot 작업은 별도 요청 전 보류.
 

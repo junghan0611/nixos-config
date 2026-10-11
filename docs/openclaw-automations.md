@@ -21,6 +21,53 @@
 
 ---
 
+## Utility 보조 호출 — 운영자에게 알려진 목적만
+
+**현재 선택(2026-10-11, 운영9.8):** `agents.defaults.utilityModel = "openai/gpt-6-luna"`.
+6봇 모두 상속하며 per-agent utility override는 없다. Luna만 모델별 런타임을
+`openclaw`로 명시했다. Codex 활성화·주 대화 모델/allowlist 변경·새 cron/heartbeat 추가는 없다.
+GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 모델을 기록하고 새 용도는 먼저 논의**다.
+이 문서는 운영 승인 경계이며, `utilityModel` 설정 자체가 목적별 강제 ACL은 아니다.
+
+### 알려진 소비자와 발동 조건
+
+아래는 9.8 소스에서 읽은 소비자 목록이다. **전부 실사용됐다는 측정이 아니며**, 각 기능의
+기존 요청/콜백/가시성 조건이 맞을 때 보조 호출이 가능하다는 뜻이다. 이번 변경에서 기능별
+새 옵션을 켜지는 않았다. utility가 존재하는지를 가용성 gate로 쓰는 소비자는 명시 모델의
+영향을 받으므로, 실제 호출 수가 이전과 같다고 보장하지 않는다.
+
+| 목적 | 호출이 가능한 조건 | 대체 경로·주의 |
+|---|---|---|
+| 대화/토픽 제목·레이블 | 새 대화/토픽의 이름 생성, Control UI의 제목 준비 요청 | 일반 제목 생성은 실패 시 primary를 시도할 수 있다. `sessions.title.prepare`는 utility-only이며 세션을 생성/변경하지 않는다 |
+| 진행 설명 | 채널이 narration 콜백을 제공하고 해당 턴의 utility 사용이 허용될 때 | 본 답변과 별도 호출. `progress-narrator.ts`의 명시 조건을 따른다 |
+| 라이브 세션 관찰·요약 | Control UI의 가시 구독/관찰 대상 작업에서 observer가 요약을 요청할 때 | 독립 cron이 아닌 관찰 기능; 매 메시지마다 무조건 실행된다고 읽지 않는다 |
+| Activity recap | 권한 있는 클라이언트의 `sessions.activitySummary.ensure` 요청 | 보통 목록 조회만으로는 생성하지 않는다. 실패 시 이전 요약 유지, primary fallback 없음 |
+| Companion 옆 질문 | 클라이언트가 세션 옆 질문을 요청할 때 | utility 선택은 요청 모델/사용자 모델 정책 영향을 받으며 primary 경로를 쓸 수 있다. 읽기 도구를 쓰는 별도 질의이지 항상 tool-free는 아니다 |
+| 녹취 요약 보강 | transcript capture의 요약 경로에 config와 발화가 제공될 때 | utility 다음 primary를 시도할 수 있고, 모델 실패 시 결정적 요약으로 복귀 |
+
+제품 세부 규칙: [9.8 Models 문서](https://github.com/openclaw/openclaw/blob/v2026.9.8/docs/concepts/models.md),
+`src/auto-reply/reply/{conversation-label-generator,progress-narrator}.ts`,
+`src/gateway/{session-observer,session-activity-summaries,session-companion-policy}.ts`,
+`src/transcripts/{capture-summary,summary-model}.ts`(모두 라이브와 같은 `fc23bc8`).
+
+### 인증·검증·차단 경계
+
+- 새 API key를 추가하지 않았다. 현재 OpenAI config의 인증 mode는 OAuth이고,
+  제목 준비 실응답은 `provider=openai`, `api=openclaw-openai-chatgpt-responses-transport`,
+  `model=gpt-6-luna`, HTTP200으로 관측했다. 이 측정은 ChatGPT 구독 transport이며 실제 청구서를 검사한 것은 아니다.
+- 운영자가 알고 실행한 검증: `sessions.title.prepare` 1회, 비개인 테스트 문장으로
+  `유틸리티 설정 검증` 반환. primary fallback 없는 호출이고 기존 대화/토픽을 수정하지 않았다.
+  재기동 뒤 6개 Telegram 계정 `running/connected`, Gateway healthy, cron 12개/활성2개를 확인했다.
+- 이전168h의 Haiku 직접 API15건은 별도 과거 증거다. 당시 key/OAuth 종류·실청구와
+  정확한 소비자별 목적은 미확인이다. 토큰 삭제/재인증을 실행한 것이 아니며 해결됐다고 덮지 않는다.
+- **미설정은 자동 모델 선택**이다. 다시 unset해서 Haiku 자동 기본값을 되살리지 않는다.
+  `utilityModel: ""`도 보조 호출 전체 금지가 아니라 작은 모델 routing off다.
+  제목/녹취 요약의 primary fallback까지 막으려면 기능별 차단 방법을 따로 결정해야 한다.
+- 모델/API/status 로그만으로 모든 개별 목적을 확정하지 않는다. 새 소비자나 미설명 호출을
+  발견하면 목적·trigger·입력 범위·모델/인증 경로를 확인하고 이 목록을 갱신한 뒤 사용한다.
+
+---
+
 ## 봇별 현황
 
 | 봇 | 모델 | heartbeat | 소유 cron | 사람 없이 도는가 |
@@ -28,7 +75,7 @@
 | **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (typing 기본값 복귀 2026-10-03) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5` | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
-| **gemini** | `github-copilot/gemini-3.7-flash` | **없음** (원래 없었음) | 없음 | **아니오** |
+| **gemini** | `zai/glm-5.3` | **없음** (원래 없었음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
 | **bbot** (B) | `anthropic/claude-fable-5-1` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |
 
