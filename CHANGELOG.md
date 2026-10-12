@@ -9,6 +9,22 @@
 
 ## Unreleased
 
+## v2026.10.12 — OpenClaw 10.2 직행 컷오버
+
+### OpenClaw 9.8 → 10.2
+
+- Oracle 게이트웨이를 9.9·10.1을 건너 **2026.10.2**(`b8952d4`)로 올렸다. shared state는 v19→v20으로 이관했고 agent DB는 v24 그대로다. 모델·채널·권한 설정은 바꾸지 않았다. 기반 이미지는 ARM64 digest로 고정했고, Claude Code·summarize·yt-dlp·jsonschema는 운영 실측 버전으로 핀했다.
+- **cron 부모 세션 기억 admission 패치를 10.2 번들 기준 v2로 다시 썼다.** 상류 10.2도 부모 키를 놓친다. 패치는 import 1줄과 호출 2곳만 바꾸고, 원본·결과·helper 해시를 고정해 다른 버전이나 번들 변형이면 빌드를 거부한다. 패치 전 baseline은 부모 분류에서 실패하고 패치 후 10개 단언을 통과한다. 컷오버 뒤 6봇의 세션 색인 수가 대상 수와 같다.
+- 전환 전에 정지 상태 cold 사본을 떠서 검증했다. 사본에 네트워크를 차단한 Doctor를 돌려 스키마 이관과 설정 무변경을 확인했고, 백업을 전부 복원해 9.8이 복원본을 받고 이관된 상태는 거부함을 확인했다. 실제 전환은 idle 확인 → 정지 → writer를 멈춘 상태의 백업(live와 비교 일치) → 이미지 교체 순서였다. 기동 Doctor를 포함해 약 6분 만에 준비됐고 재시작은 없었다.
+- 6봇 무배달 응답이 모두 예비 모델 없이 성공했다. Telegram 6계정이 연결됐고 서빙 URL 8+3개가 기대값과 같았다. Control UI·Android 앱 인증 접속, 첫 자연 cron, 첫 기억 검색은 사후 관찰로 남겼다.
+- 롤백은 9.8 패치 이미지와 정지 상태 백업의 짝이다. 이미지만 되돌리면 9.8이 v20 상태를 거부한다. CLI 홈 디렉터리와 전환 뒤 갱신된 OAuth 토큰은 백업 범위 밖이다. 9.7 롤백 이미지와 이전 cold backup, 검증용 사본은 정리했다.
+- [운영 함정](https://github.com/junghan0611/nixos-config/blob/v2026.10.12/docs/openclaw-gotchas.md)에 이번에 밟은 다섯 가지를 남겼다. 복사한 상태의 Doctor는 OAuth 갱신을 시도하므로 네트워크를 끊는다. Doctor 플래그 이름이 버전마다 다르다. 기동 판정은 Docker health 표시가 아니라 RPC로 한다. 기동 Doctor의 DB 사전 백업이 1GiB를 넘는다. codex 비활성 설정을 유지해야 한다.
+
+### OpenClaw 운영 정책·문서
+
+- 공통 보조 호출(utility) 모델을 명시적인 `openai/gpt-6-luna`로 정하고, 운영자에게 알려진 목적만 허용하는 정책을 [자동화 문서](https://github.com/junghan0611/nixos-config/blob/v2026.10.12/docs/openclaw-automations.md)에 정리했다. 실제 확인한 것은 제목 생성 1회다. 다른 소비자와 과거 Anthropic 보조 호출의 인증·과금 경로는 미확인으로 남겼다.
+- 9.9 업데이트를 검토한 뒤 보류했다(이번 10.2 직행으로 대체). 에이전트 검수 보고서는 저장소에 두지 않고 로컬 전용(`.agent-reports/`)으로 옮겼으며, 오래된 설치·실험 가이드 17개를 archive로 이동했다.
+
 ## v2026.10.8 — OpenClaw 9.8 안정화와 Telegram 토픽
 
 ### OpenClaw 운영·복구
