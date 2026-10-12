@@ -135,14 +135,19 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.9.8** baseline)
+### Model routing (현재: OpenClaw **2026.10.2** baseline)
 
-> 9.8 운영(2026-10-03): 9.7 대비 **마이그레이션 0**(shared state v19·agent DB v24 동일). main·gpt primary는
-> **`openai/gpt-6.1-sol`**(ChatGPT 구독 OAuth, 내장 `openclaw` harness, 무배달 실응답 `fallbackUsed=false`).
-> `modelPolicy.allow`에 6.1-sol을 더했고 5.6-sol은 롤백·기존 세션 핀용으로 남겼다. 9.8은 6.1-sol을
-> `sessions.patch`(세션 모델 선택)에서 "codex harness 필요"로 거부한다(`/model`도 같은 검증일 가능성, 미측정) —
-> config primary로 태운다(gotchas §9.8).
-> 롤백은 `openclaw-custom:9.7-rollback` + `backups/pre-9.8-20261003T165528/` 설정·cold state.
+> 10.2 운영(2026-10-12): 9.8 대비 shared state **v19→v20**, agent DB **v24 유지**. 모델 설정 변경 0.
+> 6봇 무배달 실응답 `ok`·`fallbackUsed=false` — main·gpt `openai/gpt-6.1-sol`(embedded/`openclaw`),
+> glg·mini `claude-cli/claude-sonnet-5`, bbot `claude-cli/claude-fable-5-1`, gemini `zai/glm-5.3`.
+> 10.2 Doctor는 main·gpt의 6.1-sol을 "Codex runtime인데 plugin disabled"로 **경고만** 한다. 명시 `codex.enabled:false`라
+> 수리는 막혀 있고, 런타임은 implicit codex 미등록 → `openclaw`로 떨어진다(10.2 smoke 실측: main·gpt embedded·`fallbackUsed=false`).
+> `sessions.patch` 거부는 9.8에서 측정했다. 10.2는 같은 경로(projection 모드는 fallback 제외)를 소스로만 확인했고 RPC 재실측은 하지 않았다.
+> **`plugins.entries.codex.enabled:false`를 지우지 않는다** — 지우면 `doctor --fix`가 codex를 켤 수 있다.
+> 근본 정리(6.1-sol에 `agentRuntime {id:"openclaw"}`)는 미결정.
+> 롤백은 **이미지 `openclaw-custom:9.8-dirty-fix` + 정지 writer cold state** `backups/pre-10.2-cutover-20261012T181929/`
+> (state v19, live와 `tar -d` 0). 이미지만 되돌리면 9.8이 state v20을 거부한다. archive 밖: `~/.claude`·`~/.codex`·`~/.gemini`·`~/.pi/agent`,
+> 컷오버 뒤 갱신된 OAuth 토큰(회전 시 openai/xai 재로그인 가능성, 미측정).
 
 > 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
 
@@ -224,13 +229,15 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
-### Memory admission hotfix (9.8)
+### Memory admission hotfix (10.2)
 
-현재 9.8 이미지는 `docker/openclaw/patch-memory-cron-parent.py`를 포함한다. cron 부모 세션도
+현재 10.2 이미지는 `docker/openclaw/patch-memory-cron-parent.py`(v2)를 포함한다. cron 부모 세션도
 기억 corpus에서 `cron`으로 분류해, 시스템 메시지뿐인 부모가 `eligible`에만 잡히며 영구
-`dirty`를 만드는 불일치를 막는다. Dockerfile 빌드 시 회귀 테스트 10개를 통과해야 한다.
-버전 가드는 **9.8 외에는 빌드를 거부**한다 — 다음 업그레이드에서 상류 수정 여부를 확인하고
-패치를 회수/재검토한다. 배포·검증 영수증과 rollback은 [gotchas §bbot dirty](docs/openclaw-gotchas.md).
+`dirty`를 만드는 불일치를 막는다. 10.2 상류도 미수정이다(corpus classifier가 run-only `isCronRunSessionKey`).
+패치는 import 1줄 + 호출 2곳뿐이고, 원본·결과·helper SHA를 고정해 **10.2 외 버전이나 번들 drift면 빌드를 거부**한다.
+빌드 시 회귀 테스트 10개를 통과해야 한다(패치 전 baseline은 parent admission에서 RED).
+컷오버 뒤 6봇 sessions indexed=eligible(bbot 22/22). 다음 업그레이드에서 상류 수정 여부를 확인하고 회수/재작성한다.
+9.8판 사건·영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md).
 
 ### autopilot — bbot memento 하나만 (2026-09-10)
 

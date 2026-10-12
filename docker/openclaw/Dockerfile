@@ -147,9 +147,9 @@
 # **우리에게 직접 걸리는 것(-1) 둘 — 둘 다 "마이그레이션 잔해" 클래스**: ① Memory Core startup repair — derived
 # legacy-index / cache-sidecar 충돌을 Gateway 를 fatal restart loop 에 가두지 않고 복구(구조적 vector-store 손상은
 # 여전히 retryable 유지). ② Legacy migration recovery — 검토된 migration residue 를 startup 에서 nonfatal 로 처리.
-# 우리는 7.1 이 만든 `config/memory/*.migrated` **1.4G 를 롤백 대비로 이고 있다**(NEXT.md 회수 항목). 그 잔해가
-# 정확히 위 두 픽스가 가리키는 대상이다 — 지금 로그엔 관련 경고 0(72h)이지만, 잔해를 안고 재시작할 때의 최악
-# 시나리오가 "복구 가능한 정지"로 내려온다. **잔해 회수 판단보다 이 bump 를 먼저 하는 게 순서상 맞다.**
+# 당시 7.1 이 만든 `config/memory/*.migrated` **1.4G 를 롤백 대비로 보존 중이었다**(이후 안전 근거를 확인해 회수).
+# 그 잔해가 정확히 위 두 픽스가 가리키는 대상이었다 — 당시 로그엔 관련 경고 0(72h)이었지만, 잔해를 안고
+# 재시작할 때의 최악 시나리오가 "복구 가능한 정지"로 내려온다. **잔해 회수 판단보다 이 bump 를 먼저 하는 게 순서상 맞았다.**
 # 나머지 -1 항목: ③ Codex progress replies — app-server 턴이 progress 메시지 뒤 mid-turn 정지하던 것 수정.
 # **우리 hot path 에 걸린다. 이번 bump 의 최대 실이득이 이것이다.** (※ 2026-08-04 최초 작성분은 "hot path 아님"
 # 이라고 적었다 — per-agent models 맵의 빈 `{}` 를 "런타임 미지정 = API 경로"로 오독한 것. 정정한다: 빈 `{}` 는
@@ -204,7 +204,8 @@
 # 2026.9.8: no state/agent DB migration (state v19, agent DB v24 unchanged); adds openai/gpt-6.1-sol.
 # Internal sessions can no longer end with NO_REPLY; Doctor drops retired silentReply.internal/direct.
 # Rollback: openclaw-custom:9.7-rollback + backups/pre-9.8-20261003T165528 (config + cold state, same v19/v24).
-FROM ghcr.io/openclaw/openclaw:2026.9.8
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:904a62cb9502358de9a4441cb7f579ae94c346cfa9ccbdd2502d43c1ac66e77e
+FROM ${OPENCLAW_BASE}
 
 USER root
 
@@ -223,15 +224,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # yt-dlp (pip — GitHub binary download가 불안정)
 # 2026.08+ required on datacenter IPs (oracle): older builds hit
 # "The page needs to be reloaded" without the EJS challenge solver path.
-RUN pip install --no-cache-dir --break-system-packages "yt-dlp>=2026.8.19"
+RUN pip install --no-cache-dir --break-system-packages "yt-dlp==2026.8.19"
 
 # jsonschema — butlercli estate surface bridge(skills/butlercli/scripts/estate_surface.py).
 # 봇이 viewer(map.junghanacs.com)로 IR을 post하기 전 클라이언트 fail-closed 검증에 필수
 # (계약 SSOT, fallback 없음). 없으면 sample/validate/post가 "NEED: pip install jsonschema"로 정지.
-RUN pip install --no-cache-dir --break-system-packages jsonschema
+RUN pip install --no-cache-dir --break-system-packages jsonschema==4.26.0
 
 # summarize CLI (@steipete/summarize — URL/파일/미디어 요약)
-RUN npm install -g @steipete/summarize \
+RUN npm install -g @steipete/summarize@0.25.0 \
     && mkdir -p /home/node/.summarize \
     && echo '{"model":{"id":"openrouter/google/gemini-3-flash-preview"}}' > /home/node/.summarize/config.json \
     && chown -R node:node /home/node/.summarize
@@ -270,11 +271,12 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 #             ② install.cjs 를 명시 실행해 npm 버전이 또 바뀌어도 자가치유하며(멱등)
 #             ③ `claude --version` 으로 빌드를 fail-closed 시킨다. ③ 이 없으면 같은 회귀가 다음 bump 에 또 조용히 지나간다.
 RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
-      @anthropic-ai/claude-code \
+      @anthropic-ai/claude-code@2.1.288 \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
-# 9.8-only memory admission hotfix; review/retire when bumping the base version.
+# 10.2-only memory admission hotfix; version/bundle guards fail closed.
+# Cron parents must be classified before the corpus is counted as eligible.
 # Cron parents must be classified before the corpus is counted as eligible.
 COPY patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/
 RUN python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \

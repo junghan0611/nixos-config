@@ -12,6 +12,26 @@
 
 ## 활성
 
+### 10.2 컷오버 — 복사 상태 Doctor·CLI 플래그·기동 대기 (2026-10-12)
+
+전체 서사는 ROADMAP 2026-10-12에 있다. 여기는 다시 밟을 함정만 둔다.
+
+- **복사한 상태에 `doctor --fix`를 돌리면 OAuth refresh를 시도한다.** 사본 검증에서 openai·xai Shared
+  profile refresh가 네트워크 차단 때문에 실패하는 것을 실측했다. 네트워크가 열려 있으면 복사된 refresh token으로 갱신하고,
+  provider가 토큰을 회전시키면 live 인증이 깨질 수 있다. **복사 상태로 하는 모든 실행은 `--network none`.**
+- **Doctor 플래그 이름이 버전마다 다르다.** 10.2의 `doctor --json`은 read-only lint라 `--fix`와 함께 쓰면 exit 2로 거부된다.
+  9.8에서 같은 기능의 이름은 `--lint`다. 기동 경로와 같은 플래그는 `doctor --fix --non-interactive`
+  (`docker-entrypoint.mjs`가 gateway argv일 때 그대로 spawn한다).
+- **기동 판정을 Docker health badge로 하지 않는다.** healthcheck 간격이 180초라, 기동 Doctor와 ready가 끝난 뒤에도
+  badge는 한참 `starting`이다. 150초 deadline 스크립트가 이 badge만 보고 실패를 선언했다. 판정은 `openclaw gateway call
+  health --json`의 `ok:true`로 하고, deadline은 ≥600초로 둔다(10.2 기동 실측: Doctor 포함 350초).
+- **live 기동 Doctor는 사본 Doctor보다 많이 쓴다.** live에서는 agent DB 7개와 state의 `.pre-startup-migration-*.bak`
+  1.09GiB를 config 안에 남겼고, 사본에서는 state 사본만 남겼다. 컷오버 공간 예산에 넣는다.
+  "Pre-repair state retained … `~/.openclaw.update-captures/`"는 mount 밖, 즉 컨테이너 layer에 있어서
+  recreate하면 사라진다. 복구 자산으로 세지 않는다.
+- **`plugins.entries.codex.enabled:false`를 지우지 않는다.** 10.2 Doctor는 6.1-sol을 "Codex runtime인데 plugin disabled"라고
+  경고한다. 명시된 false가 Doctor의 자동 enable 수리를 막고 있다.
+
 ### bbot `dirty` 반복 — cron 부모 세션의 검사/색인 admission 불일치 (2026-10-08)
 
 **"사용자가 대화 중이라 dirty가 계속된다"로 단정하지 않는다.** 9.8 라이브에서 사람이

@@ -1,61 +1,73 @@
 #!/usr/bin/env python3
-"""9.8-only hotfix: classify cron parent sessions before memory admission.
+"""10.2-only cron-parent admission port, verified against pinned ARM64 dist.
 
-Source: packages/memory-host-sdk/src/host/session-transcript-corpus.ts,
-collectCronGeneratedSessionKeys. Use the existing isCronSessionKey parser, not
-substring matching. Retirement: upstream corpus classifies the parent as cron
-and memory status/index admission agrees. Never silently carry across upgrades.
+Upstream source: packages/memory-host-sdk/src/host/session-transcript-corpus.ts
+and src/sessions/session-key-utils.ts at b8952d477f0c932d8ddc6da5c89cab5a169b6ff1.
+Only the two classifier calls change; all other bytes and the key helper remain
+unchanged. Do not weaken version/content guards for another build or release.
 """
 import argparse
-import re
+import hashlib
+import json
 from pathlib import Path
 
-MARKER = "// operator-hotfix: memory-cron-parent-admission-v1"
+VERSION = "2026.10.2"
+CORPUS_NAME = "session-transcript-corpus-B2gUPO4D.mjs"
+KEY_NAME = "session-key-C09ow4h0.mjs"
+ORIGINAL_SHA = "1fc438cc61bc9d6106734aa5f8e3c0841e34ea67c264dae2baceca61b0cf6102"
+PATCHED_SHA = "ca089fb0481d4c6445db264bc2549d56acb9d6da6ce0506ff3e3a4f1677487ff"
+HELPER_SHA256 = "34c459c8cb5c33755e67fcbebbc6ba27438c09406fad29f0a2ecedae18e18cd5"
+IMPORT = 'import { C as isDreamingNarrativeSessionStoreKey, x as isCronRunSessionKey } from "./session-key-C09ow4h0.mjs";'
+MARKER = "// operator-hotfix: memory-cron-parent-admission-v2 (10.2)"
+
+
+def sha(data: bytes) -> str:
+	return hashlib.sha256(data).hexdigest()
 
 
 def patch_text(text: str) -> str:
-	if MARKER in text:
+	current = sha(text.encode())
+	if current == PATCHED_SHA:
 		return text
-	pattern = r'import \{ b as isCronRunSessionKey \} from "(\./session-key-[^"/]+\.mjs)";'
-	matches = list(re.finditer(pattern, text))
-	if len(matches) != 1:
-		raise ValueError("session-key import drift; refusing patch")
+	if current != ORIGINAL_SHA:
+		raise ValueError("10.2 corpus content drift; refusing patch")
+	if text.count(IMPORT) != 1:
+		raise ValueError("10.2 import drift; refusing patch")
 	start = text.index("function collectCronGeneratedSessionKeys(summaries) {")
 	end = text.index("\nfunction ", start + 1)
 	block = text[start:end]
 	if block.count("isCronRunSessionKey(") != 2:
-		raise ValueError("cron lineage classifier drift; refusing patch")
+		raise ValueError("cron classifier call drift; refusing patch")
 	block = block.replace("isCronRunSessionKey(", "isCronSessionKey(")
 	text = text[:start] + block + text[end:]
-	match = matches[0]
-	return text[:match.start()] + MARKER + '\n' + (
-		'import { b as isCronRunSessionKey, x as isCronSessionKey } from "'
-		+ match.group(1) + '";'
-	) + text[match.end():]
+	text = text.replace(IMPORT, MARKER + "\n" + IMPORT.replace(
+		"x as isCronRunSessionKey", "S as isCronSessionKey, x as isCronRunSessionKey"))
+	if sha(text.encode()) != PATCHED_SHA:
+		raise ValueError("unexpected patch result; refusing write")
+	return text
 
 
 def main() -> None:
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--app", type=Path, default=Path("/app"))
+	parser.add_argument("--output", type=Path, help="emit a test override without changing source")
 	args = parser.parse_args()
 	app = args.app
-	# Refuse a blind patch when the upstream release changes.
-	import json
-	if json.loads((app / "package.json").read_text())["version"] != "2026.9.8":
-		raise SystemExit("hotfix requires OpenClaw 2026.9.8; review/retire on upgrade")
-	files = [p for p in (app / "dist").glob("session-files-*.mjs")
+	if json.loads((app / "package.json").read_text())["version"] != VERSION:
+		raise SystemExit("hotfix requires OpenClaw 2026.10.2; review/retire on upgrade")
+	files = [p for p in (app / "dist").glob("session-transcript-corpus-*.mjs")
 		if "function collectCronGeneratedSessionKeys(summaries) {" in p.read_text()]
-	if len(files) != 1:
-		raise SystemExit(f"expected one corpus bundle, found {len(files)}")
+	if len(files) != 1 or files[0].name != CORPUS_NAME:
+		raise SystemExit("10.2 corpus locator drift; refusing patch")
+	if sha((app / "dist" / KEY_NAME).read_bytes()) != HELPER_SHA256:
+		raise SystemExit("10.2 session-key helper/export drift; refusing patch")
 	file = files[0]
 	text = file.read_text()
-	match = re.search(r'import \{ b as isCronRunSessionKey[^}]*\} from "(\./session-key-[^"/]+\.mjs)";', text)
-	if not match or "isCronSessionKey as x" not in (file.parent / match.group(1)).read_text():
-		raise SystemExit("isCronSessionKey export drift; refusing patch")
 	patched = patch_text(text)
-	if patched != text:
-		file.write_text(patched)
-	print("memory-cron-parent-admission-v1: applied/verified")
+	output = args.output or file
+	if args.output or patched != text:
+		output.write_text(patched)
+	print("memory-cron-parent-admission-v2: applied/verified (10.2, guarded)")
 
 
 if __name__ == "__main__":

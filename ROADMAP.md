@@ -10,6 +10,31 @@
 
 ---
 
+## 2026-10-12 — OpenClaw 9.8→10.2 직행, cron-parent 기억 패치 v2
+
+- 10.2(`b8952d4`)를 9.9·10.1을 건너 직접 올렸다(운영 컷오버 2026-10-12). 9.8 대비 shared state **v19→v20**, agent DB **v24 유지**.
+  base는 ARM64 digest `904a62cb…`로 고정하고, 동반 도구도 live 실측 값으로 핀했다(claude-code 2.1.288, summarize 0.25.0,
+  yt-dlp 2026.8.19, jsonschema 4.26.0).
+- 기억 hotfix는 9.8판을 그대로 쓸 수 없어서 10.2 번들 기준으로 다시 썼다(v2). 원본·결과·helper SHA를 고정했다.
+  patch 전 baseline은 parent admission에서 RED, patch 후 10/10이다. 상류 10.2도 미수정(ORACLE §Memory admission hotfix).
+  커밋 전에 helper digest 상수 이름을 `KEY_SHA`→`HELPER_SHA256`으로 바꿨다(gitleaks `generic-api-key` 오탐).
+  이미지 안 사본(sha `884d7e66…`)과 리포 사본(`94d33e95…`)은 이 이름만 다르고, 결과 SHA `ca089fb0…`는 같다. 다음 재빌드 때 일치시킨다.
+- 격리 검증 순서: idle 정지 → cold 사본 → 9.8 재기동 → 사본에 `--network none` Doctor →
+  schema 19→20 / config bookkeeping 4경로만 변경 → archive 전체 복원 → 9.8 admission ok / state 20 거부.
+  - 첫 회수 판정은 150초 deadline이 180초 간격 health badge를 기다리다 실패했다. RPC `health.ok` 기준으로 고쳤다.
+  - 두 번째 시도는 Doctor가 exit 2로 끝났다(10.2의 `doctor --json`은 read-only lint라 `--fix`와 함께 못 쓴다; 9.8의 이름은 `--lint`).
+  - 사본 Doctor가 OAuth refresh를 시도했다. 그래서 복사 상태로 하는 모든 실행에서 `--network none`은 필수다.
+- 컷오버 18:21–18:32 KST: idle gate → 정지 → stopped-writer archive 1.52GB(`tar -d` live 비교 0) → `latest` 재태그
+  → recreate. 기동 Doctor와 ready까지 350초, 재시작 0, ELOOP 0. 기동 Doctor는 DB 사전 백업 `.pre-startup-migration-*.bak`
+  1.09GiB를 live config 안에 남겼다(보존 중).
+- 검증: `openclaw.json`은 bookkeeping 4경로 외 무변경(보호 10섹션 동일). Telegram 6/6 connected.
+  6봇 무배달 smoke 모두 `ok`·`fallbackUsed=false`. sessions indexed=eligible 6/6, 8+3 서빙 URL 기대값 일치.
+  Control UI WS·Android·첫 자연 cron·실제 `memory_search`는 사후 관찰로 남겼다.
+- 롤백면: `openclaw-custom:9.8-dirty-fix` + 비공개 `~/openclaw/backups/pre-10.2-cutover-20261012T181929/`.
+  CLI home(`~/.claude` 등)과 컷오버 뒤 OAuth 토큰은 범위 밖이다.
+- 정리(GLG 승인): 9.7 롤백 이미지, 9.8 pre-dirty-fix 이미지, `pre-9.8` cold state, 검증 사본·archive, 복원 scratch를 지웠다.
+  `/` 3.1G→7.9G, `/home` 5.8G→11G.
+
 ## 2026-10-03 — OpenClaw 9.7→9.8, main·gpt를 GPT-6.1 Sol로
 
 - 9.8(`fc23bc8`)은 **마이그레이션 0**: 두 이미지 dist의 state `toVersion:19`·agent DB 24 동일, 라이브 설정

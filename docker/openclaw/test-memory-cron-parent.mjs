@@ -1,17 +1,21 @@
-// Run in the image; tests the actual emitted classifier without opening a DB.
+// Actual10.2 emitted classifier and key helper; no DB, gateway or API access.
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 const dist = process.argv[2] || '/app/dist';
-const file = readdirSync(dist).filter(n => /^session-files-.*\.mjs$/.test(n))
-	.find(n => readFileSync(`${dist}/${n}`, 'utf8').includes('function collectCronGeneratedSessionKeys(summaries) {'));
-assert.ok(file);
-const text = readFileSync(`${dist}/${file}`, 'utf8');
-const keyFile = text.match(/import \{ b as isCronRunSessionKey[^}]*\} from "\.\/(session-key-[^"/]+\.mjs)";/)[1];
-const { b: isCronRunSessionKey, x: isCronSessionKey } = await import(pathToFileURL(`${dist}/${keyFile}`));
+const files = readdirSync(dist).filter(n => /^session-transcript-corpus-.*\.mjs$/.test(n))
+	.filter(n => readFileSync(`${dist}/${n}`, 'utf8').includes('function collectCronGeneratedSessionKeys(summaries) {'));
+assert.equal(files.length, 1, 'one actual corpus chunk');
+const text = readFileSync(`${dist}/${files[0]}`, 'utf8');
+const keyFile = text.match(/import \{[^\n]*x as isCronRunSessionKey[^\n]*\} from "\.\/(session-key-[^"/]+\.mjs)";/)?.[1];
+assert.ok(keyFile, 'verified key import');
+const { x: isCronRunSessionKey, S: isCronSessionKey } = await import(pathToFileURL(`${dist}/${keyFile}`));
+assert.equal(typeof isCronRunSessionKey, 'function');
+assert.equal(typeof isCronSessionKey, 'function');
 const start = text.indexOf('function readParentSessionKeys(entry) {');
-const end = text.indexOf('\nfunction toSessionStoreCorpusEntry(', start);
+const end = text.indexOf('\nfunction listSessionTranscriptArtifactFiles(', start);
+assert.ok(start >= 0 && end > start, 'actual classifier boundaries');
 const collect = new Function('isCronRunSessionKey', 'isCronSessionKey',
 	text.slice(start, end) + '\nreturn collectCronGeneratedSessionKeys;')(isCronRunSessionKey, isCronSessionKey);
 const parent = 'agent:bbot:cron:job-1';
@@ -41,4 +45,4 @@ assert.equal(keys.has('agent:bbot:subagent:a'), false, 'cycle is not cron');
 assert.equal(keys.has('agent:bbot:subagent:b'), false, 'cycle terminates');
 assert.equal(isCronSessionKey('not-agent:cron:job'), false, 'malformed key');
 assert.equal(collect([...cases].reverse()).has(parent), !baseline, 'order independence');
-console.log(`${baseline ? 'baseline reproduces parent omission' : 'patched parent admission'}: 10 assertions passed; no DB/API access`);
+console.log(`${baseline ? 'baseline reproduces parent omission' : 'patched parent admission'}: 10 behavior assertions passed; no DB/API access`);

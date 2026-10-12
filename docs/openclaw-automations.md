@@ -7,6 +7,7 @@
 > 그 출력의 §1·§1b가 이 문서의 표와 같아야 한다. 다르면 이 문서를 갱신한다.
 
 기준 시각: **2026-09-10 07:5x KST** · OpenClaw **2026.8.2** (0965053)
+재확인: **2026-10-12 18:4x KST** · OpenClaw **2026.10.2** (b8952d4) 컷오버 직후 — turnwatch §1 활성 2개(스케줄·모델)가 아래 표와 일치. §1b disabled 10개는 이번에 표와 대조하지 않았다.
 
 관련: [ORACLE.md](../ORACLE.md) (운영 핸드북) · [openclaw-gotchas.md](openclaw-gotchas.md) (함정) · [NEXT.md](../NEXT.md) (후속)
 
@@ -23,7 +24,7 @@
 
 ## Utility 보조 호출 — 운영자에게 알려진 목적만
 
-**현재 선택(2026-10-11, 운영9.8):** `agents.defaults.utilityModel = "openai/gpt-6-luna"`.
+**현재 선택(2026-10-11 지정, 9.8→10.2 컷오버 후 설정 무변경):** `agents.defaults.utilityModel = "openai/gpt-6-luna"`.
 6봇 모두 상속하며 per-agent utility override는 없다. Luna만 모델별 런타임을
 `openclaw`로 명시했다. Codex 활성화·주 대화 모델/allowlist 변경·새 cron/heartbeat 추가는 없다.
 GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 모델을 기록하고 새 용도는 먼저 논의**다.
