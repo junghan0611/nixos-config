@@ -47,10 +47,19 @@ def gh_json(path, raw=False):
 		return None
 
 
+def dig(o, *keys):
+	for k in keys:
+		o = o.get(k) if isinstance(o, dict) else None
+	return o
+
+
+def is_int(v):
+	return isinstance(v, int) and not isinstance(v, bool)
+
+
 def schema(ver):
-	d = gh_json(f'{REPO}/contents/package.json?ref=v{ver}', raw=True)
-	s = ((d or {}).get('openclaw') or {}).get('schemaVersions') if isinstance(d, dict) else None
-	if not isinstance(s, dict) or not all(isinstance(s.get(k), int) and not isinstance(s.get(k), bool) for k in ('state', 'agent')):
+	s = dig(gh_json(f'{REPO}/contents/package.json?ref=v{ver}', raw=True), 'openclaw', 'schemaVersions')
+	if not (is_int(dig(s, 'state')) and is_int(dig(s, 'agent'))):
 		return None
 	return {'state': s['state'], 'agent': s['agent']}
 
@@ -74,37 +83,44 @@ note('OK' if st else 'UNKNOWN', f'{target}: {st}')
 
 print('== compare (must be linear: ahead or identical, behind 0)')
 cmp = gh_json(f'{REPO}/compare/v{current}...v{target}') if current else None
-if not isinstance(cmp, dict) or 'status' not in cmp:
+if not isinstance(cmp, dict) or not isinstance(cmp.get('status'), str):
 	note('UNKNOWN', 'compare unavailable')
 elif cmp.get('status') not in ('ahead', 'identical') or cmp.get('behind_by') != 0:
 	note('FAIL', f"status={cmp.get('status')} ahead={cmp.get('ahead_by')} behind={cmp.get('behind_by')} — not a linear upgrade")
 else:
 	note('OK', f"status={cmp.get('status')} ahead={cmp.get('ahead_by')} behind=0")
 
-c = gh_json(f'{REPO}/commits/v{target}')
-commit = c.get('sha') if isinstance(c, dict) else None
+commit = dig(gh_json(f'{REPO}/commits/v{target}'), 'sha')
 if not (isinstance(commit, str) and re.fullmatch(r'[0-9a-f]{40}', commit)):
 	commit = None
 note('OK' if commit else 'UNKNOWN', f'v{target} commit: {commit}')
 
-print('== registry (no pull)')
+print('== registry (no pull; exactly one linux/arm64 manifest)')
 digest = None
 rc, out = run(['docker', 'buildx', 'imagetools', 'inspect', '--raw', f'{IMG}:{target}'])
 try:
-	digest = next(x['digest'] for x in json.loads(out)['manifests'] if x.get('platform', {}).get('architecture') == 'arm64') if rc == 0 else None
-except (json.JSONDecodeError, KeyError, StopIteration, TypeError):
-	digest = None
-if not (isinstance(digest, str) and re.fullmatch(r'sha256:[0-9a-f]{64}', digest)):
-	note('FAIL', f'arm64 manifest for {IMG}:{target} not found')
-	digest = None
+	ms = dig(json.loads(out), 'manifests') if rc == 0 else None
+except json.JSONDecodeError:
+	ms = None
+if not isinstance(ms, list) or not all(isinstance(x, dict) for x in ms):
+	note('UNKNOWN', f'manifest index for {IMG}:{target} unavailable or malformed')
 else:
-	note('OK', f'arm64 manifest: {digest}')
+	hits = [x for x in ms if dig(x, 'platform', 'os') == 'linux' and dig(x, 'platform', 'architecture') == 'arm64']
+	d = hits[0].get('digest') if len(hits) == 1 else None
+	if len(hits) != 1:
+		note('FAIL', f'expected exactly 1 linux/arm64 manifest, found {len(hits)}')
+	elif not (isinstance(d, str) and re.fullmatch(r'sha256:[0-9a-f]{64}', d)):
+		note('FAIL', f'linux/arm64 digest malformed: {d!r}')
+	else:
+		digest = d
+		note('OK', f'linux/arm64 manifest: {digest}')
+if digest:
 	rc, out = run(['docker', 'buildx', 'imagetools', 'inspect', f'{IMG}@{digest}', '--format', '{{json .Image}}'])
 	try:
-		rev = (json.loads(out).get('config', {}).get('Labels') or {}).get('org.opencontainers.image.revision') if rc == 0 else None
+		rev = dig(json.loads(out), 'config', 'Labels', 'org.opencontainers.image.revision') if rc == 0 else None
 	except json.JSONDecodeError:
 		rev = None
-	if not rev or not commit:
+	if not (isinstance(rev, str) and commit):
 		note('UNKNOWN', f'label revision {rev} vs commit {commit}')
 	elif rev != commit:
 		note('FAIL', f'label revision {rev} != tag commit {commit} — STOP')

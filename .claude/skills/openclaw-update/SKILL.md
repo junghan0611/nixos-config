@@ -70,16 +70,23 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
      -v ~/openclaw/config/openclaw.json:/home/node/.openclaw/openclaw.json:ro \
      --entrypoint node openclaw-custom:<ver>-candidate-<date> openclaw.mjs config validate --json
    ```
-   이어서 비교용으로 `openclaw.json`을 영수증 디렉터리(700)에 `openclaw.json.pre-swap`(600)으로 복사해 둔다.
+   이어서 비교용으로 `openclaw.json`을 영수증 디렉터리에 `openclaw.json.pre-swap`으로 복사해 둔다. 쓰기 **전에** 권한을 정한다
+   (뒤늦은 chmod는 잠깐 644로 노출된다):
+   ```bash
+   umask 077; R=~/openclaw/backups/swap-<ver>-<date>; mkdir -p -m 700 "$R"
+   cp ~/openclaw/config/openclaw.json "$R/openclaw.json.pre-swap"
+   ```
 7. **교체** — 게이트웨이에 턴이 없을 때. 단계마다 결과를 보고 다음으로 간다.
    ```bash
-   R=~/openclaw/backups/swap-<ver>-<date>      # 700, 비공개 영수증
+   umask 077; R=~/openclaw/backups/swap-<ver>-<date>      # §1-6에서 700으로 만든 비공개 영수증 자리
    docker exec openclaw-gateway openclaw gateway call gateway.suspend.prepare --json \
-     --params '{"requestId":"swap-<ver>","terminalPolicy":"preserve"}' > $R/suspend-prepare.json; chmod 600 $R/suspend-prepare.json
-   #   status=ready, activeCount=0 일 때만 진행. 보낸 requestId도 같은 영수증에 적어 둔다.
+     --params '{"requestId":"swap-<ver>","terminalPolicy":"preserve"}' > "$R/suspend-prepare.json"
+   #   status=ready · activeCount=0 · blockers 비어 있음 — 셋 다일 때만 진행. 보낸 requestId도 같은 영수증에 적어 둔다.
    docker tag openclaw-custom:<ver>-candidate-<date> openclaw-custom:latest
    cd ~/openclaw && docker compose -p openclaw-config up -d --no-build --force-recreate openclaw-gateway
    docker exec openclaw-gateway openclaw gateway call health --json   # ok:true 가 나올 때까지 15초 간격으로
+   docker exec openclaw-gateway openclaw --version                    # 대상 버전인지
+   docker inspect openclaw-gateway --format '{{.Image}}'              # candidate의 Id와 같은지 (verify --image가 다시 대조)
    ```
    - **suspend 응답을 버리지 않는다.** 풀 때는 그 응답의 `suspensionId`가 필수다(resume 스키마가 `suspensionId` 하나만 받는다):
      `docker exec openclaw-gateway openclaw gateway resume <suspensionId>`. ready가 아니면 이걸로 풀고 나중에 다시 한다.
@@ -90,16 +97,21 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - **중단·롤백은 상태부터 본다.** 그 사이 새 게이트웨이가 이미 떠서 턴을 받고 있을 수 있다. 무조건 다시 recreate하지 않고
      `docker inspect`·RPC health로 상태를 확인한 뒤, 롤백 recreate도 같은 idle gate(suspend.prepare → ready)를 거친다.
      롤백 = 이전 candidate로 `latest`를 다시 태그하고 같은 `up` 명령.
+   - prepare 응답 파일은 umask 077 아래서 써서 처음부터 600이다.
    - 10.3 때 썼던 감싼 스크립트는 참고용 영수증일 뿐이다: `~/openclaw/backups/swap-10.3-20261014/swap.py`.
 8. **확인 (모델 호출 없음)**
    ```bash
-   python3 -I {baseDir}/scripts/verify.py --receipts ~/openclaw/backups/swap-<ver>-<date>     # 읽기 전용
+   python3 -I {baseDir}/scripts/verify.py --receipts ~/openclaw/backups/swap-<ver>-<date> \
+     --image openclaw-custom:<ver>-candidate-<date>                     # 읽기 전용
    ```
-   - exit 0 = 필수 항목 전부 PASS · 1 = FAIL 있음 · 2 = UNKNOWN 있음(필수 측정 누락). 0이 아니면 완료가 아니다.
-   - 보는 것: 버전 형식, 컨테이너 running, RPC `health.ok`, Telegram 연결 수 = `--accounts`(기본 6), 플러그인 errors/unavailable 빈 값,
+   - exit 0 = 필수 항목 전부 PASS · 1 = FAIL 있음 · 2 = UNKNOWN 있음(필수 측정 누락 또는 사람 판단 필요). 0이 아니면 완료가 아니다.
+     `--receipts`·`--image`를 빼면 그 비교가 UNKNOWN이 된다 — 교체 판정용으로는 둘 다 준다.
+   - 보는 것: 버전 형식, 컨테이너 running, 실행 중 이미지 Id = candidate Id, RPC `health.ok`, Telegram 연결 수 = `--accounts`(기본 6), 플러그인 errors/unavailable 빈 값,
      eventLoop, deliveryQueues.failed가 비었거나 6월 tombstone과 정확히 같음, 필수 플러그인 상태(codex disabled 포함),
      hotfix 파일 전체 sha(패치 스크립트의 `VERSION`·`PATCHED_SHA`·`HELPER_SHA256`과 대조 — 마커 존재만으로는 무결성이 아니다),
      `codex.enabled:false`, pre-swap 대비 config 변경 경로, cron consecutiveErrors, 서빙 8+3, comments ping(본문은 출력하지 않는다).
+   - config 경로가 하나라도 바뀌면 UNKNOWN이고 **경로 이름만** 출력한다. Doctor bookkeeping인지는 사람이 판정한다 — 자동 허용 목록은 없다.
+     패치 스크립트가 없으면 UNKNOWN이다. hotfix 회수는 §1-4의 GREEN 확인을 거친 결정이지 파일이 없어진 상태가 아니다.
    - 실제 동작은 다음 자연 cron과 실제 대화로 본다. 모델을 부르는 smoke는 GLG가 요청할 때만 한다.
 9. **기록** — 순서대로:
    - openclaw-config: Dockerfile, patch, README change history
