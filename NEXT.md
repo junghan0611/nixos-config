@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.12](CHANGELOG.md#v20261012--openclaw-102-직행-컷오버).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.14](CHANGELOG.md#v20261014--openclaw-103와-단계별-업데이트-절차).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -54,7 +54,7 @@
 
 - **Current**: DNS·DNSSEC·등록기관·homepage·garden 이전 완료, Netlify DNS zone 삭제 완료(2026-10-02). Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다. 이제 7·8단계 전의 **이관 절차 정리 단계**.
 - **Next**: ① aionsclubs.org DS 반영·`AD` 확인(위 RAIL 11) ② 이관 절차 정리 — 7·8단계 착수 조건(접근제어·클라이언트·롤백·`proxy` 네트워크·DNSSEC 해제 순서)을 문서로 먼저 굳힌다. 정리가 끝나기 전에는 터널 이전을 시작하지 않는다.
-- **OpenClaw detour — 10.3 교체 완료(2026-10-14)**: 라이브 `2026.10.3 (59cb447)`. 남은 것은 아래 §OpenClaw 후속의 사후 관찰뿐이고, 관찰은 자연 사용을 기다리면 된다. 그래서 stem #11로 복귀한다. 영수증: ROADMAP 2026-10-14·10-12, 로컬 `.agent-reports/openclaw-10.3-opus-preflight.md`·`openclaw-10.2-opus-candidate-review.md`(gitignore).
+- **OpenClaw detour 복귀선**: 10.3 교체와 업데이트 절차 내재화는 CHANGELOG `v2026.10.14`로 승격했다. 아래 사후 관찰은 자연 사용을 기다리며 stem #11로 복귀한다. 다음 버전업은 [openclaw-update 스킬](.claude/skills/openclaw-update/SKILL.md)을 읽는다. 비공개 영수증은 로컬 `.agent-reports/`와 `~/openclaw/backups/`에 보존한다.
 - **Read**: [#11 본문·최신 코멘트](https://github.com/junghan0611/nixos-config/issues/11) · 위 RAIL 11 · 비공개 oracle `~/web-publish/`.
 - **Do not touch**: 7·8단계 착수 금지(GLG 10-02). aions 터널 변경 금지. ICANN 인증은 새 대기 경고 없이 미처리로 되살리지 않는다. DNSSEC은 DS를 먼저 지우기 전에 끄거나 NS를 옮기지 않는다.
 
@@ -90,7 +90,7 @@
 - **9.8→10.2 이월 검수**(10.2 Doctor도 6.1-sol을 implicit codex→openclaw로 해석, 9.8과 동일): ① main·gpt Telegram 실대화가 6.1-sol로 도는지 첫 실사용에서 확인(DM엔 사용자 핀 없음 —
   다음 턴부터 primary). ② Telegram `/model`로 6.1-sol 선택이 되는지(`sessions.patch`는 codex harness 요구로
   거부 — 같은 검증이면 upstream 이슈 후보). ③ Android node 세션 `agent:main:node-1fd06883a3db`의 옛
-  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP — 10.2 recreate 0회, 10.3 recreate 4회(재시작 정책으로 자동 회복). recreate마다 0~4회로 나오는 기존 증상이다. ⑤ Control UI에서 GitHub 링크
+  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP — 10.2 recreate 0회, 10.3 recreate 4회(재시작 정책으로 회복)를 관측했다. 0~4회는 허용 범위나 회복 보장이 아니며, 계속 재시작하거나 새 오류가 나면 따로 판단한다. ⑤ Control UI에서 GitHub 링크
   리더 실사용 확인(10-03 `plugins.allow`에 `github` 추가, 핫리로드 적용; 토큰 없이 익명 쿼터).
 - **9.7 다음 검수**: `/dashboard` Telegram 명령 중복의 메뉴 영향 확인; 부모 세션별
   subagent 동시성 변경에서 호스트 전체 상한 4 의도 유지 여부 확인(숫자만 임의 변경 금지).

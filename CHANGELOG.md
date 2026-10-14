@@ -9,6 +9,24 @@
 
 ## Unreleased
 
+## v2026.10.14 — OpenClaw 10.3와 단계별 업데이트 절차
+
+### OpenClaw 10.3 운영 교체
+
+- Oracle 게이트웨이를 **2026.10.3**(`59cb447`)으로 교체했다. ARM64 기반 이미지를 digest로 고정하고, cron 부모 세션 기억 admission 패치를 실제 Docker 번들 기준 **v3**로 이식했다. 미패치 기본 검사의 RED와 패치 후 10개 단언 GREEN을 확인했으며, 버전·원본·결과·helper 해시 가드는 유지했다.
+- 선언 스키마는 shared state **20**, agent **24**로 같았다. GLG 결정에 따라 이번 마이너 업데이트는 새 cold archive·Doctor 리허설·전체 복원 시험 없이 유휴 상태에서 교체했다. 실제 기동의 자동 Doctor는 실행됐다. 교체 전후 설정 변경 경로는 0개였고, Codex 비활성 설정을 유지했다.
+- **모델 호출 0회**의 운영 점검으로 RPC readiness, Telegram 6계정 연결, 플러그인·서빙 경로를 확인했다. 첫 실제 대화·자연 cron, 인증 후 Control UI WebSocket·Android는 별도 관찰로 남겼다. 기동 tini ELOOP 4회는 재시작 정책으로 회복했으며, RPC 준비와 Docker health 표시의 지연을 구분했다.
+- 승인받은 9.8 이미지를 정리하고 직전 **10.2 candidate 이미지는 보존**했다. 같은 스키마와 이미지 보존만으로 기동 후 config·auth·외부 OAuth 효과까지 되돌릴 수 있다고 주장하지 않는다. 비공개 설정·로그·자격증명·영수증은 릴리즈에 첨부하지 않는다.
+
+### 업데이트 절차 내재화
+
+- 흩어져 있던 판정·패치 이식·기동·복귀·함정을 **[openclaw-update 스킬](.claude/skills/openclaw-update/SKILL.md)**로 모았다. 자동 교체기가 아니라 사람이 단계별 결과를 확인하는 절차서이며, 기존 OpenClaw·NixOS 스킬과 운영 문서에서 연결했다.
+- 읽기 전용 preflight·verify 점검면을 추가하고 교차 검수로 실패 시 닫히도록(fail-closed) 수선했다. 조회 실패·잘못된 스키마를 마이너로 오판하거나 RPC 실패를 마지막 URL 성공으로 덮는 경로를 오프라인 실패 fixture로 재현·차단했다. 설정 사본·패치·이미지 비교 누락은 UNKNOWN, 설정 변경은 경로명만 출력해 사람의 판단을 받는다. Linux ARM64 이미지 선택과 전체 패치 해시도 검증한다. 스키마 선언은 초기 분류 근거이지 모든 미래 릴리즈의 실행 승인이나 롤백 안전성 증명이 아니다. 실제 모델 smoke·삭제·push 권한은 별도로 구분한다.
+
+### 음성 접점 조사
+
+- **[음성 전사 조사 #12](https://github.com/junghan0611/nixos-config/issues/12)**를 열어 기존 OpenAI 구독 안의 공식 무추가비용 경로를 조사 대상으로 삼았다. Oracle 로컬 전사 모델 운영과 유료 API·fallback 활성화는 제외했다. 공식 Sign in with ChatGPT 공유 flow의 전사 API 제한과, 기존 OpenClaw OAuth 구현의 미확인 사용권·과금을 구분하고 적용을 보류했다. 더 넓은 STT·TTS·STS 접점 탐색까지 불가로 닫지는 않았다.
+
 ## v2026.10.12 — OpenClaw 10.2 직행 컷오버
 
 ### OpenClaw 9.8 → 10.2
