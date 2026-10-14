@@ -31,6 +31,7 @@
 - 검증(모델 호출 없음): Telegram 6/6, plugin errors 0(zai global 로드, codex disabled 유지),
   sessions indexed=eligible 6/6, 8+3 URL·comments ping, turnwatch 미완료 턴 0.
 - 롤백면: 이미지 `openclaw-custom:10.2-candidate-20261012`(retag + recreate). 9.8로 돌아갈 이미지는 삭제됐다.
+- 사후 영수증: 첫 자연 bbot 메멘토(13:26)는 `ok/delivered`, 695초, `claude-fable-5-1`로 완료됐다. 근거는 Opus의 `cron.runs limit 6` 측정 전달(13:39 KST)이며, Gateway healthy·restarts=4 유지도 같은 전달에 포함됐다. 이어 GLG가 제공한 B의 13:38 Telegram 원문으로 실제 메멘토 처리·발행·배달을 보강 확인했다. 원문과 개인 일기 내용은 공개 기록에 옮기지 않았다. 첫 수동 실대화·가족 cron 도구 권한·기억 수렴·Control UI WS·Android는 이 영수증으로 닫지 않는다.
 
 ## 2026-10-12 — OpenClaw 9.8→10.2 직행, cron-parent 기억 패치 v2
 

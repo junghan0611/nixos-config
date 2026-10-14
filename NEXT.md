@@ -67,7 +67,7 @@
     - 10.2: bbot memento 5회 ok/delivered(10-12 19:43 ~ 10-13 07:36), 가족 08:00 cron ok/delivered(10-13·10-14). cron은 모두 `cli exec provider=claude-cli`이고 Anthropic API 직접 호출은 0건이다(cron.runs의 `provider: anthropic`은 모델 접두어 표시일 뿐).
     - 10.3: Telegram 6/6, sessions indexed=eligible 6/6, 8+3 URL, config 변경 0.
   - **볼 것**:
-    - ① 10.3 첫 자연 cron(bbot memento 10-14 13:26)과 첫 실대화
+    - ① 10.3 첫 수동 실대화(첫 자연 메멘토의 실행·발행·Telegram 배달은 ROADMAP 2026-10-14의 사후 영수증으로 닫음)
     - ② Control UI(인증 후 WS)·Android 앱 접속. HTTP 302/200은 인증·WS 성공이 아니다.
     - ③ 가족 08:00 cron의 도구 권한. Doctor가 legacy sender-policy로 지목한 job이고, 실행·배달은 ok지만 도구 사용은 판독하지 않았다.
     - ④ 첫 실제 `memory_search`가 콜드 15s timeout에 걸리는지
