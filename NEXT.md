@@ -54,7 +54,7 @@
 
 - **Current**: DNS·DNSSEC·등록기관·homepage·garden 이전 완료, Netlify DNS zone 삭제 완료(2026-10-02). Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다. 이제 7·8단계 전의 **이관 절차 정리 단계**.
 - **Next**: ① aionsclubs.org DS 반영·`AD` 확인(위 RAIL 11) ② 이관 절차 정리 — 7·8단계 착수 조건(접근제어·클라이언트·롤백·`proxy` 네트워크·DNSSEC 해제 순서)을 문서로 먼저 굳힌다. 정리가 끝나기 전에는 터널 이전을 시작하지 않는다.
-- **OpenClaw detour — 10.2 컷오버 완료(2026-10-12)**: 라이브 `2026.10.2 (b8952d4)`. 남은 것은 아래 §OpenClaw 후속의 사후 관찰뿐이고, 관찰은 자연 사용을 기다리면 된다. 그래서 stem #11로 복귀한다. 영수증: ROADMAP 2026-10-12, 로컬 `.agent-reports/openclaw-10.2-opus-candidate-review.md`(gitignore).
+- **OpenClaw detour — 10.3 교체 완료(2026-10-14)**: 라이브 `2026.10.3 (59cb447)`. 남은 것은 아래 §OpenClaw 후속의 사후 관찰뿐이고, 관찰은 자연 사용을 기다리면 된다. 그래서 stem #11로 복귀한다. 영수증: ROADMAP 2026-10-14·10-12, 로컬 `.agent-reports/openclaw-10.3-opus-preflight.md`·`openclaw-10.2-opus-candidate-review.md`(gitignore).
 - **Read**: [#11 본문·최신 코멘트](https://github.com/junghan0611/nixos-config/issues/11) · 위 RAIL 11 · 비공개 oracle `~/web-publish/`.
 - **Do not touch**: 7·8단계 착수 금지(GLG 10-02). aions 터널 변경 금지. ICANN 인증은 새 대기 경고 없이 미처리로 되살리지 않는다. DNSSEC은 DS를 먼저 지우기 전에 끄거나 NS를 옮기지 않는다.
 
@@ -62,22 +62,35 @@
 
 - **Utility 후속 — 새 자동 호출은 먼저 설명/기록**: 현재(9.8에서 지정, 10.2 컷오버 후 설정 무변경) 공통 utility는 명시 `openai/gpt-6-luna` / runtime `openclaw`; known-purpose title RPC 1회가 ChatGPT transport HTTP200으로 성공. 운영 상태·소비자/trigger/fallback은 [자동화 SSOT §Utility](docs/openclaw-automations.md#utility-보조-호출--운영자에게-알려진-목적만)·ORACLE.md에 승격. Next: 다음 자연 실사용/정기 cron에서 helper model/rail·실제 소비자 목적을 관찰(추가 강제 실행/모델 호출 안 함); 새 미설명 소비자는 GLG와 먼저 논의. title/transcript primary fallback은 기존 동작이고 전체 목적별 hard deny는 아직 구현하지 않았다. 과거 Haiku key/OAuth·실청구는 별도 미확인이다.
 
-- **10.2 사후 관찰 — 추가 호출 없이 자연 사용으로**(컷오버 2026-10-12 18:32 KST):
-  - **본 것**: 6봇 무배달 smoke `ok`·`fallbackUsed=false`, Telegram 6/6, sessions indexed=eligible 6/6, 8+3 서빙 URL 기대값, mini 실제 DM 1턴 처리(18:37).
-  - **볼 것**: ① Control UI(인증 후 WS)·Android 앱 접속 — HTTP 302/200은 인증·WS 성공이 아니다. ② 첫 자연 cron 실행·실배달·도구 권한: bbot memento 3h, 그리고 **glg `morning-family-schedule-reminder`(활성, 매일 08:00 KST)**. 후자는 Doctor가 "explicit tool cap이 없어 legacy restrictive sender-policy 유지"로 지목한 3개 중 하나라 첫 실행에서 도구 권한을 본다. 나머지 2개(wife·경매 브리핑)는 OFF다. ③ 첫 실제 `memory_search`가 콜드 15s timeout에 걸리는지. prewarm 6호출은 GLG 승인 사항이고, `ok` smoke는 prewarm으로 세지 않는다. ④ memory source dirty(mini 70/71, bbot 119/119): 정기 sync 뒤에도 남을 때만 조사하고 force는 금지. ⑤ utility가 명시 Luna 레일로 남는지.
-  - **보존 중 / 정리 후보**: live config 안의 기동 Doctor `.pre-startup-migration-*.bak` 1.09GiB는 soak 뒤 GLG 승인을 받아 정리한다. cold state v19는 `~/openclaw/backups/pre-10.2-cutover-20261012T181929/`(비공개)에 있다. smoke 세션 `agent:<id>:smoke-10-2-20261012` 6개는 지원 절차 확인 전에는 지우지 않는다(jsonl·DB 직접 삭제 금지).
-  - **롤백**: `openclaw-custom:9.8-dirty-fix` + 위 cold state. 이미지만 되돌리면 9.8이 state v20을 거부한다. CLI home·컷오버 뒤 OAuth 토큰은 범위 밖이다.
+- **10.2·10.3 사후 관찰 — 추가 호출 없이 자연 사용으로**(10.2 컷오버 2026-10-12 18:32 · 10.3 교체 2026-10-14 12:04 KST):
+  - **본 것**:
+    - 10.2: bbot memento 5회 ok/delivered(10-12 19:43 ~ 10-13 07:36), 가족 08:00 cron ok/delivered(10-13·10-14). cron은 모두 `cli exec provider=claude-cli`이고 Anthropic API 직접 호출은 0건이다(cron.runs의 `provider: anthropic`은 모델 접두어 표시일 뿐).
+    - 10.3: Telegram 6/6, sessions indexed=eligible 6/6, 8+3 URL, config 변경 0.
+  - **볼 것**:
+    - ① 10.3 첫 자연 cron(bbot memento 10-14 13:26)과 첫 실대화
+    - ② Control UI(인증 후 WS)·Android 앱 접속. HTTP 302/200은 인증·WS 성공이 아니다.
+    - ③ 가족 08:00 cron의 도구 권한. Doctor가 legacy sender-policy로 지목한 job이고, 실행·배달은 ok지만 도구 사용은 판독하지 않았다.
+    - ④ 첫 실제 `memory_search`가 콜드 15s timeout에 걸리는지
+    - ⑤ memory source dirty(glg·mini·bbot의 dirty 플래그, bbot memory 120/121). 정기 sync 뒤에도 남을 때만 조사하고 force는 금지.
+    - ⑥ utility가 명시 Luna 레일로 남는지
+  - **관찰만 하는 기존 증상**:
+    - `Activity summary publication failed (aborted)`: Control UI 실시간 push만 실패하고 요약은 저장된다. 10.3에서도 해당 코드는 무변경.
+    - gpt 봇 `keyed user is outside the current turn` 1회(10-13 08:18, 상류 #159059·#168456 열림)
+    - health `deliveryQueues failed=1`: 6월 레거시 tombstone(`completed_permanent`)이라 정상 기준값이다.
+  - **보존 중 / 정리 후보**: 10.2 기동 Doctor의 `.pre-startup-migration-*.bak` 1.09GiB는 soak 뒤 GLG 승인을 받아 정리한다(10.3은 새 `.bak` 0개). cold state v19는 `~/openclaw/backups/pre-10.2-cutover-20261012T181929/`(비공개)에 있다. smoke 세션 `agent:<id>:smoke-10-2-20261012` 6개는 지원 절차 확인 전에는 지우지 않는다(jsonl·DB 직접 삭제 금지).
+  - **롤백**: `openclaw-custom:10.2-candidate-20261012`로 재태그 후 recreate. 9.8 이미지는 10-14에 삭제했다. CLI home·OAuth 토큰은 범위 밖이다.
+  - **음성 전사 보류**: `Media provider not available`(groq가 `plugins.allow` 밖). GLG는 추가 비용 0과 Oracle 로컬 모델 제외를 결정했다. 공식 Sign in with ChatGPT flow는 transcription API 미지원이다. 조사는 [#12](https://github.com/junghan0611/nixos-config/issues/12). `tools.media.models`를 비우지 않는다(자동 감지에 OpenRouter가 잡힌다).
   - **미결 이월 — 컷오버와 무관**: 과거 Anthropic Haiku 보조 호출의 credential 종류·실청구, 그리고 CLI 인증 선택 조건은 여전히 미확인이다. 공식 read-only 수단으로 메타데이터만 조회하는 일은 **GLG 승인 대기**(비밀값·DB 직접조회·refresh/probe·모델호출 금지). CLI를 쓴다는 사실만으로 허용 판정하지 않는다.
   - **Do not touch**: `plugins.entries.codex.enabled:false` 유지(지우면 Doctor가 codex를 켤 수 있다). 복사 상태로 무엇을 실행하든 `--network none`(Doctor가 OAuth refresh를 시도한다).
 
 - **Telegram DM 토픽 첫 실대화 검수**: 운영자가 새 토픽을 만들고 첫 메시지 → 토픽별 세션·같은 토픽 답변 확인. 6봇 활성화·연결 갱신 영수증은 [운영 문서](docs/openclaw-telegram-topics.md)와 CHANGELOG `v2026.10.8`. 플래그 검증과 실제 대화 성공은 구분하고, 기존 flat DM 맥락의 자동 이관은 보장하지 않는다. 기존 DM reset·모델 변경·privacy 전역 해제 금지; 채널·Telegram bot-to-bot 작업은 별도 요청 전 보류.
 
-- **bbot memory admission 패치 후속**: 10.2판(v2)으로 재작성해 배포했다. 다음 정기 memento 후 새 cron 부모도 clean으로 수렴하는지 soak 확인 → 버전업 전 상류 수정 확인·패치 회수/재검토(10.2 외에는 빌드 fail-closed). 배포·청크 보존 영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md)와 CHANGELOG `v2026.10.8`. 노트북의 재수확·prune·verify·발행은 운영자가 agent-config 담당자에게 전달한다. **Do not touch:** 오토B 중지·`--force`·DB 직접 수정·andenken dirty hold 우회 금지.
+- **bbot memory admission 패치 후속**: 10.3판(v3)으로 이식해 배포했다(상류 10.3도 미수정). 정기 memento 뒤 새 cron 부모도 clean으로 수렴하는지 soak 확인 → 다음 버전업에서도 상류 수정 확인·패치 회수/재이식(10.3 외에는 빌드 fail-closed). 배포·청크 보존 영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md)와 CHANGELOG `v2026.10.8`. 노트북의 재수확·prune·verify·발행은 운영자가 agent-config 담당자에게 전달한다. **Do not touch:** 오토B 중지·`--force`·DB 직접 수정·andenken dirty hold 우회 금지.
 
 - **9.8→10.2 이월 검수**(10.2 Doctor도 6.1-sol을 implicit codex→openclaw로 해석, 9.8과 동일): ① main·gpt Telegram 실대화가 6.1-sol로 도는지 첫 실사용에서 확인(DM엔 사용자 핀 없음 —
   다음 턴부터 primary). ② Telegram `/model`로 6.1-sol 선택이 되는지(`sessions.patch`는 codex harness 요구로
   거부 — 같은 검증이면 upstream 이슈 후보). ③ Android node 세션 `agent:main:node-1fd06883a3db`의 옛
-  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP 재발 여부(10.2 recreate에서는 0회). ⑤ Control UI에서 GitHub 링크
+  `gpt-5.6-sol` 사용자 핀 — ②가 풀리면 정렬. ④ 기동 tini ELOOP — 10.2 recreate 0회, 10.3 recreate 4회(재시작 정책으로 자동 회복). recreate마다 0~4회로 나오는 기존 증상이다. ⑤ Control UI에서 GitHub 링크
   리더 실사용 확인(10-03 `plugins.allow`에 `github` 추가, 핫리로드 적용; 토큰 없이 익명 쿼터).
 - **9.7 다음 검수**: `/dashboard` Telegram 명령 중복의 메뉴 영향 확인; 부모 세션별
   subagent 동시성 변경에서 호스트 전체 상한 4 의도 유지 여부 확인(숫자만 임의 변경 금지).

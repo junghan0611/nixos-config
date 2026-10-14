@@ -10,6 +10,28 @@
 
 ---
 
+## 2026-10-14 — OpenClaw 10.2→10.3 마이너 교체 (GLG 방식), 기억 패치 v3
+
+- GLG 결정: *"마이너 버전 업데이트 백업 롤백 준비하지 않고 게이트웨이 안돌때 하면될거야. 리허설 할필요 없고
+  이미지 가져와서 교체하는 식으로"*. 그래서 cold archive·Doctor 리허설·복원 시험 없이 교체만 했다. 절차는
+  `.claude/skills/openclaw` §9로 승격했다.
+- 판정: `package.json openclaw.schemaVersions`가 10.2·10.3 모두 `{state:20, agent:24}`.
+  compare는 ahead 90 / behind 0(선형)이다. ARM64 digest는 `c9af5b53…`, label revision은 `59cb447`.
+  10.3 수정 중 우리에게 해당하는 것(claude-cli MCP 도구 권한 #165432, CLI 도구 이름 #153032,
+  Doctor OAuth 보존 #170256, ChatGPT 1000 close #167512)은 커밋 diff로 범위를 확인했다.
+  #169412는 `/model` 선택 검사만 고친 것이라 runtime pin 정리의 근거가 아니다.
+- 기억 hotfix v3: 상류 소스 blob이 10.2와 같아 여전히 미수정이다. 10.3 이미지 dist에서 다시 측정했다
+  (`DoL7k8z2` 원본 `65545cac…` → 결과 `ad1a3fe1…`, helper `34c459c8…` 동일).
+  미패치 상태에서 `--baseline` GREEN, 기본 모드 RED. 빌드 안에서 패치 후 10/10.
+- 디스크: 9.8 이미지 2개를 지우고(GLG 승인) 7일 넘은 build cache 2.05GB를 정리했다. 이미지를 지워도 cache가 레이어를
+  붙잡아 공간이 안 생기는 것을 실측했다. root 여유 6.6G → 11G → 교체 후 7.1G.
+- 교체 11:59–12:04 KST: idle gate ready/active 0 → `latest` 재태그 → recreate. 기동 tini ELOOP 4회 자동 회복 →
+  startup Doctor → RPC health ok 307초. Docker health badge는 12:07(약 8분)에 healthy.
+  기동 Doctor가 만든 `.bak`은 0개이고 `openclaw.json` 변경 경로도 0개다.
+- 검증(모델 호출 없음): Telegram 6/6, plugin errors 0(zai global 로드, codex disabled 유지),
+  sessions indexed=eligible 6/6, 8+3 URL·comments ping, turnwatch 미완료 턴 0.
+- 롤백면: 이미지 `openclaw-custom:10.2-candidate-20261012`(retag + recreate). 9.8로 돌아갈 이미지는 삭제됐다.
+
 ## 2026-10-12 — OpenClaw 9.8→10.2 직행, cron-parent 기억 패치 v2
 
 - 10.2(`b8952d4`)를 9.9·10.1을 건너 직접 올렸다(운영 컷오버 2026-10-12). 9.8 대비 shared state **v19→v20**, agent DB **v24 유지**.

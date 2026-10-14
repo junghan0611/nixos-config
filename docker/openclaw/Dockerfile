@@ -204,7 +204,10 @@
 # 2026.9.8: no state/agent DB migration (state v19, agent DB v24 unchanged); adds openai/gpt-6.1-sol.
 # Internal sessions can no longer end with NO_REPLY; Doctor drops retired silentReply.internal/direct.
 # Rollback: openclaw-custom:9.7-rollback + backups/pre-9.8-20261003T165528 (config + cold state, same v19/v24).
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:904a62cb9502358de9a4441cb7f579ae94c346cfa9ccbdd2502d43c1ac66e77e
+# 2026.10.2: state v19→v20 (agent DB v24); cold backup + startup Doctor; rollback = 9.8 image + pre-10.2 cold state.
+# 2026.10.3 (59cb447): no state/agent DB migration (state v20, agent DB v24 unchanged); minor bump —
+# pull pinned digest, port hotfix guard, swap at idle. Rollback image: openclaw-custom:10.2-candidate-20261012.
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:c9af5b5327f4835511f9f3856a80a2a5b3a9da0ad5c01fdd6f4e0f3f49d1be22
 FROM ${OPENCLAW_BASE}
 
 USER root
@@ -275,8 +278,7 @@ RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
-# 10.2-only memory admission hotfix; version/bundle guards fail closed.
-# Cron parents must be classified before the corpus is counted as eligible.
+# 10.3-only memory admission hotfix (v3; upstream source unchanged); version/bundle guards fail closed.
 # Cron parents must be classified before the corpus is counted as eligible.
 COPY patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/
 RUN python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \

@@ -12,6 +12,21 @@
 
 ## 활성
 
+### 10.3 교체 — 디스크·격리 검증·정상 기준값 (2026-10-14)
+
+- **이미지를 지워도 공간이 안 생길 수 있다.** 9.8 이미지 2개(4.45GB)를 지웠는데 `df`가 그대로였다.
+  BuildKit cache가 그 레이어를 붙잡고 있었기 때문이다. `docker builder prune -f --filter until=168h`로
+  2.05GB를 회수한 뒤에야 root가 6.6G에서 11G로 늘었다. docker는 root(`/dev/sda2`)에 있고 `~/openclaw`는 home(`/dev/sdb`)에 있다.
+- **격리한 `config validate`는 global plugin을 못 본다.** 후보 이미지에 `openclaw.json`만 ro로 붙이면
+  `plugins.entries.zai: plugin not installed`가 뜬다. zai는 이미지가 아니라 live state
+  `~/.openclaw/extensions/zai`에 설치돼 있기 때문이다. 교체 후 `plugins list`에서 `zai loaded/global`이면 오탐이다.
+- **health `deliveryQueues.failed=1`은 정상 기준값이다.** state DB `delivery_queue_entries`의 6월 16일 행이다.
+  channel·target·payload가 없고 `recovery_state=completed_permanent`인 레거시 이관 tombstone이다(재전송 방지 펜스).
+  자동 정리 대상이 아니고(`completed_permanent` 제외), 지원 CLI도 없다. DB 직접 삭제 금지.
+- **`[gateway] Activity summary publication failed error="This operation was aborted"`** — Control UI용
+  `sessions.changed` 실시간 push만 실패한다. Luna 요약 생성은 200으로 성공하고 저장된다(새로고침하면 보인다).
+  텔레그램 영향과 종량 비용은 없다. 10.2에서 2일간 56회. 10.3에서도 해당 코드는 무변경이라 관찰만 한다.
+
 ### 10.2 컷오버 — 복사 상태 Doctor·CLI 플래그·기동 대기 (2026-10-12)
 
 전체 서사는 ROADMAP 2026-10-12에 있다. 여기는 다시 밟을 함정만 둔다.
