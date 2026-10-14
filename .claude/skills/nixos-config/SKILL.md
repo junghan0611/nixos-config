@@ -1,6 +1,6 @@
 ---
 name: nixos-config
-description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드 판정(마이너=교체만 / 메이저=별도 판단 — 절차는 openclaw 스킬 §9), 공개면 변경 시 서빙 URL 전수 검수(caddy 8-세트 + CF Tunnel + Tailscale Serve), 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리', 'tailscale', '터널', '안드로이드 앱', '앱이 안 붙어', 'trustedProxies', '403', '페어링'."
+description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드 판정(마이너=교체만 / 메이저=별도 판단 — 절차는 openclaw-update 스킬), 공개면 변경 시 서빙 URL 전수 검수(caddy 8-세트 + CF Tunnel + Tailscale Serve), 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리', 'tailscale', '터널', '안드로이드 앱', '앱이 안 붙어', 'trustedProxies', '403', '페어링'."
 user_invocable: true
 ---
 
@@ -68,8 +68,8 @@ sudo nixos-rebuild switch --flake .#<profile>   # profile = oracle|nuc|laptop|th
 라이브 truth = `~/openclaw/`. 공개 백업/레퍼런스 = `docker/openclaw/`, `docker/*`. 절대
 secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. 자주 쓰는 반사신경만:
 
-- **업그레이드는 두 종류다 — 먼저 어느 쪽인지 판정하라.** 절차의 SSOT는 `openclaw` 스킬 §9
-  "버전업 — GLG 방식"이다(2026-10-14). 여기는 요약만 둔다.
+- **업그레이드는 두 종류다 — 먼저 어느 쪽인지 판정하라.** 절차·함정표의 SSOT는 같은 리포의
+  **`openclaw-update` 스킬**이다(2026-10-14). 여기는 요약만 둔다.
   - **마이너 (선언 `schemaVersions` 동일)** = 교체만 한다. base digest pin → hotfix 가드 이식 → candidate 빌드 →
     idle gate → retag → recreate → 모델 호출 없는 확인. cold archive·리허설은 하지 않는다.
     `~/openclaw` = `openclaw-config` 리포이고, 공개 미러는 `docker/openclaw/`다.

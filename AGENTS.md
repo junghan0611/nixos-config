@@ -19,6 +19,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **`nuc` / `laptop` 일반 NixOS 작업** | 이 문서 + 표준 NixOS 흐름 |
 | 함정 카탈로그 (OpenClaw) | [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) |
 | **OpenClaw 런타임을 실제로 만짐** (봇 설정·heartbeat·cron·채널·스키마) | `openclaw` **스킬** — 기억이 아니라 그 버전의 사실로 만지는 절차. 첫 수는 `openclaw docs` / `config schema` |
+| **OpenClaw 버전업** (이미지 교체) | `openclaw-update` **스킬** — 마이너/메이저 판정, GLG 방식 교체 순서, 함정표, 읽기 전용 점검 스크립트 |
 | OpenClaw 주제별 소스 좌표 (`src/…:줄`) | [docs/openclaw-reference-map.md](docs/openclaw-reference-map.md) — v2026.8.2 고정 클론 기준 |
 | **봇별 크론/heartbeat — 무엇이 사람 없이 도는가** | [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**. 동기화 `./run.sh w)` |
 

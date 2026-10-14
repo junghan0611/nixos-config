@@ -14,7 +14,7 @@
 
 - GLG 결정: *"마이너 버전 업데이트 백업 롤백 준비하지 않고 게이트웨이 안돌때 하면될거야. 리허설 할필요 없고
   이미지 가져와서 교체하는 식으로"*. 그래서 cold archive·Doctor 리허설·복원 시험 없이 교체만 했다. 절차는
-  `.claude/skills/openclaw` §9로 승격했다.
+  `.claude/skills/openclaw-update`로 승격했다(자동화 없이 체크리스트와 함정표, 읽기 전용 점검 스크립트 둘).
 - 판정: `package.json openclaw.schemaVersions`가 10.2·10.3 모두 `{state:20, agent:24}`.
   compare는 ahead 90 / behind 0(선형)이다. ARM64 digest는 `c9af5b53…`, label revision은 `59cb447`.
   10.3 수정 중 우리에게 해당하는 것(claude-cli MCP 도구 권한 #165432, CLI 도구 이름 #153032,

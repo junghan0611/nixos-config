@@ -154,67 +154,8 @@ git -C ~/repos/3rd/openclaw describe --tags               # 클론이 그 버전
 셋 다 통과하고 나서 손을 대라. 버전업 직후라면 `openclaw config schema` 출력을 이전 버전과
 diff하는 것이 "우리 설정이 깨졌나"의 가장 빠른 답이다.
 
-## 9. 버전업 — GLG 방식 (매번 묻지 않는다)
+## 9. 버전업 — `openclaw-update` 스킬로
 
-> 2026-10-14 GLG: *"마이너 버전 업데이트 백업 롤백 준비하지 않고 게이트웨이 안돌때 하면될거야.
-> 리허설 할필요 없고 이미지 가져와서 교체하는 식으로"* · *"게이트웨이 턴만 안돌고 있으면 내렸다가
-> 올리는것은 상관없어"* · *"다 끝나고 알려주면돼"* · *"업데이트는 매우 중요하다."*
-
-**첫 수는 판정이다 — 마이너인가 메이저인가.** 기준은 이름이 아니라 **선언된 스키마**다. 이미지를
-받기 전에 GitHub API로 잰다:
-
-```bash
-R=repos/openclaw/openclaw; for t in v<현재> v<대상>; do
-  gh api "$R/contents/package.json?ref=$t" -H 'Accept: application/vnd.github.raw' \
-    | jq -c '[.version, .openclaw.schemaVersions]'; done          # {state, agent} 비교
-gh api "$R/compare/v<현재>...v<대상>" -q '.status, .ahead_by, .behind_by'   # 선형(ahead, behind 0)인가
-docker buildx imagetools inspect --raw ghcr.io/openclaw/openclaw:<대상>    # arm64 manifest digest
-```
-
-| 판정 | 조건 | 절차 |
-|---|---|---|
-| **마이너** | `schemaVersions` 동일 | **교체만.** cold archive·Doctor 리허설·복원 시험 **하지 않는다** |
-| **메이저** | state 또는 agent 스키마 상승 | **이 절의 GLG 결정 범위 밖이다 — 따로 판단한다.** 선례는 게이트웨이 정지 → cold archive(tar -d 0, sha) → `--network none` 사본 리허설 → 컷오버(ROADMAP "9.8→10.2") |
-
-선언값은 첫 판정일 뿐이다. pull한 뒤 이미지에서 실제 schema·config 파싱을 확인한다(gotchas
-"bump가 한 줄인지 마이그레이션인지는 이미지를 열어라"). 선언과 실측이 어긋나면 메이저로 다룬다.
-
-### 마이너 교체 순서 (중간 질문 없이 끝까지 간 뒤 한 번 보고)
-
-1. **릴리즈 노트 대조** — `CHANGELOG/<ver>.md`(raw)를 우리 증상·설정과 맞춘다. PR 제목만 보고
-   "직결"이라 말하지 말고 그 커밋 diff로 범위를 확인한다(10.3 #169412 과장 사례).
-2. **디스크** — docker는 root(`/dev/sda2`), 운영 상태는 home(`/dev/sdb`)이다. 새 base는 압축 해제
-   약 3.4GB + 커스텀 레이어 약 1GB를 root에 쓴다. `docker system df -v`의 UNIQUE로 잰다.
-   이미지를 지워도 build cache가 레이어를 붙잡고 있으면 공간이 안 생긴다 →
-   `docker builder prune -f --filter until=168h`.
-3. **base pull은 digest로** — `Dockerfile` `ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:<arm64>`.
-   이미지 label `org.opencontainers.image.revision`이 릴리즈 SHA와 같은지 본다.
-4. **로컬 hotfix 가드** — `patch-*.py`는 버전과 바이트에 고정돼 있어 새 버전에서 **빌드가 일부러
-   실패한다**. upstream이 고쳤는지 소스 blob으로 확인하고, 안 고쳤으면 새 이미지 dist에서 chunk
-   이름·원본 sha를 재측정해 이식한다. 미패치 bundle에서 `--baseline` GREEN, 기본 모드 RED를 확인하고,
-   패치 후 기본 모드 GREEN으로 닫는다. npm dist는 Docker dist와 chunk 이름이 달라 대용하지 못한다.
-5. **빌드** — 최소 컨텍스트(`.dockerignore`로 Dockerfile·hotfix만 포함)로
-   `openclaw-custom:<ver>-candidate-<date>`를 만든다. config 디렉터리가 빌드 컨텍스트에 들어가지 않게 한다.
-   빌드 뒤 후보 이미지로 config를 격리 파싱한다:
-   `docker run --rm --network none -e OPENROUTER_API_KEY=dummy -v ~/openclaw/config/openclaw.json:/home/node/.openclaw/openclaw.json:ro …
-   openclaw.mjs config validate --json`. 이때 global plugin(zai)의 "not installed" 경고는 오탐이다(gotchas 10.3).
-6. **교체** — idle gate(`gateway.suspend.prepare` → `ready`, activeCount 0) → `latest` retag →
-   `docker compose -p openclaw-config up -d --no-build --force-recreate openclaw-gateway`.
-   기동 entrypoint가 startup Doctor를 자동으로 돌리므로 **수 분간 응답이 없는 것은 정상이고, GLG가 허용했다.**
-   실측(10.3): tini ELOOP 4회 자동 회복 → RPC health ok 307초 → Docker health badge healthy 약 8분.
-   badge는 3분 간격으로 늦게 따라오므로 **완료 판정은 RPC `health.ok`로 한다.**
-   실패하면 이전 candidate로 retag하고 다시 recreate한다. 스크립트 선례: `~/openclaw/backups/swap-10.3-20261014/swap.py`.
-7. **확인 (모델 호출 없음)** — version · RPC health · restarts 0 · Telegram 6/6 · plugins errors 0 ·
-   ELOOP 0 · config diff(bookkeeping 경로만 바뀌었는가) · hotfix가 이미지에 적용됐는가. 실제 동작은
-   다음 자연 cron과 실제 대화로 본다. **smoke 모델 호출은 GLG가 따로 요청할 때만.**
-8. **기록** — openclaw-config(Dockerfile·hotfix·README change history)와 nixos-config 미러
-   (`docker/openclaw/`) 및 문서(ORACLE 현재 버전, ROADMAP 이력, NEXT 후속). push는 GLG가 말할 때만.
-
-### 묻는 것은 셋뿐
-- **롤백 자산 삭제**(옛 이미지·백업) — 디스크가 모자랄 때 범위를 제시하고 승인을 받는다.
-- **모델 호출이 들어가는 smoke**.
-- **push**.
-
-나머지는 끝까지 진행하고 **한 번에 보고**한다. 롤백 수단은 직전 candidate 이미지를 지우지 않고
-두는 것이다. 스키마가 같아도 이미지만 되돌리는 롤백이 Doctor가 바꾼 config·auth까지 되돌린다는
-증명은 아니다 — 그 위험을 알고 간다.
+버전을 올릴 때는 같은 리포의 **`openclaw-update` 스킬** 한 장을 본다. 마이너/메이저 판정, GLG 방식의 교체 순서
+(마이너는 교체만, 메이저는 따로 판단), 매번 밟았던 함정표, 읽기 전용 `preflight.sh`·`verify.sh`가 들어 있다.
+교체는 자동화하지 않는다 — GLG: *"자동화하면 터지니까 그냥 헛발질 안하게하는게 중요하다."*
