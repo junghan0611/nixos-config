@@ -9,6 +9,22 @@
 
 ## Unreleased
 
+## v2026.10.16-openclaw.1 — OpenClaw 10.4 운영 교체
+
+### OpenClaw 10.3 → 10.4
+
+- Oracle Gateway를 **2026.10.4**(`383c124`)로 교체했다. ARM64 기반 이미지 digest를 고정하고, 선언 스키마 state20·agent24가 직전10.3과 같음을 확인했다. GitHub compare의 파일300개 상한을 보완하기 위해 trees API로 변경431파일을 식별하고 주요 런타임 경로의 diff를 검토했다. 이는 실제 대화의 모든 동작을 검증했다는 뜻은 아니다.
+- **cron 부모 세션 기억 admission 패치**를 실제10.4 Docker 번들 기준으로 재이식했다. 미패치 characterization GREEN·기본 검사 RED에서 패치 후10개 단언 GREEN으로 닫았고, 버전·번들 위치·원본·결과·helper 해시의 fail-closed 가드를 유지했다. 기반 이미지는 `sha256:e79f0168…c8bb16`이며, Dockerfile·패치·검출기의 공개 미러를 운영 사본과 대조했다.
+- GLG의 마이너 업데이트 방식에 따라 새 cold archive·Doctor 리허설·전체 복원 시험 없이 진행했다. 격리된 네트워크·읽기 전용 설정으로 후보를 검증한 뒤, 원자적 idle gate의 ready·active0·blockers없음을 확인하고 교체했다. 기동 Doctor를 포함해 약6분 뒤 RPC가 준비됐고, 이번 기동의 ELOOP·재시작은0회였다. 원인이 수정됐다는 일반화는 하지 않는다.
+- **모델 호출0회**, 운영 검증32개 PASS·FAIL0·UNKNOWN0을 확인했다. Telegram6계정 연결, 플러그인·패치 해시·서빙 URL·comments ping을 검사했고, 코디가 실제10.4 이미지·healthy·재시작0·10.3 롤백 이미지 보존을 독립 확인했다. 설정 내용은 교체 전후 변경0경로였지만, Doctor의 delivery row 정규화 등 모든 쓰기가 없었다는 뜻은 아니다.
+- 교체 직후6봇 sessions의 files/eligible 수가 모두 같음을 확인했다. 이는 verify의 정보(INFO) 항목이며, mini·bbot 일반 기억 색인의 일부 지연과 dirty 상태는 다음 정기 동기화 관찰로 남겼다. 첫 실제 대화·자연 cron·인증 후 Control UI WebSocket·Android도 이번 점검으로 닫지 않았다.
+
+### 공간·복구 경계와 운영 문서
+
+- 승인된 미참조 Nix GC는 시스템·프로필·롤백 세대를 삭제하지 않고 약582MiB를 회수했다. 이후 공간 정리가 끝난 뒤 root 여유16.7GiB를 재측정하고 추가 삭제 없이 후보 빌드·교체를 진행했다. 다운로드·빌드의 디스크 증가량과 준비 시간을 운영 스킬에 관측값으로 남겼다.
+- GLG 승인으로 옛10.2 이미지를 은퇴시켰으며 **직전10.3 candidate는 보존**했다. 이미지 삭제만으로 디스크가 풀리지 않고 BuildKit cache가 레이어를 보유하는 사례를 기록했다. cache의 표시 크기·이미지 논리 크기와 실제 회수량을 구분하며 전체 prune를 자동 허용하지 않는다.
+- ORACLE의 현재 버전·롤백·hotfix, ROADMAP의 교체 영수증, NEXT의 후속 관찰과 업데이트 스킬을 현행화했다. 컨테이너 층의 Doctor capture는 휘발성 사본이며 지속 보존·복원 검증을 하지 않았다. 비공개 설정·인증·개인 로그·원본 백업은 공개 릴리즈에서 제외한다. 모델·보조 호출·전사·채널 권한 정책은 바꾸지 않았다.
+
 ## v2026.10.16 — 재현 가능한 작업장의 대문 정리
 
 ### README 현행화와 프로젝트 소개

@@ -135,8 +135,9 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.10.3** baseline)
+### Model routing (현재: OpenClaw **2026.10.4** baseline)
 
+> 10.4 교체(2026-10-16): 10.3과 스키마 동일(state v20 / agent v24), `openclaw.json` 설정 내용 변경 없음(경로 diff 0), 이번 기동 재시작 0. Doctor 경고는 10.3과 같다.
 > 10.3 교체(2026-10-14): 10.2와 스키마 동일(state v20 / agent v24), `openclaw.json` 변경 0경로. Doctor 경고는 10.2와 같다.
 > 10.2 운영(2026-10-12): 9.8 대비 shared state **v19→v20**, agent DB **v24 유지**. 모델 설정 변경 0.
 > 6봇 무배달 실응답 `ok`·`fallbackUsed=false` — main·gpt `openai/gpt-6.1-sol`(embedded/`openclaw`),
@@ -146,8 +147,8 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 > `sessions.patch` 거부는 9.8에서 측정했다. 10.2는 같은 경로(projection 모드는 fallback 제외)를 소스로만 확인했고 RPC 재실측은 하지 않았다.
 > **`plugins.entries.codex.enabled:false`를 지우지 않는다** — 지우면 `doctor --fix`가 codex를 켤 수 있다.
 > 근본 정리(6.1-sol에 `agentRuntime {id:"openclaw"}`)는 미결정.
-> 롤백은 **이미지 `openclaw-custom:10.2-candidate-20261012`**(a0178785)로 `latest`를 재태그하고 recreate한다. 10.3은 GLG 마이너 방식이라
-> cold archive를 만들지 않았다. 스키마가 같아도 Doctor가 바꾼 config·auth까지 되돌린다는 증명은 아니다. 9.8 이미지는 2026-10-14에 삭제했다.
+> 롤백은 **이미지 `openclaw-custom:10.3-candidate-20261014`**(77132168)로 `latest`를 재태그하고 recreate한다. 10.3·10.4는 GLG 마이너 방식이라
+> cold archive를 만들지 않았다. 스키마가 같아도 Doctor가 바꾼 config·auth까지 되돌린다는 증명은 아니다. 9.8 이미지는 2026-10-14, 10.2 이미지는 2026-10-16에 삭제했다.
 > pre-10.2 cold state(v19)는 비공개 `backups/pre-10.2-cutover-20261012T181929/`에 남아 있다. 9.8로 돌아가려면 git 이력의 Dockerfile로 재빌드해야 한다.
 
 > 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
@@ -230,15 +231,15 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
-### Memory admission hotfix (10.3, v3)
+### Memory admission hotfix (10.4, v3)
 
-현재 10.3 이미지는 `docker/openclaw/patch-memory-cron-parent.py`(v3)를 포함한다. cron 부모 세션도
+현재 10.4 이미지는 `docker/openclaw/patch-memory-cron-parent.py`(v3)를 포함한다. cron 부모 세션도
 기억 corpus에서 `cron`으로 분류해, 시스템 메시지뿐인 부모가 `eligible`에만 잡히며 영구
-`dirty`를 만드는 불일치를 막는다. 10.3 상류도 미수정이다(소스 blob이 10.2와 동일, corpus classifier가 run-only `isCronRunSessionKey`).
-패치는 import 1줄 + 호출 2곳뿐이고, 원본·결과·helper SHA를 고정해 **10.3 외 버전이나 번들 drift면 빌드를 거부**한다.
+`dirty`를 만드는 불일치를 막는다. 10.4 상류도 미수정이다(소스 blob이 10.2·10.3과 동일, 미패치 10.4 dist에서 기본 모드 RED, corpus classifier가 run-only `isCronRunSessionKey`).
+패치는 import 1줄 + 호출 2곳뿐이고, 원본·결과·helper SHA를 고정해 **10.4 외 버전이나 번들 drift면 빌드를 거부**한다.
 빌드 시 회귀 테스트 10개를 통과해야 한다. 미패치 bundle에서 `--baseline`(characterization)은 GREEN, 기본 모드는 RED다.
 버전업마다 새 이미지 dist에서 chunk 이름과 원본 sha를 다시 재서 이식한다. npm dist는 chunk 이름이 달라 대신 쓸 수 없다.
-10.3 교체 뒤 6봇 sessions indexed=eligible.
+10.4 교체 직후 `swap-10.4-20261016/verify-1.log`의 memory INFO(17:20)에서 6봇 sessions의 files/eligible 수가 모두 같음을 확인했다. 이 정보는 verify PASS 판정과 별개다. memory source의 mini 75/77·bbot 122/123 및 dirty 상태는 다음 정기 sync에서 수렴을 관찰한다. 패치 해시·10개 회귀 단언도 통과했다.
 9.8판 사건·영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md).
 
 ### autopilot — bbot memento 하나만 (2026-09-10)

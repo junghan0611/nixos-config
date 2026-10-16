@@ -207,7 +207,9 @@
 # 2026.10.2: state v19→v20 (agent DB v24); cold backup + startup Doctor; rollback = 9.8 image + pre-10.2 cold state.
 # 2026.10.3 (59cb447): no state/agent DB migration (state v20, agent DB v24 unchanged); minor bump —
 # pull pinned digest, port hotfix guard, swap at idle. Rollback image: openclaw-custom:10.2-candidate-20261012.
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:c9af5b5327f4835511f9f3856a80a2a5b3a9da0ad5c01fdd6f4e0f3f49d1be22
+# 2026.10.4 (383c124): stability patch, state v20 / agent DB v24 unchanged; same minor swap.
+# Rollback image: openclaw-custom:10.3-candidate-20261014 (10.2 image retired 2026-10-16).
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:e79f0168377a1ee77e29c652f133007d270558590bce8358967f456258c8bb16
 FROM ${OPENCLAW_BASE}
 
 USER root
@@ -278,7 +280,7 @@ RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
-# 10.3-only memory admission hotfix (v3; upstream source unchanged); version/bundle guards fail closed.
+# 10.4-only memory admission hotfix (v3; upstream source unchanged); version/bundle guards fail closed.
 # Cron parents must be classified before the corpus is counted as eligible.
 COPY patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/
 RUN python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \

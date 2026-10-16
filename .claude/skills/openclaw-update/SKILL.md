@@ -45,7 +45,7 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
 1. **릴리즈 노트를 우리 증상과 대조한다** — `CHANGELOG/<ver>.md`(raw). PR 제목만 보고 "고쳐졌다/직결"이라 하지 말고
    그 커밋의 diff로 범위를 본다. config·auth·plugin·권한 계약이 바뀌면 마이너 후보라도 멈추고 보고한다.
 2. **디스크** — docker는 root(`/dev/sda2`), `~/openclaw`는 home(`/dev/sdb`)이다. 10.3 때는 새 base가 압축 해제로 약 3.4GB,
-   커스텀 레이어가 약 1GB를 root에 썼다(관측값). 옛 롤백 이미지 삭제는 GLG에게 범위를 제시하고 승인받는다.
+   커스텀 레이어가 약 1GB를 root에 썼다(관측값). 10.4는 df 기준으로 pull에 3.65GB, build에 1.10GB를 썼다. 옛 롤백 이미지 삭제는 GLG에게 범위를 제시하고 승인받는다.
 3. **base pull은 digest로**
    ```bash
    docker pull ghcr.io/openclaw/openclaw@<arm64 digest>
@@ -91,7 +91,7 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - **suspend 응답을 버리지 않는다.** 풀 때는 그 응답의 `suspensionId`가 필수다(resume 스키마가 `suspensionId` 하나만 받는다):
      `docker exec openclaw-gateway openclaw gateway resume <suspensionId>`. ready가 아니면 이걸로 풀고 나중에 다시 한다.
      10.3에서는 recreate 뒤 새 프로세스에 suspend가 남지 않았다(관측).
-   - **RPC 대기에는 deadline을 둔다** — 10.3 때 20분. 10.2·10.3의 RPC 준비는 recreate부터 350초·307초였다(관측값, 보장 아님).
+   - **RPC 대기에는 deadline을 둔다** — 10.3 때 20분. 10.2·10.3·10.4의 RPC 준비는 recreate부터 350초·307초·371초였다(관측값, 보장 아님).
      다음 중 하나면 **멈추고 판단한다**(자동 롤백하지 않는다): deadline 경과 · `health.ok` 뒤에도 RestartCount가 계속 는다 ·
      ELOOP나 새 에러 줄이 이어진다.
    - **중단·롤백은 상태부터 본다.** 그 사이 새 게이트웨이가 이미 떠서 턴을 받고 있을 수 있다. 무조건 다시 recreate하지 않고
@@ -126,15 +126,15 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 
 ## 2. 함정표 — 증상 → 뜻 → 할 일
 
-숫자는 9.8·10.2·10.3에서 **관측한 값**이다. 허용 범위나 보장이 아니다. "기존 증상"으로 넘기려면 영수증의 이전 관측과
+숫자는 9.8·10.2·10.3·10.4에서 **관측한 값**이다. 허용 범위나 보장이 아니다. "기존 증상"으로 넘기려면 영수증의 이전 관측과
 **같은 대상·같은 메시지인지 비교**한 뒤에만 넘긴다.
 
 | 증상 | 관측과 뜻 | 할 일 |
 |---|---|---|
-| recreate 직후 `[FATAL tini] exec tini failed: Too many levels of symbolic links` | 9.8: 3회, 10.2: 0회, 10.3: 4회 재시작 뒤 회복. 원인 미확인 | RPC `health.ok` 뒤 RestartCount가 더 늘지 않는지 본다. 계속 늘거나 새 에러가 이어지면 §1-7 중단 기준 |
-| 수 분간 응답 없음 | entrypoint가 startup Doctor를 자동 실행한다. 350초(10.2)·307초(10.3)는 recreate부터 RPC 준비까지의 **전체 시간**이지 Doctor 단독 소요가 아니다 | §1-7 deadline 안에서 기다린다. GLG가 허용했다 |
+| recreate 직후 `[FATAL tini] exec tini failed: Too many levels of symbolic links` | 9.8: 3회, 10.2: 0회, 10.3: 4회, 10.4: 0회. 원인 미확인 — 0회는 관측일 뿐 수정 판정이 아니다 | RPC `health.ok` 뒤 RestartCount가 더 늘지 않는지 본다. 계속 늘거나 새 에러가 이어지면 §1-7 중단 기준 |
+| 수 분간 응답 없음 | entrypoint가 startup Doctor를 자동 실행한다. 350초(10.2)·307초(10.3)·371초(10.4)는 recreate부터 RPC 준비까지의 **전체 시간**이지 Doctor 단독 소요가 아니다 | §1-7 deadline 안에서 기다린다. GLG가 허용했다 |
 | Docker `health: starting/unhealthy`가 오래 감 | healthcheck 간격이 3분이라 badge가 늦게 따라온다(10.3: RPC ok 뒤 약 3분) | 완료 판정은 **RPC `health.ok`**와 verify. badge로 판정하지 않는다 |
-| 이미지를 지웠는데 `df`가 그대로 | BuildKit cache가 레이어를 붙잡고 있을 수 있다 | `docker system df`로 Build Cache부터 잰다. 10.3에서 쓴 `docker builder prune -f --filter until=168h`(2.05GB)는 **관측된 회수 기법일 뿐 자동 허용 명령이 아니다** — 공유 빌드 캐시라 범위를 제시하고 GLG 승인 후 |
+| 이미지를 지웠는데 `df`가 그대로 | BuildKit cache가 레이어를 붙잡을 수 있다. 10.2 이미지 삭제 때는 df 이득이 40KiB였고, 캐시 레코드의 shared 전환을 관측했다. base layer는 `from local` 레코드(빌드 시점, 각 0B 표기)가, 빌드 layer는 exec 레코드가 단독 보유로 바뀌었다. 그래서 reclaimable 값은 과소 표기다 | `docker system df`로 Build Cache부터 재고, `docker buildx du --verbose`로 rmi 전후 shared 전환 레코드를 대조한다. 10.3에서 쓴 `docker builder prune -f --filter until=168h`(2.05GB)는 **관측된 회수 기법일 뿐 자동 허용 명령이 아니다** — 공유 빌드 캐시라 범위를 제시하고 GLG 승인 후 |
 | 빌드가 `hotfix requires OpenClaw <ver>`로 실패 | 의도된 fail-closed | §1-4 이식. 가드를 약하게 만들지 않는다 |
 | 격리 `config validate`에 `plugins.entries.zai: plugin not installed` | 10.2·10.3에선 zai가 이미지가 아니라 live state `~/.openclaw/extensions/zai`의 global plugin이라 생긴 오탐이었다 | 교체 후 verify에서 `zai: loaded`인지 확인. 다른 플러그인 이름이면 오탐으로 단정하지 않는다 |
 | Doctor 경고 "Codex runtime is selected, but the Codex plugin is disabled"(main·gpt 6.1-sol) | 9.8 이후 기존 상태. 턴은 openclaw 런타임으로 떨어진다 | `plugins.entries.codex.enabled:false`를 **지우지 않는다**. 대상 에이전트가 늘면 조사 |

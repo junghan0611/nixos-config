@@ -10,6 +10,31 @@
 
 ---
 
+## 2026-10-16 — OpenClaw 10.3→10.4 마이너 교체 (GLG 방식), 기억 패치 v3 재이식
+
+- 10.3과 같은 GLG 마이너 규칙(cold archive·리허설·복원 시험 없음)이다. 실행은 Opus, 코디·검수는 Sol(pi-durable)이 맡았다.
+- 판정: preflight exit 0. `schemaVersions`가 10.3·10.4 모두 `{state:20, agent:24}`다.
+  compare는 ahead 83 / behind 0, ARM64 digest `e79f0168…`, label revision `383c124`.
+  compare API가 파일 300개에서 잘리므로 git/trees API로 다른 하위 트리만 내려가 431파일 전체를 얻었고, 런타임 경로는 blob diff로 직접 확인했다.
+  - auth: Doctor의 OAuth sidecar 거부 조건이 "참조된 sidecar"로 좁아졌다(#165420). 쓰기 경로는 변화 없다.
+  - Doctor tailscale 전제조건 note는 `mode=off`라 해당 없다.
+  - standalone plugin onStartup은 `load.paths=[]`라 해당 없다.
+  - claude-cli live session key에서 account·auth profile이 빠졌다(#167241). agentId별 분리는 유지된다.
+  - 확인한 diff 범위에서 우리 config·auth·plugin·권한 설정을 바꿔야 할 요구는 없다고 판독했다. CLI 경로의 실대화 검증까지 끝났다는 뜻은 아니다.
+- 기억 hotfix v3: 상류 소스 blob이 10.3과 같다. 미패치 10.4 dist에서 `--baseline` GREEN, 기본 모드 RED여서 회수하지 않고 이식했다
+  (`CuTed983` 원본 `54d5a1f1…` → 결과 `6ac93a1e…`, helper `34c459c8…` 동일). 빌드 안에서 10/10.
+- 디스크: 10.2 이미지 삭제(GLG 승인) 직후의 df 이득은 40KiB였다. 10.2 base의 distinct layer 36개를 build cache의 `from local` 레코드가
+  0B 표기로 붙잡고 있었다(10.2 빌드 시점 레코드 44개가 단독 보유로 전환). 이후 GLG가 직접 공간을 정리했다.
+  재개 시 root 여유는 16.7GiB였고, pull −3.65GB, build −1.10GB였다.
+- 교체 17:13–17:19 KST: idle gate ready/active 0 → `latest` 재태그 → recreate.
+  재시작 0(이번 관측에서 tini ELOOP 없음. 10.4가 원인을 고쳤다는 판정은 아니다) → startup Doctor → RPC health ok 371초.
+  `openclaw.json` 경로 diff 0은 설정 내용 변경이 없다는 뜻일 뿐, 쓰기가 전혀 없었다는 증명은 아니다.
+  Doctor는 delivery state 1 row를 정규화했다. 새 `.bak`은 0개다. Doctor 경고는 10.3과 같은 대상·개수다(canonical archive 누락 8파일 동일).
+  `~/.openclaw.update-captures/` 1.2G는 컨테이너 층의 휘발성 사본이다. 지속 보존·복원 검증은 하지 않았다.
+- 검증(모델 호출 없음): verify PASS 32 / FAIL 0 / UNKNOWN 0. Telegram 6/6, hotfix sha 일치, 8+3 URL·comments ping.
+- 롤백면: 이미지 `openclaw-custom:10.3-candidate-20261014`(retag + recreate). 10.2 이미지는 삭제됐다.
+- 미측정 후속: 실대화, 자연 cron, Control UI·Android는 이 영수증으로 닫지 않는다.
+
 ## 2026-10-14 — OpenClaw 10.2→10.3 마이너 교체 (GLG 방식), 기억 패치 v3
 
 - GLG 결정: *"마이너 버전 업데이트 백업 롤백 준비하지 않고 게이트웨이 안돌때 하면될거야. 리허설 할필요 없고
