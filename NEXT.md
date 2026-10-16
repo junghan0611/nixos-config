@@ -1,10 +1,14 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.14](CHANGELOG.md#v20261014--openclaw-103와-단계별-업데이트-절차).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.16](CHANGELOG.md#v20261016--재현-가능한-작업장의-대문-정리).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
 ---
+
+## 홈페이지 발행 — 별도 코디 소관
+
+README 현행화·한영 소개글 인계·통합 빌드 확인은 CHANGELOG `v2026.10.16`으로 갈무리했다. 남은 홈페이지 화면 검수·커밋·배포 판단은 홈페이지 코디 `20261016T103933-96efd0`가 GLG 직접 승인으로 진행한다. 이 리포의 tag-release 승인을 홈페이지 발행 승인으로 전파하지 않는다. 새 leaf는 동결 유지하고, 이 리포 운영은 아래 stem #11로 복귀한다.
 
 # RAIL — 현재 좌표
 
