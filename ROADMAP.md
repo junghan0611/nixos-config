@@ -33,7 +33,8 @@
   `~/.openclaw.update-captures/` 1.2G는 컨테이너 층의 휘발성 사본이다. 지속 보존·복원 검증은 하지 않았다.
 - 검증(모델 호출 없음): verify PASS 32 / FAIL 0 / UNKNOWN 0. Telegram 6/6, hotfix sha 일치, 8+3 URL·comments ping.
 - 롤백면: 이미지 `openclaw-custom:10.3-candidate-20261014`(retag + recreate). 10.2 이미지는 삭제됐다.
-- 미측정 후속: 실대화, 자연 cron, Control UI·Android는 이 영수증으로 닫지 않는다.
+- 교체 직후 미측정 후속은 실대화, 자연 cron, Control UI·Android였다. 교체 영수증만으로 이를 닫지는 않았다.
+- 사후 접속 확인(코디가 읽은 Opus의 17:45·17:48 전달): GLG가 Android에서 갱신된 TLS 지문을 재신뢰한 뒤 연결 성공을 직접 확인했고, Control UI도 접속·사용이 괜찮다고 직접 확인했다. 재페어링·서버·설정 변경 없이 기본 접속 관찰을 닫았다. 성공한 WS 요청들은 측정됐지만 UI·Android 중 어느 연결인지 서버 로그만으로는 식별하지 못했다. 모든 UI 패널·도구 권한을 검증한 것은 아니며, 스킬 제안 패널 요청 오류는 NEXT에 별도 관찰로 남겼다.
 
 ## 2026-10-14 — OpenClaw 10.2→10.3 마이너 교체 (GLG 방식), 기억 패치 v3
 

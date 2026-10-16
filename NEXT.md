@@ -72,7 +72,9 @@ README 현행화·한영 소개글 인계·통합 빌드 확인은 CHANGELOG `v2
     - 10.3: Telegram 6/6, sessions indexed=eligible 6/6, 8+3 URL, config 변경 0.
   - **볼 것**:
     - ① 10.4 첫 자연 cron·첫 수동 실대화. 10.3 첫 자연 메멘토 완료는 ROADMAP 2026-10-14의 사후 영수증으로 닫혔지만 10.4를 증명하지 않는다.
-    - ② Control UI(인증 후 WS)·Android 앱 접속. HTTP 302/200은 인증·WS 성공이 아니다.
+    - ② **Control UI·Android 기본 접속**은 GLG의 직접 사용 확인을 전달받아 닫았다(ROADMAP 2026-10-16 사후 확인). 서버에서 성공한 WS 요청을 UI·Android 중 어느 클라이언트에 귀속할지는 미측정이며, 모든 패널 기능 성공을 뜻하지 않는다. 추가 자동 접속·인증 변경은 하지 않는다.
+    - **Control UI 스킬 제안 패널 관찰**: Opus의 10-16 17:48 전달에서 `skills.proposals.list` 2회가 `INVALID_REQUEST`였다. 다중 에이전트의 workspace 지정 문제라는 해석은 가설이며, 실제 요청 클라이언트·10.3 재현 여부는 미측정이다. 접속 장애와 분리해, 해당 패널이 필요할 때만 agent 지정·재현 조건을 확인한다.
+    - **Android TLS pin 재발 시 참고**: Opus의 17:41 측정 전달에 따르면 앱은 leaf 인증서 SHA256을 pin하며 Tailscale Serve 인증서는 10-08에 갱신됐다. 거부 기록은 10.4 교체 전부터 있었다. 향후 재신뢰/재등록 전에는 저장된 pin과 현재 인증서의 전체 지문을 신뢰할 수 있는 서버 측 경로로 대조한다. 축약 지문만으로 Trust하거나 TLS 검증을 끄지 않는다.
     - ③ 가족 08:00 cron의 도구 권한. Doctor가 legacy sender-policy로 지목한 job이고, 실행·배달은 ok지만 도구 사용은 판독하지 않았다.
     - ④ 첫 실제 `memory_search`가 콜드 15s timeout에 걸리는지
     - ⑤ memory source dirty(glg·mini·bbot의 dirty 플래그, 10.4 직후 bbot memory 122/123 — 실행자 측정). 정기 sync 뒤에도 남을 때만 조사하고 force는 금지.
