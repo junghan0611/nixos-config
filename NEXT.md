@@ -6,9 +6,14 @@
 
 ---
 
-## 홈페이지 발행 — 별도 코디 소관
+## 외부 패키지 — 서버 담당자에게 넘길 다음 단계
 
-README 현행화·한영 소개글 인계·통합 빌드 확인은 CHANGELOG `v2026.10.16`으로 갈무리했다. 남은 홈페이지 화면 검수·커밋·배포 판단은 홈페이지 코디 `20261016T103933-96efd0`가 GLG 직접 승인으로 진행한다. 이 리포의 tag-release 승인을 홈페이지 발행 승인으로 전파하지 않는다. 새 leaf는 동결 유지하고, 이 리포 운영은 아래 stem #11로 복귀한다.
+- **다음 실행자:** GLG가 푸시 후 서버 담당자를 직접 부른다. 이 세션은 Oracle 접속·설치·컨테이너 변경을 하지 않았다.
+- **서버에서 읽을 곳:** `scripts/external-packages.sh`, `python3 scripts/test-external-packages-gog.py`. gog는 `./scripts/external-packages.sh install gog`, summarize는 Nix 제공 pnpm으로 단일 패키지만 갱신한다. `install all`은 실행 중 하네스까지 바꾸므로 이번 범위가 아니다. latest는 이동하므로 서버 설치 시 릴리즈·아키텍처를 재확인한다.
+- **로컬 영수증:** gog v0.45.0 정적 링크(설치 #361 exit0), summarize 설치·실행 모두 0.25.2(#396 exit0). gog/./gog tar 형식·실패 시 기존 설치 보존 등 7개 격리 fixture 통과. netlify-cli·typescript-language-server는 선언과 로컬 전역에서 제거했고 TypeScript 컴파일러는 유지했다. 서버에서도 미사용 패키지 제거는 별도 실행해야 한다.
+- **분업:** 인증·스킬 변경 검토는 agent-config Opus `20261015T123300-a98cac`가 인수했다(13:10:53 KST mailbox). 갱신 전 개인·work refresh-token 교환은 모두 성공했지만 미래 만료는 보장하지 않는다. 서버·봇에서의 실행/경로/정적 링크는 아직 미측정이다. 재인증·스코프 확대·유료 호출·스킬 바이너리 복제를 설치에 섞지 않는다. 로컬 완료를 원격 배포 완료로 쓰지 않는다.
+
+운영 stem #11은 아래에 유지한다.
 
 # RAIL — 현재 좌표
 

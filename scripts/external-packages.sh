@@ -18,12 +18,11 @@
 #
 # ── 패키지 SSOT ──────────────────────────────────────────────────────────────
 # [pnpm global]  nix pnpm 11.x. 설치: pnpm add -g <PNPM_PACKAGES>
-#   netlify-cli                               netlify / ntl
 #   clawhub                                   OpenClaw hub CLI
 #   @steipete/summarize                       URL/미디어 요약 (summarize)
 #   @openai/codex                             codex — curl 인스톨러가 GitHub API rate limit
 #                                             (무인증 60/시간)에 걸려 403 나므로 pnpm으로 안전하게.
-#   typescript-language-server + typescript   TS LSP (Claude Code typescript-lsp 플러그인)
+#   typescript                                TS 컴파일러 (LSP 서버와 별개)
 #   @earendil-works/pi-coding-agent           pi — 최초 1회만. 이후 `pi update` 로 self-update.
 #   wrangler                                  Cloudflare Workers CLI. 1층에서 내려온 사유(2026-09-30):
 #                                             릴리즈가 주 단위로 나오는데 nixpkgs 26.05 는 4.93,
@@ -46,7 +45,8 @@
 #     ⚠️ 정적 링크가 핵심: 봇 컨테이너(Debian, nix store 없음)에서도 그대로 돈다.
 #        `go install`(호스트 CGO=1)은 nix glibc에 동적 링크돼 컨테이너에선 loader 부재로
 #        실행 실패한다(2026-07-15 확정 — 봇 배포가 이래서 막혔다). 릴리즈 정적본은 양쪽 OK.
-#     → ~/.local/bin/gog. 봇도 이 정적본을 공유(스킬 번들, agent-config/skills/gogcli/gog).
+#     → ~/.local/bin/gog (PATH). 스킬에 바이너리를 복제하지 않는다.
+#     다른 호스트/봇 배포는 별도 확인하며 로컬 갱신만으로 완료로 간주하지 않는다.
 #
 # [uv tool]  파이썬 앱. 현재 **비어 있다** — 아래 UV_TOOLS 참고.
 #   nixpkgs가 `broken` 마킹했다는 사실만으로는 여기로 내려오지 않는다. 무엇이 왜 깨지는지
@@ -70,11 +70,10 @@ error()   { echo -e "${RED}✗${NC} $1"; }
 
 # pnpm global SSOT — 이 배열이 곧 `pnpm add -g` 대상 집합이다.
 PNPM_PACKAGES=(
-    netlify-cli
     clawhub
     @steipete/summarize
     @openai/codex
-    typescript-language-server typescript
+    typescript
     @earendil-works/pi-coding-agent
     wrangler
     cf
@@ -82,11 +81,9 @@ PNPM_PACKAGES=(
 
 # check 표시용: "표시 라벨 → npm 패키지명" (버전 비교에 npm view 사용)
 declare -A PNPM_CHECK=(
-    [netlify-cli]="netlify-cli"
     [clawhub]="clawhub"
     [summarize]="@steipete/summarize"
     [codex]="@openai/codex"
-    [typescript-language-server]="typescript-language-server"
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
     [wrangler]="wrangler"
     [cf]="cf"
@@ -199,36 +196,54 @@ install_harness() {
 install_gog() {
     # gogcli 공개 릴리즈 정적 바이너리 (go 빌드 아님 — 정적본이라 봇 컨테이너와 공유 가능)
     info "gog (gogcli 공개 릴리즈) 설치..."
-    local repo="openclaw/gogcli" arch json tag ver url tmp
+    local repo="openclaw/gogcli" arch json tag ver url tmp member installed_version
     case "$(uname -m)" in
         aarch64|arm64) arch="linux_arm64" ;;
         x86_64|amd64)  arch="linux_amd64" ;;
-        *) warn "gog: 미지원 arch $(uname -m)"; return 0 ;;
+        *) warn "gog: 미지원 arch $(uname -m)"; return 1 ;;
     esac
     # 응답을 변수에 받는다: `curl | grep -m1`은 grep이 파이프를 조기에 닫아
     # curl이 SIGPIPE로 죽고 pipefail+set -e가 스크립트를 중단시킨다(2026-07-15 실측).
     json=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest") \
-        || { warn "gog: 릴리즈 조회 실패 (네트워크/rate limit)"; return 0; }
-    tag=$(printf '%s' "$json" | grep -m1 '"tag_name"' | cut -d'"' -f4)
-    if [[ -z "$tag" ]]; then warn "gog: 릴리즈 태그 파싱 실패"; return 0; fi
+        || { warn "gog: 릴리즈 조회 실패 (네트워크/rate limit)"; return 1; }
+    tag=$(printf '%s' "$json" | grep -m1 '"tag_name"' | cut -d'"' -f4) || return 1
+    if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        warn "gog: 릴리즈 태그 파싱 실패"; return 1
+    fi
     ver="${tag#v}"
     url="https://github.com/$repo/releases/download/$tag/gogcli_${ver}_${arch}.tar.gz"
     tmp=$(mktemp -d)
-    if curl -fsSL "$url" -o "$tmp/g.tgz" && tar xzf "$tmp/g.tgz" -C "$tmp" gog 2>/dev/null \
-         && [[ -f "$tmp/gog" ]]; then
-        install -Dm755 "$tmp/gog" "$HOME/.local/bin/gog"
-        # 정적 링크 확인 — 동적이면 봇 컨테이너에서 못 돈다(릴리즈본은 항상 정적이어야)
-        if file "$HOME/.local/bin/gog" | grep -q 'statically linked'; then
-            success "gog $("$HOME/.local/bin/gog" --version 2>/dev/null | head -1) → ~/.local/bin/gog (정적)"
-        else
-            warn "gog 설치됨이나 정적 링크 아님 — 봇 컨테이너 비호환일 수 있음"
-        fi
-    else
-        warn "gog 설치 실패 (URL: $url)"
+    # 공식 tarball은 gog 또는 ./gog를 담는다. 정확히 한 파일만 선택한다.
+    # 다운로드·압축·정적 링크·버전을 모두 확인하기 전에는 기존 설치를 건드리지 않는다.
+    if ! curl -fsSL "$url" -o "$tmp/g.tgz" \
+        || ! tar tzf "$tmp/g.tgz" > "$tmp/members"; then
+        warn "gog 다운로드/압축 검사 실패 (URL: $url)"
+        rm -rf "$tmp"; return 1
+    fi
+    member=$(grep -xE '(\./)?gog' "$tmp/members" || true)
+    if [[ "$member" != "gog" && "$member" != "./gog" ]] \
+        || ! tar xzf "$tmp/g.tgz" -C "$tmp" -- "$member" \
+        || [[ ! -f "$tmp/gog" || -L "$tmp/gog" ]] \
+        || ! file "$tmp/gog" | grep -q 'statically linked'; then
+        warn "gog 실행 파일/정적 링크 검사 실패 — 기존 설치 유지"
+        rm -rf "$tmp"; return 1
+    fi
+    if ! installed_version=$("$tmp/gog" --version) \
+        || [[ "${installed_version%% *}" != "$tag" ]]; then
+        warn "gog 버전 검사 실패 — 기존 설치 유지"
+        rm -rf "$tmp"; return 1
+    fi
+    if ! install -Dm755 "$tmp/gog" "$HOME/.local/bin/gog"; then
+        warn "gog 설치 실패"; rm -rf "$tmp"; return 1
     fi
     rm -rf "$tmp"
     # 옛 화석 정리: ~/go/bin/gog (구 go install 산물, PATH에서 ~/.local/bin 앞을 가림)
-    [[ -f "$HOME/go/bin/gog" ]] && { rm -f "$HOME/go/bin/gog"; info "gog: ~/go/bin 화석 제거"; }
+    if [[ -f "$HOME/go/bin/gog" ]]; then
+        rm -f "$HOME/go/bin/gog"
+        info "gog: ~/go/bin 화석 제거"
+    fi
+    success "gog $installed_version → ~/.local/bin/gog (정적)"
+    return 0
 }
 
 install_uv() {
@@ -276,7 +291,7 @@ check() {
         echo "$glist" | sed 's/^/      /'
         has_update=1
     fi
-    for label in netlify-cli clawhub summarize codex typescript-language-server pi-coding-agent wrangler cf; do
+    for label in clawhub summarize codex pi-coding-agent wrangler cf; do
         local pkg="${PNPM_CHECK[$label]}" cur lat
         # `├── <pkg>@<ver>` 에서 npm 이름으로 정확히 집는다 — 라벨 부분일치(cf)와
         # 프리릴리즈 버전(1.0.0-beta.5)을 `[\d.]+$` 로는 못 읽는다.
@@ -307,7 +322,7 @@ check() {
     done
 
     echo ""
-    echo -e "${YELLOW}[go install]${NC}"
+    echo -e "${YELLOW}[release binary] (설치 버전만 표시)${NC}"
     if command -v gog >/dev/null 2>&1; then
         echo -e "  ${GREEN}✓${NC} gog: $(gog --version 2>/dev/null | head -1)"
     else
