@@ -61,7 +61,7 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - 미패치 base에서 테스트를 두 번 돌린다. `--baseline`(characterization)은 **GREEN**, 기본 모드는 **RED**여야 한다.
      패치 후 빌드 안에서 기본 모드 **GREEN 10/10**.
    - npm tarball dist는 Docker dist와 chunk 이름이 달라 **대용할 수 없다**.
-5. **빌드** — config가 컨텍스트에 들어가지 않게, 최소 컨텍스트(임시 디렉터리에 Dockerfile·patch·test + `.dockerignore`)에서 빌드한다:
+5. **빌드** — config가 컨텍스트에 들어가지 않게, 최소 컨텍스트(임시 디렉터리에 Dockerfile·patch·test·`summarize-bot.sh` + `.dockerignore`; Dockerfile의 COPY 대상 전부 포함)에서 빌드한다:
    `docker build -t openclaw-custom:<ver>-candidate-<date> .`
    로그에서 `claude --version`, `…applied/verified`, `10 behavior assertions passed`를 확인한다.
 6. **config 격리 파싱** — 바꾸지 않고 읽기만 한다:

@@ -1,17 +1,17 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.16-openclaw.1](CHANGELOG.md#v20261016-openclaw1--openclaw-104-운영-교체).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.17](CHANGELOG.md#v20261017--내장-요약과-호스트봇-도구-정렬).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
 ---
 
-## 외부 패키지 — 서버 담당자에게 넘길 다음 단계
+## 도구 후속 — 완료분은 v2026.10.17로 갈무리
 
-- **다음 실행자:** GLG가 푸시 후 서버 담당자를 직접 부른다. 이 세션은 Oracle 접속·설치·컨테이너 변경을 하지 않았다.
-- **서버에서 읽을 곳:** `scripts/external-packages.sh`, `python3 scripts/test-external-packages-gog.py`. gog는 `./scripts/external-packages.sh install gog`, summarize는 Nix 제공 pnpm으로 단일 패키지만 갱신한다. `install all`은 실행 중 하네스까지 바꾸므로 이번 범위가 아니다. latest는 이동하므로 서버 설치 시 릴리즈·아키텍처를 재확인한다.
-- **로컬 영수증:** gog v0.45.0 정적 링크(설치 #361 exit0), summarize 설치·실행 모두 0.25.2(#396 exit0). gog/./gog tar 형식·실패 시 기존 설치 보존 등 7개 격리 fixture 통과. netlify-cli·typescript-language-server는 선언과 로컬 전역에서 제거했고 TypeScript 컴파일러는 유지했다. 서버에서도 미사용 패키지 제거는 별도 실행해야 한다.
-- **분업:** 인증·스킬 변경 검토는 agent-config Opus `20261015T123300-a98cac`가 인수했다(13:10:53 KST mailbox). 갱신 전 개인·work refresh-token 교환은 모두 성공했지만 미래 만료는 보장하지 않는다. 서버·봇에서의 실행/경로/정적 링크는 아직 미측정이다. 재인증·스코프 확대·유료 호출·스킬 바이너리 복제를 설치에 섞지 않는다. 로컬 완료를 원격 배포 완료로 쓰지 않는다.
+- **미관찰 경계:** gpt·mini(Sonnet)의 실제 URL 요약은 GLG가 확인해 닫았다. 실네트워크 YouTube·다음 자연 재기동은 미관찰이며 강제 리허설하지 않는다. PDF는 현 이미지에 uvx/markitdown이 없으므로 필요가 생길 때 별도 판단한다. 재인증·scope 확대·유료 전사를 설치에 섞지 않는다.
+- **private 소스 정리:** 공개 릴리즈 요청을 별도 private 리포의 push 승인으로 확대하지 않는다. 승인 시 Dockerfile·README·새 `summarize-bot.sh`·추적 중이던 `config/claude-skills/summarize` 링크 삭제4개만 검토하고, 타 작업의 `config/gitconfig-system`·`config/openclaw.json` 변경은 섞지 않는다. 새 가드 없이 Dockerfile만 커밋하면 다음 빌드가 깨진다.
+- **복원 좌표:** `~/openclaw/backups/swap-native-summarize-20261017/`, 기존10.4 이미지 `8818c811…`·10.3 롤백 보존. gog 바이너리 복원은 이미지 복원과 별개다. 전체 `run.sh k)` 재배포·이미지/캐시 정리는 승인하지 않았다. 운영 정책·검사는 `ORACLE.md` summarize 절, 로컬 영수증은 `.agent-reports/openclaw-native-summarize-20261017.md`.
+- **미사용 서버 패키지:** Oracle의 netlify-cli·typescript-language-server 기설치본은 아직 남아 있다. 제거는 별도 승인 후 수행하고 TypeScript 컴파일러는 유지한다. `install all`로 실행 중 하네스를 갱신하지 않는다.
 
 운영 stem #11은 아래에 유지한다.
 
@@ -44,7 +44,7 @@
 
 - [ ] **10. doctor 가 찾아낸 것 셋** ← 2026-09-09 첫 전수 점검(`openclaw config validate` + `doctor` read-only). **`config validate` 는 통과했다** — 스키마 위반 0, 경고는 우리가 9/1 에 일부러 끈 `active-memory` 하나뿐. 문제는 스키마가 아니라 선언과 배포다.
   - [ ] **glg 봇 `USER.md` 가 29% 잘려서 주입된다** — `5,668 raw / 3,999 injected`. 전체 bootstrap 예산은 `31,322/60,000`(52%)로 여유가 있는데 **파일당 상한**에 걸렸다. 가족봇이 GLG 정보를 3분의 1 잘린 채 읽고 있다는 뜻. 처방은 `agents.entries.glg.bootstrapMaxChars`(doctor 가 이 키를 직접 알려준다). **셋 중 사람에게 실제로 닿고 있는 유일한 것이라 먼저다.**
-  - [ ] **`summarize`·`tmux` 가 5봇 전부에서 번들본을 덮는다** — `winner=openclaw-workspace … loser=openclaw-bundled`. 의도한 것이면 정상이지만 **의도했는지 확인된 바 없다.** 확인 안 하면 버전업으로 내장본이 개선돼도 우리 사본이 계속 이긴다.
+  - [ ] **`tmux` 커스텀 스킬의 번들 덮기 의도 확인** — 이번 범위가 아니며 기존 워크스페이스 스킬 우선 상태의 의도만 별도 판단한다.
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 

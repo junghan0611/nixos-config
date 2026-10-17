@@ -445,7 +445,8 @@ main() {
                 #   punchout: 사용자 본인 일일 마무리 도구
                 #   browser-tools: 봇 컨테이너에 무거운 puppeteer 불필요
                 #   entwurf-peek: pi-shell-acp 분신 호출자 전용
-                SKILL_EXCLUDE=(telegram slack-latest jiracli memory-sync punchout browser-tools entwurf-peek)
+                # summarize: OpenClaw 번들 스킬 사용. 호스트용 Pi 래퍼 지침으로 덮지 않는다.
+                SKILL_EXCLUDE=(telegram slack-latest jiracli memory-sync punchout browser-tools entwurf-peek summarize)
                 SKILL_DEPLOY=()
                 for d in "$AGENT_SKILLS_SSOT"/*/; do
                     [[ -e "$d" ]] || continue

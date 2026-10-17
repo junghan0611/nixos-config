@@ -236,11 +236,18 @@ RUN pip install --no-cache-dir --break-system-packages "yt-dlp==2026.8.19"
 # (계약 SSOT, fallback 없음). 없으면 sample/validate/post가 "NEED: pip install jsonschema"로 정지.
 RUN pip install --no-cache-dir --break-system-packages jsonschema==4.26.0
 
-# summarize CLI (@steipete/summarize — URL/파일/미디어 요약)
-RUN npm install -g @steipete/summarize@0.25.0 \
-    && mkdir -p /home/node/.summarize \
-    && echo '{"model":{"id":"openrouter/google/gemini-3-flash-preview"}}' > /home/node/.summarize/config.json \
+# OpenClaw's bundled summarize skill uses source extraction only in this deployment.
+# The current agent turn writes the summary: no Pi subprocess or recursive agent turn.
+RUN npm install -g @steipete/summarize@0.25.2 \
+    && mkdir -p /usr/local/libexec/summarize-upstream /home/node/.summarize \
+    && ln -s "$(readlink -f /usr/local/bin/summarize)" /usr/local/libexec/summarize-upstream/summarize \
+    && echo '{"cli":{"enabled":[],"autoFallback":{"enabled":false}}}' > /home/node/.summarize/config.json \
     && chown -R node:node /home/node/.summarize
+COPY summarize-bot.sh /usr/local/bin/summarize-bot
+RUN chmod 755 /usr/local/bin/summarize-bot \
+    && ln -sf /usr/local/bin/summarize-bot /usr/local/bin/summarize \
+    && ln -sf /usr/local/bin/summarize-bot /usr/local/bin/summarizer \
+    && summarize --version
 
 # GitHub CLI (gh)
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \

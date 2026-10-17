@@ -685,9 +685,11 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 - 신선도: agent-config SKILL.md/스크립트 수정이 재배포 없이 전 봇·claude-cli에 즉시 반영 (`skills.load.watch: true`).
 - OpenClaw `skills.load.allowSymlinkTargets`에 SSOT 경로를 열어 심볼릭 following 허용.
 
-### Exclude (봇 미배포)
+### Exclude (agent-config 스킬 심볼릭 배포 제외)
 
-`telegram` `slack-latest` `jiracli` `memory-sync` `punchout` `browser-tools` `entwurf-peek`
+`telegram` `slack-latest` `jiracli` `memory-sync` `punchout` `browser-tools` `entwurf-peek` `summarize`
+
+`summarize`는 미사용 제외가 아니라 **OpenClaw 내장 스킬 우선**이다. 호스트용 Pi 설정을 요구하는 커스텀 스킬이 번들 스킬을 덮지 않게 한다. 전환·복원 때 전체 `run.sh k)`를 실행하지 말고 해당 링크만 다룬다(비어 있던 workspace에도 전체 스킬이 배포될 수 있다).
 
 ### Per-agent policy
 
@@ -760,7 +762,16 @@ Scanner: clean
 - `agent-config/skills/gogcli/gog` → 그 경로 심볼릭. workspace/claude-skills의 gogcli는 agent-config로 심볼릭이므로 한 곳에서 resolve.
 - 호스트 마스터는 별도 `~/.local/bin/gog` (`external-packages.sh`). 컨테이너는 `~/.local/bin` 미마운트 → 봇용 실파일 1벌 필요.
 - 업그레이드: ① `external-packages.sh`로 호스트 갱신 ② `cp ~/.local/bin/gog ~/openclaw/bin/gog` ③ 끝 (스킬 재배포 불필요).
-- 인증 = 호스트 `~/.config/gogcli` rw 마운트 공유. 정적 링크 바이너리(Debian, nix 없음).
+- 봇 gog0.45.0은 스킬 트리 밖 `~/openclaw/bin/gog`에 두고, 호스트 master는 `~/.local/bin/gog`다. 인증 = 호스트 `~/.config/gogcli` rw 마운트 공유. 정적 링크 바이너리(Debian, nix 없음). 바이너리 갱신과 토큰 재인증은 별개다. 스킬 디렉터리에 실바이너리를 복제하지 않는다.
+
+### summarize — 봇은 내장 스킬, 현재 턴에서 요약
+
+- 호스트의 agent-config 스킬·설정과 봇 실행을 구분한다. 호스트 기본은 Pi를 통한 Codex 구독 Luna이며, 봇은 **OpenClaw 내장 summarize 스킬 + 기존 summarize CLI**를 사용한다. 별도 Pi CLI나 요약용 에이전트를 추가하지 않는다.
+- 봇 CLI0.25.2의 `summarize`·`summarizer`는 `docker/openclaw/summarize-bot.sh`로 연결된다. 중앙 agent-config 래퍼로 종량 API 키 환경변수를 제거하고, vendor CLI의 **본문 추출만** 실행한다. 추출 결과의 요약은 현재 봇의 기존 턴에서 한다. `cli/openclaw/main`처럼 다른 agent 턴을 다시 호출하지 않는다.
+- 가드는 모델·CLI·LLM Markdown·전사 설정·설치/daemon·JSON 출력을 거부한다. 모든 입력에 Firecrawl off와 원문 최대20000자를 강제하고, readability 변환만 웹 URL에 한정한다. 잘렸다면 브라우저나 더 좁은 자료를 사용하며 같은 명령을 반복해 나머지를 얻으려 하지 않는다.
+- 기본 커맨드 경로의 비용·컨텍스트 보호 정책이지, 임의 셸 명령까지 막는 보안 샌드박스는 아니다. 중앙 래퍼는 rw로 공유된 source이므로 호스트 변경이 봇에도 반영된다. 배포 검증 때 검토한 원본과 해시를 대조한다.
+- 회귀 검사: `python3 docker/openclaw/test-summarize-bot.py`(오프라인 차단 사례), `--image <후보태그>` 추가 시 네트워크·인증 없는 컨테이너에서 실제 웹 추출·인수 순서·Firecrawl 덮어쓰기·길이 상한·별칭·키 제거·기존 기억 패치를 검사한다. 모델 호출은 없다.
+- 한계: 일반 텍스트 파일은 직접 읽고 현재 턴에서 요약한다. CLI의 PDF 추출은 현재 이미지에 없는 uvx/markitdown이 필요하다. 실네트워크 YouTube 추출은 별도 실사용 확인 대상이며, 인용 정본은 `youtube-transcript` 스킬 소관이다. 전사 모델·유료 API·로컬 전사 엔진을 자동 활성화하지 않는다.
 
 ---
 
