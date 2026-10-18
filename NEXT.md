@@ -6,6 +6,13 @@
 
 ---
 
+## OpenClaw10.5 — 보류 확정, 다음 정식 릴리즈 때 재검토
+
+- [v2026.10.5](https://github.com/openclaw/openclaw/releases/tag/v2026.10.5)는 마이너 후보가 아니다. Opus 읽기 전용 preflight exit1: compare diverged(ahead2704/behind463), 선언 agent24→25(state20동일). 코디도 태그 고정 API로 스키마·분기 및10.4의 상위 DB 버전 거부 코드를 독립 확인했다. 이관 후 이미지 재태그만으로10.4 롤백 불가다.
+- **GLG 결정(2026-10-19): 10.5는 보류하고10.4를 유지한다. 이번 검토는 여기서 종료하며 다음 정식 릴리즈 때 다시 판단한다.** 다음 검토에서는 계보·스키마·누락 수정·Workshop config 변환·기억 패치 이식 여부를 다시 확인한다. 다음 stable도 자동으로 마이너라고 가정하지 않는다. 메이저라면 cold state 보존·네트워크 없는 사본 리허설이 먼저이며, 이번 문서 commit/push 승인을 pull/build/운영 교체·모델 smoke 승인으로 확대하지 않는다.
+- 보고서 `.agent-reports/openclaw-10.5-opus-review-20261019.md`, 독립 핵심 확인 `.agent-reports/openclaw-10.5-coordinator-critical-check-20261019.json`. 10.4의 CLI 이력/cache 수정 일부가10.5에 없는 것은 소스 관찰이며 실제 회귀는 미측정이다. Workshop Doctor config 재작성과 cron-parent 패치 구조 변경도 검토 대상; Docker dist 미검증을 이식/회수 성공으로 쓰지 않는다. 제거된3rd 소스는 자동 재복제하지 않는다.
+- 검토 시작 실측: 기존 운영 이미지 `17dab88f…` healthy·restart4, public HEAD `55b01e0`, root12GiB/home11GiB 여유. 운영 설정·서비스 변경 없음.
+
 ## 도구 후속 — 완료분은 v2026.10.17로 갈무리
 
 - **미관찰 경계:** gpt·mini(Sonnet)의 실제 URL 요약은 GLG가 확인해 닫았다. 실네트워크 YouTube·다음 자연 재기동은 미관찰이며 강제 리허설하지 않는다. PDF는 현 이미지에 uvx/markitdown이 없으므로 필요가 생길 때 별도 판단한다. 재인증·scope 확대·유료 전사를 설치에 섞지 않는다.
