@@ -293,4 +293,14 @@ COPY patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/open
 RUN python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \
  && node /usr/local/lib/openclaw-hotfix/test-memory-cron-parent.mjs
 
+# Andenken `run.sh excerpt:session` runs pnpm under its packageManager pin (pnpm@10.33.0). The node user
+# cannot write the root-owned Corepack cache, so cache that exact pin here — no --activate, the base default
+# pnpm stays. Keep in lockstep with Andenken packageManager; qualify the pinned version from a fresh offline container.
+RUN default_pnpm="$(cd /tmp && pnpm --version)" \
+ && lkg="$(sha256sum "$COREPACK_HOME/lastKnownGood.json")" \
+ && corepack prepare pnpm@10.33.0 \
+ && test "$(cd /tmp && pnpm --version)" = "$default_pnpm" \
+ && test "$(sha256sum "$COREPACK_HOME/lastKnownGood.json")" = "$lkg" \
+ && test "$(cd /tmp && COREPACK_ENABLE_NETWORK=0 corepack pnpm@10.33.0 --version)" = 10.33.0
+
 USER node

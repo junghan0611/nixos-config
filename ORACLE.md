@@ -773,6 +773,12 @@ Scanner: clean
 - 회귀 검사: `python3 docker/openclaw/test-summarize-bot.py`(오프라인 차단 사례), `--image <후보태그>` 추가 시 네트워크·인증 없는 컨테이너에서 실제 웹 추출·인수 순서·Firecrawl 덮어쓰기·길이 상한·별칭·키 제거·기존 기억 패치를 검사한다. 모델 호출은 없다.
 - 한계: 일반 텍스트 파일은 직접 읽고 현재 턴에서 요약한다. CLI의 PDF 추출은 현재 이미지에 없는 uvx/markitdown이 필요하다. 실네트워크 YouTube 추출은 별도 실사용 확인 대상이며, 인용 정본은 `youtube-transcript` 스킬 소관이다. 전사 모델·유료 API·로컬 전사 엔진을 자동 활성화하지 않는다.
 
+### Andenken readback — Corepack의 핀 버전 사전 공급
+
+- 봇은 기존 Andenken `run.sh excerpt:session`을 그대로 호출한다. Andenken의 `pnpm@10.33.0`을 이미지 빌드 때 Corepack 캐시에 공급하며, `--activate`를 쓰지 않아 이미지 기본 pnpm12.5.1은 유지한다. 호스트 Nix pnpm이나 Andenken dependency/lockfile/runner/parser를 바꾸는 조치가 아니다.
+- 캐시는 기존 `/usr/local/share/corepack`의 root 소유를 유지한다. 기본 node에게 쓰기 권한을 넓히거나 `/tmp/corepack` export에 의존하지 않는다. Dockerfile은 기본 pnpm·lastKnownGood 불변과 네트워크 차단 상태의10.33.0 실행을 빌드 중 검사한다.
+- 현재 핀 조합은 fresh 컨테이너·기본 node/HOME·네트워크 없음에서 합성 pi/Claude 읽기와 ENOENT/bounds 오류 분리를 검증했다. 상위 pnpm의 새 릴리즈만으로 정확한 핀이 바뀌지는 않는다. Andenken 핀과 이미지 캐시는 자동 동기화되지 않으므로, 핀을 바꿀 때는 Dockerfile을 함께 맞추고 콜드·오프라인 검사를 다시 한다. 캐시 없는 다른 핀까지 무네트워크라는 보장은 아니며 Corepack 네트워크 정책을 전역 변경하지 않았다. 실제 private 히트는 다음 자연 사용에서 관찰하고 강제 모델 smoke·재임베딩으로 대체하지 않는다.
+
 ---
 
 ## 6. Gotchas

@@ -6,6 +6,12 @@
 
 ---
 
+## Andenken readback — 환경 수선 완료, B의 다음 자연 사용 관찰
+
+- **다음 한 수:** B가 실제 private 히트를 선택해 기존 `run.sh excerpt:session`을 쓸 때 확인한다. [원 컨테이너 영수증](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260216313)·[hit→source 계약](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260069262)은 그대로이며, 강제 모델 턴·private 세션 재열람·새 검색/재임베딩은 하지 않는다.
+- **운영 완료:** 10.4 이미지 `7e39b0b2…` healthy/restart0, 실제 유휴 gate 후 반영·verify32/0/0·합성 readback13/13 통과. fresh/offline 격리13검사×3회 및 기존 가드·기억 패치도 통과했고, 코디가 live 이미지/설정 내용 불변/미러/롤백 보존을 독립 확인했다. 실제 private 히트는 미검증이다. 원 실행 보고서 `.agent-reports/corepack-andenken-opus-execution-20261019.md`, 영수증 `~/openclaw/backups/swap-corepack-andenken-20261019/`.
+- **동결·복원 경계:** GLG 결정대로 Andenken pin10.33.0·dependency/lockfile/runner/parser 변경 없음, 기본pnpm12.5.1 유지. 다른 핀까지 무네트워크라 가정하지 않는다. 직전17dab 이미지 보존, 롤백도 유휴 gate 필요. 공개 수선 소스는 Dockerfile/ORACLE/NEXT3개로 갈무리한다. 별도 private 리포의 잔여 운영 소스는 추가 승인 없이 커밋·푸시하지 않으며 타 작업 config 변경과 섞지 않는다. 현재 정책은 ORACLE Corepack 절.
+
 ## OpenClaw10.5 — 보류 확정, 다음 정식 릴리즈 때 재검토
 
 - [v2026.10.5](https://github.com/openclaw/openclaw/releases/tag/v2026.10.5)는 마이너 후보가 아니다. Opus 읽기 전용 preflight exit1: compare diverged(ahead2704/behind463), 선언 agent24→25(state20동일). 코디도 태그 고정 API로 스키마·분기 및10.4의 상위 DB 버전 거부 코드를 독립 확인했다. 이관 후 이미지 재태그만으로10.4 롤백 불가다.
