@@ -31,6 +31,7 @@ TZ='Asia/Seoul' date '+%Y%m%dT%H%M%S'
 
 | 작업 맥락 | 펼칠 문서 |
 |---|---|
+| **Oracle 정리·계획 재부팅·재접속 점검** | → **`oracle-reboot` 스킬** — 승인·실유휴게이트·권한·복구 순서의 정본 |
 | **OpenClaw 런타임 자체를 만짐** (봇 설정·heartbeat·cron·채널·배달·스키마) | → **`openclaw` 스킬** (`.claude/skills/openclaw/` — 같은 리포, 별개 스킬). 기억으로 찍지 말고 그 버전의 사실로 만지는 절차 |
 | OpenClaw 주제별 소스 좌표 (`src/…:줄`) | `docs/openclaw-reference-map.md` (v2026.8.2 기준, 미확인은 미확인이라 적힘) |
 | oracle 디바이스 또는 OpenClaw 관련 | `ORACLE.md` (ownership·model routing·env/secret·업그레이드·함정) |
@@ -60,8 +61,8 @@ tunnel/restart/status/pairing, skill deploy(`k)`). 상세 oracle helper는 `ORAC
 sudo nixos-rebuild switch --flake .#<profile>   # profile = oracle|nuc|laptop|thinkpad
 ```
 문제 시 rollback: `run.sh` 또는 `sudo nixos-rebuild switch --rollback`. NixOS는 generation이
-롤백 표면이다. 디스크 여유 부족하면(oracle 특히) 정리부터 — 먼저 `run.sh c)` safe로 재고,
-여유가 부족할 때만 `run.sh C)` deep을 고른다.
+롤백 표면이다. 디스크 여유 부족하면(oracle 특히) 정리부터 — 먼저 `scripts/diskclean.sh safe --dry-run`으로 재고,
+여유가 부족할 때만 `run.sh C)` deep을 검토한다. 단 Oracle 분기 유지보수는 **`oracle-reboot` 스킬**과 `run.sh d)`가 우선이다. safe도 전체 묶음·나이 기반 세대 삭제이므로 부분 승인에 실행하지 않는다.
 
 ## 4. oracle / openclaw 작업 (safety-critical)
 
@@ -113,10 +114,7 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
 
   caddy 밖의 두 경로(`aionsclubs.org` CF Tunnel, `oracle.tailb0e905.ts.net` Tailscale Serve)는
   caddy 를 안 타므로 Caddyfile 검수에서 빠지기 쉽다. **세트에 넣어라.**
-- **계획 재부팅 뒤에는 재기동만 보고 끝내지 마라**: `systemctl --failed`·`docker ps`로 실패/health를
-  먼저 보고, `emacsclient -s server --eval '(+ 1 1)'`로 agenda의 호스트 socket을 확인한다. 이어 위
-  **8+3 URL 세트**와 `comments /api/v1/ping`, `./scripts/turnwatch.sh 24`를 통과해야 복구 완료다.
-  caddy 443 선점과 emacs socket ownership은 과거에 재부팅에서만 드러난 레이스다.
+- **계획 재부팅·재접속 복구 순서의 정본은 [oracle-reboot](../oracle-reboot/SKILL.md) §5**다. 공개 URL의 기대값만 이 절에서 유지하고 복구 절차는 중복하지 않는다.
 - **`/health` 200 은 게이트웨이가 멀쩡하다는 증거가 아니다**: `/health` 는 무인증 라우트라
   proxy attribution·토큰 검사를 **건너뛴다**. 그래서 `/health` 는 200 인데 `/` 는 403 인
   비대칭이 나오고, 이 비대칭 자체가 "네트워크·프로세스는 살아있고 **인증 계층**에서 막혔다"는
@@ -156,10 +154,10 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
 - **봇 스킬은 심볼릭 배포** — workspace 스킬을 sibling repo SSOT(예: butlercli)로 절대 심볼릭.
   봇이 고친 게 SSOT로 흐르고 SSOT 수정이 봇에 즉시 반영(redeploy 불필요). 이중 마운트 덕에
   `/home/junghan/...` 절대경로가 host·container 양쪽 resolve. (`NEXT.md` "스킬 심볼릭 배포")
-- **디스크 보수적으로** — oracle storage 빠듯. 압박의 첫 수는 `run.sh c)` safe(14일 generation
-  보존, docker·pnpm 제외) → 여유를 재측정하는 것이다. `run.sh C)` deep/docker prune은 그 다음
-  선택지다(`docker system df` 명목치 ≠ 실 회수량, builder prune이 본 회수원). safe의 `--yes`는
-  스크립트 확인만 넘긴다. root GC·journal 같은 `sudo` 단계는 비대화형에서 건너뛸 수 있으므로,
+- **디스크 보수적으로** — oracle storage 압박의 첫 수는 `run.sh d)` 사전 점검과 영수증 보존이다.
+  `oracle-reboot` 스킬에 따라 범위별 승인 후 개별 명령으로 실행한다. safe도 전체 묶음이며
+  14일 조건은 복귀 세대1개 보존을 보장하지 않는다. 전체 safe/deep 대상 승인이 있을 때만 실행한다(`docker system df` 명목치 ≠ 실 회수량, builder prune이 본 회수원). safe의 `--yes`는
+  스크립트 확인만 넘긴다. root GC 같은 `sudo` 단계는 명령별 권한에 따라 비대화형 실패가 날 수 있으므로,
   출력의 실패를 확인하고 필요하면 visible terminal에서 sudo 인증 후 처리한다. 현재 journal은
   선언적 1GiB 상한으로 사후 진단 여지를 보존한다.
 - **restart vs recreate — "무엇을 바꿨느냐"로 가른다** (매번 까먹는 지점):

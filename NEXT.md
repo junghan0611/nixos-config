@@ -1,34 +1,40 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 스냅샷 [v2026.10.17](CHANGELOG.md#v20261017--내장-요약과-호스트봇-도구-정렬).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 갈무리 [v2026.10.25](CHANGELOG.md#v20261025--oracle-분기-유지보수와-재부팅-절차).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
 ---
 
+# RAIL — 현재 좌표
+
+- [x] **1. 호스트 유지보수·oracle-reboot 정본** — 완료분은 CHANGELOG v2026.10.25로 갈무리
+- [ ] **2. OpenClaw10.7 읽기 전용 검토** ← CURRENT: 릴리즈·schema·계보·패치 경계부터
+- [ ] **3. 공간·cold 보존·리허설 예산** ← PAUSED: home5.2GiB, 보호 자산/범위별 승인 필요
+- [ ] **4. 실제 이관·복구 검증** ← PAUSED: 검토 결과와 별도 실행 승인 전에는 pull/build/교체하지 않음
+
+## NOW — OpenClaw10.7 검토 대기
+
+- **다음 한 수:** `openclaw-update` 스킬로10.7 릴리즈·선언schema·10.4와 계보·필요 패치를 읽기 전용으로 판정한다. 기존 GC/재부팅을 반복하지 않는다. 이미지 다운로드·이관·강제 모델 턴은 별도 승인이다.
+- **현재 경계:** live10.4/7e39 이미지 유지, 부팅 뒤 ELOOP1회에서 복구돼 restart1 안정 관측. root36GiB/home5.2GiB이므로 home cold 보존·리허설 예산은 미확보다. 현행/부팅system은 같은 gen72, 복귀71·별도 사용자 profile/crypto·봇 상태·백업은 보존했다.
+- **별도 판단:** pnpm·타 레인 산출물·원본은 정리 승인 없음. 주간30일GC가11-02부터 복귀71을 지울 수 있다는 모의 근거가 있어 정책/보호 root를 판단해야 한다. 부분 승인으로 fullsafe/deep 실행 금지. Pi용TTYdaemon은 필요할 때 수동 기동한다.
+- **읽을 곳:** 재부팅 정본 `.claude/skills/oracle-reboot/SKILL.md`; 실행·복구 영수증 `.agent-reports/oracle-maintenance/20261025T0444-retire-hm23/postboot/summary.md`; 스킬 검수 `.agent-reports/oracle-reboot-skill-review-20261025.md`. 이전 후보 근거는 `.agent-reports/openclaw-10.5-opus-review-20261019.md`·`openclaw-10.5-coordinator-critical-check-20261019.json`·`openclaw-10.6-review-20261023.md`. Workshop 변환·기억 패치 재이식·위험 경계를 재검토하되 제거된3rd 소스를 자동 재복제하지 않는다.
+
 ## Andenken readback — 환경 수선 완료, B의 다음 자연 사용 관찰
 
 - **다음 한 수:** B가 실제 private 히트를 선택해 기존 `run.sh excerpt:session`을 쓸 때 확인한다. [원 컨테이너 영수증](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260216313)·[hit→source 계약](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260069262)은 그대로이며, 강제 모델 턴·private 세션 재열람·새 검색/재임베딩은 하지 않는다.
-- **운영 완료:** 10.4 이미지 `7e39b0b2…` healthy/restart0, 실제 유휴 gate 후 반영·verify32/0/0·합성 readback13/13 통과. fresh/offline 격리13검사×3회 및 기존 가드·기억 패치도 통과했고, 코디가 live 이미지/설정 내용 불변/미러/롤백 보존을 독립 확인했다. 실제 private 히트는 미검증이다. 원 실행 보고서 `.agent-reports/corepack-andenken-opus-execution-20261019.md`, 영수증 `~/openclaw/backups/swap-corepack-andenken-20261019/`.
-- **동결·복원 경계:** GLG 결정대로 Andenken pin10.33.0·dependency/lockfile/runner/parser 변경 없음, 기본pnpm12.5.1 유지. 다른 핀까지 무네트워크라 가정하지 않는다. 직전17dab 이미지 보존, 롤백도 유휴 gate 필요. 공개 수선 소스는 Dockerfile/ORACLE/NEXT3개로 갈무리한다. 별도 private 리포의 잔여 운영 소스는 추가 승인 없이 커밋·푸시하지 않으며 타 작업 config 변경과 섞지 않는다. 현재 정책은 ORACLE Corepack 절.
-
-## OpenClaw10.5 — 보류 확정, 다음 정식 릴리즈 때 재검토
-
-- [v2026.10.5](https://github.com/openclaw/openclaw/releases/tag/v2026.10.5)는 마이너 후보가 아니다. Opus 읽기 전용 preflight exit1: compare diverged(ahead2704/behind463), 선언 agent24→25(state20동일). 코디도 태그 고정 API로 스키마·분기 및10.4의 상위 DB 버전 거부 코드를 독립 확인했다. 이관 후 이미지 재태그만으로10.4 롤백 불가다.
-- **GLG 결정(2026-10-19): 10.5는 보류하고10.4를 유지한다. 이번 검토는 여기서 종료하며 다음 정식 릴리즈 때 다시 판단한다.** 다음 검토에서는 계보·스키마·누락 수정·Workshop config 변환·기억 패치 이식 여부를 다시 확인한다. 다음 stable도 자동으로 마이너라고 가정하지 않는다. 메이저라면 cold state 보존·네트워크 없는 사본 리허설이 먼저이며, 이번 문서 commit/push 승인을 pull/build/운영 교체·모델 smoke 승인으로 확대하지 않는다.
-- 보고서 `.agent-reports/openclaw-10.5-opus-review-20261019.md`, 독립 핵심 확인 `.agent-reports/openclaw-10.5-coordinator-critical-check-20261019.json`. 10.4의 CLI 이력/cache 수정 일부가10.5에 없는 것은 소스 관찰이며 실제 회귀는 미측정이다. Workshop Doctor config 재작성과 cron-parent 패치 구조 변경도 검토 대상; Docker dist 미검증을 이식/회수 성공으로 쓰지 않는다. 제거된3rd 소스는 자동 재복제하지 않는다.
-- 검토 시작 실측: 기존 운영 이미지 `17dab88f…` healthy·restart4, public HEAD `55b01e0`, root12GiB/home11GiB 여유. 운영 설정·서비스 변경 없음.
+- **동결·복원 경계:** Andenken pin10.33.0·dependency/lockfile/runner/parser는 동결, 이미지 기본pnpm12.5.1 유지. 다른 핀의 무네트워크 실행을 가정하지 않는다. 직전17dab 이미지와 유휴 gate 경계를 보존한다. 별도 private 리포의 소스는 추가 승인 없이 커밋·푸시하지 않으며 타 작업 config 변경과 섞지 않는다. 현재 정책은 ORACLE Corepack 절, 당시 영수증은 `~/openclaw/backups/swap-corepack-andenken-20261019/`에 남긴다.
 
 ## 도구 후속 — 완료분은 v2026.10.17로 갈무리
 
 - **미관찰 경계:** gpt·mini(Sonnet)의 실제 URL 요약은 GLG가 확인해 닫았다. 실네트워크 YouTube·다음 자연 재기동은 미관찰이며 강제 리허설하지 않는다. PDF는 현 이미지에 uvx/markitdown이 없으므로 필요가 생길 때 별도 판단한다. 재인증·scope 확대·유료 전사를 설치에 섞지 않는다.
 - **private 소스 정리:** 공개 릴리즈 요청을 별도 private 리포의 push 승인으로 확대하지 않는다. 승인 시 Dockerfile·README·새 `summarize-bot.sh`·추적 중이던 `config/claude-skills/summarize` 링크 삭제4개만 검토하고, 타 작업의 `config/gitconfig-system`·`config/openclaw.json` 변경은 섞지 않는다. 새 가드 없이 Dockerfile만 커밋하면 다음 빌드가 깨진다.
-- **복원 좌표:** `~/openclaw/backups/swap-native-summarize-20261017/`, 기존10.4 이미지 `8818c811…`·10.3 롤백 보존. gog 바이너리 복원은 이미지 복원과 별개다. 전체 `run.sh k)` 재배포·이미지/캐시 정리는 승인하지 않았다. 운영 정책·검사는 `ORACLE.md` summarize 절, 로컬 영수증은 `.agent-reports/openclaw-native-summarize-20261017.md`.
+- **복원 좌표:** `~/openclaw/backups/swap-native-summarize-20261017/`, 실제 보존 중인 직전10.4 이미지 `17dab88f…`·10.3 candidate를 사용한다. 이전8818은 이미 은퇴했으므로 복원 대상으로 가정하지 않는다. gog 바이너리 복원은 이미지 복원과 별개다. 전체 `run.sh k)` 재배포·이미지/캐시 정리는 승인하지 않았다. 운영 정책·검사는 `ORACLE.md` summarize 절, 로컬 영수증은 `.agent-reports/openclaw-native-summarize-20261017.md`.
 - **미사용 서버 패키지:** Oracle의 netlify-cli·typescript-language-server 기설치본은 아직 남아 있다. 제거는 별도 승인 후 수행하고 TypeScript 컴파일러는 유지한다. `install all`로 실행 중 하네스를 갱신하지 않는다.
 
 운영 stem #11은 아래에 유지한다.
 
-# RAIL — 현재 좌표
+# LEDGER — 이전 OpenClaw 운영 좌표
 
 - [x] **1. OpenClaw `2026.8.2` 안정화 고정** — 9.1/9.2 미채택(GLG 2026-09-06). 라이브 healthy · 롤백면 `8.1-rollback` 하나만 유지
 - [x] **2. 컷오버 잔재 회수** — `/home` 94%→75%, docker 12.6→9.8GB. 롤백면 은퇴 완료
@@ -61,7 +67,7 @@
   - [ ] **`AgentSelectionRequiredError` 가 doctor 의 health check 한 칸을 막는다** — `openclaw message send` 가 거부되던 것과 같은 에러다. 우리 CLI 사용만의 불편이 아니라 **자기 점검이 안 도는 상태**. 스키마에 `bindings[].match.{channel,accountId} → agentId` 라는 정식 자리가 있는데(`src/config/zod-schema.agents.ts:90-163`) 우리는 안 쓴다 — 계정↔에이전트가 이름 규칙에 기대고 있고, 앱·웹도 이 선언을 읽는다.
   - [x] ~~`forge` 스킬이 gpt/gemini/mini 에서 symlink-escape 로 로드 거부~~ — **대상 아님**(GLG 2026-09-09: forge 는 공사 중, 안 써도 된다). 되살릴 때 `skills.load.allowSymlinkTargets` 를 볼 것.
 
-- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← CURRENT: 7·8단계 전 이관 절차 정리. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
+- [ ] **11. 웹 퍼블리시를 Cloudflare 하나로 — [#11](https://github.com/junghan0611/nixos-config/issues/11)** ← 별도 STEM: 7·8단계 전 이관 절차 정리. 2026-09-30 homepage#2에서 이관(GLG). 단계·결정·체크박스는 이슈 본문이 SSOT, 영수증은 코멘트. 도구·토큰 준비는 끝나 CHANGELOG `v2026.9.30`으로 갔다 — 토큰 `~/.cf-token-glg`(`glg-cloudflare` 하나), 호출은 `CLOUDFLARE_API_TOKEN=$(<~/.cf-token-glg) cf|wrangler …`. 역할(본문 결정 6): **oracle = 상시 배포 플랫폼**, 노트북 = 켜져 있을 때의 검수대, nixos-config = 계정·토큰·DNS·터널·도구, 사이트 리포 = 리포 안 설정·실배포·검증(homepage는 [homepage#3](https://github.com/junghan0611/homepage/issues/3)).
   - [ ] **aionsclubs.org DNSSEC DS 반영 확인** — GLG가 12:2x 켰다(Cloudflare `pending`, MX·SPF·DKIM·A는 서명 응답에서도 `NOERROR`). `.org` DS는 12:37 시점 미반영; 안내는 최대 24시간. 반영되면 8.8.8.8·1.1.1.1에서 `dig +tcp DS`·`+dnssec` `AD` 확인. #11 범위 밖(aions 터널은 건드리지 않았다).
   - **DNSSEC 해제 순서(함정)** — NS를 Cloudflare 밖으로 옮기거나 서명을 끄려면 **DS를 먼저 지우고 TTL(3600s) 뒤에** 한다. 순서를 어기면 검증 resolver에서 도메인이 통째로 SERVFAIL이다. 이관 절차 정리에 넣을 것.
   - **상태 정정 영수증** — [#11 10/01 코멘트](https://github.com/junghan0611/nixos-config/issues/11#issuecomment-5922317409): 아래 보관 선택·등록기관 뒷정리·미확인 인증 기한 폐기의 출처.
@@ -72,7 +78,7 @@
 
 현재 좌표: 1·2·3·4·7·8·9 완료, 9.6·Copilot 이관은 CHANGELOG → **11(Cloudflare 이전: 전환 끝, 7·8단계는 절차 정리 후)** · 5(무응답 통지 복귀) → 10(doctor 셋) → 6(상류)
 
-# NOW — #11 Cloudflare 이전
+# LEDGER — #11 Cloudflare 이전 (별도 stem)
 
 - **Current**: DNS·DNSSEC·등록기관·homepage·garden 이전 완료, Netlify DNS zone 삭제 완료(2026-10-02). Netlify 사이트는 Free·자동 배포 해제 상태로 보관(GLG 10-01 확인); 삭제를 다시 요구하지 않는다. 이제 7·8단계 전의 **이관 절차 정리 단계**.
 - **Next**: ① aionsclubs.org DS 반영·`AD` 확인(위 RAIL 11) ② 이관 절차 정리 — 7·8단계 착수 조건(접근제어·클라이언트·롤백·`proxy` 네트워크·DNSSEC 해제 순서)을 문서로 먼저 굳힌다. 정리가 끝나기 전에는 터널 이전을 시작하지 않는다.

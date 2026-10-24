@@ -9,6 +9,32 @@
 
 ## Unreleased
 
+## v2026.10.25 — Oracle 분기 유지보수와 재부팅 절차
+
+### 재부팅을 문서가 아닌 운영 스킬로
+
+- **[oracle-reboot 스킬](https://github.com/junghan0611/nixos-config/blob/v2026.10.25/.claude/skills/oracle-reboot/SKILL.md)**을 리포 전용 정본으로 추가했다. 범위 승인 → 상태 수집 → 개별 정리 → 명령별 권한 확인 → 실제 Gateway 유휴 게이트 → 재부팅1회 → 재접속 복구를 연결한다. 기존 유지보수 문서는 진입 링크만 남기고, AGENTS·NixOS 운영 스킬·README의 라우팅을 통일했다. 새 자동 재부팅기·cron·watcher나 봇용 스킬 배포는 만들지 않았다.
+- 교차 검수에서 **SSH 로그인 셸의 옵션 오염, 짧은 게이트 만료, 인증 실패 뒤 hold 잔존, 시도와 수락 기록의 혼동**을 찾아 보완했다. 마지막 동작은 서브셸로 격리하고, 실제 권한을 prepare 전에 확인하며, 남은 TTL이 최소60초의 셧다운 예산을 충족할 때만 진행한다. 예산은 더 긴 정지 지연에 맞춰 늘려 판단하며 고정 TTL로 가정하지 않는다. transport 실패도 저장된 ID로 수동 resume 안내를 제공하고, attempt·명령 exit·실제 새 boot ID를 구분한다. 덮어쓰기와 불명 결과의 자동 재시도는 차단한다.
+- Oracle `run.sh d)`에 **삭제 없는 영속 사전 수집**을 연결했다. system/user 실패 유닛·부트 기본 선택·GC root·프로세스 메타데이터·Docker·자동 기동 없는 Emacs probe·정리 예상치를 기록하고, 실행 당시 정본5파일의 사본과 해시를700/600 영수증에 보존한다. Git index의 기회적 갱신을 피하고 Nix 평가는 opt-in·lock 갱신 금지로 구분했다. `COLLECTION_COMPLETE`는 수집 완료이지 서비스 정상이나 실행 승인이 아니며, dry-run 내부 오류 은폐 가능성도 표시한다.
+- **오프라인11검사**에 정본 누락·권한·부분 실패·비Oracle 거절·메뉴의 SSH 소켓 보존·Emacs 임시 경로·Oracle 저널 보존을 남겼다. 문서의 실제 Python 게이트를 추출해14합성 응답을 검사하고, Bash4블록은 실행 없이 문법·격리 구조를 확인했다. bool 카운트·누락·블로커·만료·셧다운 예산 부족을 통과시키지 않는다. 합성 검사를 실서비스 정상 증거로 확대하지 않았다. 릴리즈 gate의 `nix flake check --no-build --offline --no-update-lock-file`로 네 프로필 평가도 통과했으며 패키지 빌드·시스템 전환은 하지 않았다.
+
+### 승인된 공간 회수와 실제 복구
+
+- 현행 NixOS 모듈 Home Manager와 별개인 **옛 standalone HM23 링크2개**만 은퇴시키고, 나이·시스템 세대 삭제 없는 사용자 GC를 실행했다. Nix는 약2.2만 경로·22.2GiB 해제를 표시했고, `df`의 실제 root 여유 증가는 **약23.6GiB(5.5→29GiB)**였다. 현행 HM·별도 사용자 profile과 crypto·현재/booted system·복귀71을 보존했다. pnpm store·봇 상태·백업·타 레인 산출물은 이 범위에 포함하지 않았다.
+- 실제 ready·active0·blockers없음·유효기간을 검증한 뒤 **Oracle을 재부팅1회** 수행했다. 새 boot ID와 current=booted인 세대72로 실제 부팅을 확인했다. 이후 root 여유36GiB·home5.2GiB를 관측했으며, GC 직후보다 추가 증가한 root 공간의 원인은 단정하지 않았다. Nix 구성 변경·재switch·OpenClaw 버전업은 없었다.
+- 의도적으로 자동 기동되지 않는 **agenda용 Emacs server를 geworfen 정본으로 복구**한 뒤, 컨테이너14개 기동·health 대상 정상·Gateway RPC·공개 URL 기대 상태·comments ping·system/user 실패 유닛0을 확인했다. translation-server는 장수 프로세스라는 이유로 수동 기동이라 추측하지 않고 실제 enabled unit과 실행 파일을 확인했다. 턴 관측의 미완료 행은0이었고 과거 실패 기록은 보존했다. 인증된 앱 세션·실제 봇 답변까지 HTTP 결과로 일반화하지 않았으며 강제 모델 smoke/prewarm은 하지 않았다.
+- Gateway는 **10.4와 같은 이미지**를 유지했다. 기동 초기 tini ELOOP1회 뒤 재시작 수1로 안정됐으나 근본 원인이 해결됐다는 뜻은 아니다. home 공간과 주간 나이 기반 GC의 복귀 세대 보존 정책은 별도 판단으로 남겼다. 비공개 설정·인증·원문·실행 영수증은 릴리즈에 포함하지 않는다.
+
+### 정리 도구와 전 기기 메뉴의 안전 경계
+
+- `diskclean.sh deep`의 마지막 safe 전용 조건이 정상 dry-run을 exit1로 끝내던 오류를 고쳤다. 알려진 `emacs*`·`agent-emacs*` 임시 경로를 제외하고 Oracle journal의 추가200M vacuum을 없애 선언된1GiB 진단 보존을 유지했다. 이는 일반적인 활성 사용 감지나 중간 모든 명령의 오류 전파를 구현했다는 뜻은 아니다.
+- safe/deep가 **전체 묶음**이라는 점과 나이 기반 GC가 복귀 세대1개 보존을 보장하지 않는 점을 메뉴·스킬·README에서 분명히 했다. 부분 승인에는 개별 명령을 사용한다. **네 프로필 모두** `run.sh` 시작 시 자동으로 수행하던 GitHub SSH 제어 소켓 삭제를 없애고, 필요한 때 명시적으로 선택하는 **g** 메뉴로 분리했다. Oracle 이외의 d 분기는 기존 동작을 유지했다.
+
+### 직전 태그 이후의 Andenken 환경 수선·업데이트 경계
+
+- `93d90bb`의 **정확한 pnpm10.33.0 Corepack 캐시 사전 공급**을 갈무리했다. 이미지 기본 pnpm12.5.1과 root 소유 캐시는 유지하고 `--activate`나 쓰기 권한 확대를 사용하지 않았다. Andenken의 packageManager·dependency·lockfile·runner/parser와 호스트 Nix pnpm을 바꾸지 않았으며, 핀 변경과 이미지 캐시의 자동 동기화도 만들지 않았다. 당시 fresh/offline 합성 읽기13검사×3과 운영 검증32 PASS를 확인했고 실제 private 히트는 다음 자연 사용 관찰로 남겼다.
+- `e881e65`의 **10.5 보류 결정**도 포함했다. 선언 agent 스키마24→25와 분기 계보 때문에 마이너 교체로 다루지 않았으며, 이관 후 이미지 재태그만으로10.4를 복구할 수 없음을 기록했다. 이번 컷은10.4를 유지한 호스트 유지보수이며,10.7은 공간·스키마·계보를 읽기 전용으로 검토할 다음 단계다. 이미지 다운로드·DB 이관 승인을 포함하지 않는다.
+
 ## v2026.10.17 — 내장 요약과 호스트·봇 도구 정렬
 
 ### 본문 추출은 도구로, 요약은 현재 봇의 턴에서

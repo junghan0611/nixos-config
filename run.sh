@@ -96,6 +96,7 @@ show_menu() {
     echo "    7) Flake show (구성 확인)"
     echo "    8) List generations (세대 목록)"
     echo "    9) Rollback (이전 세대로)"
+    echo "    g) GitHub SSH 소켓 초기화 (문제 있을 때만 명시 실행)"
     echo ""
     echo -e "  ${YELLOW}Peon-ping${NC}"
     echo "    p) Preview packs (팩별 소리 미리듣기)"
@@ -119,9 +120,9 @@ show_menu() {
     echo "    E) 외부 패키지 업그레이드"
     echo ""
     echo -e "  ${YELLOW}Cleanup${NC}"
-    echo "    c) Cleanup safe (GC + /tmp + 스크래치패드 + 캐시 — 작업 손실 없음)"
+    echo "    c) Cleanup safe (GC·임시 캐시 — 세대·전체 대상 승인 필요)"
     echo "    C) Cleanup deep (+ repo 빌드 캐시 + optimise + 브라우저/툴, docker·pnpm 선택)"
-    echo "    d) Disk usage (디스크 사용량 확인)"
+    echo "    d) Disk usage (Oracle: 유지보수 사전 점검·영수증 보존)"
     echo ""
     echo "    0) Exit"
     echo ""
@@ -148,14 +149,16 @@ execute_cmd() {
 # Main loop
 main() {
     cd "$FLAKE_DIR"
-    fix_ssh_github
     check_device
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, p/P, e/E, i/I, c/C/d, t/r/s/k): " choice
+        read -p "선택하세요 (0-9, g, p/P, e/E, i/I, c/C/d, t/r/s/k): " choice
 
         case $choice in
+            g)
+                fix_ssh_github
+                ;;
             1)
                 execute_cmd "nix flake update"
                 ;;
@@ -544,27 +547,31 @@ main() {
                 execute_cmd "bash '$FLAKE_DIR/scripts/setup-stignore.sh' diff"
                 ;;
             d|D)
-                echo ""
-                info "디스크 사용량:"
-                df -h /
-                echo ""
-                info "/nix 폴더 크기:"
-                du -sh /nix 2>/dev/null || echo "측정 중..."
-                echo ""
-                info "현재 시스템 클로저 크기:"
-                nix path-info -Sh /run/current-system 2>/dev/null || echo "측정 실패"
-                echo ""
-                info "GC roots 개수:"
-                nix-store --gc --print-roots 2>/dev/null | grep -v '/proc/' | wc -l
-                echo ""
-                info "시스템 세대 목록:"
-                sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
-                echo ""
-                info "Home-manager 세대 수:"
-                ls ~/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | wc -l
-                echo ""
-                info "result 심볼릭 링크:"
-                find ~/repos -maxdepth 3 -name "result" -type l 2>/dev/null || echo "없음"
+                if [[ "$DEVICE" == "oracle" ]]; then
+                    execute_cmd "DEVICE=oracle bash '$FLAKE_DIR/scripts/oracle-maintenance-preflight.sh'"
+                else
+                    echo ""
+                    info "디스크 사용량:"
+                    df -h /
+                    echo ""
+                    info "/nix 폴더 크기:"
+                    du -sh /nix 2>/dev/null || echo "측정 중..."
+                    echo ""
+                    info "현재 시스템 클로저 크기:"
+                    nix path-info -Sh /run/current-system 2>/dev/null || echo "측정 실패"
+                    echo ""
+                    info "GC roots 개수:"
+                    nix-store --gc --print-roots 2>/dev/null | grep -v '/proc/' | wc -l
+                    echo ""
+                    info "시스템 세대 목록:"
+                    sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
+                    echo ""
+                    info "Home-manager 세대 수:"
+                    ls ~/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | wc -l
+                    echo ""
+                    info "result 심볼릭 링크:"
+                    find ~/repos -maxdepth 3 -name "result" -type l 2>/dev/null || echo "없음"
+                fi
                 ;;
             e)
                 # 목록은 run.sh 에 두지 않는다 — SSOT는 scripts/external-packages.sh

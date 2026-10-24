@@ -131,7 +131,11 @@ echo "    2. /tmp — 7일 이상 방치된 작업 디렉토리"
 echo "    3. 에이전트 스크래치패드 — 3일 이상"
 echo "    4. uv 캐시 prune (활성 링크 보존)"
 $GUI_CACHE && echo "    5. 휴지통"
-echo "    6. systemd 저널 → 200M"
+if [[ "$DEVICE" == "oracle" ]]; then
+    echo "    6. systemd 저널 보존 (선언 상한 유지, 추가 vacuum 없음)"
+else
+    echo "    6. systemd 저널 → 200M"
+fi
 if [[ "$LEVEL" == "deep" ]]; then
     echo "    ─ deep ─"
     echo "    7. nix-store --optimise (하드링크 중복 제거)"
@@ -142,6 +146,8 @@ $WITH_PNPM   && echo "    + pnpm store prune  ${YELLOW}(라이브 node 세션 �
 $WITH_DOCKER && echo "    + docker prune      ${YELLOW}(dangling 이미지 24h+ / 빌드 캐시)${NC}"
 $WITH_PNPM   || echo -e "    ${YELLOW}제외${NC}: pnpm store (--with-pnpm 로 활성화)"
 $WITH_DOCKER || echo -e "    ${YELLOW}제외${NC}: docker (--with-docker 로 활성화)"
+warn "실행 모드는 위 전체 묶음을 처리합니다. 부분 승인에는 개별 명령을 사용하세요."
+warn "나이 기반 GC는 사용 가능한 이전 세대 보존을 보장하지 않습니다. 프로필부터 확인하세요."
 echo ""
 
 if ! $DRY_RUN && ! $ASSUME_YES; then
@@ -176,7 +182,7 @@ info "2. /tmp 오래된 작업 디렉토리 (7일+)"
 TMP_SMALL_N=0; TMP_SMALL_MB=0; TMP_BIG=()
 while IFS= read -r d; do
     case "$(basename "$d")" in
-        .*|systemd-private-*|snap*|tmux-*|ssh-*|nix-shell.*|claude-*|pi-shell-*) continue ;;
+        .*|systemd-private-*|snap*|tmux-*|ssh-*|nix-shell.*|claude-*|pi-shell-*|emacs*|agent-emacs*) continue ;;
     esac
     mb=$(path_mb "$d")
     if [[ "$mb" -ge 50 ]]; then
@@ -227,8 +233,13 @@ if $GUI_CACHE; then
 fi
 
 # ── 6. systemd 저널 ────────────────────────────────────────────────────
-info "6. systemd 저널 vacuum → 200M"
-run "sudo journalctl --vacuum-size=200M 2>&1 | tail -1"
+# Oracle은 선언된 1GiB 상한과 재부팅 전후 진단 기록을 보존한다.
+if [[ "$DEVICE" == "oracle" ]]; then
+    info "6. systemd 저널 보존 — 선언 상한 유지, 추가 vacuum 없음"
+else
+    info "6. systemd 저널 vacuum → 200M"
+    run "sudo journalctl --vacuum-size=200M 2>&1 | tail -1"
+fi
 
 # ── deep 레벨 ──────────────────────────────────────────────────────────
 if [[ "$LEVEL" == "deep" ]]; then
@@ -296,4 +307,6 @@ df -h / | tail -1 | awk '{printf "  디스크: %s 중 %s 사용 (%s), 여유 %s\
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "  오래된 부트 엔트리는 다음 nixos-rebuild boot/switch 때 정리됩니다."
-[[ "$LEVEL" == "safe" ]] && echo "  더 필요하면: $0 deep --with-docker"
+if [[ "$LEVEL" == "safe" ]]; then
+    echo "  더 필요하면: $0 deep --with-docker"
+fi

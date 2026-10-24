@@ -15,6 +15,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | 작업 맥락 | 펼칠 문서 |
 |---|---|
 | **`oracle` 디바이스 또는 OpenClaw 관련 작업** | [ORACLE.md](ORACLE.md) — ownership, 봇 model routing, env/secret, 업그레이드/restart, skills, 함정 |
+| **Oracle 분기 유지보수·정리·재부팅** | **`oracle-reboot` 스킬** — 승인·유휴 게이트·재접속 복구의 정본. [진입 안내](docs/oracle-maintenance.md), `run.sh d)` 사전 수집 |
 | **`thinkpad` 로컬 AI (Ollama)** | [THINKPAD.md](THINKPAD.md) |
 | **`nuc` / `laptop` 일반 NixOS 작업** | 이 문서 + 표준 NixOS 흐름 |
 | 함정 카탈로그 (OpenClaw) | [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) |
@@ -123,7 +124,7 @@ sudo nixos-rebuild switch --flake .#<profile>
 
 # 디스크 정리 (디바이스 프로파일 자동 인식)
 ./scripts/diskclean.sh deep --dry-run    # 측정만
-./scripts/diskclean.sh safe              # 작업 손실 없음
+./scripts/diskclean.sh safe              # 전체 대상 승인·복귀 세대 확인 후 (부분 승인에는 개별 명령)
 ./scripts/diskclean.sh deep --with-docker
 ```
 

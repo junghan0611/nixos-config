@@ -50,9 +50,9 @@ A `broken` package marker is a reason to investigate, not automatically to bypas
 
 The cloud host supports services such as Caddy, Authelia, Remark42, Umami, Home Assistant, Forgejo, and OpenClaw. Files under `docker/` are service definitions or references, **not an inventory proving every directory is deployed**.
 
-OpenClaw operations are owned here because upgrades cross the host–container boundary: disk capacity, mounts, networking, authentication, and recovery all affect service continuity. The operational handbook records a **2026.10.3** baseline and six bot workspaces. The former ACP route has been retired in this deployment; do not follow old ACP installation instructions as the current architecture.
+OpenClaw operations are owned here because upgrades cross the host–container boundary: disk capacity, mounts, networking, authentication, and recovery all affect service continuity. The operational handbook records a **2026.10.4** baseline and six bot workspaces. The former ACP route has been retired in this deployment; do not follow old ACP installation instructions as the current architecture.
 
-**Private live state is not the public configuration.** OpenClaw's live configuration, credentials, conversations, and workspaces live outside this public repository. Public Dockerfile/Compose copies are references, not permission to overwrite that state. Model routing changes frequently; consult the current baseline at the top of [ORACLE.md's routing section](ORACLE.md#model-routing-현재-openclaw-2026103-baseline), not an old model list copied into a README.
+**Private live state is not the public configuration.** OpenClaw's live configuration, credentials, conversations, and workspaces live outside this public repository. Public Dockerfile/Compose copies are references, not permission to overwrite that state. Model routing changes frequently; consult the current baseline at the top of [ORACLE.md's routing section](ORACLE.md#model-routing-현재-openclaw-2026104-baseline), not an old model list copied into a README.
 
 Operations distinguish:
 
@@ -86,11 +86,20 @@ Use the existing `run.sh` paths for recurring operations instead of inventing pa
 ### Disk cleanup starts with measurement
 
 ```bash
-./scripts/diskclean.sh deep --dry-run
-./scripts/diskclean.sh safe
+bash scripts/diskclean.sh deep --dry-run
+# Oracle: collect a persistent, private maintenance baseline without deleting anything.
+bash scripts/oracle-maintenance-preflight.sh
 ```
 
-Nix GC cannot reclaim paths still rooted by repository `.direnv` or `result` links, and it does not own browser, compiler, or application caches. The cleanup script accounts for device roles. pnpm-store and Docker cleanup are separate opt-ins: live Node sessions and service containers make indiscriminate pruning unsafe.
+Nix GC cannot reclaim paths still rooted by repository `.direnv` or `result` links, and it does not own browser, compiler, or application caches. The cleanup script accounts for device roles, but `safe` and `deep` execute whole bundles: partial approval requires individual commands. Age-based GC does not guarantee a previous rollback generation. pnpm-store and Docker cleanup are separate opt-ins: live Node sessions and service containers make indiscriminate pruning unsafe.
+
+### Planned Oracle reboot and recovery
+
+The repository-local **[oracle-reboot skill](.claude/skills/oracle-reboot/SKILL.md)** owns the quarterly manual procedure: agree on scope, collect evidence, reclaim only approved paths, verify command-specific privileges and the live Gateway idle gate, then reboot once and inspect recovery. It is not an automatic reboot, update, or model-prewarming service.
+
+`run.sh d)` on Oracle collects system facts and a deletion-free estimate into private `.agent-reports/oracle-maintenance/` receipts, including copies and hashes of the procedure used. Nix target evaluation is opt-in; even offline evaluation can write input sources and caches. Oracle journal retention and known Emacs temporary paths are preserved, but these exclusions are not a general active-use detector.
+
+**Menu behavior change on all four profiles:** opening `run.sh` no longer clears the GitHub SSH control socket. Choose **g** explicitly when that repair is needed. Other hosts retain their existing **d** disk-inspection path.
 
 ## Layout
 
@@ -123,6 +132,7 @@ See the [archived blacksmith's workshop essay](docs/deprecated/20251018T184200--
 | Why were operational choices made? | [ROADMAP.md](ROADMAP.md) |
 | What changed in released snapshots? | [CHANGELOG.md](CHANGELOG.md) |
 | How is the cloud runtime operated? | [ORACLE.md](ORACLE.md) |
+| How is a planned Oracle reboot performed and verified? | [oracle-reboot skill](.claude/skills/oracle-reboot/SKILL.md) |
 | What recurring runtime failures should not be repeated? | [OpenClaw gotchas](docs/openclaw-gotchas.md) |
 | What runs without a human turn? | [Automation SSOT](docs/openclaw-automations.md) |
 | How are packages added? | [Package policy](AGENTS.md) · [external package list](scripts/external-packages.sh) |
