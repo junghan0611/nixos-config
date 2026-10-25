@@ -9,27 +9,38 @@
 # RAIL — 현재 좌표
 
 - [x] **1. 호스트 유지보수·oracle-reboot 정본** — 완료분은 CHANGELOG v2026.10.25로 갈무리
-- [ ] **2. OpenClaw10.7 읽기 전용 검토** ← CURRENT: 릴리즈·schema·계보·패치 경계부터
-- [ ] **3. 공간·cold 보존·리허설 예산** ← PAUSED: home5.2GiB, 보호 자산/범위별 승인 필요
-- [ ] **4. 실제 이관·복구 검증** ← PAUSED: 검토 결과와 별도 실행 승인 전에는 pull/build/교체하지 않음
+- [x] **2. 리포별 메타데이터·승인된 첫 archive 퇴역** — 실제 전후 결과는 private 실행 영수증에 보존
+- [x] **3. 승인된 데이터·백업·개발 사본 퇴역과 provider 정지** — 원본 보호·최종 RPC/가용성 검증 완료
+- [x] **4. 재현성 교차검토·reboot 통합·README·회귀검증** — 초기 Grok 검토를 같은 세션의 GPT Sol이 이어 승인 순서·중단 경계 보강
+- [ ] **5. git-annex 세션 코퍼스 보관 체계 설계** ← CURRENT: 목적지·사본 수·reader/manifest 계약과 검증 계획부터, 실제 실행은 승인 대기
 
-## NOW — OpenClaw10.7 검토 대기
+## NOW — 세션 코퍼스 보관 계획부터
 
-- **다음 한 수:** `openclaw-update` 스킬로10.7 릴리즈·선언schema·10.4와 계보·필요 패치를 읽기 전용으로 판정한다. 기존 GC/재부팅을 반복하지 않는다. 이미지 다운로드·이관·강제 모델 턴은 별도 승인이다.
-- **현재 경계:** live10.4/7e39 이미지 유지, 부팅 뒤 ELOOP1회에서 복구돼 restart1 안정 관측. root36GiB/home5.2GiB이므로 home cold 보존·리허설 예산은 미확보다. 현행/부팅system은 같은 gen72, 복귀71·별도 사용자 profile/crypto·봇 상태·백업은 보존했다.
-- **별도 판단:** pnpm·타 레인 산출물·원본은 정리 승인 없음. 주간30일GC가11-02부터 복귀71을 지울 수 있다는 모의 근거가 있어 정책/보호 root를 판단해야 한다. 부분 승인으로 fullsafe/deep 실행 금지. Pi용TTYdaemon은 필요할 때 수동 기동한다.
-- **읽을 곳:** 재부팅 정본 `.claude/skills/oracle-reboot/SKILL.md`; 실행·복구 영수증 `.agent-reports/oracle-maintenance/20261025T0444-retire-hm23/postboot/summary.md`; 스킬 검수 `.agent-reports/oracle-reboot-skill-review-20261025.md`. 이전 후보 근거는 `.agent-reports/openclaw-10.5-opus-review-20261019.md`·`openclaw-10.5-coordinator-critical-check-20261019.json`·`openclaw-10.6-review-20261023.md`. Workshop 변환·기억 패치 재이식·위험 경계를 재검토하되 제거된3rd 소스를 자동 재복제하지 않는다.
+- **다음 한 수:** 아래 annex 후속의 목적지·독립 사본 수·hot/cold와 reader/manifest 계약을 먼저 정한다. 읽을 곳은 `docs/data-retirement.md` §6–7과 `.agent-reports/home-data-20261025/repro-review-checkpoint.md`·`final-peer-review.md`. 원본 데이터와 현행 코퍼스는 그대로 둔다. 시험 복사/복원도 먼저 정확한 범위·목적지 승인을 받아야 한다. 앞 작업의 commit/push 승인을 다음 세션의 새 실행 허가로 이어받지 않는다.
+- **최종 운영 근거:** `.agent-reports/home-data-20261025/provider-final-verified.json`은 zai/xai disabled, Gemini Telegram false/heartbeat0m, 다른5primary 유지, RPC health true, home약20.1GiB를 기록한다. `provider-public-surfaces.log`는 전체 기대 HTTP상태·comments pong 확인. 이전 조사표/실패 receipt와 최종 상태를 혼동하지 않는다.
+- **마감된 실행:** 승인된 archive/복구사본/빌드/푸시된 Jacobian/HPBL/Go모듈캐시/6tmp검증물/옛Codex로그·import보관함/구형npm플러그인·oldcapture는 이미 회수했다. Jacobian은 README만 남음. 지연 background 완료 알림으로 삭제·uninstall·restart를 재실행하지 않는다. 현재 agent DB7개/auth원본·이미지는 보존했다.
+- **회복·미해결:** uninstall클라이언트50s초과는 실제 records[]/디렉터리부재/ownedexec[]로 완료 판독해 재실행하지 않았다. 준비된 유휴게이트 뒤 same-image restart1회에서 tiniELOOP4회와150s대기초과가 있었으나 이후 실제healthy를 읽기전용 검증으로 확인했다. 최종 RestartCount4·own hold 해제 확인. ELOOP 원인은 미해결이며 새 이미지/추가 restart로 고쳤다고 주장하지 않는다.
+- **교차검토 근거:** 초기 Grok 뒤 서비스 불가로 GLG가 같은 garden `20261025T115115-e01831`을 GPT Sol로 변경했고, 이 형제가 실제 diff/새 SOP를 읽어 최종 검토했다(15:44 수신, `final-peer-review.md`). 재시작/RPC 중단 경계·annex 사전 승인 순서를 보강했다. 기존 TTL 실행 셸은 HEAD와 바이트 동일. 공개 리포에 privateOpenClaw config/README·영수증·auth 사본은 포함하지 않는다.
+- **운영 권고:** [Andenken#18](https://github.com/junghan0611/andenken/issues/18)은 약10GiB 상주를 감당할 수 없으니 축소·예산을 agent-config와 논의하라는 인프라 권고다. 기억축/인덱스 설계 지시나 데이터 폐기 허가는 아니다. 임의의 고정GiB/자동퇴거 정책은 없다.
+- **별도 보류:** OpenClaw10.7/스키마이관/콜드리허설·모델smoke/prewarm·재임베딩·credential rotation은 진행하지 않는다. 버전업 재개 전 `openclaw-update`/검수 fixture의 과거 ZAI loaded·6계정 기대 계약과 현 provider 정지 정책을 먼저 대조한다. 통과를 위해 provider를 다시 켜거나 검증을 약하게 만들지 않는다. Andenken pin/dependency/lockfile/runner/parser는 동결. 주간30일GC의복귀71보존문제와Pi TTYdaemon수동기동은 별도 판단이다.
+
+## NEXT — git-annex 기반 세션 코퍼스 보관 체계
+
+- **대상/첫 행동:** GLG가 명시한 `~/repos/gh/session`(기기 통합 세션 코퍼스)의 hot/cold 배치·비공개 annex 경계를 설계한다. 초기 메타데이터 표(`.agent-reports/home-data-20261025/repo-summary.md`)에서 약5.1GiB, 이번 경로 stat 재확인에서 `.git` 부재·`MANIFEST.json` 존재인 데이터다. 코드 clone으로 복원되지 않으며 실제 데이터 복원 경로는 따로 결정한다. `git-annex`는 공통 Home Manager 선언/네프로필 평가만 완료했고 switch/install 활성화·init/add/drop/remote/upload/이동은 하지 않았다.
+- **먼저 결정:** Oracle에 남길 조회 원본 범위, 노트북/개인 외부 저장소 목적지와 가용량, 로컬 drop 뒤에도 남길 독립 사본 수, 무결성/복원 증거·평시/작업 피크 예산. 회사 계정 저장소를 유일한 보관처로 삼지 않는다. 같은 디스크 두 폴더나 곧 지울 로컬 사본으로 사본 수를 채우지 않는다.
+- **소유자 계약:** Andenken·agent-config와 현재 `MANIFEST.json`/SHA256·append-only 실복사·gather/replicate·reader 경로를 유지할 방법을 검토한다. annex의 잠긴 symlink/미보유 콘텐츠가 기존 탐색·읽기를 깨뜨리지 않는지 먼저 확인한다. live pi-durable/인증 저장소를 직접 annex에 넣거나 읽지 않는다.
+- **완료 기준/금지:** 이번에는 배치·reader/manifest 계약과 검증 계획만 확정한다. 선택한 닫힌 묶음의 시험 복사/복원도 목적지·정확한 범위를 먼저 승인받고 수행한다. 결과·무결성·reader 호환성과 독립 사본을 확인한 뒤 원본 이동/drop은 별도 승인받는다. 보존 기획을 기억축 재설계·유료 재임베딩·인덱스 초기화·현재 코퍼스 일괄 drop으로 확대하지 않는다. SDK1.3의37SQLite백업·Forge·미분류tar/첨부자료는 별도 자산이며 자동 포함하지 않는다.
 
 ## Andenken readback — 환경 수선 완료, B의 다음 자연 사용 관찰
 
 - **다음 한 수:** B가 실제 private 히트를 선택해 기존 `run.sh excerpt:session`을 쓸 때 확인한다. [원 컨테이너 영수증](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260216313)·[hit→source 계약](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260069262)은 그대로이며, 강제 모델 턴·private 세션 재열람·새 검색/재임베딩은 하지 않는다.
-- **동결·복원 경계:** Andenken pin10.33.0·dependency/lockfile/runner/parser는 동결, 이미지 기본pnpm12.5.1 유지. 다른 핀의 무네트워크 실행을 가정하지 않는다. 직전17dab 이미지와 유휴 gate 경계를 보존한다. 별도 private 리포의 소스는 추가 승인 없이 커밋·푸시하지 않으며 타 작업 config 변경과 섞지 않는다. 현재 정책은 ORACLE Corepack 절, 당시 영수증은 `~/openclaw/backups/swap-corepack-andenken-20261019/`에 남긴다.
+- **동결·복원 경계:** Andenken pin10.33.0·dependency/lockfile/runner/parser는 동결, 이미지 기본pnpm12.5.1 유지. 다른 핀의 무네트워크 실행을 가정하지 않는다. 직전17dab 이미지와 유휴 gate 경계를 보존한다. 별도 private 리포의 소스는 추가 승인 없이 커밋·푸시하지 않으며 타 작업 config 변경과 섞지 않는다. 현재 정책은 ORACLE Corepack 절이다. 과거 `~/openclaw/backups/swap-corepack-andenken-20261019/`는 GLG의 복구 사본 정리 승인으로 폐기돼 재사용할 수 없다. 원 컨테이너 영수증은 위 issue31 링크를 참조한다.
 
 ## 도구 후속 — 완료분은 v2026.10.17로 갈무리
 
 - **미관찰 경계:** gpt·mini(Sonnet)의 실제 URL 요약은 GLG가 확인해 닫았다. 실네트워크 YouTube·다음 자연 재기동은 미관찰이며 강제 리허설하지 않는다. PDF는 현 이미지에 uvx/markitdown이 없으므로 필요가 생길 때 별도 판단한다. 재인증·scope 확대·유료 전사를 설치에 섞지 않는다.
 - **private 소스 정리:** 공개 릴리즈 요청을 별도 private 리포의 push 승인으로 확대하지 않는다. 승인 시 Dockerfile·README·새 `summarize-bot.sh`·추적 중이던 `config/claude-skills/summarize` 링크 삭제4개만 검토하고, 타 작업의 `config/gitconfig-system`·`config/openclaw.json` 변경은 섞지 않는다. 새 가드 없이 Dockerfile만 커밋하면 다음 빌드가 깨진다.
-- **복원 좌표:** `~/openclaw/backups/swap-native-summarize-20261017/`, 실제 보존 중인 직전10.4 이미지 `17dab88f…`·10.3 candidate를 사용한다. 이전8818은 이미 은퇴했으므로 복원 대상으로 가정하지 않는다. gog 바이너리 복원은 이미지 복원과 별개다. 전체 `run.sh k)` 재배포·이미지/캐시 정리는 승인하지 않았다. 운영 정책·검사는 `ORACLE.md` summarize 절, 로컬 영수증은 `.agent-reports/openclaw-native-summarize-20261017.md`.
+- **복원 좌표:** 과거 `~/openclaw/backups/swap-native-summarize-20261017/`와 gog 구형 바이너리 사본은 GLG의 복구사본 정리 승인으로 폐기돼 재사용할 수 없다. 보존한 직전10.4 이미지 `17dab88f…`·10.3 candidate도 전체 state/config 복원점과 같지 않다. 이전8818은 이미 은퇴했으므로 복원 대상으로 가정하지 않는다. 전체 `run.sh k)` 재배포·이미지/캐시 정리는 승인하지 않았다. 운영 정책·검사는 `ORACLE.md` summarize 절, 로컬 영수증은 `.agent-reports/openclaw-native-summarize-20261017.md`.
 - **미사용 서버 패키지:** Oracle의 netlify-cli·typescript-language-server 기설치본은 아직 남아 있다. 제거는 별도 승인 후 수행하고 TypeScript 컴파일러는 유지한다. `install all`로 실행 중 하네스를 갱신하지 않는다.
 
 운영 stem #11은 아래에 유지한다.

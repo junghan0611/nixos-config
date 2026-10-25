@@ -91,6 +91,7 @@ in {
     lazygit
     delta
     git-lfs
+    git-annex      # 데이터 콘텐츠를 Git 이력과 분리해 보관·이동
     direnv
 
     logdy

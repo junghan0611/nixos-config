@@ -1,6 +1,6 @@
 ---
 name: nixos-config
-description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드 판정(마이너=교체만 / 메이저=별도 판단 — 절차는 openclaw-update 스킬), 공개면 변경 시 서빙 URL 전수 검수(caddy 8-세트 + CF Tunnel + Tailscale Serve), 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리', 'tailscale', '터널', '안드로이드 앱', '앱이 안 붙어', 'trustedProxies', '403', '페어링'."
+description: "nixos-config 오퍼레이터의 운영 면 — oracle/nuc/laptop/thinkpad 멀티 디바이스 NixOS + oracle에 사는 OpenClaw 봇 런타임을 실제로 손볼 때. AGENTS.md가 '현재 상태', NEXT.md가 '할 일', ROADMAP.md가 '이력'을 담는다면 이 스킬은 그 문서들이 front-load 못 하는 운영 반사신경을 담는다: 자리(디바이스) 인식 먼저, run.sh 엔트리, oracle/openclaw 분리 원칙, rebuild/rollback, OpenClaw 업그레이드 판정(마이너=교체만 / 메이저=별도 판단 — 절차는 openclaw-update 스킬), 공개면 변경 시 서빙 URL 전수 검수(caddy 8-세트 + CF Tunnel + Tailscale Serve), 봇 스킬 심볼릭 배포, 커밋/스탬프/git-hooks 규율. 트리거: 'nixos-config', 'nixos-rebuild', 'rebuild', 'switch', 'rollback', 'flake update', 'oracle', 'openclaw', '봇 업그레이드', 'caddy', 'claw', 'control ui', 'geworfen', 'authelia', 'agenda 안돼', '디바이스', 'run.sh', '롤백', 'nixos 정리', 'tailscale', '터널', '안드로이드 앱', '앱이 안 붙어', 'trustedProxies', '403', '페어링', '리포 정리', '리포 퇴역', '작업 잔여물', 'git-annex', '용량 권고', '스토리지 예산', '방 비우기'."
 user_invocable: true
 ---
 
@@ -31,6 +31,7 @@ TZ='Asia/Seoul' date '+%Y%m%dT%H%M%S'
 
 | 작업 맥락 | 펼칠 문서 |
 |---|---|
+| **home 데이터·리포 퇴역·작업 잔여물 정리** | → `../../../docs/data-retirement.md` — 기기 공통 실측/분류/승인/복원 표지의 정본. `.tmp-verify`·`.agent-reports`를 이름만으로 일괄 삭제하지도 무기한 보관하지도 않음. 예산 초과는 운영자 권고 → 담당 리포/로직 소유자의 축소안 → 필요시 승인된 로컬 퇴역·README 표지 |
 | **Oracle 정리·계획 재부팅·재접속 점검** | → **`oracle-reboot` 스킬** — 승인·실유휴게이트·권한·복구 순서의 정본 |
 | **OpenClaw 런타임 자체를 만짐** (봇 설정·heartbeat·cron·채널·배달·스키마) | → **`openclaw` 스킬** (`.claude/skills/openclaw/` — 같은 리포, 별개 스킬). 기억으로 찍지 말고 그 버전의 사실로 만지는 절차 |
 | OpenClaw 주제별 소스 좌표 (`src/…:줄`) | `docs/openclaw-reference-map.md` (v2026.8.2 기준, 미확인은 미확인이라 적힘) |

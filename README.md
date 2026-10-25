@@ -9,7 +9,7 @@ This is a personal, actively used configuration, not a distribution or a turnkey
 - **Hosts:** four NixOS profiles spanning x86_64 desktops and an aarch64 cloud VM.
 - **User environment:** home-manager modules for i3wm, shells, terminals, Doom Emacs integration, fonts, and language tooling.
 - **Package policy:** Nix first; one explicit list for tools that must live outside Nix; per-repository devShells for project-specific versions.
-- **Operations:** a shared `run.sh` entrypoint, device-aware disk cleanup, rollback procedures, and service-operation handbooks.
+- **Operations:** a shared `run.sh` entrypoint, device-aware disk cleanup, data/repository retirement and storage-budget reviews, rollback procedures, and service-operation handbooks.
 - **Public service references:** Docker definitions and operational lessons, with private runtime state and credentials deliberately outside this repository.
 
 The editor's own configuration belongs to [doomemacs-config](https://github.com/junghan0611/doomemacs-config). Shared agent skills and profiles belong to [agent-config](https://github.com/junghan0611/agent-config); sibling-session connections to [entwurf](https://github.com/junghan0611/entwurf); searchable memory to [andenken](https://github.com/junghan0611/andenken). This repository provides their operating ground, not a replacement for them.
@@ -93,11 +93,23 @@ bash scripts/oracle-maintenance-preflight.sh
 
 Nix GC cannot reclaim paths still rooted by repository `.direnv` or `result` links, and it does not own browser, compiler, or application caches. The cleanup script accounts for device roles, but `safe` and `deep` execute whole bundles: partial approval requires individual commands. Age-based GC does not guarantee a previous rollback generation. pnpm-store and Docker cleanup are separate opt-ins: live Node sessions and service containers make indiscriminate pruning unsafe.
 
+### Data and repositories have a lifecycle
+
+Cache cleanup is not a retention policy. The **[data-retirement procedure](docs/data-retirement.md)** separates Git history, original datasets, dependencies, generated output, verification sandboxes, diagnostic logs, and recovery copies. Shared/hardlinked directory sizes are not independent reclaimable bytes; a user-owned read-only tree is not necessarily a root-ownership problem. GitHub code does not restore ignored databases, session corpora, credentials, or LFS/annex content.
+
+The operator measures the footprint and asks the owning project to fit a host storage budget, without prescribing its internal memory or indexing architecture. A project may shrink, relocate approved assets, retain a shallow local copy, or retire its checkout and leave a README recording the upstream source, revision, reason, and separate data-recovery boundary. Explicit permanent disposal is also a choice; it does not require creating another indefinite safety copy. Every actual deletion or relocation still needs its own scoped approval.
+
+Agents own the closing of their temporary work: promote necessary evidence, then decide what can be retired rather than leaving every `.tmp-verify` and `.agent-reports` tree forever. Runtime captures, locks, active dependencies, and unique data are not disposable merely because their names look temporary. Provider cost/availability pauses must likewise survive maintenance without an automatic paid fallback or reactivation.
+
+`git-annex` is declared in the shared Home Manager package set. That declaration does not activate a host generation, initialize an annex, or move data. A preservation/placement plan for the merged session corpus is a separate [NEXT](NEXT.md) item, with the corpus owners' reader, manifest, and incremental-copy contracts kept intact.
+
 ### Planned Oracle reboot and recovery
 
-The repository-local **[oracle-reboot skill](.claude/skills/oracle-reboot/SKILL.md)** owns the quarterly manual procedure: agree on scope, collect evidence, reclaim only approved paths, verify command-specific privileges and the live Gateway idle gate, then reboot once and inspect recovery. It is not an automatic reboot, update, or model-prewarming service.
+The repository-local **[oracle-reboot skill](.claude/skills/oracle-reboot/SKILL.md)** owns the quarterly manual procedure: agree on scope, collect evidence, review data/repository retention and provider availability, reclaim only approved paths, verify command-specific privileges and the live Gateway idle gate, then reboot once and inspect recovery. It is not an automatic cleanup, reboot, update, or model-prewarming service.
 
-`run.sh d)` on Oracle collects system facts and a deletion-free estimate into private `.agent-reports/oracle-maintenance/` receipts, including copies and hashes of the procedure used. Nix target evaluation is opt-in; even offline evaluation can write input sources and caches. Oracle journal retention and known Emacs temporary paths are preserved, but these exclusions are not a general active-use detector.
+`run.sh d)` on Oracle collects system facts, user-available filesystem bytes, and a deletion-free estimate into private `.agent-reports/oracle-maintenance/` receipts. It snapshots the reboot/data-retirement procedure and the runtime/automation policy sources with hashes. **`DATA_REVIEW_PENDING` means the manual home/repository review has not been done:** record the scoped decisions, restore sources, reference coverage, and paused services in `storage-review.md`, including unchanged/deferred choices. Collection success is neither a complete home audit nor permission to delete or reboot.
+
+Nix target evaluation remains opt-in; even offline evaluation can write input sources and caches. Oracle journal retention and known Emacs temporary paths are preserved, but these exclusions are not a general active-use detector. A timed-out uninstall or startup wait is not permission to replay the mutation: inspect its actual processes, state, and receipts first. Postboot verification preserves deliberate provider pauses and distinguishes late recovery from an unresolved startup cause, without spending a model turn to test it.
 
 **Menu behavior change on all four profiles:** opening `run.sh` no longer clears the GitHub SSH control socket. Choose **g** explicitly when that repair is needed. Other hosts retain their existing **d** disk-inspection path.
 
@@ -133,6 +145,7 @@ See the [archived blacksmith's workshop essay](docs/deprecated/20251018T184200--
 | What changed in released snapshots? | [CHANGELOG.md](CHANGELOG.md) |
 | How is the cloud runtime operated? | [ORACLE.md](ORACLE.md) |
 | How is a planned Oracle reboot performed and verified? | [oracle-reboot skill](.claude/skills/oracle-reboot/SKILL.md) |
+| How are large datasets, repository checkouts, and agent leftovers retired? | [Data retirement and storage-budget procedure](docs/data-retirement.md) |
 | What recurring runtime failures should not be repeated? | [OpenClaw gotchas](docs/openclaw-gotchas.md) |
 | What runs without a human turn? | [Automation SSOT](docs/openclaw-automations.md) |
 | How are packages added? | [Package policy](AGENTS.md) · [external package list](scripts/external-packages.sh) |

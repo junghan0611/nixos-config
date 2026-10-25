@@ -9,6 +9,8 @@
 기준 시각: **2026-09-10 07:5x KST** · OpenClaw **2026.8.2** (0965053)
 재확인: **2026-10-12 18:4x KST** · OpenClaw **2026.10.2** (b8952d4) 컷오버 직후 — turnwatch §1 활성 2개(스케줄·모델)가 아래 표와 일치. §1b disabled 10개는 이번에 표와 대조하지 않았다.
 
+운영 가용성 변경: **2026-10-25 · 10.4** — ZAI(`zai`)·Grok/xAI(`xai`) provider는 GLG 요청으로 disabled. Gemini Telegram account도 정지, heartbeat는 명시 `0m`이며 재시작 후 RPC에서 disabled 확인. Gemini의 크론은 변경 전부터 enabled 항목이 없었고 이번에 크론을 추가·재활성화하지 않았다. 아래의 보존 모델 이름을 현재 호출 허가로 읽지 않는다. 대체 유료 모델·자동 fallback·자동 재개는 금지이며 재개는 GLG가 별도 결정한다.
+
 관련: [ORACLE.md](../ORACLE.md) (운영 핸드북) · [openclaw-gotchas.md](openclaw-gotchas.md) (함정) · [NEXT.md](../NEXT.md) (후속)
 
 ---

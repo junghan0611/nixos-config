@@ -17,6 +17,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **`oracle` 디바이스 또는 OpenClaw 관련 작업** | [ORACLE.md](ORACLE.md) — ownership, 봇 model routing, env/secret, 업그레이드/restart, skills, 함정 |
 | **Oracle 분기 유지보수·정리·재부팅** | **`oracle-reboot` 스킬** — 승인·유휴 게이트·재접속 복구의 정본. [진입 안내](docs/oracle-maintenance.md), `run.sh d)` 사전 수집 |
 | **`thinkpad` 로컬 AI (Ollama)** | [THINKPAD.md](THINKPAD.md) |
+| **home 데이터·리포 퇴역·에이전트 작업 잔여물** | [docs/data-retirement.md](docs/data-retirement.md) — 기기 공통 수동 절차, 리포별 실측·원본/재생성물 구분·집합 승인·README 복원 표지 |
 | **`nuc` / `laptop` 일반 NixOS 작업** | 이 문서 + 표준 NixOS 흐름 |
 | 함정 카탈로그 (OpenClaw) | [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) |
 | **OpenClaw 런타임을 실제로 만짐** (봇 설정·heartbeat·cron·채널·스키마) | `openclaw` **스킬** — 기억이 아니라 그 버전의 사실로 만지는 절차. 첫 수는 `openclaw docs` / `config schema` |
@@ -108,6 +109,12 @@ pnpm 11의 글로벌 루트는 `~/.local/share/pnpm/global/v11`이다. pnpm 10 �
 측정부터 하려면 `scripts/diskclean.sh deep --dry-run` (삭제 없음). 분석만 필요하면 `run.sh d)`.
 
 ---
+
+## 2.7 데이터·리포 퇴역 — 캐시 청소와 별도
+
+정본은 **[docs/data-retirement.md](docs/data-retirement.md)**. 리포 합계를 `.git` 이력·원본 데이터·의존성·빌드/검증물로 나누고 상주 / 명시적 영구 폐기 / 재생성물 회수 / 로컬 얕은 사본 / 콜드 이관 / README만 유지 중 선택한다. GitHub 코드와 ignored 데이터·LFS/annex 콘텐츠의 복구 가능성은 별개다.
+
+`.tmp-verify`·`.agent-reports`는 생성한 작업이 종료·보존/폐기 판단까지 책임진다. 이름만으로 지우지도, 이유 없이 영구 보관하지도 않는다. 정확한 후보 집합과 활성/차용 참조를 확인하고 승인 범위만 실행한다. 사본 수·보존 일수·외부 저장소는 자산별 결정이며 자동 삭제 정책은 없다. 호스트 예산을 감당하지 못하는 리포에는 운영자 관점의 용량 축소 권고를 남기고, 담당 리포가 로직 소유자와 대응하게 한다. 축소/이관으로 맞추지 못하면 승인 후 로컬 퇴역·README 표지로 방을 비운다. 권고 자체가 로직 변경이나 삭제 승인은 아니다.
 
 ## 3. Commands (공통)
 

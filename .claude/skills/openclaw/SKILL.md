@@ -95,7 +95,9 @@ openclaw config set … --dry-run                   # 먼저 이걸로
 등록 자체가 바뀌는 변경까지 덮는지는 미확인 — 그때만 `docker compose restart openclaw-gateway`.
 
 라이브 설정 파일은 `~/openclaw/config/openclaw.json`이고 **커밋 대상이 아니다.**
-바꾸기 전에 타임스탬프 백업을 남긴다(`openclaw.json.bak-<사유>-<YYYYmmddTHHMMSS>`).
+바꾸기 전에 타임스탬프 백업을 남긴다(`openclaw.json.bak-<사유>-<YYYYmmddTHHMMSS>`). 작업 중/미검증 사본은 보호하되, 검증 뒤 승인된 불필요 사본을 무기한 쌓지 않는다. 보존/퇴역·시간초과 후 실제 상태 판독은 [데이터 퇴역 절차](../../../docs/data-retirement.md) §5·§10을 따른다.
+
+**운영자 provider 가용성 정지**는 일반 장애 수선과 다르다. 실제 ID·primary/fallback·계정·heartbeat·cron 메타데이터를 확인하고, 다른 유료 모델/API 키로 대체하거나 doctor로 다시 켜지 않는다. 원래 모델 이름이 남아 있어도 현재 호출 허가가 아니다. 모델 smoke 없이 enabled/status·정지 상태·RPC로 검증하며 재개는 별도 GLG 승인이다. 현재 정지 정책은 [ORACLE.md](../../../ORACLE.md)가 소유한다.
 
 ## 5. 좌표 — 어느 주제를 어디서 보나
 

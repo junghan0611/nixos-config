@@ -137,6 +137,8 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 ### Model routing (현재: OpenClaw **2026.10.4** baseline)
 
+> **현재 provider 가용성 우선:** 운영자 요청으로 **Z.AI(`zai`)·Grok/xAI(`xai`)는 disabled**다. Gemini의 Telegram account는 `enabled:false`, heartbeat는 `every:"0m"`로 명시 정지했다. 기존 primary `zai/glm-5.3`와 허용 모델 기록은 재개용 설정이지 현재 서빙 근거가 아니다. 다른5봇의 primary와 fallback은 변경하지 않았고 대체 유료 모델을 지정하지 않았다. 자동 fallback·API 키 우회·doctor로 provider 재활성화하지 않는다. 재개는 GLG가 별도로 승인할 때만 한다. 인증 원본과 ZAI 설치 소스는 보존했다.
+
 > 10.4 교체(2026-10-16): 10.3과 스키마 동일(state v20 / agent v24), `openclaw.json` 설정 내용 변경 없음(경로 diff 0), 이번 기동 재시작 0. Doctor 경고는 10.3과 같다.
 > 10.3 교체(2026-10-14): 10.2와 스키마 동일(state v20 / agent v24), `openclaw.json` 변경 0경로. Doctor 경고는 10.2와 같다.
 > 10.2 운영(2026-10-12): 9.8 대비 shared state **v19→v20**, agent DB **v24 유지**. 모델 설정 변경 0.
@@ -149,7 +151,7 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 > 근본 정리(6.1-sol에 `agentRuntime {id:"openclaw"}`)는 미결정.
 > 롤백은 **이미지 `openclaw-custom:10.3-candidate-20261014`**(77132168)로 `latest`를 재태그하고 recreate한다. 10.3·10.4는 GLG 마이너 방식이라
 > cold archive를 만들지 않았다. 스키마가 같아도 Doctor가 바꾼 config·auth까지 되돌린다는 증명은 아니다. 9.8 이미지는 2026-10-14, 10.2 이미지는 2026-10-16에 삭제했다.
-> pre-10.2 cold state(v19)는 비공개 `backups/pre-10.2-cutover-20261012T181929/`에 남아 있다. 9.8로 돌아가려면 git 이력의 Dockerfile로 재빌드해야 한다.
+> 과거 pre-10.2 cold state(v19)와 migration/config 복구 사본은 GLG의 스토리지 정리 승인으로 이 호스트에서 폐기했다. 해당 경로가 남아 있다고 가정하지 않는다. 보존된 이미지는 전체 state/config/auth 복원점이 아니며, 9.8 이미지를 재빌드하는 것만으로 옛 데이터를 복원할 수 없다. 이후 전체 cold 사본이 필요한 작업은 별도 승인·생성·검증부터 한다.
 
 > 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
 
@@ -186,7 +188,7 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 >
 > **판정 규칙**: `expires`가 오늘/내일이어도 **정상이다.** 손댈 때는 ① `.credentials.json` mtime이 회전 주기(~8h)보다 오래 멈춰 있거나, ② `refreshTokenExpiresAt`이 임박했거나, ③ 실제 서빙이 깨졌을 때다. 그 경우에만 수동 `models auth login`(TTY, GLG)이 필요하다. 매일 만료 알람으로 읽으면 있지도 않은 부채를 만든다.
 
-**챗봇 서빙 경로는 구독으로 제한한다.** anthropic/openai는 구독 인증, gemini 방은 Z.AI Coding Plan **전용** 엔드포인트(`zai/glm-5.3`)와 SuperGrok OAuth(`xai/grok-4.7`)다. Z.AI는 키 기반이지만 일반 종량제 엔드포인트(`/api/paas/v4`)가 아니라 `/api/coding/paas/v4`에 고정한다. xAI Console API 키는 구독과 다른 청구 풀이라 금지. **Copilot은 2026-09-28 제거**(플러그인 entry는 `enabled:false` 유지 — 없애면 번들 자동 로드 가능). 8/16 제거→8/27 복귀의 경위는 ROADMAP.md 이력으로만 읽는다. ⚠️ config에서 auth 프로필을 지워도 토큰은 SQLite에 남는다. ⚠️ glg/gpt/gemini 등에 남은 `anthropic:default` 토큰 프로필은 별도 부채 — 현재 primary는 사용하지 않는다.
+**챗봇 서빙 경로는 구독으로 제한한다.** anthropic/openai는 구독 인증이다. Gemini 방의 보존 설정은 Z.AI Coding Plan **전용** 엔드포인트(`zai/glm-5.3`)와 SuperGrok OAuth(`xai/grok-4.7`)지만 **현재 두 provider와 해당 Telegram account는 운영자 요청으로 정지**돼 있다. Z.AI는 키 기반이지만 일반 종량제 엔드포인트(`/api/paas/v4`)가 아니라 `/api/coding/paas/v4`에 고정한다. xAI Console API 키는 구독과 다른 청구 풀이라 금지. **Copilot은 2026-09-28 제거**(플러그인 entry는 `enabled:false` 유지 — 없애면 번들 자동 로드 가능). 8/16 제거→8/27 복귀의 경위는 ROADMAP.md 이력으로만 읽는다. ⚠️ config에서 auth 프로필을 지워도 토큰은 SQLite에 남는다. ⚠️ glg/gpt/gemini 등에 남은 `anthropic:default` 토큰 프로필은 별도 부채 — 현재 primary는 사용하지 않는다.
 
 ### Utility — 주 대화와 분리된 명시 보조 모델
 
@@ -309,7 +311,7 @@ if (value === "codex-app-server") return "codex";
 | gpt | `openai/gpt-6.1-sol` | `workspace-gpt/` | partial | ~~✓~~ | 개인. **2026-10-03 5.6-sol→6.1-sol**(9.8, GLG 결정, 격리 실응답 `fallbackUsed=false`). **2026-07-14 5.5→5.6-sol 승격**(7.1 업글, GLG 결정 — 서빙 확인 `fallbackUsed=false`). sol=flagship 티어(bare `openai/gpt-5.6` 별칭, 크레딧 125/1M in). **2026-08-04 5.5 카탈로그에서 제거**(GLG: 5.5 아예 안 씀) — 롤백축 없음, 필요하면 terra/luna. 개인 lane이라 최상위 티어를 여기 둔다 |
 | **bbot** | `anthropic/claude-fable-5-1` | `workspace-bbot/` | off | — | `@glg_b_bot`. claude-cli runtime native. **2026-09-19 config primary + fresh memento job을 fable-5-1로 전환**; 격리 서빙 probe 뒤 bbot per-agent 카탈로그의 `claude-cli` 등록 누락을 보강하고 manual catch-up이 성공·배달됐다. direct/main도 같은 모델이다. 2026-06-13 active-memory 제외(recall 훅 mini lane이 매 direct 메시지마다 23~35s 2차 턴·절반 timeout으로 본 턴과 겹침→응답성 우선 제거, glg와 동일 처방). **2026-07-12 fable-5 재승격** — 2026-06-13 시도 땐 Fable 5가 구독/CLI에서 서빙 실패(auto-fallback deepseek로 정체성 훼손)해 opus-4-8로 환원했으나, upstream v2026.6.6 adaptive-thinking 어댑터 fix + 현재 6.11에서 **서빙 재개 확인**(claude-cli, `fallbackUsed=false`, thinking=high 강제, Opus 4.8 안전 폴백). 승격 전 primary=opus 유지한 채 오버라이드 격리 probe로 서빙 검증 후 promote(실사용자 노출 0). 롤백축은 **2026-08-04 opus-4-8→`anthropic/claude-opus-5`로 갱신**(GLG `/model`로 복귀 가능). canonical `anthropic/claude-fable-5` + `agentRuntime.id=claude-cli`. ⚠️ **2026-08-04까지 라이브 DM이 `gpt-5.5`/openai로 돌고 있었다** — config는 fable-5인데 provider까지 달랐다. `/model`로 정렬 완료(위 'config ↔ DM 쌍' 규칙이 나온 사건) |
 | mini | `anthropic/claude-sonnet-5` | `workspace-mini/` | off | — | **2026-07-12 sonnet-4-6→sonnet-5 승격**(서빙 확인 `fallbackUsed=false`). **2026-08-04 sonnet-4-6 카탈로그에서 제거**(GLG: sonnet은 5로 통일). ⚠️ 그때까지 라이브 DM이 sonnet-4-6으로 돌고 있어 `/model`로 정렬. active-memory 제외 검증 lane |
-| **gemini** | `zai/glm-5.3` (기본) · `xai/grok-4.7` (`/model` 선택) | `workspace-gemini/` | partial | — | `@glg_gemini_bot`. Coding Plan + SuperGrok OAuth, gemini 전용 allow는 두 모델만. **fallback 없음**. 두 모델 모두 격리 실응답 확인(재기동 후 재검수는 NEXT.md). `google/` API 키·Copilot 금지. catch-all 1번은 `openai/gpt-5.6-terra` 유지 |
+| **gemini** | 보존 primary `zai/glm-5.3` · 선택 기록 `xai/grok-4.7` | `workspace-gemini/` | **운영 정지** | — | ZAI·xAI provider disabled, Telegram account disabled, heartbeat0m. **fallback 없음**, 다른 유료 레일로 대체하지 않음. 두 모델의 과거 실응답은 현재 가용성 근거가 아니다. GLG의 별도 재개 승인 전 호출·모델 smoke·자동 수선 금지. `google/` API 키·Copilot 우회도 금지. |
 | subagents | `openai/gpt-5.6-terra` | — | — | — | **2026-08-07 codex 제거로 `gpt-5.4`에서 이동** (runtime=openclaw 내장). per-agent 오버라이드 0 — 6봇 전체가 이 하나를 공유한다. active-memory recall lane은 `openai/gpt-5.6-luna`로 분리 (main lane quota 보호) |
 
 #### ⚠️ 모델 세팅은 **config ↔ DM 쌍**으로 관리한다 (2026-08-04 확립)

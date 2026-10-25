@@ -14,7 +14,7 @@ user_invocable: true
 - **이번 범위를 먼저 말한다:** 상태 조회 / 정확한 삭제 대상 / 재부팅 / 필요한 수동 서비스 복구. 조회 승인을 삭제·재부팅 승인으로 확대하지 않는다. commit/push도 별도다.
 - **비목표:** flake update, 새 Nix 구성 적용, 외부 패키지/이미지 갱신, OpenClaw 버전업·DB 이관, auth/scope 변경, 재임베딩, 모델 smoke/prewarm. 필요하면 별도로 판단한다.
 - cron·watcher·숨은 helper agent·자동 재시도·자동 롤백을 설치하지 않는다. 긴 작업은 사용자 기본소켓의 보이는 tmux, stdout도 화면에 남긴다.
-- 상태 수집 = `../../../scripts/oracle-maintenance-preflight.sh`(`run.sh d`, Oracle 분기). 정리 로직 = `../../../scripts/diskclean.sh`. 복제 관리기를 새로 만들지 않는다.
+- 상태 수집 = `../../../scripts/oracle-maintenance-preflight.sh`(`run.sh d`, Oracle 분기). 캐시/GC 정리 = `../../../scripts/diskclean.sh`. **데이터·리포·작업 잔여물의 수명과 provider 가용성 검토** = [기기 공통 데이터 퇴역 절차](../../../docs/data-retirement.md). 이 스킬은 Oracle 재부팅에 그 검토를 연결할 뿐, 별도 삭제 관리자나 전체 home 자동 청소를 만들지 않는다.
 - 런타임의 버전별 사실과 API = [openclaw](../openclaw/SKILL.md), suspend/RPC deadline = [openclaw-update](../openclaw-update/SKILL.md), 서빙 URL 기대값 = [nixos-config](../nixos-config/SKILL.md) §5. 소유자 정본을 임의 수정하지 않는다.
 
 ## 1. 상태 수집 — 아직 아무것도 지우지 않는다
@@ -27,12 +27,24 @@ bash scripts/oracle-maintenance-preflight.sh
 bash scripts/oracle-maintenance-preflight.sh --nix-plan
 ```
 
-- 실행별 영수증은 `.agent-reports/oracle-maintenance/<KST>.<고유접미사>/`에 영속 보존한다. 디렉터리700·파일600. `/tmp`만이 정본/유일 영수증이 되게 하지 않는다.
-- 로그와 정본 소스 사본·해시를 함께 보존한다. 토큰·env 전체·세션 원문·auth/config 덤프는 수집하지 않는다. CLI는 기존 인증을 내부에서 사용하게 한다.
+- 실행별 영수증은 `.agent-reports/oracle-maintenance/<KST>.<고유접미사>/`에 보존한다. 디렉터리700·파일600. 진행 중/미검토 영수증을 지우거나 `/tmp`만이 정본이 되게 하지 않는다. 종료 뒤 필요한 결론·출처·검증을 내구 문서에 승격하고 원시 로그/중복 사본의 보존·퇴역을 별도 결정한다. 모든 원시 자료를 무기한 쌓는다는 뜻은 아니다.
+- 로그와 정본 소스 사본·해시를 함께 보존한다. `source/`는 당시 바이트의 증거이지 독립 실행/복구용 checkout이 아니다. 재현은 기록한 리포 SHA·변경과 원래 상대 경로를 확인해 진행한다. 토큰·env 전체·세션 원문·auth/config 덤프는 수집하지 않는다. CLI는 기존 인증을 내부에서 사용하게 한다.
 - `COLLECTION_COMPLETE`는 **수집 명령 완료일 뿐 서비스 정상/삭제 허가가 아니다.** 실패 unit의 행, 실제 probe, Docker 상태를 읽는다. `ESTIMATE_UNAUDITED`는 정리 dry-run이 일부 du/find 오류를 숨긴다는 뜻이다.
 - 기본 수집은 Nix 평가/다운로드를 하지 않는다. `--nix-plan`은 `--offline --no-update-lock-file`이어도 소스 store 복사·평가 캐시 쓰기가 가능하다. store쓰기0/네트워크0을 보장하지 않는다.
 - root(Docker/Nix)와 home(봇 상태/사용자 데이터)을 따로 본다. 이미지 논리 크기, narSize, du 합계, reclaimable은 실제 회수량이 아니다.
 - Git branch·변경·upstream을 확인한다. main 복귀/pull이 필요하면 변경 보존부터 결정하며 reset/discard하지 않는다. 현재 `system`과 목표가 같으면 재switch를 의식처럼 반복하지 않는다.
+
+### 1.1 분기 데이터·리포·가용성 검토 — 캐시 견적과 별도
+
+기본 preflight의 `DATA_REVIEW_PENDING`은 이 검토가 아직 수동으로 남았다는 표시다. 시스템 수집 성공을 home 전수 조사나 검토 완료로 읽지 않는다. [기기 공통 절차](../../../docs/data-retirement.md)의 읽기전용 명령으로 합의한 루트만 재고, 이번 영수증에 `storage-review.md`로 아래 판단과 근거를 남긴다.
+
+- **실측/예산:** root와 home의 사용자 가용 바이트, 리포별 `.git`/데이터/의존성/빌드·검증물 비중을 구분한다. 심볼릭 별칭·공유 inode의 귀속 크기는 실제 회수량이 아니다. 목표 여유와 주기마다 회수할 양도 다르며 고정 GiB/보존일수를 임의로 만들지 않는다.
+- **재현/복구:** 각 후보의 원본성, SHA·원격·미푸시/미커밋/ignored·LFS/annex 콘텐츠 위치, 실제 복구 가능한 사본/재생성 입력과 활성·차용 참조를 확인한다. GitHub 코드가 DB·세션·사진을 복원한다는 뜻은 아니다. SDK 이름의 SQLite/WAL/SHM 사본을 패키지 캐시로 오인하지 않는다.
+- **복구점/권한:** 전체 cold 사본·개별 migration bak·로그·import 원문·실행 capture를 분리하고 버전/스키마/이미지와 보존 의도를 연결한다. UID와 읽기전용 모드, 파일과 부모 디렉터리의 쓰기 권한을 구분한다. `.tmp-verify`/`.agent-reports`/`tmp`라는 이름만으로 폐기하지도 영구 보관하지도 않는다.
+- **결정/책임:** 상주 / 재생성물 회수 / 이관 / 로컬 얕은 사본 / README만 유지 / 명시적 영구 폐기 중 정확한 집합을 GLG가 고른다. 미확인 항목은 미확인으로 남기고 추가 승인 없이 지우지 않는다. 예산 초과는 담당 리포에 축소 권고를 남겨 로직 소유자와 대응하게 하며 운영자가 기억/인덱스 로직을 대신 설계하지 않는다.
+- **가용성/중지:** provider·봇·heartbeat·cron의 운영 중지와 비용 제약을 [ORACLE.md](../../../ORACLE.md)와 [자동화 SSOT](../../../docs/openclaw-automations.md)에서 확인한다. 저장된 primary 이름·과거 성공을 현재 호출 허가로 읽지 않는다. 정지된 레일을 doctor/자동 fallback/모델 prewarm으로 되살리지 않는다. 다른 유료 모델이나 API 키로 대체하지 않는다.
+
+삭제/이관/권한 변경은 위 검토만으로 승인되지 않는다. 재부팅에 데이터 작업 승인이 없다면 **변경 없음**과 후속 판단만 기록하고 원래 부팅·접근·복귀·유휴 게이트를 그대로 지킨다.
 
 ## 2. 범위 승인 → 개별 정리 → 실제 전후 비교
 
@@ -64,7 +76,8 @@ bash scripts/oracle-maintenance-preflight.sh --nix-plan
    ```
    `sudo -n true` 실패로 reboot까지 불가능하다고 단정하지 않는다. 해당 명령의 `!authenticate`/NOPASSWD를 확인한다. 인증이 필요하면 **같은 보이는 터미널**에서 먼저 로컬 인증한다. 비밀번호를 채팅/스크립트로 받지 않는다.
 4. **복구 주체·방법:** 아래 표를 라이브 상태와 소유자 정본으로 확인한다. 프로세스 수명이 길거나 PPID1이라는 이유로 수동/자동을 추측하지 않는다. system unit의 실행 파일도 살아 있는지 본다.
-5. **NEXT:** 마지막 완료 단계, 다음 복구 검사, 절대 영수증 경로, 실행 승인/미승인 경계를 남긴다. 새 실행의700 영수증 디렉터리 `$R`에 `(umask 077; set -C; printf '%s\n' "$(</proc/sys/kernel/random/boot_id)" > "$R/boot-id.before")`로 이전 boot ID를600으로 한 번만 기록한다(기존 파일 덮어쓰기 금지). 재접속 시 이 파일을 먼저 비교하고 덮어쓰지 않는다. 이 모델이 자동 재개된다고 가정하지 않는다. 기록/DM/인증을 게이트 취득 뒤에 길게 하지 않는다.
+5. **검토 영수증:** §1.1의 검토 결과·명시적 보류/변경 없음·이번 승인 집합과 재현/복구 출처를 `storage-review.md`에 남긴다. 다른 머신의 경로/실측/승인을 복사해 실행하지 않는다. 데이터 이관·annex 도입과 provider 가용성 변경은 재부팅 승인과 별개다.
+6. **NEXT:** 마지막 완료 단계, 다음 복구 검사, 절대 영수증 경로, 실행 승인/미승인 경계를 남긴다. 새 실행의700 영수증 디렉터리 `$R`에 `(umask 077; set -C; printf '%s\n' "$(</proc/sys/kernel/random/boot_id)" > "$R/boot-id.before")`로 이전 boot ID를600으로 한 번만 기록한다(기존 파일 덮어쓰기 금지). 재접속 시 이 파일을 먼저 비교하고 덮어쓰지 않는다. 이 모델이 자동 재개된다고 가정하지 않는다. 기록/DM/인증을 게이트 취득 뒤에 길게 하지 않는다.
 
 | 대상 | 확인과 복구 |
 |---|---|
@@ -164,7 +177,8 @@ exit "$rc"
    자동 daemon 기동 없는 probe다. 무응답/새 설정 문제가 있으면 geworfen 담당과 조율하며 여기서 daemon/config를 임의 수선하지 않는다.
 4. 그 다음 [nixos-config §5](../nixos-config/SKILL.md)의 공개 URL 전체·comments ping. claw/map302와 comments루트404는 정상 기대값이다. agenda 검사만 먼저 해서 Emacs 수동 기동을 새 장애로 오판하지 않는다.
 5. translation-server 등 자동 서비스 복귀, `scripts/turnwatch.sh 24`의 실제 오류·대기/미완료 턴을 확인한다. 과거 실패 행을 새 부팅 장애와 구분하고 private 원문을 덤프하거나 DB를 수선하지 않는다.
-6. root/home 여유와 재시작 수를 다시 기록한다. startup ELOOP 등 오류가 있었으면 영향·복구·현재 안정성·미해결 원인을 분리해 적는다. restart수가 계속 늘거나 RPC deadline을 넘으면 멈추고 판단하며 무조건 recreate/rollback하지 않는다.
+6. root/home 사용자 가용 바이트와 재시작 수를 다시 기록한다. startup ELOOP 등 오류가 있었으면 영향·복구·현재 안정성·미해결 원인을 분리해 적는다. **재시작 수가 계속 증가하거나 RPC가 정한 deadline 안에 응답하지 않으면 정상 완료로 닫지 않고 멈춰 GLG와 판단한다.** 건강 대기 deadline 초과나 이 판단은 추가 restart/recreate/rollback 허가가 아니다. 실제로 나중에 healthy가 됐다면 읽기전용 검증으로 이어가며 실패 영수증을 성공으로 덮지 않는다. timeout 난 Docker exec도 명령/잔여 실행/설정·파일의 실제 결과를 확인하기 전 재실행하지 않는다.
+7. 부팅 전의 **운영 중지 상태**가 유지되는지 provider enabled/status, 해당 계정·heartbeat·cron 메타데이터를 확인한다. 새 유료 레일을 택하거나 모델 호출로 검증하지 않는다. 삭제/이관한 자산과 보존한 원본·실행 의존성·복구점, README 퇴역 표지와 복원 출처를 전후 대조한다. 캐시가 재생성됐으면 숨기지 않고 정상/피크 예산에 반영한다.
 
 **종료 조건:** 계획한 부팅 확인 + 필수 서비스 복구 + 전체 공개면 기대 상태 + Gateway RPC/재시작 안정 + 영수증/NEXT 갱신. 실제 봇 동작은 다음 자연 대화/자동화로 관찰한다. 임의 smoke/prewarm 모델 턴은 만들지 않는다. 오래 걸려 GLG가 자리를 비웠다면 완료/판단 필요 사건당 DM1회, 보고 있는 동안은 채팅으로 답한다.
 

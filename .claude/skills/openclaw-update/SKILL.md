@@ -19,6 +19,8 @@ user_invocable: true
 `python3 -I {baseDir}/scripts/selftest.py` — docker·gh·curl을 가짜로 바꿔 끼우고 실패 시나리오의 exit 코드를 단언한다.
 런타임·네트워크·모델은 건드리지 않는다.
 
+**현재 운영 중지 정책이 과거 검수 예보다 우선한다.** [ORACLE.md](../../../ORACLE.md)의 provider/계정/자동화 가용성을 먼저 읽는다. ZAI·xAI와 Gemini 입력이 정지된 상태에서 과거의 `zai: loaded`·Telegram6계정 기준을 맞추려고 재활성화하지 않는다. 다음 버전업은 보류 중이며, 재개할 때 검수 도구/fixture의 플러그인·계정 기대 계약부터 별도 검토한다. 검증 실패를 숨기거나 안전 게이트를 약하게 만들어 통과시키지 않는다.
+
 ## 0. 판정 — 마이너 후보인가
 
 ```bash
@@ -98,7 +100,7 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
      `docker inspect`·RPC health로 상태를 확인한 뒤, 롤백 recreate도 같은 idle gate(suspend.prepare → ready)를 거친다.
      롤백 = 이전 candidate로 `latest`를 다시 태그하고 같은 `up` 명령.
    - prepare 응답 파일은 umask 077 아래서 써서 처음부터 600이다.
-   - 10.3 때 썼던 감싼 스크립트는 참고용 영수증일 뿐이다: `~/openclaw/backups/swap-10.3-20261014/swap.py`.
+   - 10.3 때 썼던 비공개 감싼 스크립트 `~/openclaw/backups/swap-10.3-20261014/swap.py`는 복구 사본 정리로 폐기됐다. 현행 실행/복구 수단으로 찾거나 그 파일에 재현을 의존하지 않는다. 당시 영수증과 지금의 승인된 정본 절차는 다른 것이다.
 8. **확인 (모델 호출 없음)**
    ```bash
    python3 -I {baseDir}/scripts/verify.py --receipts ~/openclaw/backups/swap-<ver>-<date> \
@@ -136,7 +138,7 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 | Docker `health: starting/unhealthy`가 오래 감 | healthcheck 간격이 3분이라 badge가 늦게 따라온다(10.3: RPC ok 뒤 약 3분) | 완료 판정은 **RPC `health.ok`**와 verify. badge로 판정하지 않는다 |
 | 이미지를 지웠는데 `df`가 그대로 | BuildKit cache가 레이어를 붙잡을 수 있다. 10.2 이미지 삭제 때는 df 이득이 40KiB였고, 캐시 레코드의 shared 전환을 관측했다. base layer는 `from local` 레코드(빌드 시점, 각 0B 표기)가, 빌드 layer는 exec 레코드가 단독 보유로 바뀌었다. 그래서 reclaimable 값은 과소 표기다 | `docker system df`로 Build Cache부터 재고, `docker buildx du --verbose`로 rmi 전후 shared 전환 레코드를 대조한다. 10.3에서 쓴 `docker builder prune -f --filter until=168h`(2.05GB)는 **관측된 회수 기법일 뿐 자동 허용 명령이 아니다** — 공유 빌드 캐시라 범위를 제시하고 GLG 승인 후 |
 | 빌드가 `hotfix requires OpenClaw <ver>`로 실패 | 의도된 fail-closed | §1-4 이식. 가드를 약하게 만들지 않는다 |
-| 격리 `config validate`에 `plugins.entries.zai: plugin not installed` | 10.2·10.3에선 zai가 이미지가 아니라 live state `~/.openclaw/extensions/zai`의 global plugin이라 생긴 오탐이었다 | 교체 후 verify에서 `zai: loaded`인지 확인. 다른 플러그인 이름이면 오탐으로 단정하지 않는다 |
+| 격리 `config validate`에 `plugins.entries.zai: plugin not installed` | 10.2·10.3에선 zai가 이미지가 아니라 live state `~/.openclaw/extensions/zai`의 global plugin이라 생긴 오탐이었다 | 현재 승인된 설치/중지 정책과 대조한다. 운영 정지된 zai를 과거의 `loaded`로 수선하지 않는다. 검수 도구의 기대 계약도 먼저 확인한다. 다른 플러그인 이름이면 오탐으로 단정하지 않는다 |
 | Doctor 경고 "Codex runtime is selected, but the Codex plugin is disabled"(main·gpt 6.1-sol) | 9.8 이후 기존 상태. 턴은 openclaw 런타임으로 떨어진다 | `plugins.entries.codex.enabled:false`를 **지우지 않는다**. 대상 에이전트가 늘면 조사 |
 | Doctor "Missing canonical transcript archive file(s)" | 10.2·10.3에서 레거시 이관 잔재로 관측. blob은 보존돼 있었다 | 이전 영수증과 대상·개수가 같으면 관찰만. 새 대상이면 조사 |
 | live config 안에 `.pre-startup-migration-*.bak`이 생김 | 기동 Doctor의 DB 사전 백업(10.2: 1.09GiB, 10.3: 없음) | soak 뒤 GLG 승인 후 정리 |

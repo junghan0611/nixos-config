@@ -27,6 +27,9 @@ class PreflightTests(unittest.TestCase):
 		(self.repo / 'run.sh').write_text('# fixture operator\n')
 		(self.repo / 'docs').mkdir()
 		(self.repo / 'docs/oracle-maintenance.md').write_text('# fixture procedure\n')
+		(self.repo / 'docs/data-retirement.md').write_text('# fixture data retirement\n')
+		(self.repo / 'ORACLE.md').write_text('# fixture provider availability\n')
+		(self.repo / 'docs/openclaw-automations.md').write_text('# fixture automation policy\n')
 		(self.repo / '.claude/skills/oracle-reboot').mkdir(parents=True)
 		(self.repo / '.claude/skills/oracle-reboot/SKILL.md').write_text('# fixture reboot skill\n')
 		self.home = self.root / 'home'
@@ -73,6 +76,15 @@ class PreflightTests(unittest.TestCase):
 		self.assertIn('emacsclient -s server --alternate-editor=false', self.calls.read_text())
 		self.assertIn('nix-store --gc --print-roots', self.calls.read_text())
 		self.assertIn('ESTIMATE_UNAUDITED', log.read_text())
+		self.assertIn('DATA_REVIEW_PENDING', log.read_text())
+		self.assertIn('storage-review.md', log.read_text())
+		self.assertFalse((log.parent / 'storage-review.md').exists(), 'A collection must not manufacture a reviewed decision')
+		self.assertEqual((log.parent / 'source/data-retirement.md').read_text(), '# fixture data retirement\n')
+		self.assertEqual((log.parent / 'source/data-retirement.md').stat().st_mode & 0o777, 0o600)
+		self.assertEqual((log.parent / 'source/ORACLE.md').read_text(), '# fixture provider availability\n')
+		self.assertEqual((log.parent / 'source/openclaw-automations.md').read_text(), '# fixture automation policy\n')
+		self.assertEqual(len(list((log.parent / 'source').iterdir())), 8)
+		self.assertIn('df -B1 / ', self.calls.read_text())
 
 	def test_optional_nix_is_plan_only(self):
 		p = self.run_check('--nix-plan')
@@ -127,6 +139,25 @@ class PreflightTests(unittest.TestCase):
 		self.assertEqual(p.returncode, 2)
 		self.assertIn('Procedure source missing', p.stderr)
 		self.assertFalse(self.calls.exists())
+
+	def test_missing_data_procedure_does_not_probe(self):
+		(self.repo / 'docs/data-retirement.md').unlink()
+		p = self.run_check()
+		self.assertEqual(p.returncode, 2)
+		self.assertIn('Procedure source missing: docs/data-retirement.md', p.stderr)
+		self.assertFalse(self.calls.exists())
+
+	def test_missing_availability_policy_does_not_probe(self):
+		for relative in ('ORACLE.md', 'docs/openclaw-automations.md'):
+			with self.subTest(relative=relative):
+				p = self.repo / relative
+				original = p.read_bytes()
+				p.unlink()
+				result = self.run_check()
+				self.assertEqual(result.returncode, 2)
+				self.assertIn('Procedure source missing: ' + relative, result.stderr)
+				self.assertFalse(self.calls.exists())
+				p.write_bytes(original)
 
 	def test_wrong_device_and_bad_option_do_not_probe(self):
 		(self.home / '.current-device').write_text('laptop\n')

@@ -36,7 +36,7 @@ LOG="$R/preflight.log"
 failed=0
 # Preserve exactly the public procedure bytes used, even before they are committed.
 mkdir "$R/source" || exit 2
-for relative in scripts/oracle-maintenance-preflight.sh scripts/diskclean.sh run.sh docs/oracle-maintenance.md .claude/skills/oracle-reboot/SKILL.md; do
+for relative in scripts/oracle-maintenance-preflight.sh scripts/diskclean.sh run.sh docs/oracle-maintenance.md .claude/skills/oracle-reboot/SKILL.md docs/data-retirement.md ORACLE.md docs/openclaw-automations.md; do
     source_file="$REPO/$relative"
     if [[ ! -f "$source_file" ]]; then
         printf 'Procedure source missing: %s\n' "$relative" >&2
@@ -82,6 +82,7 @@ step 'Repository state (no optional index refresh)' git --no-optional-locks -C "
 step 'Repository revision' git --no-optional-locks -C "$REPO" rev-parse HEAD
 step 'Procedure snapshot hashes' sha256sum "$R/source/"*
 step 'Disk space' df -hT / "$HOME" /tmp
+step 'User-available bytes (not logical/shared reclaimable sizes)' df -B1 / "$HOME"
 step 'Inodes' df -i / "$HOME"
 step 'Memory' free -h
 step 'Running kernel' uname -r
@@ -97,7 +98,7 @@ step 'Long-running user process metadata (top80, no command arguments)' long_pro
 step 'Docker disk accounting (shared sizes are not freed-space guarantees)' docker system df
 step 'Dangling images (no deletion)' docker images --filter dangling=true --no-trunc
 step 'Containers' docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
-step 'Gateway image/state' docker inspect openclaw-gateway --format 'image={{.Image}} running={{.State.Running}} health={{.State.Health.Status}} restart={{.RestartCount}}'
+step 'Gateway image/state' docker inspect openclaw-gateway --format 'image={{.Image}} init={{.HostConfig.Init}} running={{.State.Running}} health={{.State.Health.Status}} restart={{.RestartCount}}'
 printf '%s\n' 'ESTIMATE_UNAUDITED: diskclean hides some du/find errors; exit0 does not prove the estimate complete or approve all its targets.' | tee -a "$LOG"
 step 'Cleanup estimate only; partial errors may be hidden (no pnpm/docker)' env DEVICE=oracle bash "$REPO/scripts/diskclean.sh" deep --dry-run
 if $NIX_PLAN; then
@@ -105,6 +106,7 @@ if $NIX_PLAN; then
     step 'Desired system (compare with current/booted)' compare_desired
 fi
 
+printf '%s\n' 'DATA_REVIEW_PENDING: this collection does not scan/classify all home data or approve retirement. Follow oracle-reboot section1.1 and source/data-retirement.md; record scope, restore sources, shared/readonly/active references and provider pauses in storage-review.md (including explicit unchanged/deferred decisions).' | tee -a "$LOG"
 printf '\nReport: %s\n' "$R" | tee -a "$LOG"
 if [[ "$failed" -ne 0 ]]; then
     printf '%s\n' 'COLLECTION_INCOMPLETE: inspect command errors. No cleanup/activation/reboot performed.' | tee -a "$LOG"
