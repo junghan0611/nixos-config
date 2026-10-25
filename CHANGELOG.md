@@ -9,6 +9,33 @@
 
 ## Unreleased
 
+## v2026.10.26 — OpenClaw 10.7과 메멘토 복구, 데이터 퇴역 절차
+
+### OpenClaw 10.7 — 승인된 비선형 메이저 전환
+
+- Oracle Gateway를 **2026.10.7 (`157d8c2`)**로 교체했다. 기본 선형 preflight의 FAIL은 보존하고, 정확 commit의 비선형 전환과 agent DB **24→25**를 별도 승인받았다. 정지 writer의 cold24 사본을 봉인하고, old 이미지의 복원 admission과 네트워크 없는 별도 사본 이관을 검증한 뒤 실제 원본을 native Doctor로 이관했다. agent DB7개 모두25·owner 일치, shared state20을 확인했으며 이관 사본을 원본에 덮어쓰지 않았다.
+- cron 부모 기억 admission 패치를 **10.7 한정 v4**로 이식했다. 미패치 characterization GREEN·기본 RED를 확인한 뒤 import1줄과 classifier1호출만 바꿨으며 상류 cycle 전파를 보존했다. 정확 버전·번들·원본/결과/helper 해시 가드, **12개 behavior 단언**, node-user companion6검사와 무네트워크 Corepack 핀 검증을 통과했다. Andenken pin10.33.0·dependency·lockfile·runner/parser는 그대로이며 새 base의 기본 pnpm은12.15.0이다.
+- ZAI·xAI·codex 정지, Gemini 입력false·heartbeat0m, 기존 primary/fallback/defaults를 보존했다. 검수 도구에 명시적 disabled 계약을 추가해 config와 runtime을 함께 검사하며, 활성5계정·누락/형식 오류·필수 플러그인·설정 drift 경계를 **오프라인100fixtures**로 검증했다. provider를 다시 켜거나 검사를 약하게 만들어 통과시키지 않았다.
+- Workshop의 제거된 propose 모드는 **명시 off**로 이관하고 approvalPolicy를 정식 제거했다. pending/quarantined4묶음의 draft/support5파일을 비활성 archive에 보존하고 바이트 일치를 확인했다. 설정 차이는 native 버전 bookkeeping과 이 두 Workshop 경로뿐이었다. 옛 수동승인 큐 기능이 유지되는 것은 아니며, mode unset으로 auto를 상속하지 않는다.
+- 실제 이미지는 **e122cbd2…**, ARM64 base는3cf9182f…다. RPC·활성5계정·정지 정책·핫픽스·공개면을 확인했다. 원래24 비교는37PASS/2FAIL/1UNKNOWN, 별도 post-native/pre-gateway 비교는38PASS/2FAIL/0UNKNOWN이며 추가 startup config drift는0이었다. 당시 두 cron 실패는 cold24와 같은 기존 오류로 분류했고, 원문 FAIL/UNKNOWN과 이관3경로 판독을 보존했다. 전체 verifier를 녹색으로 고치지 않았다.
+
+### 쿼터 복귀 뒤 메멘토의 자연 실행 확인
+
+- Claude 한도로 실패하던 `bbot-memento-autopilot`이 **10회 연속 오류 뒤 자동 비활성화**됐음을 다음 아침 확인했다. GLG 승인으로 native cron enable을1회 수행해 기존3시간 anchor·Fable 모델·Telegram 배달을 유지하고 다음 자연 슬롯을 복원했다. enable이 내장 수행한 실패 카운터 초기화와 과거 실패의 해소 증명을 구분하고, SQL 조작·강제 cron 실행은 하지 않았다.
+- **10/26 07:26:52 KST 정기 기동 → 07:47:02 정상 완료·Telegram delivered**, 소요1,210,608ms를 확인했다. 다음 예약은10:26:52다. Fable/claude-cli의 실제 서빙과 배달은 이 자연 실행으로 닫았으며, 수동 호출을 정기 성공으로 대신하지 않았다. 관측 로그는 상태 변경 때만 기록했으며 경과 시간만으로 성공·실패를 판정하지 않았다.
+- 전날 승인된 mini 정상 요청1회는 사용한도에 막혔다. 그 앞의 권한 거부 요청은 exact-image guard와 자체 probe metadata로 model0을 확인했으며, backend 위장·embedded fallback·다른 모델/키 우회는 하지 않았다. 다음 아침 추가 mini 검수는 GLG 지시로 생략했다. 메멘토 성공을 mini/Sonnet·가족 cron·모든 Claude 모델의 검수로 확대하지 않는다.
+
+### 데이터 퇴역을 공통 운영 절차로 통합
+
+- `docs/data-retirement.md`에 기기 공통 **원본/재생성물 구분 → 정확 후보·활성/차용 참조 확인 → 집합 승인 → 실행/복원 표지** 절차를 마련했다. README·AGENTS·운영 스킬과 Oracle 유지보수의 storage review를 연결하고, 사전 수집에 정본 사본·용량·승인 미결 상태를 남겼다. 자료·백업·작업 잔여물을 캐시 이름이나 보존 일수만으로 일괄 삭제하지 않는다.
+- 승인된 역사적 사본·개발/빌드 잔여물은 원본과 현행 봇 DB·auth를 보호하며 퇴역시켰다. 업그레이드 작업의 **임시4디렉터리·실패 후보2이미지**만 별도 참조 검토 후 정리해 home 가용량 약6.57GiB 증가를 관측했다. 이미지 논리 크기를 실제 회수량으로 세지 않았고 광역 prune는 하지 않았다. 중단 지시 이후 추가 삭제는 없었다.
+- 공통 Home Manager에 git-annex를 선언하고 네 프로필을 평가했다. 설치 전환·annex init/add/drop/전송은 하지 않았으며, 세션 코퍼스의 목적지·독립 사본·reader/manifest 계약은 후속 설계로 남겼다. 다른 리포의 용량 축소 권고를 그 리포 데이터 삭제나 기억축 재설계 승인으로 확대하지 않았다.
+
+### 보존·미완 경계
+
+- **복귀는 검증된 cold24 + old7e39 이미지의 짝**이다. DB25에 old 이미지만 start하지 않는다. 이관 뒤 새 대화·토큰 회전은 과거 사본 복원으로 보호된다고 가정하지 않으며 복귀 전에 별도 보존 판단이 필요하다. cold·현재/복귀 이미지·필수 FAIL/차단 영수증은 보호했다.
+- 당시 family cron 오류4의 원인, mini/Sonnet 재검수, 기억 색인 자연 수렴, 초기 tini/ELOOP의 근본 원인은 별도 미완이다. 남은 startup backup/capture·SDK 백업·작업창·기존 이미지 등은 새 inventory와 승인부터이며 이번 컷을 추가 삭제 허가로 삼지 않는다. 비공개 설정·자격증명·대화 원문·실행 사본은 공개 릴리즈에 포함하지 않는다.
+
 ## v2026.10.25 — Oracle 분기 유지보수와 재부팅 절차
 
 ### 재부팅을 문서가 아닌 운영 스킬로
