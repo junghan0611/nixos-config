@@ -8,21 +8,27 @@
 
 # RAIL — 현재 좌표
 
-- [x] **1. 호스트 유지보수·oracle-reboot 정본** — 완료분은 CHANGELOG v2026.10.25로 갈무리
-- [x] **2. 리포별 메타데이터·승인된 첫 archive 퇴역** — 실제 전후 결과는 private 실행 영수증에 보존
-- [x] **3. 승인된 데이터·백업·개발 사본 퇴역과 provider 정지** — 원본 보호·최종 RPC/가용성 검증 완료
-- [x] **4. 재현성 교차검토·reboot 통합·README·회귀검증** — 초기 Grok 검토를 같은 세션의 GPT Sol이 이어 승인 순서·중단 경계 보강
-- [ ] **5. git-annex 세션 코퍼스 보관 체계 설계** ← CURRENT: 목적지·사본 수·reader/manifest 계약과 검증 계획부터, 실제 실행은 승인 대기
+- [x] **1. 10.4→10.7 선언 스키마 판정** — live package20/24, target20/25로 메이저 이관 확인
+- [x] **2. 비선형 전환·메이저 복구/격리 이관 범위 승인** — GLG ‘응 진행 맡겨. 그리고 뒷정리만 잘하면된다’, 기본선형FAIL보존
+- [x] **3. 후보·hotfix·정지정책/companion 검증** — candidatee122, hotfix12/companion6/독립verifier100·offlinecorepack 통과
+- [x] **4. cold 사본 이관·복원 검증 후 실제 컷오버** — 실제7DB25/e122기동·RPC정상·restart2에서66.7초안정관측
+- [ ] **5. 오늘 인계 마감 → 내일 잔여 정리·릴리즈** ← CURRENT: 오늘 실행·인계 마감 완료. 내일(2026-10-26) Claude 쿼터/재개 범위를 GLG와 확인
 
-## NOW — 세션 코퍼스 보관 계획부터
+## NOW — 오늘은 보존·인계만, 뒷정리와 태그 릴리즈는 내일
 
-- **다음 한 수:** 아래 annex 후속의 목적지·독립 사본 수·hot/cold와 reader/manifest 계약을 먼저 정한다. 읽을 곳은 `docs/data-retirement.md` §6–7과 `.agent-reports/home-data-20261025/repro-review-checkpoint.md`·`final-peer-review.md`. 원본 데이터와 현행 코퍼스는 그대로 둔다. 시험 복사/복원도 먼저 정확한 범위·목적지 승인을 받아야 한다. 앞 작업의 commit/push 승인을 다음 세션의 새 실행 허가로 이어받지 않는다.
+- **최신 GLG 지시:** “정리는 내일 하자. 클로드 쿼터 열리면. 넥스트에 남겨두고 오늘 되는 것까지만 정리… 태그릴리즈도 내일”. 실행자 Pi Sol은 추가 삭제 중단을 수락하고 19:22 최종 읽기전용 확인·실행 lane 정지를 보고했다. 코디는 `closeout-final-metadata.json`/`EXECUTION-CLOSEOUT.md`를 직접 읽어 19:17 관측 e122 running/healthy·RPC정상·restart2·활성5계정·Gemini정지·cold보호를 확인했다. 이는 선택 메타데이터 확인이며 전체 verifier 녹색/mini 응답 성공 주장이 아니다. 이미 끝난 정리는 정확 집합·회수량만 확인하고 재실행하지 않는다. 운영 실행은 오늘 마감했다. 이후 GLG의 “일단 커밋푸시 하자” 승인으로 공개 nixos-config 변경만 커밋·푸시한다. 추가 삭제/모델 호출/재시작/tag/release/자동예약은 없으며 뒷정리와 릴리즈는 내일로 유지한다.
+- **내일 첫 행동:** `.agent-reports/openclaw-upgrade-20261025/EXECUTION-CLOSEOUT.md`와 `closeout-final-metadata.json`부터 읽는다. 이미 끝난4경로/2image는재삭제하지않는다. 작업창16개는dead상태로그대로보존됐고그외startup backup/capture·SDK37백업등은미측정/미변경이다. 이lane임시스크립트는소진된one-shot이며지연background알림으로재실행하지않는다. 보관 데이터·임시 사본·기존 Docker를 용량/활성·차용 참조/복구 필요성으로 나눠 GLG에게 제시하고 확인된 범위만 정리한다. Claude 쿼터가 실제 열렸는지와 mini 재검수 범위는 재개 시 확인하며 자동 재호출하지 않는다. 태그·릴리즈는 GLG가 내일 진행할 예정이지 오늘의 실행 승인이 아니다.
+
+- **현재 안전 경계:** **실제 DB7개는 이미25다. old7e39 container/image를 그대로 start하면 안 된다.** rollback은 보호cold24 복원+old7e39세트이며 새25를image만되돌려열지않는다. 실제nativeowner/config/schema/policy/proposal검증은코디가actual영수증으로확인했다. 18:37보고후 gateway-ready-stable.json과verify-original24-comparison.result.json/.stdout을직접읽어e122/6784f6…/RPC정상·restart2/66.7초관측과37PASS/2FAIL/1UNKNOWN을확인했다. 새기동성공과전체검수완료는별개이며mini정상요청1회는Claude월사용한도로응답미완이다. 추가mini재요청/다른모델·키우회는금지하며새검수에는GLG별도승인이필요하다. ELOOP원인수정주장없음.
+- **다음 한 수:** 18:40의cron-before-after-metadata.json을코디직접읽음: bbot-memento-autopilot7·morning-family-schedule-reminder4는cold24와counter/시각/duration/nextRun/status/오류비공개동일비교가일치하는기존실패다. bbot만rate-limit marker있고family원인미확정. 이를PASS/복구완료로바꾸지않고업그레이드새장애와분리해기존운영문제로남긴다. 실패영수증/카운터유지,cron재실행·새모델·auth변경없음. configUNKNOWN3경로는nativebookkeeping/공식retire/명시off로별도판독한증거를보존한다. activation비교는별도명시baseline이며원래24snapshot을덮지않는다. activation결과는38PASS/기존2FAIL/0UNKNOWN·추가startupdrift0으로직접읽었다. 첫mini RPC는reserved guard의runId전return·probe5종0으로모델0을코디확인했다. 이후동일고립session/idempotencyKey의정상operator·무배달1요청이UNAVAILABLE/월사용한도/retryablefalse로차단됐다(mini-smoke-admitted.stdout의기술marker만코디투영확인). 실응답성공0이며추가요청없음; backend위장/권한우회/embeddedfallback/인증변경없음. 실행자의19:16보고와owned-cleanup-complete.json을코디직접읽음: 19:10에restore24/rehearsal25/actual-native-cache/context 4디렉터리와실패후보ffcfc6de8c60…/96faf5ed5233… 2image삭제가이미완료됐다. home가용+7,049,801,728B(약6.57GiB),삭제후가용약17.6GiB. 이집합은absent라내일재삭제하지않는다. 추가삭제는중단수락됐고그외native startup backup/capture·다른자산은아직미분류다. 내일은새후보목록/용량/활성·차용참조확인부터시작한다. 보호cold24/old7e39/현재e122/실패증거는유지한다. GLG가현재대화중이므로오늘마감DM은보내지않는다. 상세·cold복구좌표는`.agent-reports/openclaw-upgrade-20261025/cold-stage-review.md`; 지연알림으로stop/backup/recreate를반복하지않는다.
+- **위임/검수:** GLG의 ‘이걸 니가하지말고 맡기지’ 직접지시로 기존 live PiSol `20261025T115115-e01831`(owner alive/openai-codex/gpt-6.1-sol)을 남은 이관·교체·mini검수·뒷정리 실행자로 지정해 전달했다. 17:41 수신한 인계 수락에서 이 형제가 단독 운영 실행과 정지 gateway의 안전한 복구 우선을 확인했다. 코디20261008T152203-145c2f는 인계·교차검토만, 동시live실행 금지. 실행자는 단계별 직접실측 영수증·blocker·마감을 코디로 보고한다. mini 격리·무배달 Claude smoke1회만, ZAI/xAI/codex disabled·Gemini 입력/heartbeat0m·primary/fallback 보존. credential rotation/호스트reboot/indexreset/미승인push 없음.
+- **실행 전 경계:** 정확SHA157d8c2 비선형전환 및 agent24→25cold/격리검증후교체는 GLG가 명시 승인했으나 기본선형FAIL은 그대로다. Workshop propose/pending은native공식이관으로명시off/approvalPolicy제거, unset은auto라금지. `rehearse-copies.py`는코디미실행·미검증초안이므로실행자가검토해야하며사본밖rw차용을금지한다. 실제cold복구점1세트/원본/FAIL영수증을임시context·복사본·컨테이너/이전후보이미지와분리해보존·정리한다. 아래annex는후속보류다.
 - **최종 운영 근거:** `.agent-reports/home-data-20261025/provider-final-verified.json`은 zai/xai disabled, Gemini Telegram false/heartbeat0m, 다른5primary 유지, RPC health true, home약20.1GiB를 기록한다. `provider-public-surfaces.log`는 전체 기대 HTTP상태·comments pong 확인. 이전 조사표/실패 receipt와 최종 상태를 혼동하지 않는다.
 - **마감된 실행:** 승인된 archive/복구사본/빌드/푸시된 Jacobian/HPBL/Go모듈캐시/6tmp검증물/옛Codex로그·import보관함/구형npm플러그인·oldcapture는 이미 회수했다. Jacobian은 README만 남음. 지연 background 완료 알림으로 삭제·uninstall·restart를 재실행하지 않는다. 현재 agent DB7개/auth원본·이미지는 보존했다.
 - **회복·미해결:** uninstall클라이언트50s초과는 실제 records[]/디렉터리부재/ownedexec[]로 완료 판독해 재실행하지 않았다. 준비된 유휴게이트 뒤 same-image restart1회에서 tiniELOOP4회와150s대기초과가 있었으나 이후 실제healthy를 읽기전용 검증으로 확인했다. 최종 RestartCount4·own hold 해제 확인. ELOOP 원인은 미해결이며 새 이미지/추가 restart로 고쳤다고 주장하지 않는다.
 - **교차검토 근거:** 초기 Grok 뒤 서비스 불가로 GLG가 같은 garden `20261025T115115-e01831`을 GPT Sol로 변경했고, 이 형제가 실제 diff/새 SOP를 읽어 최종 검토했다(15:44 수신, `final-peer-review.md`). 재시작/RPC 중단 경계·annex 사전 승인 순서를 보강했다. 기존 TTL 실행 셸은 HEAD와 바이트 동일. 공개 리포에 privateOpenClaw config/README·영수증·auth 사본은 포함하지 않는다.
 - **운영 권고:** [Andenken#18](https://github.com/junghan0611/andenken/issues/18)은 약10GiB 상주를 감당할 수 없으니 축소·예산을 agent-config와 논의하라는 인프라 권고다. 기억축/인덱스 설계 지시나 데이터 폐기 허가는 아니다. 임의의 고정GiB/자동퇴거 정책은 없다.
-- **별도 보류:** OpenClaw10.7/스키마이관/콜드리허설·모델smoke/prewarm·재임베딩·credential rotation은 진행하지 않는다. 버전업 재개 전 `openclaw-update`/검수 fixture의 과거 ZAI loaded·6계정 기대 계약과 현 provider 정지 정책을 먼저 대조한다. 통과를 위해 provider를 다시 켜거나 검증을 약하게 만들지 않는다. Andenken pin/dependency/lockfile/runner/parser는 동결. 주간30일GC의복귀71보존문제와Pi TTYdaemon수동기동은 별도 판단이다.
+- **별도 경계:** 10.7 비선형 메이저 cold/격리 검증 후 교체는 새 명시 승인 범위이며 원본FAIL을 보존한다. 검증 실패/미확인에는 중단·복구 판단을 우선한다. 재임베딩·credential rotation·mini 외 Claude smoke/prewarm은 진행하지 않는다. `openclaw-update`/검수 fixture의 과거 ZAI loaded·6계정 기대 계약과 현 provider 정지 정책은 기존 Pi Sol과 먼저 대조한다. 통과를 위해 provider를 다시 켜거나 검증을 약하게 만들지 않는다. Andenken pin/dependency/lockfile/runner/parser는 동결. 주간30일GC의복귀71보존문제와Pi TTYdaemon수동기동은 별도 판단이다.
 
 ## NEXT — git-annex 기반 세션 코퍼스 보관 체계
 

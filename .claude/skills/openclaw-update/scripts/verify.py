@@ -2,6 +2,10 @@
 """Post-swap verification without model calls — read-only, fail-closed.
 
 Usage: verify.py --receipts DIR --image TAG [--accounts 6]
+  --expect-disabled-plugin ID     repeat for an explicitly paused optional provider (zai/xai)
+  --expect-disabled-telegram ID   repeat for an explicitly disabled Telegram account
+  --expect-disabled-heartbeat ID repeat for an agent whose heartbeat must stay disabled
+These are positive policy assertions, not skip switches; missing or contradictory evidence cannot PASS.
   --receipts  swap receipt dir holding openclaw.json.pre-swap (omitted → UNKNOWN)
   --image     candidate tag that was swapped in; the running container must use its image Id (omitted → UNKNOWN)
 Exit: 0 all required checks PASS · 1 any FAIL · 2 any UNKNOWN (a required measurement is missing, or a human must judge).
@@ -66,11 +70,20 @@ def oc_json(*a):
 ap = argparse.ArgumentParser()
 ap.add_argument('--receipts', type=Path)
 ap.add_argument('--image')
-ap.add_argument('--accounts', type=int, default=6)
+ap.add_argument('--accounts', type=int, default=6, help='expected number of connected, active Telegram accounts')
+ap.add_argument('--expect-disabled-plugin', action='append', default=[], choices=('zai', 'xai'),
+	help='assert this optional provider is disabled in both plugin metadata and config (repeatable)')
+ap.add_argument('--expect-disabled-telegram', action='append', default=[], metavar='ID',
+	help='assert this Telegram account is explicitly disabled (repeatable; not a skip)')
+ap.add_argument('--expect-disabled-heartbeat', action='append', default=[], metavar='ID',
+	help='assert this agent heartbeat is explicitly 0m and disabled in RPC metadata (repeatable)')
 args = ap.parse_args()
 if args.accounts < 1:
-	print('--accounts must be a positive number of Telegram accounts')
-	sys.exit(2)
+	ap.error('--accounts must be a positive number of active Telegram accounts')
+for field in ('expect_disabled_plugin', 'expect_disabled_telegram', 'expect_disabled_heartbeat'):
+	values = getattr(args, field)
+	if len(values) != len(set(values)) or any(not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', v) for v in values):
+		ap.error(f'--{field.replace("_", "-")}: IDs must be unique non-empty identifiers')
 
 print('== version / container / image')
 rc, out = run(['docker', 'exec', 'openclaw-gateway', 'openclaw', '--version'])
@@ -104,10 +117,39 @@ else:
 	note('PASS' if h.get('ok') is True else 'FAIL', f"ok={h.get('ok')}")
 	acc = dig(h, 'channels', 'telegram', 'accounts')
 	acc = acc if isinstance(acc, dict) else {}
-	conn = sum(1 for s in acc.values() if dig(s, 'connected') is True)
+	paused = set(args.expect_disabled_telegram)
+	active = {aid: value for aid, value in acc.items() if aid not in paused}
+	conn = sum(1 for s in active.values() if dig(s, 'connected') is True)
 	errs = sum(1 for s in acc.values() if dig(s, 'lastError'))
-	note('PASS' if len(acc) == args.accounts and conn == args.accounts and errs == 0 else 'FAIL',
-		f'telegram connected {conn}/{len(acc)} (expect {args.accounts}), lastError {errs}')
+	note('PASS' if len(active) == args.accounts and conn == args.accounts and errs == 0 else 'FAIL',
+		f'telegram connected {conn}/{len(active)} active (expect {args.accounts}), '
+		f'observed total {len(acc)}, lastError {errs}')
+	for aid in args.expect_disabled_telegram:
+		account = acc.get(aid)
+		if not isinstance(account, dict):
+			note('UNKNOWN', f'telegram {aid}: disabled runtime metadata missing')
+			continue
+		enabled, running = account.get('enabled'), account.get('running')
+		# Native disabled-state projection omits connected; omission alone proves nothing.
+		# Config enabled=False is separately mandatory below, and config diff is still checked.
+		connected = account.get('connected')
+		if enabled is True or running is True or connected is True:
+			note('FAIL', f'telegram {aid}: runtime contradicts disabled policy')
+		elif (type(enabled) is not bool or type(running) is not bool
+			or ('connected' in account and type(connected) is not bool)):
+			note('UNKNOWN', f'telegram {aid}: disabled runtime booleans missing or malformed')
+		else:
+			note('PASS', f'telegram {aid}: enabled=false, running=false, '
+				f'connected={"false" if "connected" in account else "omitted by native disabled projection"}')
+	for aid in args.expect_disabled_heartbeat:
+		agents = h.get('agents')
+		rows = [a for a in agents if isinstance(a, dict) and a.get('agentId') == aid] if isinstance(agents, list) else []
+		if len(rows) != 1 or not isinstance(rows[0].get('heartbeat'), dict):
+			note('UNKNOWN', f'heartbeat {aid}: unique RPC metadata missing')
+		else:
+			hb = rows[0]['heartbeat']
+			matches = hb.get('enabled') is False and hb.get('every') == 'disabled' and 'everyMs' in hb and hb['everyMs'] is None
+			note('PASS' if matches else 'FAIL', f'heartbeat {aid}: disabled metadata matches policy: {matches}')
 	pe, pu = dig(h, 'plugins', 'errors'), dig(h, 'plugins', 'unavailable')
 	note('PASS' if pe == [] and pu == [] else 'FAIL', f'plugin errors={pe} unavailable={pu}')
 	el = dig(h, 'eventLoop', 'degraded')
@@ -121,10 +163,24 @@ ps = pj.get('plugins') if isinstance(pj, dict) else pj
 if not isinstance(ps, list):
 	note('UNKNOWN', 'plugins list unavailable')
 else:
-	by = {p.get('id'): p for p in ps if isinstance(p, dict)}
-	for pid, want in (('codex', 'disabled'), ('telegram', 'loaded'), ('openai', 'loaded'), ('anthropic', 'loaded'), ('zai', 'loaded'), ('memory-core', 'loaded')):
+	valid = [p for p in ps if isinstance(p, dict) and isinstance(p.get('id'), str) and p['id']]
+	by = {p['id']: p for p in valid}
+	if len(valid) != len(ps) or len(by) != len(ps):
+		note('FAIL', 'plugins list has malformed or duplicate entries')
+	for p in ps:
+		if isinstance(p, dict) and p.get('status') in ('error', 'unavailable'):
+			note('FAIL', f'plugin {p.get("id")}: unexpected status {p.get("status")}')
+	expected = dict((('codex', 'disabled'), ('telegram', 'loaded'), ('openai', 'loaded'),
+		('anthropic', 'loaded'), ('zai', 'loaded'), ('memory-core', 'loaded')))
+	expected.update({pid: 'disabled' for pid in args.expect_disabled_plugin})
+	for pid, want in expected.items():
 		got = dig(by.get(pid), 'status')
-		note('PASS' if got == want else 'FAIL', f'{pid}: {got} (expect {want})')
+		if pid in args.expect_disabled_plugin:
+			enabled = dig(by.get(pid), 'enabled')
+			note('PASS' if got == want and enabled is False else 'FAIL',
+				f'{pid}: status={got}, enabled={enabled} (expect disabled, false)')
+		else:
+			note('PASS' if got == want else 'FAIL', f'{pid}: {got} (expect {want})')
 
 print('== hotfix integrity (constants from the patch script)')
 patch = HOME / 'patch-memory-cron-parent.py'
@@ -155,6 +211,25 @@ if not isinstance(b, dict):
 else:
 	ce = dig(b, 'plugins', 'entries', 'codex', 'enabled')
 	note('PASS' if ce is False else 'FAIL', f'plugins.entries.codex.enabled={ce}')
+	for pid in args.expect_disabled_plugin:
+		value = dig(b, 'plugins', 'entries', pid, 'enabled')
+		note('PASS' if value is False else 'FAIL', f'plugins.entries.{pid}.enabled explicitly false: {value is False}')
+	for aid in args.expect_disabled_telegram:
+		value = dig(b, 'channels', 'telegram', 'accounts', aid, 'enabled')
+		note('PASS' if value is False else 'FAIL', f'channels.telegram.accounts.{aid}.enabled explicitly false: {value is False}')
+	if args.expect_disabled_telegram:
+		configured = dig(b, 'channels', 'telegram', 'accounts')
+		if not isinstance(configured, dict) or any(not isinstance(v, dict) for v in configured.values()):
+			note('UNKNOWN', 'configured Telegram account metadata malformed')
+		elif isinstance(h, dict):
+			runtime = dig(h, 'channels', 'telegram', 'accounts')
+			wanted = {aid for aid, value in configured.items() if value.get('enabled') is not False}
+			actual = set(runtime) - set(args.expect_disabled_telegram) if isinstance(runtime, dict) else set()
+			note('PASS' if wanted == actual and len(wanted) == args.accounts else 'FAIL',
+				f'active Telegram identities match config: {wanted == actual}, configured count={len(wanted)}')
+	for aid in args.expect_disabled_heartbeat:
+		value = dig(b, 'agents', 'entries', aid, 'heartbeat', 'every')
+		note('PASS' if value == '0m' else 'FAIL', f'agents.entries.{aid}.heartbeat.every explicitly 0m: {value == "0m"}')
 if not args.receipts:
 	note('UNKNOWN', 'no --receipts: config not compared with the pre-swap snapshot')
 else:

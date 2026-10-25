@@ -12,6 +12,15 @@
 
 ## 활성
 
+### 10.7 메이저 — native admission·사본 캐시·검수 예외 (2026-10-25)
+
+- **`doctor --fix --json`은 거부된다.** 10.2의 함정을10.7에서도 재확인했다(exit2). Fix 호출만 plain 출력을 private에 보관하고, 이후 config validate/readonly owner-lint는 별도 strictJSON으로 검사한다. JSON 계약을 일괄 해제하거나 plain exit0을 전체 이관 성공으로 세지 않는다.
+- **read-only worker도 private snapshot 공간이 필요하다.**64MiB cache tmpfs에서 state 약35MB의 추가 snapshot이 ENOSPC로 실패했다(잔여 약32MB). root read-only/network-none 경계는 유지하고, 사본 안의700 private cache를 별도로 mount했다. live host cache·원본 workspace·CLI home을 광역 rw 차용하지 않는다. One-shot 컨테이너는 상속 Gateway healthcheck도 `--no-healthcheck`로 끈다.
+- **legacy session validate의 exit0/targets0은7DB 복원 증명이 아니다.**10.4에서 실제로0targets였다. 소스에서 확인한 `doctor --lint --only core/doctor/agent-database-admission --json`은 checksRun1을 확인한 뒤 판독한다. report의 schemaVersion과 실제 DB 버전을 혼동하지 않는다. native owner 결과와 별도 readonly schema/owner metadata를 같이 보고, 미설정 seventh DB를 unused로 삭제하거나 빈 DB·수동 버전 갱신으로 맞추지 않는다.
+- **공개 RPC 스키마에 필드가 있어도 operator 권한이라는 뜻이 아니다.** `sessionEffects:internal`/`suppressPromptPersistence`는 backend 전용이다. 이번에는 exact-image preflight의 runId 이전 reject와 우리 probe5종 count0을 함께 확인하여 첫 요청 model0을 증명했다. 그 확인 없이 timeout/오류를 model0으로 간주하거나 새 nonce·backend 위장·embedded fallback으로 반복하지 않는다. 정상 operator의 유일한 mini 요청은 사용한도 응답으로 끝났으며 재시도하지 않았다.
+- **기존 FAIL은 계속 FAIL이다.** cron counter7/4·lastRun/status/duration/nextRun·비공개 오류 동등성이 cold24와 같아도 PASS로 바꾸지 않는다. 운영 예외와 새 업그레이드 장애를 분리하여 증거와 함께 남긴다. Bbot의 rate-limit marker를 family의 원인으로 일반화하지 않는다. 원래 config24 baseline/FAIL/이관3paths를 보존하고, 별도 post-native/pre-gateway baseline은 추가 startup drift만 검사한다. 전체 변경0·전체 검수 녹색으로 표현하지 않는다.
+- **현재 정지 정책이 옛 정상 예보다 우선한다.** ZAI/xAI disabled와 Gemini 입력false/heartbeat0m을6계정·zai loaded 예에 맞추려고 복구하지 않는다. 명시적 disabled 계약을 검수한다. migrated25의 복귀는 보호 cold24+old7e39 세트이며 old 이미지 단독 start는 금지다. 정리는 확인한 owned 임시 집합만 하고 검증 cold·실원본·실패/차단 영수증·다른 자산은 보호한다.
+
 ### 10.3 교체 — 디스크·격리 검증·정상 기준값 (2026-10-14)
 
 - **이미지를 지워도 공간이 안 생길 수 있다.** 9.8 이미지 2개(4.45GB)를 지웠는데 `df`가 그대로였다.

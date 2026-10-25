@@ -10,6 +10,18 @@
 
 ---
 
+## 2026-10-25 — OpenClaw 10.4→10.7, 별도 승인된 비선형 메이저 전환
+
+- GLG가 정확 commit `157d8c2bc3ea2fa183afdc11088e69690bf8e64e`의 비선형 전환과 state20/agent24→25, cold 복원·격리 검증을 함께 승인했다. 기본 선형 preflight와 원래 FAIL은 유지했다. 이 작업의 비공개 영수증은 `.agent-reports/openclaw-upgrade-20261025/`이며 값·개인 본문은 공개 기록에 옮기지 않는다.
+- 정지 writer의8입력 범위를 cold `state-20-agent24.tar.zst`(1,174,483,759 bytes, SHA `b096f3ad…`)로 봉인했다. old7e39의 별도 restore24 config/native-owner admission과7DB 스키마24 metadata를 확인한 뒤, network-none 별도 clone을 candidatee122의 native Doctor로 이관했다. actual 쓰기 직전 원본/cold 재대조 exit0도 확인했다(`cold/sealed.json`, `restore24-reviewed-admission.json`, `actual-prewrite-cold-compare.json`).
+- 실제 원본도 native Doctor만 이관했으며 사본을 덮어 승격하지 않았다. agent DB7개 모두25·각 owner 일치, state20 유지, 독립 config JSON validtrue와 native owner JSON oktrue/checksRun1/findings0이다. seventh claude DB도 native owner가 처리했으며 unused로 치워버리지 않았다(`actual-native-stage-complete.json`, `actual-reviewed-metadata.json`).
+- Workshop은 propose→명시off, approvalPolicy 정식 제거다. maxPending은 원래 없었다. 이전 pending/quarantined4묶음을 agent별 비활성 archive로 내보냈고 draft/support5파일 바이트가 cold24와 같다. 옛 제안/수동승인 큐 기능이 유지되는 것은 아니다. config 이관 차이는 meta.lastTouchedVersion과 두 Workshop 경로만이며 primary/fallback/defaults·provider 중지 정책은 보존했다. mode unset→auto나 SIWC 전환·재로그인·index reset은 하지 않았다(`actual-config-diff-classification.json`).
+- 기억 패치는10.7 한정 v4: 미패치 baseline GREEN/기본 RED를 확인한 뒤 import1줄+classifier1호출만 바꿨다. 상류 cycle 전파를 보존하여12개 behavior 단언을 통과했다. 최소 공개 context의4파일만 runtime/public mirror로 배포했다. node-user의 summarize guard/alias·extract-only·Corepack offline pin qualification과 offline verifier100fixtures도 통과했다. Andenken pin/deps/parser를 바꾸지 않았고 새 base의 pnpm default12.15.0도 유지했다(옛10.4의 default와 버전이 같다는 뜻은 아니다).
+- 실제 image는 `e122cbd2…`, ARM64 base `3cf9182f…`다. latest를 한 번 재태그하고 Gateway 하나만 recreate했다. 초기 restart2 뒤 RPC 준비·66.7초 안정성을 관측했다. 원인 미확인 tini/ELOOP의 수정 판정은 아니다(`gateway-ready-stable.json`).
+- **전체 verifier는 녹색이 아니다.** 원래24 비교는37PASS/2FAIL/1UNKNOWN(검토한 migration3paths), 별도 post-native/pre-gateway activation 비교는38PASS/2FAIL/0UNKNOWN이다. 추가 startup config drift0과 전체 업그레이드 변경0을 혼동하지 않는다. 두 cron 실패는 cold24/current25의 counter7/4·최종실행·duration·nextRun·status 및 비공개 오류 동등성이 같았다. Bbot만 rate-limit marker가 있고 family 원인은 미확정이다. reset·수동 재실행·FAIL→PASS 변경 없이 운영 예외로 남겼다(`cron-before-after-metadata.json`, `verification-manual-review.json`).
+- 승인된 mini 실응답 검수도 성공으로 닫지 못했다. 첫 RPC는 backend 전용 옵션 때문에 runId 입장 전 거절됐고 공개 exact-image guard/우리 probe5종 count0으로 model0을 확인했다. 해당 옵션을 제거한 정상 operator 요청을 같은 idempotency/session key로1회 보냈으나 native Claude 사용한도 응답으로 종료됐다. deliverfalse/message tool disabled, 추가 추론·다른 모델·키 우회·embedded fallback0이다. 이 차단은 provider 후속으로 남긴다(`mini-preflight-no-admission-proof.json`, `mini-smoke-admitted.*`).
+- 복귀 세트는 **검증된 cold24 + `openclaw-custom:10.4-corepack-20261019` (`7e39b0b2…`)**다. migrated25에 old 이미지 단독 start 금지. 호스트 CLI home·이후 토큰 회전/새 대화까지 복원한다는 보장은 아니며, 복귀 전 현재 실행의 idle gate와 새 데이터 보존을 다시 판단한다. 보호 cold/실원본/필수 실패·차단 증거와 현재·과거 정상 이미지는 정리 범위 밖이다. commit/push는 별도 승인 사항이다.
+
 ## 2026-10-16 — OpenClaw 10.3→10.4 마이너 교체 (GLG 방식), 기억 패치 v3 재이식
 
 - 10.3과 같은 GLG 마이너 규칙(cold archive·리허설·복원 시험 없음)이다. 실행은 Opus, 코디·검수는 Sol(pi-durable)이 맡았다.

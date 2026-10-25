@@ -209,7 +209,9 @@
 # pull pinned digest, port hotfix guard, swap at idle. Rollback image: openclaw-custom:10.2-candidate-20261012.
 # 2026.10.4 (383c124): stability patch, state v20 / agent DB v24 unchanged; same minor swap.
 # Rollback image: openclaw-custom:10.3-candidate-20261014 (10.2 image retired 2026-10-16).
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:e79f0168377a1ee77e29c652f133007d270558590bce8358967f456258c8bb16
+# 2026.10.7 candidate (157d8c2): explicit non-linear transition; state20 / agent24->25.
+# Activation requires stopped-writer cold recovery and isolated migration/restore verification.
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:3cf9182f242d07f5edf2633a8cbb95869154cd27d4a97a182aea96a1c486338e
 FROM ${OPENCLAW_BASE}
 
 USER root
@@ -287,10 +289,12 @@ RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
-# 10.4-only memory admission hotfix (v3; upstream source unchanged); version/bundle guards fail closed.
+# 10.7-only memory admission hotfix (v4; upstream cycle propagation retained); guards fail closed.
 # Cron parents must be classified before the corpus is counted as eligible.
-COPY patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/
-RUN python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \
+# Host receipts stay private; these public image scripts must be readable by USER node.
+COPY --chmod=644 patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/
+RUN chmod 755 /usr/local/lib/openclaw-hotfix \
+ && python3 /usr/local/lib/openclaw-hotfix/patch-memory-cron-parent.py \
  && node /usr/local/lib/openclaw-hotfix/test-memory-cron-parent.mjs
 
 # Andenken `run.sh excerpt:session` runs pnpm under its packageManager pin (pnpm@10.33.0). The node user

@@ -19,7 +19,7 @@ user_invocable: true
 `python3 -I {baseDir}/scripts/selftest.py` — docker·gh·curl을 가짜로 바꿔 끼우고 실패 시나리오의 exit 코드를 단언한다.
 런타임·네트워크·모델은 건드리지 않는다.
 
-**현재 운영 중지 정책이 과거 검수 예보다 우선한다.** [ORACLE.md](../../../ORACLE.md)의 provider/계정/자동화 가용성을 먼저 읽는다. ZAI·xAI와 Gemini 입력이 정지된 상태에서 과거의 `zai: loaded`·Telegram6계정 기준을 맞추려고 재활성화하지 않는다. 다음 버전업은 보류 중이며, 재개할 때 검수 도구/fixture의 플러그인·계정 기대 계약부터 별도 검토한다. 검증 실패를 숨기거나 안전 게이트를 약하게 만들어 통과시키지 않는다.
+**현재 운영 중지 정책이 과거 검수 예보다 우선한다.** [ORACLE.md](../../../ORACLE.md)의 provider/계정/자동화 가용성을 먼저 읽는다. ZAI·xAI와 Gemini 입력이 정지된 상태에서 과거의 `zai: loaded`·Telegram6계정 기준을 맞추려고 재활성화하지 않는다. 검수 도구는 기본6계정/필수 loaded 계약을 보존하면서 명시적 `--expect-disabled-*`의 config/runtime 동시 증거를 검사한다(offline100fixtures 통과). 현재 정책은 active5/Gemini disabled·heartbeat0m이며 §1-8처럼 명시한다. 실패를 숨기거나 게이트를 약하게 만들지 않는다. 이번10.7 비선형 메이저 승인은 기본 선형 FAIL을 해제한 일반 권한이 아니다.
 
 ## 0. 판정 — 마이너 후보인가
 
@@ -61,11 +61,11 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - 이식은 **새 이미지 dist에서** 다시 잰다(`docker run --rm --network none --entrypoint sh <base> -c …`):
      chunk 이름, 원본 sha, helper sha, import 줄 개수. 결과 sha는 변환을 적용해 계산한다.
    - 미패치 base에서 테스트를 두 번 돌린다. `--baseline`(characterization)은 **GREEN**, 기본 모드는 **RED**여야 한다.
-     패치 후 빌드 안에서 기본 모드 **GREEN 10/10**.
+     패치 후 빌드 안에서 기본 모드 **GREEN**(현재10.7 v4는12 behavior 단언).
    - npm tarball dist는 Docker dist와 chunk 이름이 달라 **대용할 수 없다**.
 5. **빌드** — config가 컨텍스트에 들어가지 않게, 최소 컨텍스트(임시 디렉터리에 Dockerfile·patch·test·`summarize-bot.sh` + `.dockerignore`; Dockerfile의 COPY 대상 전부 포함)에서 빌드한다:
    `docker build -t openclaw-custom:<ver>-candidate-<date> .`
-   로그에서 `claude --version`, `…applied/verified`, `10 behavior assertions passed`를 확인한다.
+   로그에서 `claude --version`, `…applied/verified`, `behavior assertions passed`(현재v4:12개)를 확인한다.
 6. **config 격리 파싱** — 바꾸지 않고 읽기만 한다:
    ```bash
    docker run --rm --network none -e OPENROUTER_API_KEY=dummy \
@@ -104,7 +104,9 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
 8. **확인 (모델 호출 없음)**
    ```bash
    python3 -I {baseDir}/scripts/verify.py --receipts ~/openclaw/backups/swap-<ver>-<date> \
-     --image openclaw-custom:<ver>-candidate-<date>                     # 읽기 전용
+     --image openclaw-custom:<ver>-candidate-<date> --accounts 5 \
+     --expect-disabled-plugin zai --expect-disabled-plugin xai \
+     --expect-disabled-telegram gemini --expect-disabled-heartbeat gemini  # 현재 정책, 읽기 전용
    ```
    - exit 0 = 필수 항목 전부 PASS · 1 = FAIL 있음 · 2 = UNKNOWN 있음(필수 측정 누락 또는 사람 판단 필요). 0이 아니면 완료가 아니다.
      `--receipts`·`--image`를 빼면 그 비교가 UNKNOWN이 된다 — 교체 판정용으로는 둘 다 준다.
