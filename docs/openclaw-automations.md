@@ -78,14 +78,14 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 | **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (typing 기본값 복귀 2026-10-03) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5` | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
-| **gemini** | `zai/glm-5.3` | **없음** (원래 없었음) | 없음 | **아니오** |
+| **gemini** | `zai/glm-5.3` | **꺼짐** (`{every:"0m"}` 명시, 2026-10-25 — 그전엔 엔트리 없음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
 | **bbot** (B) | `anthropic/claude-fable-5-1` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있다. bbot은 반드시 엔트리에
 `{"every":"0m"}`를 **명시**해 상속을 막는다. 이를 `unset`하면 defaults cadence가 다시 물려
 **6봇 전원**의 활성 heartbeat monitor가 재생성된다(2026-09-10 07:29에는 bbot 1건만 재현;
-6봇 팬아웃은 `resolveHeartbeatAgents` 분기 판독). 현재 heartbeat monitor는 bbot의 retained disabled row 하나뿐이다.
+6봇 팬아웃은 `resolveHeartbeatAgents` 분기 판독). 라이브 cron 목록의 heartbeat 행은 bbot(`everyMs:3600000`)·gemini(`everyMs:1800000`)의 **retained disabled row 둘**이고 enabled heartbeat 행은 0이다(2026-10-26 · 10.7 `cron list --all` 실측, total 7). retained row는 활성 monitor가 아니다.
 
 > ⚠️ memento의 배달은 heartbeat `target`이 아니라 cron의 명시 `delivery`(`telegram` /
 > `123861330` / `accountId:"bbot"`)가 담당한다. memento를 조절하려고 `agents.defaults.heartbeat.target`
@@ -165,7 +165,8 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 | `daily_real_estate_auction_study_brief_miir` | glg | 이전부터 off. ⚠️ **model 미지정** — 켜기 전에 model을 박아야 한다 |
 | `SK브로드밴드 인터넷 이사 신청 리마인더` | glg | 2026-09-07 one-shot이 disabled로 보존됨. **model 미지정** |
 | `heartbeat-bbot` | bbot | system-owned retained disabled row (`everyMs:3600000`); bbot `{every:"0m"}`의 정상 투영. 편집/삭제 금지 |
-| `skill-collection-review-{main,glg,gpt,gemini,mini,bbot}` | 6봇 각 1개 | 8.1이 심은 자율 스킬 검토 자동화. 라이브 job은 모두 disabled 상태(2026-09-13 turnwatch 실측) |
+| `heartbeat-gemini` | gemini | system-owned retained disabled row (`everyMs:1800000`); gemini `{every:"0m"}`(2026-10-25)의 투영. 편집/삭제 금지 |
+| ~~`skill-collection-review-{main,glg,gpt,gemini,mini,bbot}`~~ | 6봇 각 1개 | 8.1이 심은 자율 스킬 검토 자동화. 2026-09-13 turnwatch 실측 때는 6개 모두 disabled. **10.7 라이브 목록에는 없다**(disabled가 아니라 부재 — 2026-10-26 `cron list --all` total 7). Workshop mode가 `off`로 이관된 뒤의 상태이며, 이 job은 `auto`일 때만 활성이다([reference-map](openclaw-reference-map.md) `skillCollectionReview`) |
 
 ---
 
@@ -173,8 +174,8 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 
 | 스위치 | 값 | 비고 |
 |---|---|---|
-| `skills.workshop.autonomous.mode` | `propose` | GLG가 변경·확인(2026-09-13). `skill-collection-review` 6개 job은 현재 disabled 상태 |
-| `plugins.entries.memory-core.config.dreaming.enabled` | `false` | GLG: 아직 안정화된 기술이 아니다. 스위치를 끈 것으로 끝내지 않고 **4월 산출물 880청크도 회수**했다(2026-09-06, [NEXT.md](../NEXT.md) §B 실행 완료). 켜지 말 것 |
+| `skills.workshop.autonomous.mode` | **`off`** | 10.7이 `propose`를 제거해 명시 `off`로 이관, `approvalPolicy`는 retired([ORACLE.md](../ORACLE.md) 10.7 Workshop 이관). 2026-09-13의 `propose`는 과거 값. unset 금지(`auto` 상속). `skill-collection-review` 6개 job은 라이브 목록에 없다(2026-10-26 실측) |
+| `plugins.entries.memory-core.config.dreaming.enabled` | `false` | GLG: 아직 안정화된 기술이 아니다. 스위치를 끈 것으로 끝내지 않고 **4월 산출물 880청크도 회수**했다(2026-09-06 — 완료 영수증: [옛 NEXT §B 실행 완료](https://github.com/junghan0611/nixos-config/blob/07849d5/NEXT.md?plain=1#L577), 누적 1,715청크는 [CHANGELOG](../CHANGELOG.md) 8.2 baseline 항목). 켜지 말 것 |
 | `plugins.entries.active-memory.enabled` | **`false`** | 2026-09-01 typing 조사 중 비활성; 원인 인과는 미확정 |
 | `hooks.internal` | `enabled` (`boot-md`, `session-memory`) | 턴을 스스로 만들진 않지만 인벤토리에 포함 |
 | `plugins.entries.codex.enabled` | `false` | 2026-08-07 GLG 결정 |

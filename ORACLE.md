@@ -454,7 +454,7 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). 
 
 | Layer | Provider | Model | Dim | Storage | Bot access |
 |---|---|---|---|---|---|
-| OpenClaw session+memory | OpenRouter | `qwen/qwen3-embedding-8b` | **4096** | `~/openclaw/config/memory/{agentId}.sqlite` (sqlite-vec + FTS5 trigram) | native `memorySearch` |
+| OpenClaw session+memory | OpenRouter | `qwen/qwen3-embedding-8b` | **4096** | `~/openclaw/config/memory/{agentId}.sqlite` (sqlite-vec + FTS5 trigram) | 검색엔 쓰지 않는다 — `tools.deny=["memory_search"]`(2026-10-26 실측). 이 인덱스는 Andenken harvest 원천([#5](https://github.com/junghan0611/nixos-config/issues/5)) |
 | andenken (sessions + md garden) | OpenRouter (query·index 양쪽) | `qwen/qwen3-embedding-8b` | **4096** | LanceDB `~/repos/gh/andenken/data`(sessions 75k chunks / md 10.7k, 2026-09-03 실측) | `semantic-memory` 스킬 **배포 완료**(claude-skills + workspace*) — 컨테이너 env는 [issue #9](https://github.com/junghan0611/nixos-config/issues/9) |
 
 - `agents.defaults.memorySearch.experimental.sessionMemory: true` since 2026-05-08 — sessions transcript indexing finally activated. Before that the `sources: ["sessions"]` line was being silently dropped by `normalizeSources()` because the experimental gate was closed. Verify with `openclaw memory status --agent <id>` showing `Sources: memory, sessions` and a non-zero `sessions ·` row under `By source:`.
@@ -463,7 +463,7 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). 
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
 - `~/org:/home/node/org:rw` is for file access (denotecli / bibcli / botlog / journal), not embedding. Do not remove.
 - andenken layer is separate by *storage* (LanceDB vs sqlite) and *corpus* (통합 세션+garden md vs OpenClaw sessions/memory). ~~모델(4B vs 8B)로도 분리~~ — **2026-09-02 통합 rebuild로 해소**, cross-store 보정 부채는 없다. 봇의 `semantic-memory` 스킬은 배포 완료(claude-cli 봇은 `config/claude-skills` 마운트 면, 내장 런타임은 `workspace*/skills` 면)이고, 컨테이너 env·dictcli Layer 3 프로비저닝은 [issue #9](https://github.com/junghan0611/nixos-config/issues/9)에서 종결 중.
-- This baseline is the comparison point for andenken bake-off (first-result precision, freshness, CJK short query, operator trust). OpenClaw is SSOT; andenken follows.
+- ~~This baseline is the comparison point for andenken bake-off (first-result precision, freshness, CJK short query, operator trust). OpenClaw is SSOT; andenken follows.~~ 2026-10-26 GLG 재정의로 현행 기준이 아니다: OpenClaw는 임베딩을 계속 만들되 봇 검색은 쓰지 않고, 의미 검색은 Andenken이 그 벡터를 재임베딩 없이 harvest해 `semantic-memory` `search-openclaw` 축으로 제공한다. 계약 재검토는 [#5](https://github.com/junghan0611/nixos-config/issues/5).
 
 #### 호스트별 기억축 authority — `writer | read-only consumer | absent` (2026-09-06 선언)
 
@@ -474,7 +474,7 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). 
 | `sessions.lance` | **read-only consumer** — 실물은 있으나 여기서 색인하지 않는다(`sync-sessions.sh` 가 rsync 로 채운다) | read-only consumer | thinkpad |
 | `md.lance` (가든) | read-only consumer | read-only consumer | thinkpad |
 | `openclaw.lance` | **absent** | **absent** | thinkpad |
-| OpenClaw 자체 memory (`config/memory/*.sqlite`) | — | **writer** (봇 native `memorySearch`) | oracle |
+| OpenClaw 자체 memory (`config/memory/*.sqlite`) | — | **writer** (OpenClaw 자체 임베딩. 봇 native 검색은 deny — harvest 원천) | oracle |
 
 **실측 (2026-09-06, 이 호스트에서)**:
 
@@ -720,7 +720,7 @@ Operator entrypoint: `run.sh k)` (Oracle only). **2026-08-11부터 심볼릭 전
 
 ### Skill Workshop — 봇이 자기 스킬을 제안하는 레인
 
-**현재 `autonomous.mode: "propose"`** — GLG가 2026-09-13 변경·확인했다. 2026-09-06의 `off` 상태에서도 8.1 릴리즈 노트(#106182 *"keep up to three pending proposals, even with autonomous self-learning off"*)대로 제안은 쌓였고, 실제로 아래처럼 남아 있었다:
+**현재(10.7, 2026-10-26 `config get` 실측) `autonomous.mode: "off"`** — 10.7이 `propose`를 제거해 명시 `off`로 이관했고 `approvalPolicy`는 retired다(위 10.7 업그레이드 절의 Workshop 이관). 이 절의 아래 내용은 **`propose` 시절(GLG가 2026-09-13 변경·확인)의 관측 기록**이다. 2026-09-06의 `off` 상태에서도 8.1 릴리즈 노트(#106182 *"keep up to three pending proposals, even with autonomous self-learning off"*)대로 제안은 쌓였고, 실제로 아래처럼 남아 있었다:
 
 ```
 $ docker exec openclaw-gateway openclaw skills workshop list --agent glg
@@ -728,7 +728,7 @@ next-current-pointer-20260615-958582b72f  pending  create  next-current-pointer
 #   → 나머지 5봇은 "No skill proposals". off 상태에서 6/15 에 생긴 제안이 3개월 살아 있었다
 ```
 
-라이브 설정(2026-09-13 확인): `skills.workshop = {autonomous.mode:"propose", approvalPolicy:"pending", allowSymlinkTargetWrites:false}`.
+당시 라이브 설정(2026-09-13 확인, 현재 아님): `skills.workshop = {autonomous.mode:"propose", approvalPolicy:"pending", allowSymlinkTargetWrites:false}`.
 
 **#7 §7(나) 최우선 미확인 항목이었던 "자동 생성 스킬의 쓰기 대상 경로" 는 이것으로 닫힌다.** `inspect` 가 대상 경로를 그대로 찍는다:
 
@@ -741,9 +741,11 @@ Scanner: clean
 
 - `workspace*/skills/` 는 **실디렉터리**이고, 그 안에 스킬 이름마다 `→ ~/repos/gh/agent-config/skills/<name>` **심볼릭이 개별로** 걸려 있다.
 - 따라서 **새 이름** 제안(`propose-create`)은 심링크가 없는 자리에 실디렉터리를 만든다 → SSOT 무관.
-- 위험한 것은 **기존 스킬 이름과 겹치는 `propose-update`** 뿐이다 — 그 경로는 심링크를 타고 SSOT 로 나간다. `allowSymlinkTargetWrites:false` 가 그 자리의 1차 방어다.
+- 위험한 것은 **기존 스킬 이름과 겹치는 `propose-update`** 뿐이다 — 그 경로는 심링크를 타고 SSOT 로 나간다. 2026-09-13 당시에는 `allowSymlinkTargetWrites:false` 가 그 자리의 1차 방어였다.
 
-`~/repos/gh` 전체는 **2026-09-07부터 rw**다(§Mount permission model). 따라서 `allowSymlinkTargetWrites:false`가 SSOT 오염을 막는 유일한 방어이며, 이 값을 풀지 않는다.
+`~/repos/gh` 전체는 **2026-09-07부터 rw**다(§Mount permission model). 그래서 당시에는 `allowSymlinkTargetWrites:false`를 SSOT 오염을 막는 유일한 방어로 보고 풀지 않았다.
+
+> **10.7 현재 — 이 방어를 보장으로 의존하지 않는다.** 2026-10-26 `config get skills.workshop`의 키는 `autonomous`뿐이고 `skills.workshop.allowSymlinkTargetWrites`는 "Unknown config path"다. 이 설정이 제거됐는지 다른 이름·위치로 옮겨졌는지, 심링크 대상 쓰기를 지금 무엇이 막는지는 **미검증**이다(정확한 10.7 핀 소스를 대조하지 않았다). `autonomous.mode: "off"`는 자율 레인의 설정값일 뿐, 사람의 수동 `apply`·일반 shell·모든 심링크 경유 쓰기를 차단한다는 보증이 아니다. 실제 누출·오염이 일어났다는 뜻도, 쓰기가 허용된다는 확정도 아니다 — 후속 조사는 [#10](https://github.com/junghan0611/nixos-config/issues/10).
 
 - **운영**: 제안은 사람이 처리한다 — `skills workshop inspect --agent <id> <proposalId>` 로 읽고 `apply` / `reject` / `quarantine`. `--agent` 없이 치면 `ownership=explicit` 때문에 "no explicit owner" 로 거절된다(정상).
 - **미해결**: scanner 가 무엇을 근거로 `clean` 을 주는지, 3개 상한에 도달하면 어떻게 되는지는 아직 서술 안 됨.
@@ -769,7 +771,7 @@ Scanner: clean
 
 ### Andenken readback — Corepack의 핀 버전 사전 공급
 
-- 봇은 기존 Andenken `run.sh excerpt:session`을 그대로 호출한다. Andenken의 `pnpm@10.33.0`을 이미지 빌드 때 Corepack 캐시에 공급하며, `--activate`를 쓰지 않아 이미지 기본 pnpm12.5.1은 유지한다. 호스트 Nix pnpm이나 Andenken dependency/lockfile/runner/parser를 바꾸는 조치가 아니다.
+- 봇은 기존 Andenken `run.sh excerpt:session`을 그대로 호출한다. Andenken의 `pnpm@10.33.0`을 이미지 빌드 때 Corepack 캐시에 공급하며, `--activate`를 쓰지 않아 이미지 기본 pnpm은 유지한다(10.7 이미지 기준 12.15.0 — target `package.json` `packageManager`, 2026-10-25 업그레이드 receipt. 12.5.1은 이전 이미지 관측). 호스트 Nix pnpm이나 Andenken dependency/lockfile/runner/parser를 바꾸는 조치가 아니다.
 - 캐시는 기존 `/usr/local/share/corepack`의 root 소유를 유지한다. 기본 node에게 쓰기 권한을 넓히거나 `/tmp/corepack` export에 의존하지 않는다. Dockerfile은 기본 pnpm·lastKnownGood 불변과 네트워크 차단 상태의10.33.0 실행을 빌드 중 검사한다.
 - 현재 핀 조합은 fresh 컨테이너·기본 node/HOME·네트워크 없음에서 합성 pi/Claude 읽기와 ENOENT/bounds 오류 분리를 검증했다. 상위 pnpm의 새 릴리즈만으로 정확한 핀이 바뀌지는 않는다. Andenken 핀과 이미지 캐시는 자동 동기화되지 않으므로, 핀을 바꿀 때는 Dockerfile을 함께 맞추고 콜드·오프라인 검사를 다시 한다. 캐시 없는 다른 핀까지 무네트워크라는 보장은 아니며 Corepack 네트워크 정책을 전역 변경하지 않았다. 실제 private 히트는 다음 자연 사용에서 관찰하고 강제 모델 smoke·재임베딩으로 대체하지 않는다.
 
