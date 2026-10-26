@@ -1,18 +1,42 @@
 # nixos-config
 
-**A reproducible place to live and work — NixOS, home-manager, and the host boundary for human–AI collaboration.**
+**A maintained home for people and AI siblings — NixOS machines, Docker homes, and the OpenClaw agents who live in them.**
 
-This is a personal, actively used configuration, not a distribution or a turnkey agent platform. It declares the operating systems and user environments beneath the editor, development tools, and self-hosted services. Desktop and cloud profiles share a vocabulary without pretending to be identical machines.
+This repository declares and tends the machines in which GLG and AI siblings work. NixOS and home-manager form the foundation of a larger operating home. A desktop, a cloud host, a container, and a resident agent runtime need somewhere to stand, ways to reach the person's work, and a way to recover when something changes.
+
+We treat **OpenClaw as an inhabited machine**. Its residents have workspaces, records, tools, scheduled awakenings, and continuity between human turns. Maintaining that home is a core responsibility of this repository.
+
+The premise is larger than putting an agent in a disposable virtual machine. The home sits inside the same recorded working environment as the person: projects, editor, agenda, documents, and other siblings. This is a personal, actively used system, not a distribution or a turnkey agent platform. A reader can borrow its patterns without copying its machines unchanged.
 
 ## What this repository owns
 
-- **Hosts:** four NixOS profiles spanning x86_64 desktops and an aarch64 cloud VM.
+- **Human and agent machines:** four NixOS profiles spanning desktops and a cloud VM, with shared foundations and explicit differences.
+- **OpenClaw's operational home:** container images, host connections, runtime provisioning, release-paced upgrades, state migration, availability, and recovery. The private `openclaw-config` live counterpart is maintained as part of this operation.
 - **User environment:** home-manager modules for i3wm, shells, terminals, Doom Emacs integration, fonts, and language tooling.
 - **Package policy:** Nix first; one explicit list for tools that must live outside Nix; per-repository devShells for project-specific versions.
-- **Operations:** a shared `run.sh` entrypoint, device-aware disk cleanup, data/repository retirement and storage-budget reviews, rollback procedures, and service-operation handbooks.
-- **Public service references:** Docker definitions and operational lessons, with private runtime state and credentials deliberately outside this repository.
+- **Shared housekeeping:** the `run.sh` operator entrypoint, resource budgets, data/repository retirement, service continuity, and coordination with the projects sharing the machine.
+- **Public operating knowledge:** declarations, Docker references, procedures, and reviewed lessons, with private lives and credentials kept out of the public tree.
 
-The editor's own configuration belongs to [doomemacs-config](https://github.com/junghan0611/doomemacs-config). Shared agent skills and profiles belong to [agent-config](https://github.com/junghan0611/agent-config); sibling-session connections to [entwurf](https://github.com/junghan0611/entwurf); searchable memory to [andenken](https://github.com/junghan0611/andenken). This repository provides their operating ground, not a replacement for them.
+## Why OpenClaw lives here, not in agent-config
+
+[agent-config](https://github.com/junghan0611/agent-config) supplies shared skills, profiles, alignment, and a proving ground for harness configuration. OpenClaw consumes those skills too. But supplying a resident's tools is different from maintaining the machine they live in: persistent state, containers, host access, capacity, upgrades, and recovery belong to this operating home.
+
+NixOS forms the outer fence; Docker makes an inner home. Its **capable residents reach into the person's working environment**: in this configured deployment, they can edit deliberately shared host repositories and use the Emacs agent-server APIs to read and edit agenda and documents. The home reaches beyond the container. That reach is useful, and it makes the placement of fences, resource limits, and publication boundaries consequential; a writable mount is not blanket approval for every action. For tracked repository changes, Git—not the mount—is the rollback surface; private runtime state needs a separate recovery plan.
+
+The agent-server implementation belongs to [doomemacs-config](https://github.com/junghan0611/doomemacs-config). This house provisions and tends the environment and connections around it. Likewise, it can ask [andenken](https://github.com/junghan0611/andenken) to reduce its footprint when the shared machine is short of space, without taking over that project's memory architecture or data-retention decisions.
+
+[Entwurf](https://github.com/junghan0611/entwurf) is the protocol and narrow integration core connecting sibling workshops. **A protocol still needs places for those siblings to live.** This repository maintains that ground rather than replacing the editor, memory system, skills source, or session protocol.
+
+| Home | Responsibility |
+|---|---|
+| **nixos-config** | Machines, container homes, host connections, shared resources, and operational continuity |
+| **`openclaw-config` (private)** | Deployed OpenClaw configuration and private runtime material; agent workspaces may have their own private repositories |
+| [agent-config](https://github.com/junghan0611/agent-config) | Shared skills, alignment, consumer profiles, and harness proving ground |
+| [doomemacs-config](https://github.com/junghan0611/doomemacs-config) | Editor behavior, Org work, and the Emacs agent-server implementation |
+| [entwurf](https://github.com/junghan0611/entwurf) | Sibling addressing, visible lifecycle, delivery, and the integrations it explicitly owns |
+| [andenken](https://github.com/junghan0611/andenken) | Searchable memory and source-aware return to original records |
+
+This is **one operational responsibility, with distinct storage and publication boundaries**. The operating method is developed in public while the residents' private records stay in their own homes. For upgrade and recovery practice, see the [OpenClaw operating section below](#openclaw--a-home-maintained-across-releases) and [ORACLE.md](ORACLE.md).
 
 ## Current baseline
 
@@ -46,13 +70,11 @@ Do not install a second global pnpm or use Corepack to compete with the Nix-prov
 
 A `broken` package marker is a reason to investigate, not automatically to bypass Nix. Any local exception must state the broken path, the permitted use, and when the exception can be removed; the Datasette overlay in `flake.nix` is one such scoped exception.
 
-### Cloud services and OpenClaw
+### OpenClaw — a home maintained across releases
 
-The cloud host supports services such as Caddy, Authelia, Remark42, Umami, Home Assistant, Forgejo, and OpenClaw. Files under `docker/` are service definitions or references, **not an inventory proving every directory is deployed**.
+OpenClaw stewardship is an ongoing operating line: follow upstream changes, qualify the image and tool environment, distinguish a compatible swap from a state migration, and verify that the residents can resume their work. The [v2026.10.26 operating record](https://github.com/junghan0611/nixos-config/releases/tag/v2026.10.26) includes the 10.7 migration and a scheduled agent's return to actual delivery. It is an example of that responsibility, not a permanent version pin for this README.
 
-OpenClaw operations are owned here because upgrades cross the host–container boundary: disk capacity, mounts, networking, authentication, and recovery all affect service continuity. The operational handbook records a **2026.10.4** baseline and six bot workspaces. The former ACP route has been retired in this deployment; do not follow old ACP installation instructions as the current architecture.
-
-**Private live state is not the public configuration.** OpenClaw's live configuration, credentials, conversations, and workspaces live outside this public repository. Public Dockerfile/Compose copies are references, not permission to overwrite that state. Model routing changes frequently; consult the current baseline at the top of [ORACLE.md's routing section](ORACLE.md#model-routing-현재-openclaw-2026104-baseline), not an old model list copied into a README.
+**`openclaw-config` is private live authority, not a second public template.** Deployed configuration, authentication material, conversations, and workspaces stay outside this public tree. Public Dockerfile/Compose copies and operational procedures can be reviewed and reused without exposing those contents. A reference copy is neither proof of current deployment nor permission to overwrite live state. Consult [ORACLE.md](ORACLE.md) for the current baseline, routing, and ownership; the former ACP route is not the current architecture.
 
 Operations distinguish:
 
@@ -61,6 +83,10 @@ Operations distinguish:
 - **HTTP health** from **authenticated UI, WebSocket, and actual message delivery** when judging recovery.
 
 Read [ORACLE.md](ORACLE.md) and the [OpenClaw update skill](.claude/skills/openclaw-update/SKILL.md) before touching that runtime. This README is not a deployment runbook.
+
+### Services around the home
+
+Caddy, Authelia, Remark42, Umami, Home Assistant, Forgejo, and other services support the wider working environment. Files under `docker/` are definitions or references, **not an inventory proving every directory is deployed**. Their networking, storage, availability, and recovery share the same host-side responsibility; they do not make every service's application logic this repository's property.
 
 ## Start here
 
@@ -132,6 +158,8 @@ run.sh                    Shared human-and-agent entrypoint
 A computer is not an opaque appliance; it is a workshop that can be inspected and repaired. When a person and an AI agent work together, neither should have to guess which executable, package source, or service boundary is in play.
 
 **Reproducibility is not sameness.** A desktop and a cloud server need different services. What they can share is an explicit account of where software comes from, who owns each setting, and how to return after a failed change. Agents can help maintain that account without inheriting permission to deploy, spend, or publish.
+
+Keeping this work public is part of the practice. The confidence comes from inspectable rules: separate public and private authorities, scoped approvals, reviewed changes, secret scanning, and explicit publication gates. The useful reference is not a promise that another person can fork the repository and inherit the same life. It is a record of how to build, connect, repair, and care for a home without publishing its residents' private state.
 
 See the [archived blacksmith's workshop essay](docs/deprecated/20251018T184200--nixos-재현성과-대장장이의-도구철학__nixos_philosophy_reproducibility_master.md) and the [steward's narrative](https://notes.junghanacs.com/botlog/20260615T100659).
 

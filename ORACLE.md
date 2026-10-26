@@ -128,7 +128,7 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **의도적으로 막힌 것 (이 졸업이 풀어주지 않음)**
 
-- `~/repos/gh` 기본 ro. 예외 rw는 compose에 명시된 리포만 (`aionsclubs`, `self-tracking-data`)
+- 호스트의 다른 리포에 대한 승인 없는 커밋·푸시. 파일 쓰기 범위는 아래 현행 **Mount permission model**의 rw 선언을 따르며, 워크스페이스 졸업 자체가 다른 리포의 운영 권한을 넓히지는 않는다.
 - 부모 `openclaw-config` 커밋/푸시
 - 훅 끄기, public 리포 생성, 다른 봇 workspace 수정
 - gh 토큰은 컨테이너에 마운트되어 있으므로 **허용 remote를 이 표로 고정**하는 게 가드. 토큰 스코프 분리는 아직 없다 — 그 전까지 새 remote는 호스트만 단다.

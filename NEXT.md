@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 이번 준비 갈무리 [v2026.10.26](CHANGELOG.md#v20261026--openclaw-107과-메멘토-복구-데이터-퇴역-절차), 발행 전 승인 대기.
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.10.26](https://github.com/junghan0611/nixos-config/releases/tag/v2026.10.26).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -10,13 +10,17 @@
 
 - [x] **1. OpenClaw 10.7 운영 이관・검증** — agent DB25, 보호 cold24 복구점・정지 정책 보존
 - [x] **2. 쿼터 복귀・메멘토 정기 실행 복구** — 07:26 기동 → 07:47 ok/delivered, 추가 mini 호출0
-- [x] **3. v2026.10.26 릴리즈 준비** — CHANGELOG/NEXT 갈무리・Nix 네 프로필 평가・13+7검사 통과
-- [ ] **4. 태그・push・GitHub Release** ← CURRENT: GLG 발행 승인 대기
+- [x] **3. v2026.10.26 릴리즈** — 757366e 태그・push・GitHub Release・도장, Nix/13+7검사 완료
+- [x] **4. Homepage 소개・담당자 보고** — 39c8e4e 실배포 검증・기존 botlog 날짜 보고 추가 확인
+- [ ] **5. 집의 관점으로 대문 재수선** ← CURRENT: README/ORACLE 검토 반영・한영 leaf 원문 동결 완료 → homepage 코디 인계 수락・새 후보 gate 통과, GLG 양쪽 commit/push 승인: 소스 먼저 공개 → 홈페이지 코디 발행
 
-## NOW — v2026.10.26 준비, 발행 전 멈춤
+## NOW — README를 먼저, 홈페이지는 코디에게 인계
 
-- **다음 한 수:** GLG의 발행 승인을 받으면 tag-release 스킬의 Make preflight부터 진행한다. 작업 트리/태그 중복/원격 상태를 확인하고 tag・push・GitHub Release를 한 흐름으로 발행한다. 현재는 준비 커밋만이며 태그・push・Release・도장은 하지 않는다.
-- **검증 근거:** `.agent-reports/release-prep-v2026.10.26/gates.log`의 Nix 네 프로필 평가(`--no-build --offline --no-update-lock-file`)와 유지보수13검사 통과, `notes-regression-fixed.log`의 노트 추출7검사 통과. 첫 노트 검사에 잘못 더한 -I의 import 실패는 원문 보존하고 정본 명령으로 해당 검사만 재실행했다. CHANGELOG의 후보 섹션으로 실제 release-notes 추출도 확인했으며 빌드/전환/추가 모델 호출은 없다.
+- **최신 GLG 관점:** nixos-config는 닷파일만이 아니라 사람과 형제가 실제로 사는 머신/집을 짓고 돌보는 운영자다. OpenClaw도 거주하는 머신으로 보며 private openclaw-config와 함께 그 울타리・업그레이드・복구・자원 돌봄을 맡는다. 원문 `.agent-reports/inhabited-machine-20261026/USER-INTENT.md`부터 읽는다.
+- **다음 한 수:** README/ORACLE은 Opus 검토・지적 반영을 마쳤고, 이어 한영2leaf를 같은 관점으로 편집・동결했다. GLG 지정 homepage 코디20261019T073727-bb59f4에 `.agent-reports/inhabited-machine-20261026/HANDOFF.md`・원문・diff・4파일 해시로 정식 인계를 보냈다. 08:55 homepage 코디가 인계수락/두leaf해시일치를직접보고했고08:56새gate통과를보고했다. 코디도 `/tmp/homepage-inhabited.F14XDr/gate.log`를직접읽어Hugo/Eval/JSON-LD・한영canonical/prose/ownership/언어전환・새관점/접근≠승인・초안제외/소스불변검사를확인했다. 이는새후보검증이며시각판정/공개배포는아니다. 그코디가GLG에게소스README/ORACLE을먼저공개할지물어답을대기중이고commit/push는아직0. 이전39c8e4e 검증은 새문구근거로 재사용하지 않는다. 그 코디가 추가 검수・새 gate・선택 commit/push・실배포를 맡으며 우리 쪽은 동시편집/홈페이지push를 멈춘다. 후속으로 GLG가 ‘우리 커밋푸시하고, 홈페이지도 커밋푸시하자’고 이 세션에 명시 승인했다. README/ORACLE과 이 담당자의 NEXT를 먼저 commit/push하고, 원격 소스 SHA를 홈페이지 코디에게 전달하면 그쪽이 검증한 두 leaf를 commit/push・배포 검증한다. homepage 기존 NEXT/미발행blog2개와 root NEXT의 다른 localhandoff를 승인 없이 섞지 않는다. 추가 runtime/모델/삭제는 없다.
+- **최근 마감:** homepage 한영2leaf만39c8e4e로push・실배포검증・도장 완료. 기존 nixos-config botlog `20260615T100659`에 Opus가 `[2026-10-26] 담당자의 현재 보고 — 돌아올 길을 시험하고, 살아 돌아온 것을 관측하다`를 추가했고 코디가 denotecli로본문・history・lastmod08:21을읽어확인했다. 가든 export/배포는하지않았다. 기존 homepage NEXT 변경과미발행blog2개는제외・불변. 상세 `.agent-reports/homepage-nixos-20261026/HANDOFF.md`.
+- **Homepage 근거:** Opus가 공개 release와 한영 문구를 직접 대조했고 제안한 표현을 반영했다. 추적 HEAD archive+2leaf overlay의 격리 `./run.sh v`와17개 렌더/입력 검사가 통과했다(`rendered-receipt.json`, `gate.log`). Cloudflare build3a872581…가39c8e4e SHA로success, 표준실배포21paths와KO/EN각leaf의canonical/신규본문/Release링크/footer exactSHA도확인했다(`production-gate.log`, `live-leaf-receipt.json`). 시각브라우저판정은아니다. 원래 homepage public/와 미발행 초안은 빌드하지 않았다.
+- **마감된 릴리즈 검증 근거:** `.agent-reports/release-prep-v2026.10.26/gates.log`의 Nix 네 프로필 평가(`--no-build --offline --no-update-lock-file`)와 유지보수13검사 통과, `notes-regression-fixed.log`의 노트 추출7검사 통과. 첫 노트 검사에 잘못 더한 -I의 import 실패는 원문 보존하고 정본 명령으로 해당 검사만 재실행했다. CHANGELOG의 후보 섹션으로 실제 release-notes 추출도 확인했으며 빌드/전환/추가 모델 호출은 없다.
 - **마감 근거:** 이관/cleanup은 `.agent-reports/openclaw-upgrade-20261025/EXECUTION-CLOSEOUT.md`, 정기 성공은 `.agent-reports/openclaw-quota-review-20261026/watch-memento.log`. 메멘토 다음 예약은10:26:52이며 검수를 위해 추가 호출하지 않는다. 소진된 one-shot/지연 알림을 실행 허가로 읽지 않는다.
 - **보호 경계:** 실제 agent DB7개는25다. old7e39 단독 start 금지, 복귀는 cold24+old 이미지와 컷오버 후 새 데이터 보존 판단이 함께 필요하다. 현재e122・복구점・FAIL/기준 사본・원본/auth는 보호한다. ZAI/xAI/codex・Gemini 입력/heartbeat 정지를 해제하지 않는다.
 
