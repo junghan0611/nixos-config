@@ -12,6 +12,13 @@
 
 ## 활성
 
+### 10.8 교체 — 소스 클론 부재·미러 표류·verify의 live 패치 의존 (2026-10-27)
+
+- **`~/repos/3rd/openclaw`는 소스가 아니다.** 10-16에 디스크 확보로 지웠고 README 안내문만 남아 있다. 클론을 전제로 `git -C` 하지 않는다. 필요한 파일·커밋만 `gh api repos/openclaw/openclaw/{contents,commits}/…?ref=v<ver>`로 읽는다. compare files는 300개에서 잘린다. 관심 커밋은 태그 diff를 개별 조회하고, 격리 `config validate`와 `config schema` 전후 diff(10.8: added 13 / removed 0 / changed 0)를 보조 근거로 둔다. 이 둘은 config 파싱·스키마 수준만 증명하며, 300개 밖의 runtime·auth·권한 변경 검토를 대신하지 않는다. 전체 파일이 필요하면 10.4 때처럼 git/trees API로 하위 트리를 내려간다.
+- **verify.py는 hotfix 상수를 `~/openclaw/patch-memory-cron-parent.py`에서 읽는다**(`OPENCLAW_HOME`). 스테이징에서 이식만 하고 live 파일을 갱신하지 않으면, 새 이미지가 정상이어도 VERSION·sha 대조가 FAIL이 난다. 교체가 성공한 뒤 실행 pin·패치를 live에 반영하고 verify를 돌린다. 교체 전에 미리 반영하면 중단 시 pin과 실행 이미지가 어긋난다.
+- **공개 미러 테스트는 같이 갱신되지 않을 수 있다.** 10.7 qualification은 영수증 사본(`12 behavior`)으로 통과했지만, 공개 `docker/openclaw/test-summarize-bot.py`는 `10`을 기대한 채 남아 있었다. companion을 돌릴 때는 직전 qualification 사본과 미러를 diff하고, 실제 계약(12)에 맞춘다.
+- **교체 전 health 스냅샷을 남긴다.** 10.8 verify의 `deliveryQueues.failed`에 기록 시각이 교체 7시간 전인 두 번째 `session` 실패행이 잡혔다. 교체 전 health가 없어서 이 행이 교체 전부터 있었는지(회귀가 아닌지) 확정하지 못했다. suspend.prepare 직전에 `gateway call health --json`을 영수증에 남긴다.
+
 ### 10.7 메이저 — native admission·사본 캐시·검수 예외 (2026-10-25)
 
 - **`doctor --fix --json`은 거부된다.** 10.2의 함정을10.7에서도 재확인했다(exit2). Fix 호출만 plain 출력을 private에 보관하고, 이후 config validate/readonly owner-lint는 별도 strictJSON으로 검사한다. JSON 계약을 일괄 해제하거나 plain exit0을 전체 이관 성공으로 세지 않는다.

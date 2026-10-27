@@ -135,19 +135,19 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.10.7**, `157d8c2`)
+### Model routing (현재: OpenClaw **2026.10.8**, `dc2523e`)
 
 > **현재 provider 가용성 우선:** 운영자 요청으로 **Z.AI(`zai`)·Grok/xAI(`xai`)는 disabled**다. Gemini의 Telegram account는 `enabled:false`, heartbeat는 `every:"0m"`로 명시 정지했다. 기존 primary `zai/glm-5.3`와 허용 모델 기록은 재개용 설정이지 현재 서빙 근거가 아니다. 다른5봇의 primary와 fallback은 변경하지 않았고 대체 유료 모델을 지정하지 않았다. 자동 fallback·API 키 우회·doctor로 provider 재활성화하지 않는다. 재개는 GLG가 별도로 승인할 때만 한다. 인증 원본과 ZAI 설치 소스는 보존했다.
 
-> 현재 이미지는 `openclaw-custom:10.7-candidate-20261025` (`e122cbd2…`, `latest` 동일)다. shared state **v20 / agent DB 7개 모두 v25**, native owner 일치 및 RPC 준비·안정성을 확인했다. 기본 선형 가드와 원래 FAIL은 그대로다. 이번 비선형 메이저 전환만 별도 승인받았으며 마이너 선례로 재사용하지 않는다. 경위·영수증은 ROADMAP과 `.agent-reports/openclaw-upgrade-20261025/`에 둔다.
+> 현재 이미지는 `openclaw-custom:10.8-candidate-20261027` (`3623dcc2…`, `latest` 동일, base arm64 `b1b6f18b…`)다. 2026-10-27 10.7→10.8 **마이너 교체**: shared state **v20 / agent DB v25 불변**. 실제 idle gate(ready·activeCount0·blockers[]) 뒤 recreate 1회, RPC ready 272초. verify PASS39 / FAIL1 — FAIL은 `deliveryQueues.failed`의 미확인 `session` 실패행 1건이다. 기록 시각은 10-27 16:07 KST로 교체보다 이르지만, 교체 전 health 스냅샷이 없어 회귀 여부와 원인은 미확정이다(DB·기준값 미변경). 영수증 `.agent-reports/openclaw-upgrade-20261027/`. 10.4→10.7 비선형 메이저 전환의 경위는 ROADMAP과 `.agent-reports/openclaw-upgrade-20261025/`에 있으며 마이너 선례가 아니다.
 >
 > primary/fallback·defaults와 provider 중지 정책을 보존했다. **`plugins.entries.codex.enabled:false`도 삭제하지 않는다.** 기존 GPT 인증을 SIWC로 바꾸거나 새 로그인·credential rotation을 수행한 전환이 아니다.
 >
 > Workshop은 제거된 `propose`를 **명시 `off`**로 이관하고 `approvalPolicy`를 정식 제거했다. mode를 지우면 `auto` 기본값이므로 unset 금지. 기존 pending/quarantined 4묶음은 각 agent의 `workshop-skills/.archive/.retired-proposals/`에 비활성 보관했으며 draft·support 5파일의 바이트 일치를 확인했다. 옛 제안·수동승인 큐 기능 자체가 유지되는 것은 아니다. 전체 config 이관 차이는 `meta.lastTouchedVersion`과 이 두 Workshop 경로뿐이며, 전체 변경 0으로 표현하지 않는다.
 >
-> **운영 예외:** `bbot-memento-autopilot` 연속 오류7·`morning-family-schedule-reminder` 오류4는 cold24와 counter·최종 실행시각·오류가 같은 기존 실패다. PASS로 바꾸거나 reset·수동 재실행하지 않았다. RPC·정책·공개면 정상과 전체 verifier FAIL을 분리한다. 승인된 mini 정상 요청1회도 provider 사용한도 응답으로 종료되어 실제 답변 성공은 미확인이다. 재시도·다른 모델·키 우회는 하지 않았다. 초기 재시작2 이후 안정 관측은 원인 미확인 tini 문제의 수정 증명이 아니다.
+> **운영 예외(10-25 기록):** 당시 `bbot-memento-autopilot` 연속 오류7·`morning-family-schedule-reminder` 오류4는 cold24와 counter·최종 실행시각·오류가 같은 기존 실패였다. PASS로 바꾸거나 reset·수동 재실행하지 않았다. 2026-10-27 22:58 KST 실측에서는 두 job 모두 마지막 실행 ok·consecutiveErrors 0이다(자연 실행으로 회복, 옛 원시 FAIL 기록은 그대로). RPC·정책·공개면 정상과 전체 verifier FAIL을 분리한다. 승인된 mini 정상 요청1회도 provider 사용한도 응답으로 종료되어 실제 답변 성공은 미확인이다. 재시도·다른 모델·키 우회는 하지 않았다. 초기 재시작2 이후 안정 관측은 원인 미확인 tini 문제의 수정 증명이 아니다.
 >
-> **복귀는 `openclaw-custom:10.4-corepack-20261019` (`7e39b0b2…`) + 검증된 cold24 복원 세트다. old 이미지 단독 start 금지.** 보호 복구점은 `~/nixos-config/.agent-reports/openclaw-upgrade-20261025/cold/state-20-agent24.tar.zst`와 같은 폴더 `sealed.json`이다(700/600, SHA 검증·old-image 오프라인 admission 통과). live config·auth·env·배포 파일8범위이며 호스트 `~/.claude`/하네스와 이후 토큰 회전·새 대화까지 복구한다고 보장하지 않는다. 복귀 전 새 실행의 유휴 게이트와 컷오버 후 데이터 보존을 다시 판단한다. 과거에 폐기한 역사적 사본은 이 새 복구점과 별개다.
+> **같은 스키마 복귀(10.8→10.7)는 `openclaw-custom:10.7-candidate-20261025` (`e122cbd2…`)를 `latest`로 재태그하고 같은 idle gate 뒤 recreate한다.** 아래 DB24 복귀 짝은 그보다 더 이전 상태로 돌아가는 경우만이다. **DB24 복귀는 `openclaw-custom:10.4-corepack-20261019` (`7e39b0b2…`) + 검증된 cold24 복원 세트다. old 이미지 단독 start 금지.** 보호 복구점은 `~/nixos-config/.agent-reports/openclaw-upgrade-20261025/cold/state-20-agent24.tar.zst`와 같은 폴더 `sealed.json`이다(700/600, SHA 검증·old-image 오프라인 admission 통과). live config·auth·env·배포 파일8범위이며 호스트 `~/.claude`/하네스와 이후 토큰 회전·새 대화까지 복구한다고 보장하지 않는다. 복귀 전 새 실행의 유휴 게이트와 컷오버 후 데이터 보존을 다시 판단한다. 과거에 폐기한 역사적 사본은 이 새 복구점과 별개다.
 
 > 2026-09-28: 운영 게이트웨이 9.5→9.6 오프라인 Doctor(state v18·agent DB v23)로 승격. 5봇(main/gpt/glg/mini/bbot) 무배달 실응답 GREEN. gemini는 같은 날 Copilot 403에서 **Z.AI Coding Plan `zai/glm-5.3` 기본값 + SuperGrok OAuth `xai/grok-4.7` 선택지**로 전환했고 양쪽 격리 실응답을 확인했다. per-agent `modelPolicy.allow`는 이 두 모델만, fallbacks는 `[]`. Copilot 설정·auth SQLite 프로필 제거, plugin은 명시적으로 disabled (재기동 후 health/6채널·모델 재검수는 NEXT.md). `google/` API 키·xAI Console API 키·자동 fallback 우회 금지. 아래 이전 시점 서빙 레일 설명보다 라이브 config/세션이 우선.
 
@@ -229,11 +229,11 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
-### Memory admission hotfix (10.7, v4)
+### Memory admission hotfix (10.8, v4 이식)
 
-현재 이미지는 `docker/openclaw/patch-memory-cron-parent.py`(v4)를 포함한다. cron 부모를 `cron`으로 분류하여 시스템 메시지뿐인 부모가 `eligible`에만 잡히는 불일치를 막는다. 미패치 10.7 dist의 baseline GREEN/기본 RED를 확인한 뒤 이식했으며, import 1줄과 classifier 호출1곳만 바꿨다. 상류의 cycle 전파 변경은 보존했다.
+현재 이미지는 `docker/openclaw/patch-memory-cron-parent.py`(v4, 10.8 이식)를 포함한다. 10.8은 소스 blob `5cbb0ea1`이 10.7과 같아 상류 미수정이다. 10.8 Docker dist에서 chunk 이름과 원본 sha만 다시 쟀고(helper는 바이트 동일), 변환 로직과 단언은 그대로다. cron 부모를 `cron`으로 분류하여 시스템 메시지뿐인 부모가 `eligible`에만 잡히는 불일치를 막는다. 미패치 10.7 dist의 baseline GREEN/기본 RED를 확인한 뒤 이식했으며, import 1줄과 classifier 호출1곳만 바꿨다. 상류의 cycle 전파 변경은 보존했다.
 
-원본·결과·helper SHA와 정확 chunk 이름을 고정하여 **10.7 외 버전·번들 drift면 거부**한다. 빌드와 node-user qualification에서12개 behavior 단언을 통과했다. 버전업마다 새 이미지 dist에서 재측정하며 npm dist로 대용하지 않는다. hash·회귀 통과와 memory indexed/eligible·dirty INFO, 실제 검색 수렴은 서로 다른 증거다. index reset·강제 재색인은 하지 않았다.
+원본·결과·helper SHA와 정확 chunk 이름을 고정하여 **10.8 외 버전·번들 drift면 거부**한다. 빌드와 node-user qualification에서12개 behavior 단언을 통과했다. 버전업마다 새 이미지 dist에서 재측정하며 npm dist로 대용하지 않는다. hash·회귀 통과와 memory indexed/eligible·dirty INFO, 실제 검색 수렴은 서로 다른 증거다. index reset·강제 재색인은 하지 않았다.
 9.8판 사건·영수증은 [gotchas §bbot dirty](docs/openclaw-gotchas.md).
 
 ### autopilot — bbot memento 하나만 (2026-09-10)
@@ -771,7 +771,7 @@ Scanner: clean
 
 ### Andenken readback — Corepack의 핀 버전 사전 공급
 
-- 봇은 기존 Andenken `run.sh excerpt:session`을 그대로 호출한다. Andenken의 `pnpm@10.33.0`을 이미지 빌드 때 Corepack 캐시에 공급하며, `--activate`를 쓰지 않아 이미지 기본 pnpm은 유지한다(10.7 이미지 기준 12.15.0 — target `package.json` `packageManager`, 2026-10-25 업그레이드 receipt. 12.5.1은 이전 이미지 관측). 호스트 Nix pnpm이나 Andenken dependency/lockfile/runner/parser를 바꾸는 조치가 아니다.
+- 봇은 기존 Andenken `run.sh excerpt:session`을 그대로 호출한다. Andenken의 `pnpm@10.33.0`을 이미지 빌드 때 Corepack 캐시에 공급하며, `--activate`를 쓰지 않아 이미지 기본 pnpm은 유지한다(10.7·10.8 이미지 기준 12.15.0 — 10.8 live 컨테이너에서 기본 12.15.0·오프라인 Corepack 10.33.0 실측 2026-10-27. 12.5.1은 이전 이미지 관측). 호스트 Nix pnpm이나 Andenken dependency/lockfile/runner/parser를 바꾸는 조치가 아니다.
 - 캐시는 기존 `/usr/local/share/corepack`의 root 소유를 유지한다. 기본 node에게 쓰기 권한을 넓히거나 `/tmp/corepack` export에 의존하지 않는다. Dockerfile은 기본 pnpm·lastKnownGood 불변과 네트워크 차단 상태의10.33.0 실행을 빌드 중 검사한다.
 - 현재 핀 조합은 fresh 컨테이너·기본 node/HOME·네트워크 없음에서 합성 pi/Claude 읽기와 ENOENT/bounds 오류 분리를 검증했다. 상위 pnpm의 새 릴리즈만으로 정확한 핀이 바뀌지는 않는다. Andenken 핀과 이미지 캐시는 자동 동기화되지 않으므로, 핀을 바꿀 때는 Dockerfile을 함께 맞추고 콜드·오프라인 검사를 다시 한다. 캐시 없는 다른 핀까지 무네트워크라는 보장은 아니며 Corepack 네트워크 정책을 전역 변경하지 않았다. 실제 private 히트는 다음 자연 사용에서 관찰하고 강제 모델 smoke·재임베딩으로 대체하지 않는다.
 

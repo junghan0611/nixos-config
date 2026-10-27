@@ -10,6 +10,23 @@
 
 ---
 
+## 2026-10-27 — OpenClaw 10.7→10.8 마이너 교체, 기억 패치 v4 재이식
+
+- GLG가 취침 전 10.7→10.8 업그레이드를 승인했다. 실행은 Opus(Claude Code), 코디·교차검수·DM은 pi-durable 코디가 맡았다. 승인 범위에 모델 smoke, 수동 cron, 재색인, 로그인/권한 변경, 삭제/prune, push는 포함되지 않는다. 비공개 영수증은 `.agent-reports/openclaw-upgrade-20261027/`.
+- 판정: preflight exit 0. `schemaVersions`가 10.7·10.8 모두 `{state:20, agent:25}`. compare ahead 188 / behind 0, ARM64 digest `b1b6f18b…`, label revision = tag commit `dc2523e5`. pull한 이미지의 package schema와 node v24.22.1, pnpm 12.15.0도 확인했다.
+- 계약 검토:
+  - #178742(sandbox로 분류된 위임 child의 host CLI backend 거부): 6봇 모두 `sandbox explain` 결과 mode=off, sessionIsSandboxed=false, sandbox 컨테이너 0 → 현재 구성에서는 발동하지 않는다. 미래의 모든 child에 대한 보장은 아니다. hardening을 피하려고 설정을 바꾸지 않았다.
+  - #183618: 명시 `accounts.default`가 있어 기존 동작이 유지된다.
+  - #180075: CLI history owner 변경 시 fallback을 멈춘다. 우리 fallbacks는 `[]`.
+  - #183765 `managedNativeTools`: 선택 항목이고 켜지 않았다.
+  - config schema 전체 diff는 added 13(전부 anthropic `managedNativeTools`) / removed 0 / changed 0. CHANGELOG에 breaking/migration 선언은 0이다. compare 파일 목록은 300개에서 잘렸다. 관심 커밋은 태그 diff를 개별 조회했고, 격리 config validate(10.7·10.8 모두 valid, 경고는 같은 active-memory 1건)와 schema diff는 보조 근거다. 300개 밖의 runtime·auth·권한 변경 전체를 검토한 것을 대신하지 않는다.
+- 기억 hotfix: 상류 소스 blob `5cbb0ea1`이 10.7과 같아 미수정이다. 10.8 Docker dist에서 corpus chunk는 `BQbjaNeO`(원본 `ad97f096…`)이고, helper `CDyBC9Gn`은 `984caee8…`로 바이트 동일하다. 10.7 패치본과의 차이는 의존 chunk import 이름과 패치 줄뿐이다. 상수만 이식했다(결과 `2d36b2c3…`, marker `(10.8)`). 오프라인 게이트: 미패치 baseline GREEN12 / 기본 RED / 구 10.7 스크립트 fail-closed / 이식본 GREEN12, 멱등. 빌드 안에서 applied/verified와 12 단언 통과. companion6 OK, selftest 100/100.
+- 공개 미러의 `test-summarize-bot.py`는 10.7 때 '12 behavior' 갱신이 빠져 '10'을 기대하고 있었다. 이번에 12로 맞췄다(10.7 qualification 사본과 같은 1줄).
+- 교체 23:08 KST: `gateway.suspend.prepare` ready / activeCount 0 / blockers [] (TTL 약 115초 남음) → `latest` 재태그 → recreate 1회. tini ELOOP 1회(재시작 1, 원인 미확인) 뒤 RPC health ok까지 272초. 기동 Doctor 경고는 10.7 native 영수증과 같은 대상·개수다(아카이브 누락 8, acpx, xai refresh, zai Unknown model 등). 새로 보인 것은 `MaxListenersExceededWarning`(exit listeners 11) 1회로, 관찰 대상이다.
+- 검증(모델 호출 없음): verify PASS 39 / FAIL 1 / UNKNOWN 0. FAIL은 `deliveryQueues.failed`의 두 번째 `session` 실패행(completed_permanent, 페이로드 없음)이다. 기록된 enqueued/failed 시각은 10-27 16:07 KST로 교체보다 7시간 이르다. 그러나 교체 전 health 스냅샷이 없어 '교체 전부터 있었다·회귀가 아니다'는 확정할 수 없다. 새 버전의 정리가 이전 시각을 가진 행을 만들었을 가능성도 배제하지 못한다. 원인·귀속은 미확정이고, DB와 verify 기준값은 바꾸지 않았다. 메타는 상태 DB를 읽기 전용으로 1회 직접 조회해 얻었다(방법은 영수증 `db-read-method.md`). 이후 직접 조회는 멈췄다.
+- 첫 자연 bbot memento(10-28 01:26:52 → ≈01:42:00 KST, 모델·수동 cron 호출 없이 watcher로만 관측): `cron runs` ok / succeeded / delivered, consecutiveErrors 0, claude-cli `claude-fable-5-1`, duration 908264ms(10.7 직전 595215ms보다 김, 1회 표본·원인 미조사). ok/delivered는 실행·배달 사실이지 memento 품질 판정이 아니다. 로그에 경고색 줄 3종(`history refused across auth boundary: reason=auth-unknown`, `slow SQLite reclamation`, `slow session lifecycle`)이 있으나 10.7 비교 영수증이 없어 신규 여부 미확정. 사후 verify-2 PASS 39 / FAIL 1(같은 failed 행, 증감 0), RestartCount 1·MaxListeners 1회 유지, mini·bbot memory dirty 유지.
+- 롤백: 같은 스키마인 `openclaw-custom:10.7-candidate-20261025`(`e122cbd2…`) 재태그 + 같은 idle gate. DB24 복귀 짝(cold24 + 7e39)은 그대로 보호한다.
+
 ## 2026-10-25 — OpenClaw 10.4→10.7, 별도 승인된 비선형 메이저 전환
 
 - GLG가 정확 commit `157d8c2bc3ea2fa183afdc11088e69690bf8e64e`의 비선형 전환과 state20/agent24→25, cold 복원·격리 검증을 함께 승인했다. 기본 선형 preflight와 원래 FAIL은 유지했다. 이 작업의 비공개 영수증은 `.agent-reports/openclaw-upgrade-20261025/`이며 값·개인 본문은 공개 기록에 옮기지 않는다.

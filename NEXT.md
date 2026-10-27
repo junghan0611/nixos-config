@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.10.26](https://github.com/junghan0611/nixos-config/releases/tag/v2026.10.26).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.10.28](https://github.com/junghan0611/nixos-config/releases/tag/v2026.10.28).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -10,30 +10,35 @@
 
 # RAIL — 현재 좌표
 
-- [x] **1. OpenClaw 10.7 운영 이관・검증** — agent DB25, 보호 cold24 복구점・정지 정책 보존
-- [x] **2. 쿼터 복귀・메멘토 정기 실행 복구** — 07:26 기동 → 07:47 ok/delivered, 추가 mini 호출0
-- [x] **3. v2026.10.26 릴리즈 + 집의 관점으로 대문 수선** — 757366e 태그・Release, 소스07849d5 → 홈페이지73b28cd 공개・응답 검증, botlog 보고
-- [x] **4. 업그레이드 뒷정리** — GLG 승인 집합만 09:57 은퇴, 실측 `/home` +1.35GB · `/` +1.21GB, 보호 집합 불변
-- [x] **5. NEXT 정리 → 이슈 정리** — NEXT 압축 완료. 이슈 5→4 open: #9 종결(10.7 재측정), #5는 GLG 지시로 "OpenClaw 기억 로직 재검토"로 재정의(제목·본문 교체, 원 본문은 역사 댓글), #10·#3 전제/현행성 코멘트 후 열어둠, #12 보존. automations·ORACLE의 Workshop/heartbeat 드리프트 최소 수선
+- [x] **1. OpenClaw 10.7 이관 → 뒷정리 → NEXT·이슈 정리** — [v2026.10.26](CHANGELOG.md)·[v2026.10.28](CHANGELOG.md) 기록
+- [x] **2. OpenClaw 10.8 교체 + 첫 자연 메멘토 관측** — 10-27 23:08 교체, 10-28 01:26 ok/delivered, [v2026.10.28](CHANGELOG.md)
+- [ ] **3. 10.8 잔여 자연 관측·판단** ← CURRENT: 08:00 family reminder · 실제 대화 · verify FAIL1 원인 · 경고 3종 · 기억 dirty
+- [ ] **4. 남은 복구 자산 판단** ← PAUSED: D1 DB24 복귀 짝 퇴역은 GLG 선택 대기 · e122는 soak 뒤 (A/B/C 정리는 10-28 실행, CHANGELOG v2026.10.28)
 
-현재 좌표: 1–5 완료(2026-10-26 마감). 다음 착수는 아래 열린 후속 중 GLG가 고르는 것.
+현재 좌표: 1–2 완료 → 3 자연 관측 대기 → 4 보류
 
-## NOW — 뒷정리 마감 (2026-10-26 09:57)
+## NOW — 10.8 잔여 관측·판단
 
-- **실행 결과:** GLG 승인 고정 집합만 직전 stat/sha/ID 재확인 후 은퇴 — A 10.7 native 기동 Doctor 사본 8개(agent DB 7 · state 1, ~1.35GB), B 닫힌 10.3-candidate 이미지(1개 ID, no force/prune), D/E 닫힌 gate·peer-facts 임시물, G dead tmux 3창. 실측 회수 `/home` +1.35GB, `/` +1.21GB. 보호 집합(cold24 tarball sha, 7e39·e122 이미지, live DB, native run manifest) 불변 재확인. 영수증은 비공개 `.agent-reports/post-upgrade-cleanup-20261026/`.
-- **A 은퇴의 의미:** native run manifest `session-sqlite-migration-runs/startup-migration-1c8434b2-….json`은 그대로 두었고, 그 archivePath는 이제 역사 기록이지 복구 원본이 아니다. 10.7 복귀는 여전히 검증된 cold24 + 7e39 한 짝뿐이며, 컷오버(10-25) 이후 새 데이터는 cold24에 없다.
+- **상태:** `openclaw-custom:10.8-candidate-20261027`(`3623dcc2…`) = latest 실행 중. state20/agent25, hotfix v4 10.8, live config 교체 전과 바이트 동일. 교체·첫 자연 실행의 닫힌 사실은 [CHANGELOG v2026.10.28](CHANGELOG.md), 경위는 ROADMAP 10-27, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261027/`.
+- **Next(모델 호출·수동 cron·DB 직접 조회·재시작 없이):** (1) 08:00 KST family reminder 자연 실행의 시작·종료·배달을 따로 본다 → (2) 실제 대화 1회 이상 → (3) 아래 미해결을 그 관측으로 재판정. 01:26 메멘토 1회(ok/delivered, 15분 8초)를 품질·속도·Claude CLI stall 계열(#159931·#170322·#182267) 해소로 확대하지 않는다.
+- **미해결:** ① verify **PASS39/FAIL1** — `deliveryQueues.failed`의 두 번째 `session` 실패행(10-27 16:07 KST 기록, 메타 없음). 교체 전 health 스냅샷이 없어 회귀 여부·원인·귀속 미확정, 자연 실행 전후 증감 0. 기준값 확장·행 삭제·reset 금지, 추가 조회는 native 표면 우선. ② 첫 실행 구간 경고색 로그 3종(`history refused across auth boundary: reason=auth-unknown`, `slow SQLite reclamation`, `slow session lifecycle`) — 10.7 비교 영수증 없음, 신규 여부 미확정. ③ `MaxListenersExceededWarning`(exit listeners 11) 기동 1회 — 134샘플 동안 증가 0, 반복 여부 관찰. ④ 기억 색인 mini·bbot `dirty=True`(bbot 134/135) — forceindex 금지, 자연 수렴 관찰. ⑤ 초기 tini ELOOP 1회(원인 미확인).
+- **보존 자산:** 10.8 base(`b1b6f18b…`), 10.7 `e122`(10.8→10.7 같은 스키마 롤백 = 재태그 + idle gate), 10.4 `7e39`+cold24(더 옛 DB24로 내리는 복귀 짝 — DB25에 7e39 단독 start 금지). 영수증 dir(최소 handoff `HANDOFF.md`). 10-28 정리(A 이미지 3·B 사본·C 창 3, `/` +4.45GB)는 끝났다. 남은 판단: **D1** cold24(`.agent-reports/openclaw-upgrade-20261025/cold/`) + 7e39·17dab·9d63 퇴역(`/home` ~1.17GB + `/` ~4.5GB 보임, 10.4/DB24 복귀 상실 — GLG 선택), **D2** e122(+61ff base) — family/실대화 soak까지 유지. 고르면 ORACLE·ROADMAP·README 복구 경로를 같은 커밋에서 맞춘다.
+- **커밋 범위:** 공개 nixos-config의 10.8 변경은 v2026.10.28에 실린다. 비공개 openclaw-config(Dockerfile·patch·test·README)는 기존 10.7 미커밋 diff(config·workshop 등)와 섞여 있어 별도 commit 승인·범위 분리가 필요하다.
+
+## 보존·판단 후속 — 10-26 뒷정리에서 이월
+
 - **별도 판단 후속(지금 할 일 아님):**
   - C 이미지(10.4-tools, 레이어 전부 7e39와 공유 → 회수 ~0) — 태그를 정리하고 싶을 때만.
   - SDK 1.3→1.4 롤백 자산 `~/entwurf-sdk13-backup-20261023T025052`(265MB, durable 세션 37개 sqlite+wal+shm 묶음) **보존**. 퇴역 조건 = 이 호스트에서 1.4 정착 + SDK1.3 롤백 불요를 GLG/entwurf 담당이 결정. 부분 퇴역 금지. 근거 절차 entwurf `docs/setup-clean-host.md` "Moving durable sessions from the Pi 1.3 SDK to 1.4".
   - 옛 복구 경로 정정: `~/openclaw/backups/`는 비어 있어 과거 NEXT의 10.2 cold v19 경로는 현재 없다(퇴역 경위 미확인). 10.2 run(8fc7d3ca)의 config 옆 bak도 현재 0개, run manifest만 남음.
-- **보호 경계:** 실제 agent DB는 25다. old 7e39 단독 start 금지 — 복귀는 cold24 + old 이미지와 컷오버 후 새 데이터 보존 판단이 함께 필요하다. ZAI/xAI/codex·Gemini 입력/heartbeat 정지를 해제하지 않는다. 메멘토는 3h 정기 루프로 복귀했다(10-26 07:47 ok/delivered) — 잘 돌아오는 서비스를 건드리지 않는다. 10-25·10-26에 은퇴한 경로는 재실행하지 않는다.
+- **보호 경계:** 실제 agent DB는 25다. native run manifest `session-sqlite-migration-runs/startup-migration-1c8434b2-….json`의 archivePath는 역사 기록이지 복구 원본이 아니다. DB24로 내리는 복귀는 cold24 + old 이미지와 컷오버(10-25) 후 새 데이터 보존 판단이 함께 필요하다. ZAI/xAI/codex·Gemini 입력/heartbeat 정지를 해제하지 않는다. 메멘토 3h 정기 루프는 잘 돌고 있다 — 건드리지 않는다. 10-25·10-26에 은퇴한 경로는 재실행하지 않는다.
 - **Do not:** 전체 safe/deep·Nix GC·`docker * prune`·재부팅·재시작·doctor repair·모델 smoke·수동 cron run·인증 변경·annex 이관. 삭제 승인은 정확 경로 집합 단위, 직전 재확인 후 실행하고 `df` 실측으로 보고.
 
 ## 열린 운영 후속 — OpenClaw 10.7
 
 - **미검수:** family cron 기존 오류4의 원인/다음 자연 실행, mini/Sonnet 실응답, Andenken private hit→source와 색인 수렴. Fable 메멘토 성공으로 모든 모델/도구를 인증하지 않는다. 재임베딩・재로그인・추가 유료 모델/키 우회 없음.
 - **미해결:** 초기 tini/ELOOP 근본 원인(10.2 0회·10.3 4회·10.7 기동 시 관측, 재시작 정책이 회복), 주간 GC의 복귀 세대 보존, Pi TTY daemon 수동 기동. [Andenken#18](https://github.com/junghan0611/andenken/issues/18) 스토리지 권고는 타 리포 데이터 삭제나 기억 설계 변경 허가가 아니다.
-- **bbot memory admission 패치:** 10.7 한정 v4로 이식됨(상류 미수정). 다음 버전업마다 상류 수정 확인 → 패치 회수/재이식. 노트북 재수확·prune·verify·발행은 agent-config 담당자 몫. 오토B 중지・`--force`・DB 직접 수정 금지.
+- **bbot memory admission 패치:** 10.8 한정 v4로 이식됨(10-27, 소스 blob 10.7과 동일 — 상류 미수정). 다음 버전업마다 상류 수정 확인 → 패치 회수/재이식. 노트북 재수확·prune·verify·발행은 agent-config 담당자 몫. 오토B 중지・`--force`・DB 직접 수정 금지.
 - **Andenken readback:** B가 실제 private 히트에서 `run.sh excerpt:session`을 쓸 때 확인([계약](https://github.com/junghan0611/agent-config/issues/31#issuecomment-6260069262)). pin10.33.0·runner/parser 동결, 10.7 base 기본 pnpm은 12.15.0. 강제 모델 턴・재임베딩 금지.
 - **Utility 보조 호출:** 공통 utility는 명시 `openai/gpt-6-luna`/runtime `openclaw`([자동화 SSOT §Utility](docs/openclaw-automations.md#utility-보조-호출--운영자에게-알려진-목적만)). 자연 사용에서 helper rail·소비자 목적만 관찰, 새 미설명 소비자는 GLG와 먼저 논의.
 - **도구 후속:** 실네트워크 YouTube 요약·PDF(현 이미지에 uvx/markitdown 없음)는 필요할 때 판단. private 리포 소스 커밋은 별도 승인(Dockerfile·README·`summarize-bot.sh`·`config/claude-skills/summarize` 링크 4개만, 타 작업 config 변경과 섞지 않음). Oracle의 netlify-cli·typescript-language-server 기설치본 제거는 별도 승인.

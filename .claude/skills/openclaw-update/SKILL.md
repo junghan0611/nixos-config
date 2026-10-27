@@ -121,6 +121,27 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - openclaw-config: Dockerfile, patch, README change history
    - nixos-config: `docker/openclaw/` 미러 3종, ROADMAP 이력, ORACLE 현재 버전·롤백, NEXT 관찰, gotchas 새 함정
    - 로컬 커밋도 `commit` 스킬 규율(범위·hook)을 따른다. **push는 GLG가 말할 때만** 한다.
+10. **마감 — 뒷정리 없이 완료로 넘기지 않는다** (GLG 10-28: "버전업하면 남긴 사본과 이전 도커 이미지 등, 항상 뒷정리")
+   - 자연 관측을 확인했으면, 이번 버전업이 만든 것과 이제 불필요해진 이전 자산을 **인벤토리**한다.
+     대상은 다음과 같다:
+     - 이미지: 태그 없는 base·실패/대체된 빌드, 이전 candidate.
+     - 사본·영수증 안의 중복: live와 동등한 pre-swap 사본, 빌드 컨텍스트, 재생성 가능한 schema·dist.
+     - 끝난 감시 창과 도우미.
+     항목마다 다음을 적는다:
+     - 정확한 경로 또는 full image ID, stat/sha.
+     - 컨테이너·문서 참조.
+     - 원본/재생성물/복구 자산 분류.
+     - 귀속 FS와 보이는 회수량(`docker system df -v` UNIQUE). 공유 레이어와 캐시가 있어 이 값은 df 증가량과 같지 않다.
+   - **복구 능력을 잃는 선택은 따로 묶어** GLG에게 선택지로 낸다. 같은 스키마 롤백 짝, 더 옛 DB 복귀 짝이 여기에 해당한다.
+     나머지는 **정확한 집합**으로 승인받는다. 그 뒤 직전에 다시 확인하고 실행하며 `df`로 실측해 보고한다.
+     - glob, `-f`, prune, 전체 GC, 다른 리포 자산은 쓰지 않는다.
+     - 현재 컨테이너 이미지, live DB·auth, 미해결 FAIL의 유일한 증거는 대상이 아니다.
+     - 보존 세대 수, 일수, 자동 삭제 정책을 새로 만들지 않는다.
+     - 원본/재생성물 구분과 집합 승인의 정본은 [docs/data-retirement.md](../../../docs/data-retirement.md)다.
+   - 정리한 뒤에는 ORACLE·ROADMAP·NEXT·`~/openclaw/README.md`의 복구 경로를 **실제로 남긴 자산과 일치**시킨다.
+   - 마지막으로 nixos-config CHANGELOG에 교체·자연 관측·회수량·남긴 복구 자산·미해결을 적는다.
+     tag와 GitHub Release로 갈무리하는 것은 `tag-release` 스킬을 따른다.
+     commit·push·tag·release는 매번 GLG 승인이다. 이 단계는 그 승인을 대신하지 않는다.
 
 **묻는 것은 셋뿐이다**: 롤백 자산 삭제 · 모델 호출 smoke · push. 나머지는 끝까지 진행하고 한 번에 보고한다.
 단, 이 규칙은 **승인된 마이너(preflight exit 0)이고 각 단계가 위에 적힌 결과를 낼 때**만 적용한다. preflight·verify의

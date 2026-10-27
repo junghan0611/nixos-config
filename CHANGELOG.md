@@ -9,6 +9,41 @@
 
 ## Unreleased
 
+## v2026.10.28 — OpenClaw 10.8 교체와 첫 자연 메멘토, 집 수선과 뒷정리 (verify 39PASS/1FAIL 원인 미확정)
+
+### OpenClaw 10.8 — 같은 스키마의 마이너 교체
+
+- Oracle Gateway를 **2026.10.8 (`dc2523e`)**로 교체했다. preflight exit0, 10.7·10.8 모두 shared state20/agent DB25로 스키마가 같고, compare는 ahead188/behind0이다. ARM64 base `b1b6f18b…`를 digest로 pull했고 실행 이미지는 **`3623dcc2…`**다. live `openclaw.json`은 교체 전 사본과 바이트 동일(`84232bf8…`)하며, ZAI·xAI·codex 정지와 Gemini 입력false·heartbeat0m 정책을 그대로 유지했다.
+- 계약 검토: #178742(sandbox로 분류된 위임 child의 host CLI backend 거부)는 6봇 모두 sandbox off·sessionIsSandboxed false라 현재 구성에서 발동하지 않음을 `sandbox explain`으로 확인했다(미래의 모든 child에 대한 보장은 아니며, 피하려고 설정을 바꾸지 않았다). #183618은 명시 `accounts.default`가 있어 기존 동작이 유지된다. #180075는 CLI history owner가 바뀔 때 provider 전환을 멈추는 변경이며, 현행 fallbacks가 `[]`라 추가 fallback 대상을 쓰지 않는다는 범위에서만 확인했다(오류 형태·동작 전체가 무영향이라는 판정은 아니다). #183765 `managedNativeTools`는 켜지 않았다. config schema diff는 added13(모두 managedNativeTools)/removed0/changed0이다. compare 파일 목록이 300개에서 잘려 관심 커밋만 개별 조회했으며, 격리 validate와 schema diff는 보조 근거일 뿐 전체 runtime·auth·권한 검토를 대신하지 않는다.
+- cron 부모 기억 admission 패치를 **10.8 한정 v4**로 재이식했다. 상류 소스 blob이 10.7과 같아(미수정) 번들 chunk 이름·원본/결과 해시·marker 상수만 바꿨다. 오프라인으로 미패치 baseline GREEN12·기본 RED·구 10.7 스크립트 fail-closed·이식본 GREEN12/멱등을 확인했고, 빌드 안 applied/verified와 **12개 behavior 단언**, companion6, 100fixtures를 통과했다. 공개 미러의 summarize 테스트가 10.7 때부터 10단언을 기대하던 누락을 12로 맞췄다.
+- 실제 `gateway.suspend.prepare` 유휴 게이트(ready·activeCount0·blockers[])를 통과한 뒤 latest 재태그·recreate를 1회 했다. tini ELOOP로 1회 재시작(원인 미확인)한 뒤 RPC health까지 272초가 걸렸다. 기동 Doctor 경고는 10.7 영수증과 같은 대상·개수였고, `MaxListenersExceededWarning`(exit listeners 11) 1회가 새로 보였다. 모델 smoke·수동 cron·재색인·로그인/권한 변경은 하지 않았다.
+
+### 첫 자연 메멘토 — 한정 증거
+
+- 교체 뒤 첫 정기 `bbot-memento-autopilot`을 watcher로만 관측했다: **10/28 01:26:52 KST 기동 → 약 01:42:00 종료(15분 8초), `cron runs` ok/succeeded, Telegram delivered**, consecutiveErrors0. 본문 없는 게이트웨이 메타 로그로 claude-cli `claude-fable-5-1`의 cron 실행과 bbot outbound send ok를 확인했다. 직전 10.7 실행(595,215ms)보다 길었고, 1회 표본이라 원인은 조사하지 않았다.
+- 이 한 회는 실행·배달 사실이다. memento 품질, 모든 Claude 경로의 정상, 15분 stall 계열 상류 수정의 해소, 속도 개선을 증명하지 않는다. 같은 구간의 경고색 로그 3종(`history refused across auth boundary: reason=auth-unknown`, `slow SQLite reclamation`, `slow session lifecycle`)은 10.7 비교 영수증이 없어 신규 여부가 미확정이다. 관측 134샘플 동안 재시작1·리스너 경고1에서 추가 증가는 없었다.
+
+### 원문 FAIL과 미관측 보존
+
+- verify는 교체 직후와 자연 실행 뒤 모두 **PASS39 / FAIL1 / UNKNOWN0**이다. FAIL은 `deliveryQueues.failed`의 두 번째 `session` 실패행(completed_permanent, 메타 없음)이다. 기록 시각은 교체 7시간 전이지만 교체 전 health 스냅샷이 없어 **업그레이드 회귀 여부와 원인은 미확정**이며, 실행 전후 count·시각 증감은 0이었다. 기준값 확장·행 삭제·reset으로 녹색을 만들지 않았다.
+- mini·bbot 기억 색인은 dirty로 남았고 자연 수렴은 관측하지 못했다(forceindex 없음). 08:00 family reminder와 실제 대화는 이 컷 시점에 관측 전이다.
+
+### 롤백과 보존 경계
+
+- 10.8→10.7 롤백은 같은 스키마의 `e122cbd2…` 재태그 + 같은 유휴 게이트다. 그보다 옛 DB24로 내리는 복귀는 여전히 **cold24 + old 7e39 한 짝**이며, DB25에 old 이미지만 start하지 않는다. 10.8 base·e122·7e39+cold24·비공개 영수증을 보존했다. 비공개 openclaw-config 소스·설정·자격증명·대화 원문은 이 릴리즈에 포함하지 않는다.
+
+### 버전업 뒤처리 — 이번 컷에서 실행
+
+- GLG가 "버전업하면 남긴 사본과 이전 도커 이미지 등, 항상 뒷정리"를 지시했다. 이번 레인의 생성물과 불필요해진 이전 이미지를 인벤토리했다. 항목마다 full ID/경로, 참조, 원본/재생성물/복구 분류를 적었다. 그중 복구 능력과 무관한 정확한 집합만 승인받아 정리했다. 대상은 태그 없는 10.3 base 1개, 대체된 10.4 빌드 2개(`docker rmi`, -f/prune 없음), live와 바이트 동일했던 pre-swap 사본·빌드 컨텍스트, 재생성 가능한 schema·dist 사본, 끝난 감시 창 3개다. **df 실측 회수는 `/` +4.45GB, `/home` +5.2MB**다. 이 값은 Nix 평가가 함께 돌던 구간의 df 가용량 차이라, 삭제만의 기여로 단정하지 않는다. 지운 사본의 해시와 결과 줄은 비공개 최소 handoff로 먼저 옮겼다.
+- 남긴 복구 자산은 다음과 같다. 현행 10.8 `3623dcc2…`, 10.8→10.7 롤백 `e122`(soak까지 유지), 더 옛 DB24 복귀 짝 cold24 + 7e39(10.4-tools·10.4 base 레이어 공유)다. 이 짝은 유일하게 검증된 DB24 cold 복구점이라, 퇴역 여부는 GLG의 별도 선택으로 남겼다(e122는 이미지 롤백이지 DB 스냅샷의 대체가 아니다). 다른 레인의 이미지·빌드 캐시는 손대지 않았다.
+- `openclaw-update` 스킬에 **마감 단계**를 추가했다: 인벤토리 → 복구 능력 선택 분리 → 정확 집합 승인·실측 → 복구 경로 문서 정합 → CHANGELOG·tag/Release 갈무리. 자동 삭제나 고정 보존 세대를 만들지 않았고, commit·push·release 승인을 대신하지 않는다.
+
+### 집 수선과 10.7 뒷정리 (10/26)
+
+- README가 이 리포를 사람과 AI 형제가 함께 살며 일하는 기계이자 집으로, OpenClaw를 그 거주자가 사는 집으로 설명한다: 공개 운영 집과 비공개 라이브 짝, 의도된 넓은 호스트·Emacs 접근, 이웃 프로젝트와의 소유 경계, 그리고 옛 읽기 전용 메모를 현재 마운트 권한 모델에 맞췄다.
+- 10.7 업그레이드 뒷정리는 GLG가 승인한 고정 집합만 직전 재확인 후 은퇴했다(native 기동 Doctor 사본8개, 닫힌 10.3 후보 이미지1개, 닫힌 gate·peer-facts 임시물, dead tmux3창). 실측 `/home` +1.35GB · `/` +1.21GB, 보호 집합(cold24 sha, 7e39·e122, live DB, native run manifest) 불변을 재확인했다. prune·광역 정리는 하지 않았다.
+- 1,114줄이던 NEXT를 열린 항목만 남게 압축하고 원문은 `git show 07849d5:NEXT.md`에 보존했다. 이슈는 #9 종결(10.7 재측정), #5를 "OpenClaw 기억 로직 재검토"로 재정의, #10·#3에 현행성 코멘트, #12 보존으로 정리했다. ORACLE과 자동화 SSOT에 10.7 Workshop off, 사라진 review job, 미검증 symlink guard 후계, 봇이 native memory_search가 아니라 Andenken으로 검색한다는 사실을 반영했다.
+
 ## v2026.10.26 — OpenClaw 10.7과 메멘토 복구, 데이터 퇴역 절차
 
 ### OpenClaw 10.7 — 승인된 비선형 메이저 전환

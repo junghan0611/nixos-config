@@ -108,7 +108,7 @@ class ContainerTests(unittest.TestCase):
 	def test_no_extra_pi_and_memory_regression(self):
 		p = self.run_docker(['--entrypoint', 'sh', OPTIONS.image, '-c', 'summarize --version; if command -v pi >/dev/null; then exit 9; fi; node /usr/local/lib/openclaw-hotfix/test-memory-cron-parent.mjs'])
 		self.assertIn('0.25.2', p.stdout)
-		self.assertIn('10 behavior assertions passed', p.stdout)
+		self.assertIn('12 behavior assertions passed', p.stdout)  # 10.7+ also preserves two upstream cycle cases
 
 
 if __name__ == '__main__':
