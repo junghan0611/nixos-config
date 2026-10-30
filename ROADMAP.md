@@ -10,6 +10,17 @@
 
 ---
 
+## 2026-10-30 — OpenClaw 10.8→10.9 마이너 교체, 깨움 설계는 별도 판단
+
+- 운영자가 Opus 교차검토와10.9 업그레이드를 승인했다. Opus는 릴리스 독립 검토·candidate 준비, pi-durable 코디는 사전 상태·실제 교체·최종 검수·문서를 맡았다. 깨우기/퇴근/기억/검증 설계는10.9 기준 [#13](https://github.com/junghan0611/nixos-config/issues/13)으로 분리했다. 역할·주기·기억/보존 정책은 변경하지 않았다. 업데이트 본체에는 모델 smoke·수동 cron·강제 색인·로그인·삭제·commit/push를 섞지 않았다. 이후 임시 정리와 공개 릴리스는 별도 승인받아 마감했다.
+- preflight exit0: state20/agent25 선언 동일, ahead43/behind0, ARM64 `bfa6ab15…` label revision=tag `8b18b557…`. 실제 candidate `709acab4…`, Node24.22.1/SQLite3.53.4는 이전 실행 환경과 같다. 격리 config는 양쪽 valid·경고 동일, config schema는2548012B 바이트 동일이다. 원전은 비공개 `.agent-reports/openclaw-upgrade-20261030/`, candidate 검증은 `~/openclaw/backups/candidate-10.9-20261030/`.
+- 기억 패치: source blob `5cbb0ea1`은 여전히 미수정이다. 새 Docker dist의 corpus `CP0kHK5p` 원본 `e53053ae…`·결과 `839ae12e…`, helper `984caee8…` 동일. 상수/마커만 이식했다. 미패치 baseline GREEN12→기본 RED→구버전 가드 거부→이식 GREEN12/멱등을 확인했고 코디도 실제 candidate에서 별도 default exit0/negative baseline exit1을 재현했다. 파서·runner·Utility·Corepack10.33.0은 그대로다.
+- 교차검토 발견: main PR176234만 읽으면 FTS 복구를 offline Doctor 전용으로 오해할 수 있다. 실제10.9 backport에는 #176833의 제한된 기동 복구도 포함된다. 정확 태그의 canonical FTS-only 판별·배타 lease·백업·원본 table row 미삭제 조건을 양쪽이 읽었다. schema 동일이 모든 기동 DB 쓰기0을 뜻하지 않는다. 현재 수집한 기동 로그에는 FTS-rebuild/quarantine 문구0이며 강제 index/Doctor를 실행한 것은 아니다.
+- 교체12:38:15KST: 새 native ready/activeCount0/blockers[]·TTL82485ms, config/기존이미지/candidate 재대조 뒤 retag/recreate1회. RPC첫ok12:42:49로 약274초다. 초기 tini ELOOP2회 뒤 RestartCount2, MaxListeners(exit listeners11)1회가 관측됐으며 원인 해소 증명은 아니다.
+- 사전·사후·첫 자연 실행 뒤 verify 모두 **39PASS/1FAIL/0UNKNOWN**. 이번에는 교체 전 native health 원본을 남겼다. 기존 outbound/session 실패의 count·oldestFailedAt 요약이 교체 전후 같아 관측한 증분0이다. 원인·귀속은 미확정이고 행 삭제·reset·기준 확장 없이 FAIL로 남겼다. live config 바이트 동일, 활성5채널·provider 중지 정책·공개면 검수 통과. glg/mini/bbot dirty는 별도 미해결이다.
+- 첫 자연 B 실행은13:26:53→13:45:35KST,1122477ms(18분42초)로 ok/succeeded/delivered다. 실제 로그의 Claude CLI/Fable5.1·useResume=false와 Telegram send 성공을 대조했다.54관측샘플 모두RestartCount2, 읽기오류0. 기동부터 해당 실행까지 MaxListeners1회·tini2회 유지, FTS-rebuild/quarantine 문구0. 실행 구간에는 auth-unknown·slow SQLite reclamation·slow session lifecycle 경고가 각각1회 남았다. 직전10.8 실행889138ms보다 길지만 단일 표본으로 속도/품질/경고 개선 여부를 판정하지 않는다. 추가 모델 smoke·수동 cron 없이 자연 실행만 봤다.
+- 정확 집합 승인을 받은 뒤 재생성 가능한 임시2폴더와 끝난 helper7세션을 정리했다. UID/파일 집합/해시/PID/자식/cwd/FD를 직전 재확인하고 helper부터 종료했다. 원전 목록과 릴리스 본문은 작은600 영수증으로 먼저 보존했다. 대상 allocated·root 가용량 증가 실측은 모두5,275,648B, home은 영수증 기록 구간에8KiB 감소했다. 직전10.8 `3623dcc2…`·더 이전10.7 `e122cbd2…`와 DB24 cold24+7e39 복귀 짝, candidate/pre-port/실패 영수증·Opus 시민은 보존했다. prune/GC·다른 리포 자산 정리는 하지 않았다.
+
 ## 2026-10-27 — OpenClaw 10.7→10.8 마이너 교체, 기억 패치 v4 재이식
 
 - GLG가 취침 전 10.7→10.8 업그레이드를 승인했다. 실행은 Opus(Claude Code), 코디·교차검수·DM은 pi-durable 코디가 맡았다. 승인 범위에 모델 smoke, 수동 cron, 재색인, 로그인/권한 변경, 삭제/prune, push는 포함되지 않는다. 비공개 영수증은 `.agent-reports/openclaw-upgrade-20261027/`.

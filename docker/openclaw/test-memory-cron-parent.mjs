@@ -1,4 +1,4 @@
-// Actual 10.8 emitted classifier/helper, including upstream cycle propagation.
+// Actual 10.9 emitted classifier/helper, including upstream cycle propagation.
 // No database, Gateway, credentials, network or model access.
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -13,7 +13,7 @@ const text = readFileSync(override < 0 ? `${dist}/${files[0]}` : process.argv[ov
 const helperImport = text.split('\n').filter(s => s.startsWith('import ') && s.includes('isCronRunSessionKey'));
 assert.equal(helperImport.length, 1, 'unique cron helper import');
 const keyFile = helperImport[0].match(/from "\.\/(session-key-utils-[^"/]+\.mjs)";/)?.[1];
-assert.ok(keyFile, 'verified 10.8 key helper import');
+assert.ok(keyFile, 'verified 10.9 key helper import');
 const { i: isCronRunSessionKey, a: isCronSessionKey } = await import(pathToFileURL(`${dist}/${keyFile}`));
 assert.equal(typeof isCronRunSessionKey, 'function');
 assert.equal(typeof isCronSessionKey, 'function');

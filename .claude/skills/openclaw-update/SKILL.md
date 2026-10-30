@@ -61,7 +61,7 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - 이식은 **새 이미지 dist에서** 다시 잰다(`docker run --rm --network none --entrypoint sh <base> -c …`):
      chunk 이름, 원본 sha, helper sha, import 줄 개수. 결과 sha는 변환을 적용해 계산한다.
    - 미패치 base에서 테스트를 두 번 돌린다. `--baseline`(characterization)은 **GREEN**, 기본 모드는 **RED**여야 한다.
-     패치 후 빌드 안에서 기본 모드 **GREEN**(현재10.7 v4는12 behavior 단언).
+     패치 후 빌드 안에서 기본 모드 **GREEN**(현재 v4는12 behavior 단언).
    - npm tarball dist는 Docker dist와 chunk 이름이 달라 **대용할 수 없다**.
 5. **빌드** — config가 컨텍스트에 들어가지 않게, 최소 컨텍스트(임시 디렉터리에 Dockerfile·patch·test·`summarize-bot.sh` + `.dockerignore`; Dockerfile의 COPY 대상 전부 포함)에서 빌드한다:
    `docker build -t openclaw-custom:<ver>-candidate-<date> .`

@@ -4,13 +4,19 @@
 
 세 카테고리:
 
-- **활성** — 운영 중 자주 부딪힘. 현재 deployment(5.2)에 그대로 적용.
+- **활성** — 현재 운영에서 참고할 함정. 버전별 조건은 각 항목의 근거를 확인한다.
 - **비활성** — 기능 자체가 disabled. 재활성화 시 다시 참고.
 - **역사** — resolved/superseded. 정책 근거를 보존하기 위해 남김.
 
 ---
 
 ## 활성
+
+### 10.9 교체 — main PR과 backport 차이·병렬 포팅의 baseline 고정 (2026-10-30)
+
+- **원 main PR만으로 릴리스 동작을 확정하지 않는다.** FTS 복구는 main PR176234만 보면 offline Doctor 전용으로 읽히지만 실제10.9 backport에는 #176833의 제한된 기동 경로도 들어 있다. Opus 교차검토가 이를 찾아 정확 태그의 `src/state/openclaw-agent-startup-fts.ts`·`agent-database-startup-fts.ts` 배선으로 대조했다. canonical FTS-only·배타 lease·백업 조건과 실패 시 거부를 확인하고 실제 기동 로그/백업 발생을 본다. 선언 schema 동일만으로 기동 DB 쓰기0을 주장하지 않는다.
+- **병렬 포팅 중 교체 전 검수는 이전 패치 상수를 고정한다.** `verify.py`가 읽는 host patch를 후보용으로 바꾸면 아직 이전 이미지인 live에는 VERSION/sha FAIL이 난다. 이번 baseline은 공개 git HEAD의10.8 patch를 비공개 `baseline-inputs`에 고정하고 config만 실제 live 경로로 연결해 검사했다. 사후 검수는 새 실행 이미지와10.9 host patch로 돌렸다. 롤백 시 host Dockerfile/patch/test 원본도 맞춘다. 검수 기준을 완화한 것이 아니라 비교 대상의 버전을 고정한 것이다.
+- **부정 테스트의 Node 종료코드와 grep 종료코드를 구분한다.** 예상 AssertionError를 찾은 grep의0을 원 명령의 성공으로 기록하지 않는다. 실제 candidate에서 Node exit1과 `cron parent admission` 원인을 독립 확인했다. 잘못된 argv의 실패도 기대한 RED 증거로 세지 않는다.
 
 ### 10.8 교체 — 소스 클론 부재·미러 표류·verify의 live 패치 의존 (2026-10-27)
 

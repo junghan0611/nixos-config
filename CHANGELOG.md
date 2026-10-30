@@ -9,6 +9,32 @@
 
 ## Unreleased
 
+## v2026.10.30 — OpenClaw 10.9 보안·복구 업데이트와 깨움 설계 분리 (verify 39PASS/기존 FAIL1)
+
+### OpenClaw 10.9 — 교차검토와 같은 스키마의 교체
+
+- Oracle Gateway를 **2026.10.9 (`8b18b557`)**, candidate **`709acab4…`**로 교체했다. ARM64 base `bfa6ab15…`의 revision이 태그와 같고 preflight exit0, ahead43/behind0, shared state20/agent25 선언이 같다. 양쪽 격리 config는 같은 경고로 valid이며 config schema도2548012B 바이트 동일이다. 운영 중지 provider·기존 primary/fallback·Utility·Corepack10.33.0·runner/parser·권한 설정은 바꾸지 않았다.
+- Opus가 릴리스·candidate를 독립 검토하고 코디가 패치·배포·문서를 교차 확인했다. main PR만으로 offline Doctor 전용이라고 보았던 FTS 복구를 정확10.9 태그에서 정정했다. 릴리스에는 **canonical FTS-only 손상을 기동 시 배타 lease·백업 뒤 복구**하는 경로도 포함된다. 원본 table row 삭제·강제 임베딩과 구분하며, 관측 로그에는 FTS-rebuild/quarantine 문구가 없었다. 같은 선언 스키마가 모든 기동 DB 쓰기0을 뜻하지는 않는다.
+- cron-parent 기억 admission은 상류 corpus blob `5cbb0ea1`이 같아 미수정이었다. v4를10.9 Docker dist의 chunk `CP0kHK5p`에 상수만 재이식했다(원본 `e53053ae…`, 결과 `839ae12e…`, helper `984caee8…` 동일). 미패치 baseline GREEN12→기본 RED→구버전 가드 거부→이식 GREEN12/멱등, 실제 candidate의 별도 독립 테스트를 확인했다. 잘못된 argv의 실패나 grep 종료코드를 기대한 RED로 세지 않는 운영 함정도 남겼다.
+- 최신 native 유휴 게이트 ready/activeCount0/blockers[]와 TTL·config·이미지를 다시 확인하고12:38:15KST에 retag/recreate1회 했다. 첫 RPC ok는12:42:49(약274초)다. Node24.22.1/SQLite3.53.4는 이전 이미지와 같다. 초기 tini ELOOP2회와 MaxListeners(exit listeners11)1회는 원인 해소로 판정하지 않는다.
+
+### 첫 자연 실행과 남긴 검수 예외
+
+- 13:26:53→13:45:35KST 첫 자연 B 메멘토는 **1122477ms(18분42초), ok/succeeded/delivered**다. 실제 로그에서 Claude CLI/Fable5.1·useResume=false와 해당 봇의 Telegram 전송을 대조했다. 추가 모델 smoke·수동 cron 없이 관측했으며54샘플 모두RestartCount2, 읽기 오류0이었다.
+- 교체 전·직후·첫 자연 실행 뒤 verify는 모두 **39PASS/1FAIL/0UNKNOWN**이다. 이번에는 세 시점 native health를 보존했고, 기존 outbound/session 실패의 count·oldestFailedAt 요약과 live config 바이트가 같음을 확인했다. FAIL의 원인·귀속은 미확정이며 행 삭제·reset·기준 확장으로 녹색을 만들지 않았다. glg/mini/bbot dirty도 별도 미해결이다.
+- 자연 실행에는 auth-unknown·slow SQLite reclamation·slow session lifecycle 경고가 각각1회 남았다. 직전10.8 실행보다 길었지만 업무와 입력이 다른 한 표본이므로 속도·품질·stall 해결을 인증하지 않는다. 첫 자연 배달의 성공을 모든 모델/도구의 정상으로 확대하지 않는다.
+
+### 주말 판단 좌표와 운영 문서
+
+- **연속성을 유지하면서 전체 맥락 반복 입력 비용과 매 tick 새 세션/파일 증식을 줄이는 깨움**을 [#13](https://github.com/junghan0611/nixos-config/issues/13)에10.9 기준으로 남겼다. 깨우기·퇴근·기억·검증의 공통 기준이며, 기존[#5](https://github.com/junghan0611/nixos-config/issues/5) 기억 생산 계약·[#10](https://github.com/junghan0611/nixos-config/issues/10) mini 역할과 연결했다. fresh를 기본값으로 정하거나 이번 교체에서 heartbeat·역할·주기·기억·CLI 보존 정책을 바꾸지 않았다.
+- ORACLE·ROADMAP·비공개 runtime README의 버전·rollback·FTS·검수 예외를 맞추고 Opus 문서 교차검토를 반영했다. Corepack은10.9 이미지의 격리 검증과 live 재측정을 구분했으며, update 스킬의 낡은 버전 수식은 제거했다. 비공개 설정·자격증명·대화·혼재된 runtime 리포 WIP는 이 공개 릴리스에 포함하지 않는다.
+
+### 승인된 뒷정리와 복구 경계
+
+- 정확한 임시 디렉터리2개(`/tmp/oc109-review`, `/tmp/oc109-ctx`)와 끝난 작업 helper7세션만 승인받아 정리했다. 직전 UID·파일 집합·해시·PID·자식 프로세스·cwd/FD 참조를 대조하고 helper를 먼저 종료한 뒤 사본을 회수했다. 변경 파일/커밋 목록과 편집 가능한 upstream 릴리스 본문은 작은600 영수증으로 먼저 보존했다.
+- 대상 allocated와 root 가용량 증가 실측은 모두 **5,275,648B(약5.3MB)**였다. home은 영수증 기록 구간에8KiB 감소했으며 추가 회수로 세지 않았다. 다른 세션·공유 BuildKit 캐시·이미지 prune/GC는 건드리지 않았고 Opus 시민 세션도 유지했다.
+- 현재10.9 이미지/base, 직전10.8 `3623dcc2…`와 pre-port 원본3파일, 더 이전10.7 `e122cbd2…`, **DB24 cold24+7e39 한 짝**은 보존했다. DB25에 old DB24 이미지만 start하지 않는다. 실제 rollback에도 새로운 유휴 게이트가 필요하며 검수/빌드용 host patch 상수는 실행 버전과 맞춘다. 복구 능력의 퇴역은 별도 선택이다.
+
 ## v2026.10.28 — OpenClaw 10.8 교체와 첫 자연 메멘토, 집 수선과 뒷정리 (verify 39PASS/1FAIL 원인 미확정)
 
 ### OpenClaw 10.8 — 같은 스키마의 마이너 교체
