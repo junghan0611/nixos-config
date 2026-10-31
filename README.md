@@ -58,6 +58,10 @@ These names are flake selectors. A shared module is not evidence that every host
 - **Language modules:** Python, Nix, C/C++, LaTeX, Shell, and Elisp, alongside Git and CLI tooling.
 - **Optional local AI:** Ollama/Vulkan remains available in the mobile profile but does not auto-start. See [THINKPAD.md](THINKPAD.md) before enabling it.
 
+**Official ChatGPT Linux preview** is packaged from OpenAI's Debian distribution for the `thinkpad` profile only; other desktop profiles and the headless host do not install it. Home Manager reuses the dedicated pinned nixpkgs snapshot and preserves the app's bundled Codex instead of replacing the global Codex CLI. NixOS is not an officially supported upstream distribution.
+
+The app and CLI share `~/.codex` by operator choice: separate executables do not imply isolated authentication, configuration, or state. The app can update its own runtime under `~/.cache/codex-runtimes/` outside Nix. Account material and state databases stay outside this repository. Future version and plugin-cache checks are tracked in [NEXT.md](NEXT.md).
+
 ### One package policy, three layers
 
 | Layer | Authority | Purpose |

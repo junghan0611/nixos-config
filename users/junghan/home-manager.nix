@@ -228,6 +228,13 @@ in {
     # zigbee and matter
     zigbee2mqtt
     python-matter-server
+  ]) ++ (lib.optionals (isLinux && currentSystemName == "thinkpad") [
+    # 공식 ChatGPT Linux 프리뷰. 26.05 동명 패키지는 Darwin 전용이므로
+    # 기존 고정 스냅샷을 재사용한다. 앱 내장 Codex를 보존하고 전역 CLI는 바꾸지 않는다.
+    ((import inputs.nixpkgs-ghostty {
+      system = pkgs.stdenv.hostPlatform.system;
+      config.allowUnfreePredicate = pkg: lib.getName pkg == "chatgpt";
+    }).chatgpt.override { codex = null; })
   ]);
 
   #---------------------------------------------------------------------

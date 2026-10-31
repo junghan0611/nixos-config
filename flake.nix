@@ -21,8 +21,9 @@
     # 끌어온다 — 다른 패키지를 여기서 가져오지 말 것.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    # Ghostty 1.4.0 전용. 26.05와 기존 unstable 소비자 버전은 그대로 둔다.
-    # GUI 프로필에만 적용(lib/mksystem.nix); stable이 따라오면 이 input을 회수한다.
+    # Ghostty 1.4.0 고정. 26.05와 기존 unstable 소비자 버전은 그대로 둔다.
+    # GUI 프로필에만 적용(lib/mksystem.nix). ChatGPT Linux도 HM에서 thinkpad만 재사용.
+    # stable이 두 패키지를 지원하면 이 input과 예외를 회수한다.
     nixpkgs-ghostty.url = "github:NixOS/nixpkgs/885ba4d038f10c3d17d7a92e8c3cc185b99c9158";
   };
 

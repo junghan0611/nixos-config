@@ -21,6 +21,7 @@ x-scheme-handler/gh=github-handler.desktop
 x-scheme-handler/slack=slack.desktop
 x-scheme-handler/about=google-chrome.desktop
 x-scheme-handler/unknown=google-chrome.desktop
+x-scheme-handler/codex=chatgpt.desktop
 
 [Added Associations]
 application/pdf=org.pwmt.zathura.desktop;readest.desktop;
