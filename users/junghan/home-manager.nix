@@ -244,9 +244,11 @@ in {
       source = ./../../scripts/scan-hubs.sh;
       executable = true;
     };
-    # ghostty: 레포 파일로 직접 symlink (편집 가능, nix store 경유 아님)
-    ".config/ghostty/config".source = config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/ghostty.linux";
+    # ghostty: GUI 호스트에만 편집 가능한 레포 설정 링크를 둔다.
+    ".config/ghostty/config" = lib.mkIf (!isOracle) {
+      source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/ghostty.linux";
+    };
     # tmux: 레포 파일로 직접 symlink (편집 가능, nix store 경유 아님)
     ".config/tmux/tmux.conf".source = config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/tmux.conf";

@@ -32,7 +32,16 @@ in systemFunc rec {
     # Apply our overlays. Overlays are keyed by system type so we have
     # to go through and apply our system type. We do this first so
     # the overlays are available globally.
-    { nixpkgs.overlays = overlays; }
+    {
+      nixpkgs.overlays = overlays ++ nixpkgs.lib.optionals
+        (builtins.elem name [ "nuc" "laptop" "thinkpad" ]) [
+          # Ghostty만 독립 패키지 세트에서 공급한다. Oracle에는 이 overlay도 없다.
+          # useGlobalPkgs로 시스템 패키지와 HM의 i3 실행 경로가 함께 바뀐다.
+          (final: prev: {
+            ghostty = inputs.nixpkgs-ghostty.legacyPackages.${system}.ghostty;
+          })
+        ];
+    }
 
     # Allow unfree packages.
     { nixpkgs.config.allowUnfree = true; }

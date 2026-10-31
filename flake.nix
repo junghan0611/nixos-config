@@ -20,6 +20,10 @@
     # 하한을 올리고, zmx 0.7.0은 26.05에 아직 없다. 이 input은 아래 두 패키지만
     # 끌어온다 — 다른 패키지를 여기서 가져오지 말 것.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
+    # Ghostty 1.4.0 전용. 26.05와 기존 unstable 소비자 버전은 그대로 둔다.
+    # GUI 프로필에만 적용(lib/mksystem.nix); stable이 따라오면 이 input을 회수한다.
+    nixpkgs-ghostty.url = "github:NixOS/nixpkgs/885ba4d038f10c3d17d7a92e8c3cc185b99c9158";
   };
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
@@ -40,6 +44,8 @@
     # 따라잡으면 이 오버레이와 nixpkgs-unstable input을 함께 지운다. TDLib 요구
     # 버전은 telega.el 의 telega-tdlib-min-version 으로 확인.
     # emacs 예외 사유는 오버레이 본문 주석에 있다(26.05에 emacs31 attr 부재).
+    # Ghostty는 별도 예외: GUI 프로필 한정으로 lib/mksystem.nix에서
+    # nixpkgs-ghostty의 1.4.0을 공급한다(위 26.05 이관 설명은 당시 기준).
     overlays = [
       (final: prev: let
         unstable = import inputs.nixpkgs-unstable {

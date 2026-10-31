@@ -26,6 +26,11 @@
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
 - **보존·판단:** 현재10.9/base, 직전10.8 rollback와pre-port원본3파일, 기존10.7 e122, DB24 cold24+7e39 복귀 짝·검수 영수증은 보존했다. **D1** cold24+7e39/17dab/9d63 퇴역은 DB24 복구 능력 상실을 포함한 별도 선택이다. **D2** e122(+61ff base)도 별도 선택이다. 예전 회수량 추정은 재사용하지 말고 직전에 참조/용량을 다시 재며, 결정하면 ORACLE·ROADMAP·runtime README의 경로를 함께 맞춘다. 비공개 openclaw-config의 기존 혼재 WIP는 공개 릴리스와 분리해 별도 commit 범위를 정한다.
 
+## Ghostty — 타 기기 반영 시 참고
+
+- thinkpad 1.4.0 switch·기존 설정 검증은 완료했고 GLG가 사용 결과를 수용했다(2026-10-31). 설정·바인딩은 그대로다. laptop/nuc는 선언만 바뀌었으므로 해당 기기에서 필요할 때 별도로 rebuild한다. 원격 적용은 하지 않았다.
+- Oracle에는 Ghostty 패키지·설정 drv가 없음을 평가로 확인했다. 다음 Oracle rebuild에서는 과거 설정 링크1개가 제거된다(GUI 설치 없음). stable이1.4 이상을 제공하면 전용 input/overlay 회수를 검토한다. `ghostty +ssh` 실연결은 아직 하지 않았고 서버 terminfo 쓰기는 별도 판단이다.
+
 ## 보존·판단 후속 — 10-26 뒷정리에서 이월
 
 - **별도 판단 후속(지금 할 일 아님):**
