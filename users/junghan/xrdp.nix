@@ -52,7 +52,12 @@ in
       group = guiUser;
       description = "Shared remote browser desktop";
       extraGroups = [ "tsusers" ];
-      # No initial password or sudo/docker membership. Provisioning needs approval.
+      # No sudo/docker membership. Password: a yescrypt hash the operator made
+      # with `mkpasswd` on Oracle. A runtime string path, never a Nix path, so the
+      # hash stays out of the store and Git. With mutableUsers it is applied only
+      # when the account is first created; a missing file creates it locked and an
+      # empty file creates it passwordless, so check the file before activation.
+      hashedPasswordFile = "/home/junghan/.config/oracle-rdp/browser.hash";
     };
 
     # Per-user autostart only: no global xdg/autostart entry, so no other
