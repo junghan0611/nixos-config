@@ -31,10 +31,15 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 ## #14 Oracle RDP — 남은 관측
 
-- **배포 상태:** 11-04 16:05 별도 계정 `browser`(uid 1990)를 지우고 GLG 본인 계정 `junghan` 단일 세션으로 옮겼다. gen78이 브랜치 커밋 `3eae590`이고, current이자 부트 기본값이다. booted는 아직 72다. 16:17 GLG가 junghan으로 RDP에 로그인해 Chrome 사이트 로그인과 터미널을 확인했다. DISPLAY 보완 커밋은 main에 머지만 했고, 배포는 체크포인트 뒤에 따로 한다. 사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14).
+- **배포 상태:** 11-04 16:05 별도 계정 `browser`(uid 1990)를 지우고 GLG 본인 계정 `junghan` 단일 세션으로 옮겼다(gen78 = `3eae590`). 16:41 DISPLAY 보완을 담은 main `0caf67f`을 gen79로 켰다. 79가 current이자 부트 기본값이고, booted는 아직 72다. xrdp·sesman은 재시작되지 않아 GLG의 세션이 이어졌다. 16:17 GLG가 junghan으로 RDP에 로그인해 Chrome과 터미널을 확인했다. 사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14).
 - **미검증:**
   - 이 구성으로 재부팅한 적이 없다(아래 §Oracle 계획 재부팅, 보류). 다음 재부팅 때 확인할 순서: 새 세대 부팅 → xrdp 루프백 → `run.sh R` connector → junghan 로그인. 그때까지 72가 부팅 검증된 복귀 경로다. 72 퇴역은 그 뒤 별도 판단이다.
-  - DISPLAY 보완(`autostart/import-display.desktop`)은 다음 XFCE 로그인부터 적용된다. 적용 순서 race(첫 xfce4-notifyd 활성화가 먼저 올 수 있다)는 미실측이다. 로그아웃 뒤 user manager에 죽은 DISPLAY가 남는 것도 미해결이다. 완전한 수정이 아니다.
+  - 지금 세션 692는 16:5x에 GLG가 RDP 터미널에서 직접 고쳤다. `dbus-update-activation-environment --systemd DISPLAY XAUTHORITY` 뒤 두 unit을 재시작했다. 그 결과:
+    - `xdg-desktop-portal-gtk`가 active다(16:53:15).
+    - `xfce4-notifyd` unit은 "Another notification daemon is running"으로 끝난다. 세션 스코프에서 XFCE가 직접 띄운 xfce4-notifyd(16:13)가 이미 알림 이름을 갖고 있기 때문이다. 16:13의 notifyd 실패도 같은 중복 활성화였다.
+    - user manager 환경에는 DISPLAY가 들어갔다. XAUTHORITY는 세션에 없어서 건너뛰었다.
+  - autostart `import-display.desktop`은 다음 XFCE 로그인부터 적용된다. 첫 활성화와의 순서 race는 미실측이다. 로그아웃 뒤 user manager에 죽은 DISPLAY가 남는 것도 미해결이다. 완전한 수정이 아니다.
+  - Agent Chrome은 GLG가 16:53 무렵 다시 띄웠다(uid 1000, 127.0.0.1:9222, 프로필 `~/.local/share/agent-chrome`). 16:25에 한 번 닫힌 사이 기본 프로필 Chrome에서 한 로그인은 CDP로 공유되지 않는다. 에이전트와 함께 쓸 로그인은 Agent Chrome에서 한다. 메뉴에 "공동 Agent Chrome" 런처를 보이게 둘지는 별도 제안이다.
   - 에이전트 env(HM PATH·EDITOR)가 RDP 터미널에 실리는지 실측하지 않았다. 확인 명령: `command -v pi claude; echo "$EDITOR"`.
 - **미해결:** 로그인 화면 xrdp 연결별 자식 SIGSEGV 2회(`xrdp_wm_mouse_touch`, 11-04 11:32·11:34)의 원인은 미상이다. XFCE가 junghan 세션에 `ssh-agent`와 gnome-keyring을 따로 띄운다. 기존 SSH·tmux 세션의 agent와는 별개다.
 - **GUI Emacs (owner 판단):**
