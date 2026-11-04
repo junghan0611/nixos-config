@@ -52,7 +52,7 @@ class ClientTests(unittest.TestCase):
 		r = self.run_client()
 		self.assertEqual(r.returncode, 0, r.stderr)
 		self.assertEqual(self.called(), [f'access rdp --hostname {HOST} --url rdp://127.0.0.1:13389'])
-		self.assertIn('browser', r.stdout)
+		self.assertIn('사용자: junghan', r.stdout)
 
 	def test_hostname_is_not_taken_from_env_or_env_local(self):
 		marker = Path(self.temp.name) / 'sourced-marker'

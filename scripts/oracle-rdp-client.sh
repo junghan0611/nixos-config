@@ -42,7 +42,7 @@ cat <<EOF
 Oracle RDP — 로컬 루프백 터널을 연다 (Ctrl-C 로 종료)
   1. 브라우저에서 Cloudflare Access 로그인을 승인한다.
   2. RDP 클라이언트로 127.0.0.1:$port 에 접속한다.
-     사용자: browser   암호: 본인이 정한 암호
+     사용자: junghan   암호: junghan 계정의 로컬 암호
   3. 첫 접속이면 서버 인증서 SHA256 지문을 ORACLE.md 값과 대조한다.
   Oracle 쪽 connector 가 떠 있어야 연결된다 (Oracle 에서 run.sh → R → 1, 3시간).
 EOF

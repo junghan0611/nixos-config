@@ -17,7 +17,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **`oracle` 디바이스 또는 OpenClaw 관련 작업** | [ORACLE.md](ORACLE.md) — ownership, 봇 model routing, env/secret, 업그레이드/restart, skills, 함정 |
 | **Oracle 분기 유지보수·정리·재부팅** | **`oracle-reboot` 스킬** — 승인·유휴 게이트·재접속 복구의 정본. [진입 안내](docs/oracle-maintenance.md), `run.sh d)` 사전 수집 |
 | **`thinkpad` 로컬 AI (Ollama)** | [THINKPAD.md](THINKPAD.md) |
-| **Oracle 공유 GUI 브라우저 접속** (어느 기기든 `run.sh` → `R`) | [ORACLE.md §5.5](ORACLE.md#55-공유-gui-브라우저--rdp-14) — 클라이언트 쪽 사용법·인증서 지문만 보면 된다 |
+| **Oracle 공유 GUI 작업실 접속** (어느 기기든 `run.sh` → `R`, 사용자 `junghan`) | [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14) — 클라이언트 쪽 사용법·인증서 지문만 보면 된다 |
 | **home 데이터·리포 퇴역·에이전트 작업 잔여물** | [docs/data-retirement.md](docs/data-retirement.md) — 기기 공통 수동 절차, 리포별 실측·원본/재생성물 구분·집합 승인·README 복원 표지 |
 | **`nuc` / `laptop` 일반 NixOS 작업** | 이 문서 + 표준 NixOS 흐름 |
 | 함정 카탈로그 (OpenClaw) | [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) |
