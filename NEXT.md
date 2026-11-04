@@ -26,6 +26,10 @@
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
 - **보존·판단:** 현재10.9/base, 직전10.8 rollback와pre-port원본3파일, 기존10.7 e122, DB24 cold24+7e39 복귀 짝·검수 영수증은 보존했다. **D1** cold24+7e39/17dab/9d63 퇴역은 DB24 복구 능력 상실을 포함한 별도 선택이다. **D2** e122(+61ff base)도 별도 선택이다. 예전 회수량 추정은 재사용하지 말고 직전에 참조/용량을 다시 재며, 결정하면 ORACLE·ROADMAP·runtime README의 경로를 함께 맞춘다. 비공개 openclaw-config의 기존 혼재 WIP는 공개 릴리스와 분리해 별도 commit 범위를 정한다.
 
+## SSH — 타 기기 검토
+
+- laptop도 공통 SSH 비밀번호 인증 설정을 상속하는지와 외부 노출/접속 요구를 별도 확인한다. 이번 차단은 thinkpad만이며 네트워크 장비의 포트 전달·출발지 제한은 변경하지 않았다.
+
 ## ChatGPT Linux 프리뷰 — 다음 버전업 때 확인
 
 - 현재 운영 경계는 [README](README.md#desktop-and-development)로 승격했다. 패키지는 literal rev 고정이라 일반 `nix flake update`/switch만으로 오르지 않는다. `nixpkgs-ghostty` rev를 옮길 때 Ghostty도 함께 검수하고, stable이 Linux 패키지를 지원하면 예외 회수를 검토한다.

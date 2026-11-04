@@ -18,6 +18,11 @@
   #   18080 : 앱↔서버 REST (sks-server, 폰이 WiFi로 직결)
   networking.firewall.allowedTCPPorts = [ 8883 18080 ];
 
+  # SSH 비밀번호 인증 끄기 (shared.nix의 true를 mkForce override, oracle과 같은 틀).
+  # 외부 네트워크의 비밀번호 대입을 막고, 기존 공개키 접속은 유지한다.
+  services.openssh.settings.PasswordAuthentication = lib.mkForce false;
+  services.openssh.settings.KbdInteractiveAuthentication = lib.mkForce false;
+
   # Boot configuration
   boot = {
     initrd.systemd.enable = true;

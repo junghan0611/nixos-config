@@ -81,8 +81,9 @@ execute_py_tool() {
     info "실행: $tool $args"
     echo ""
 
-    python3 "$tool_path" $args
-    local status=$?
+    # set -e 아래에서 도구 실패가 메뉴 전체를 죽이지 않도록 상태를 직접 받는다
+    local status=0
+    python3 "$tool_path" $args || status=$?
 
     echo ""
     if [[ $status -eq 0 ]]; then
@@ -170,21 +171,21 @@ main() {
         case $choice in
             1)
                 if [[ -d "$REPOS_GH" ]]; then
-                    execute_py_tool "greview.py" "$REPOS_GH"
+                    execute_py_tool "greview.py" "$REPOS_GH" || true
                 else
                     error "디렉토리가 없습니다: $REPOS_GH"
                 fi
                 ;;
             2)
                 if [[ -d "$REPOS_WORK" ]]; then
-                    execute_py_tool "greview.py" "$REPOS_WORK"
+                    execute_py_tool "greview.py" "$REPOS_WORK" || true
                 else
                     error "디렉토리가 없습니다: $REPOS_WORK"
                 fi
                 ;;
             3)
                 if [[ -d "$REPOS_3RD" ]]; then
-                    execute_py_tool "greview.py" "$REPOS_3RD"
+                    execute_py_tool "greview.py" "$REPOS_3RD" || true
                 else
                     error "디렉토리가 없습니다: $REPOS_3RD"
                 fi
@@ -200,7 +201,7 @@ main() {
                 done
                 ;;
             5)
-                execute_py_tool "greview.py" "$(pwd)"
+                execute_py_tool "greview.py" "$(pwd)" || true
                 ;;
             6)
                 show_device
