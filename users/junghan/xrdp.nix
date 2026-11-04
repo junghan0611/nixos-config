@@ -1,20 +1,15 @@
-# Oracle-only shared GUI (#14): xrdp on loopback, user browser (uid/gid 1990), XFCE, Agent Chrome.
-{ config, lib, pkgs, currentSystemName, ... }:
+# Oracle-only shared GUI (#14): xrdp on loopback, the operator's own XFCE session, Agent Chrome.
+{ config, lib, pkgs, currentSystemName, currentSystemUser, ... }:
 
 let
   cfg = config.services.xrdp;
-  guiUser = "browser";
-  # Pinned ids. Allocation only consults /etc/passwd and /etc/group, so the
-  # first free ids (uid 1001, gid 991) matched container users on this host and
-  # the GUI user could read those processes' environment. 1990 was unused on
-  # 2026-11-04 (NSS, uid/gid maps, processes, container data); the switch gate
-  # re-checks it. Not a guarantee against containers added later.
-  guiId = 1990;
-  guiHome = "/home/${guiUser}";
+  # GLG logs in as themselves. Agents already run under this uid, so the desktop,
+  # home, sockets and the CDP browser are one workspace. One session only.
+  guiUser = currentSystemUser;
   # One persistent, non-default profile. Not ~/.cache/browser-tools (its launcher
   # deletes Singleton locks there) and not the default ~/.config/google-chrome.
-  chromeProfile = "${guiHome}/.local/share/agent-chrome";
-  # Started by the GUI user's own XFCE session. CDP stays on Chrome's default
+  chromeProfile = "/home/${guiUser}/.local/share/agent-chrome";
+  # Started by the user's own XFCE session. CDP stays on Chrome's default
   # loopback; sandbox and the default password store are left as they are.
   agentChromeDesktop = pkgs.writeText "agent-chrome.desktop" ''
     [Desktop Entry]
@@ -49,31 +44,14 @@ in
     systemd.services.xrdp.serviceConfig.ExecStart = lib.mkForce
       "${pkgs.xrdp}/bin/xrdp --nodaemon --port tcp://127.0.0.1:${toString cfg.port} --config ${cfg.confDir}/xrdp.ini";
 
+    # The user's existing local password (PAM); SSH password login stays off.
     security.pam.services.xrdp-sesman.allowNullPassword = lib.mkForce false;
     users.groups.tsusers = {};
-    # Own primary group: do not share the operator's `users` group-write surface.
-    users.groups.${guiUser}.gid = guiId;
-    users.users.${guiUser} = {
-      isNormalUser = true;
-      uid = guiId;
-      group = guiUser;
-      description = "Shared remote browser desktop";
-      extraGroups = [ "tsusers" ];
-      # No sudo/docker membership. Password: a yescrypt hash the operator made
-      # with `mkpasswd` on Oracle. A runtime string path, never a Nix path, so the
-      # hash stays out of the store and Git. With mutableUsers it is applied only
-      # when the account is first created; a missing file creates it locked and an
-      # empty file creates it passwordless, so check the file before activation.
-      hashedPasswordFile = "/home/junghan/.config/oracle-rdp/browser.hash";
-    };
+    users.users.${guiUser}.extraGroups = [ "tsusers" ];
 
-    # Per-user autostart only: no global xdg/autostart entry, so no other
-    # account's session launches Chrome. Directories are owned by the GUI user.
-    systemd.tmpfiles.rules = [
-      "d ${guiHome}/.config 0700 ${guiUser} ${guiUser} -"
-      "d ${guiHome}/.config/autostart 0700 ${guiUser} ${guiUser} -"
-      "L+ ${guiHome}/.config/autostart/agent-chrome.desktop - - - - ${agentChromeDesktop}"
-    ];
+    # Per-user autostart through Home Manager: no global xdg/autostart entry, and
+    # no tmpfiles rule in the home (it would reset the existing ~/.config mode).
+    home-manager.users.${guiUser}.xdg.configFile."autostart/agent-chrome.desktop".source = agentChromeDesktop;
 
     # The CF connector is a separate, later step.
     environment.systemPackages = with pkgs; [ google-chrome xrdp ];
