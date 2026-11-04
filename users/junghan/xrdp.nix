@@ -20,6 +20,20 @@ let
     NoDisplay=true
     X-GNOME-Autostart-enabled=true
   '';
+  # Bus-activated user services (xfce4-notifyd, the GTK portal) start from the
+  # shared user manager, which has no DISPLAY, and failed with "cannot open
+  # display". Pass these two variables only: no agent sockets, no full
+  # environment; unset ones are ignored. An autostart entry, not startwm.sh: a
+  # startwm change restarts xrdp (drops the live connection) and only takes
+  # effect after xrdp-sesman restarts, which a switch does not do.
+  importDisplayDesktop = pkgs.writeText "import-display.desktop" ''
+    [Desktop Entry]
+    Type=Application
+    Name=Import display for user services
+    Exec=${pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY XAUTHORITY
+    NoDisplay=true
+    X-GNOME-Autostart-enabled=true
+  '';
 in
 {
   config = lib.mkIf (currentSystemName == "oracle") {
@@ -51,7 +65,10 @@ in
 
     # Per-user autostart through Home Manager: no global xdg/autostart entry, and
     # no tmpfiles rule in the home (it would reset the existing ~/.config mode).
-    home-manager.users.${guiUser}.xdg.configFile."autostart/agent-chrome.desktop".source = agentChromeDesktop;
+    home-manager.users.${guiUser}.xdg.configFile = {
+      "autostart/agent-chrome.desktop".source = agentChromeDesktop;
+      "autostart/import-display.desktop".source = importDisplayDesktop;
+    };
 
     # The CF connector is a separate, later step.
     environment.systemPackages = with pkgs; [ google-chrome xrdp ];

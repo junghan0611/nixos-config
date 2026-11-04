@@ -787,6 +787,7 @@ GLG가 자기 계정(`junghan`)으로 들어가는 원격 데스크톱 하나. �
 - sesman: `MaxSessions=1`, `KillDisconnected=false`(접속이 끊겨도 세션이 남고 재접속하면 같은 세션에 붙는다), `tsusers` 그룹 검사. `tsusers`에는 `junghan`만 있다.
 - 로그인은 `junghan`의 기존 로컬 암호(PAM)다. SSH 암호 인증은 계속 꺼져 있고, sudo 규칙도 그대로다.
 - XFCE 세션이 Agent Chrome을 autostart한다(Home Manager `~/.config/autostart/agent-chrome.desktop`). 프로필은 `~/.local/share/agent-chrome` 하나이고, CDP 9222는 Chrome 기본 루프백이다. sandbox·기본 키링은 그대로다. 루프백 9222에 닿는 로컬 프로세스는 이 프로필을 다룰 수 있다.
+- 같은 autostart에 `import-display.desktop`이 있다. 세션의 `DISPLAY`·`XAUTHORITY` 두 값만 user D-Bus·systemd 활성화 환경에 넘긴다. 이게 없으면 xfce4-notifyd·xdg-desktop-portal-gtk가 "cannot open display"로 실패했다. startwm에 넣지 않은 이유: startwm을 바꾸면 switch가 xrdp를 재시작해 접속이 끊긴다. 또 xrdp-sesman이 다시 시작되기 전에는 새 startwm이 쓰이지 않는다. 남은 문제가 둘 있다. 첫 활성화와의 순서 race는 미실측이고, 로그아웃 뒤 죽은 DISPLAY 값이 남는다.
 - Oracle의 Emacs는 nox 빌드라 이 세션에서 `emacsclient -c`는 터미널 프레임으로 붙는다. GUI Emacs는 별도 단계다.
 
 **접속** — 두 쪽 모두 `run.sh` → `R`. 기기에 따라 역할이 갈린다.
