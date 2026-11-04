@@ -110,6 +110,7 @@ show_menu() {
     echo "    k) OpenClaw 스킬 심볼릭 배포 (agent-config SSOT → workspace/claude-skills)"
     echo "    w) OpenClaw 턴 감시 (turnwatch — 자율 트리거/턴 원장/실패 한 화면)"
     echo "    W) 모델 강등 점검 (봇이 몰래 다른 모델로 갈아탄 자리 — refusal fallback)"
+    echo "    R) Oracle RDP — oracle: connector 3시간 시작/상태/정지 · 그 외 기기: 이 기기에서 접속"
     echo ""
     echo -e "  ${YELLOW}Syncthing${NC}"
     echo "    i) stignore 배포 (~/sync/*/.stignore)"
@@ -153,7 +154,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "선택하세요 (0-9, g, p/P, e/E, i/I, c/C/d, t/r/s/k): " choice
+        read -p "선택하세요 (0-9, g, p/P, e/E, i/I, c/C/d, t/r/s/k, R): " choice
 
         case $choice in
             g)
@@ -602,6 +603,30 @@ main() {
                     0) info "취소" ;;
                     *) error "잘못된 선택" ;;
                 esac
+                ;;
+            R)
+                if [[ "$DEVICE" == "oracle" ]]; then
+                    # Server side of #14: the dedicated connector, bounded to 3 hours.
+                    echo ""
+                    echo "  Oracle RDP — 서버 쪽 connector (접속은 클라이언트 기기에서 run.sh → R)"
+                    echo "  1) connector 시작 (3시간 상한, 연장 없음)"
+                    echo "  2) connector 상태"
+                    echo "  3) connector 정지 (XFCE·Chrome 세션은 그대로)"
+                    echo "  0) 취소"
+                    read -p "> " rdp_choice
+                    case $rdp_choice in
+                        1) execute_cmd "bash '$FLAKE_DIR/scripts/oracle-rdp-connector.sh' start" || true ;;
+                        2) execute_cmd "bash '$FLAKE_DIR/scripts/oracle-rdp-connector.sh' status" || true ;;
+                        3) execute_cmd "bash '$FLAKE_DIR/scripts/oracle-rdp-connector.sh' stop" || true ;;
+                        0) info "취소" ;;
+                        *) error "잘못된 선택입니다." ;;
+                    esac
+                else
+                    # Client side of #14. Ctrl-C stops the tunnel, not this menu.
+                    trap 'true' INT
+                    bash "$FLAKE_DIR/scripts/oracle-rdp-client.sh" || true
+                    trap - INT
+                fi
                 ;;
             0)
                 info "종료합니다."

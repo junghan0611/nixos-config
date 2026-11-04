@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 let
   # sudoers는 명령 인자를 안전하게 구조화하지 못한다. 이 wrapper가 허용 동작을
@@ -68,6 +68,11 @@ in
 
   # Oracle Cloud specific configuration
   networking.hostName = "oracle";
+
+  # The Git commit this generation was built from (`nixos-version --configuration-revision`).
+  # Oracle only: the other devices stay byte-identical. A dirty tree records dirtyRev, so a
+  # deploy is built from a clean commit (#14).
+  system.configurationRevision = inputs.self.rev or inputs.self.dirtyRev or null;
 
   # Boot configuration for Oracle Cloud ARM VM
   boot = {

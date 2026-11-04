@@ -16,9 +16,8 @@ let
     };
 in
 {
-  # XRDP 제거 — Oracle headless 전환 (i3/lightdm 체인 제거됨)
-  # imports = [ ./xrdp.nix ];
-  imports = [];
+  # #14 shared GUI; the module is a no-op outside Oracle.
+  imports = [ ./xrdp.nix ];
   # Define user account
   users.users.${vars.username} = {
     isNormalUser = true;
