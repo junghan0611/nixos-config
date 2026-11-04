@@ -242,20 +242,45 @@ def main():
     error_items = []
 
     # Process each subdirectory (2-level scan: if child has no .git, check grandchildren)
+    # 읽을 수 없는 디렉토리(예: root 소유 000)는 건너뛰고 Errors에 남긴다 — 한 칸 때문에 전체 스캔이 죽지 않게.
+    def skip(path: Path, e: OSError):
+        stats['errors'] += 1
+        error_items.append(f"{path}: skipped ({e.strerror})")
+
+    def probe(path: Path) -> Tuple[Optional[GitRepoInfo], bool]:
+        """(리포 또는 None, 읽을 수 있었는가)"""
+        try:
+            candidate = GitRepoInfo(path)
+            return (candidate if candidate.has_git() else None, True)
+        except OSError as e:
+            skip(path, e)
+            return (None, False)
+
+    def children(path: Path) -> List[Path]:
+        try:
+            return [p for p in sorted(path.iterdir()) if p.is_dir()]
+        except OSError as e:
+            skip(path, e)
+            return []
+
     repos = []
-    for item in sorted(target_dir.iterdir()):
-        if not item.is_dir():
-            continue
-        candidate = GitRepoInfo(item)
-        if candidate.has_git():
-            repos.append(candidate)
-        else:
+    target_repo, _ = probe(target_dir)
+    if target_repo:
+        # 대상 자체가 리포면 그 리포만 본다 (메뉴 5: 현재 디렉토리)
+        repos.append(target_repo)
+    else:
+        for item in children(target_dir):
+            candidate, readable = probe(item)
+            if candidate:
+                repos.append(candidate)
+                continue
+            if not readable:
+                continue
             # Scan one level deeper (category/group directories)
-            for sub in sorted(item.iterdir()):
-                if sub.is_dir():
-                    sub_candidate = GitRepoInfo(sub)
-                    if sub_candidate.has_git():
-                        repos.append(sub_candidate)
+            for sub in children(item):
+                sub_candidate, _ = probe(sub)
+                if sub_candidate:
+                    repos.append(sub_candidate)
 
     for repo in repos:
 
