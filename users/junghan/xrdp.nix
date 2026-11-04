@@ -1,9 +1,15 @@
-# Oracle-only shared GUI candidate (#14). A branch build is not activation approval.
+# Oracle-only shared GUI (#14): xrdp on loopback, user browser (uid/gid 1990), XFCE, Agent Chrome.
 { config, lib, pkgs, currentSystemName, ... }:
 
 let
   cfg = config.services.xrdp;
   guiUser = "browser";
+  # Pinned ids. Allocation only consults /etc/passwd and /etc/group, so the
+  # first free ids (uid 1001, gid 991) matched container users on this host and
+  # the GUI user could read those processes' environment. 1990 was unused on
+  # 2026-11-04 (NSS, uid/gid maps, processes, container data); the switch gate
+  # re-checks it. Not a guarantee against containers added later.
+  guiId = 1990;
   guiHome = "/home/${guiUser}";
   # One persistent, non-default profile. Not ~/.cache/browser-tools (its launcher
   # deletes Singleton locks there) and not the default ~/.config/google-chrome.
@@ -46,9 +52,10 @@ in
     security.pam.services.xrdp-sesman.allowNullPassword = lib.mkForce false;
     users.groups.tsusers = {};
     # Own primary group: do not share the operator's `users` group-write surface.
-    users.groups.${guiUser} = {};
+    users.groups.${guiUser}.gid = guiId;
     users.users.${guiUser} = {
       isNormalUser = true;
+      uid = guiId;
       group = guiUser;
       description = "Shared remote browser desktop";
       extraGroups = [ "tsusers" ];

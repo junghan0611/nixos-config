@@ -16,7 +16,7 @@ let
     };
 in
 {
-  # #14 branch candidate; the module is a no-op outside Oracle.
+  # #14 shared GUI; the module is a no-op outside Oracle.
   imports = [ ./xrdp.nix ];
   # Define user account
   users.users.${vars.username} = {

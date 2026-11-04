@@ -777,6 +777,42 @@ Scanner: clean
 
 ---
 
+## 5.5 공유 GUI 브라우저 — RDP ([#14](https://github.com/junghan0611/nixos-config/issues/14))
+
+에이전트와 GLG가 같이 쓰는 GUI 브라우저 하나. Oracle에만 있다(`users/junghan/xrdp.nix`, 다른 기기에서는 no-op).
+
+**구성**
+
+- xrdp는 `127.0.0.1:3389`에만 연다(ExecStart override, 방화벽 개방 없음). 외부 경로는 Cloudflare Access + 전용 터널 하나뿐이다.
+- sesman: `MaxSessions=1`, `KillDisconnected=false`(접속이 끊겨도 세션이 남고 재접속하면 같은 세션에 붙는다), `tsusers` 그룹 검사.
+- GUI 사용자 `browser`: uid/gid **1990 고정**. sudo·wheel·docker 없음. 자동 할당은 `/etc/passwd`만 보고 첫 빈 번호(1001)를 주는데, 그 번호가 이 호스트의 컨테이너 프로세스 UID(umami·remark42)와 겹쳐 browser 세션이 그 프로세스 환경을 읽을 수 있는 상태가 됐다. 그래서 고정했다. 앞으로 추가될 컨테이너와의 무충돌까지 보증하지는 않는다.
+- XFCE 세션이 Agent Chrome을 autostart한다. 프로필 `/home/browser/.local/share/agent-chrome` 하나, CDP 9222는 Chrome 기본 루프백. sandbox·기본 키링은 그대로다.
+
+**암호** — `hashedPasswordFile = /home/junghan/.config/oracle-rdp/browser.hash`(600, Git·store 밖).
+
+- `mutableUsers=true`라 이 파일은 **계정을 처음 만들 때만** 반영된다(`update-users-groups.pl` 241–246, 293–315). 파일만 바꾸면 기존 계정의 암호는 그대로다.
+- 암호를 바꾸려면: GLG가 해시 파일을 다시 만든다 → browser가 없는 세대를 한 번 켜서 계정을 지운다 → 이 구성을 다시 켜서 계정을 새로 만든다. 홈 `/home/browser`는 그대로 남는다. 파일이 없으면 계정이 잠기고, 빈 파일이면 무암호다. 둘 다 안전한 실패가 아니다.
+
+**접속** — 두 쪽 모두 `run.sh` → `R`. 기기에 따라 역할이 갈린다.
+
+| 어디서 | 하는 일 |
+|---|---|
+| Oracle | `scripts/oracle-rdp-connector.sh start\|status\|stop`. 전용 connector를 tmux `oracle-rdp-connector`에서 `timeout 10800`(3시간)으로 띄운다. 연장·재시작 루프·systemd 상주 없음. config `~/.cloudflared/oracle-rdp.yml`(600, 비공개, credential은 옆의 `oracle-rdp.json`), 로그 `~/.local/state/oracle-rdp/connector.log`. 같은 tunnel id를 쓰는 connector가 이미 있으면 경로가 달라도 찾아서 중복 시작을 거부한다. stop은 그 PID만(시작 시각 재확인 뒤) TERM하고, 다른 터널(aions·sorge)과 XFCE·Chrome은 건드리지 않는다 |
+| 클라이언트(thinkpad 등) | `scripts/oracle-rdp-client.sh`. `cloudflared access rdp --hostname oracle-rdp.junghanacs.com --url rdp://127.0.0.1:13389`를 연다(포트는 `ORACLE_RDP_LOCAL_PORT`). 브라우저에서 Access 로그인을 승인한 뒤 RDP 클라이언트로 `127.0.0.1:13389`, 사용자 `browser`. Ctrl-C로 터널만 닫힌다 |
+
+- connector가 끝나면 네트워크 경로만 닫힌다. XFCE·Chrome 세션은 계속 돈다.
+- 서버 인증서 SHA256 — 첫 접속 때 대조한다: `EB:FC:D2:76:FA:A6:19:4A:BF:CC:49:1D:87:B5:D1:74:64:E4:5A:98:D3:BF:EE:41:B6:2A:20:C2:AF:DD:D1:FD`
+- Access 앱·Allow 정책·터널·DNS는 Cloudflare 쪽에 있고 이 리포는 선언하지 않는다. 바꾸거나 퇴역시키려면 `cloudflare` 스킬로 dry-run 뒤 따로 승인받는다.
+
+**검증 범위 (2026-11-04)** — RDP 로그인·PAM·XFCE·Agent Chrome·CDP 루프백, 단절 후 같은 세션으로 재접속까지 확인했다. 아직 확인하지 못한 것: 이 구성으로 **재부팅**한 적이 없다. 로그인 화면에서 마우스 입력 중 xrdp 연결별 자식 프로세스가 `xrdp_wm_mouse_touch`에서 SIGSEGV로 두 번 죽었다. 원인은 미상이다. 연결 단위 자식이라 그 연결만 끊겼고, xrdp 데몬은 계속 돌아 이후 로그인은 재시작 없이 됐다.
+
+**세대 출처와 복귀**
+
+- Oracle 세대는 빌드한 Git 커밋을 기록한다: `nixos-version --configuration-revision`(`machines/oracle.nix`, 다른 기기는 불변). dirty 트리면 `-dirty` 값이 들어가니 배포는 깨끗한 커밋에서 빌드한다.
+- 특정 세대로 정확히 돌아가야 할 때는 `--rollback`(직전 번호로 감) 대신 `sudo -n /run/current-system/sw/bin/nixos-rebuild switch --store-path <toplevel> --no-reexec`를 쓴다. 세대를 지우지 않고 그 toplevel을 새 번호로 켠다(nixos-rebuild-ng `__init__.py` 301–310, `services.py` 297–303, `nix.py` 641–672).
+
+---
+
 ## 6. Gotchas
 
 운영 중 자주 부딪히는 함정 + incident 정책 근거는 별도 파일로 분리:

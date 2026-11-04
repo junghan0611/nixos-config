@@ -18,6 +18,8 @@
 
 현재 좌표: 1–3 완료 → 4 주말 판단 대기 → 5 미해결 보존
 
+#14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-브라우저--rdp-14), 남은 것은 아래 §#14.
+
 ## NOW — 10.9 기준의 깨움 설계, 적용은 별도 승인
 
 - **상태:** OpenClaw10.9(`709acab4…`) 운영 확인과 승인된 임시2폴더/끝난7helper 정리는 닫았다. 상세는 [CHANGELOG v2026.10.30](CHANGELOG.md)·ROADMAP, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261030/`. 기존 FAIL1과 경고·dirty는 별도다.
@@ -25,6 +27,13 @@
 - **Read:** 비공개 llmlog `20261028T092543` — 깨우기·퇴근·기억·검증: 연속성과 맥락 비용, 세션 증식의 기준 → #13. 기억 생산/Andenken 회수는#5, mini 역할은#10과 연결하며 자동으로 기능을 켜거나 이슈를 닫지 않는다.
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
 - **보존·판단:** 현재10.9/base, 직전10.8 rollback와pre-port원본3파일, 기존10.7 e122, DB24 cold24+7e39 복귀 짝·검수 영수증은 보존했다. **D1** cold24+7e39/17dab/9d63 퇴역은 DB24 복구 능력 상실을 포함한 별도 선택이다. **D2** e122(+61ff base)도 별도 선택이다. 예전 회수량 추정은 재사용하지 말고 직전에 참조/용량을 다시 재며, 결정하면 ORACLE·ROADMAP·runtime README의 경로를 함께 맞춘다. 비공개 openclaw-config의 기존 혼재 WIP는 공개 릴리스와 분리해 별도 commit 범위를 정한다.
+
+## #14 Oracle RDP — 배포 마무리와 남은 관측
+
+- **배포:** RDP 구성은 gen76(11-04, 커밋 기록 없음)으로 돌고 있고 RDP·PAM·XFCE·Chrome·재접속까지 확인했다. main에 들어온 커밋으로 새 세대(configurationRevision 포함)를 빌드·적용·post 검수하는 단계가 남았다. 적용은 코디 checkpoint 뒤다.
+- **세대 정리:** 새 세대 post PASS 뒤에만 한다. 72는 부팅 검증된 마지막 세대라 복귀용으로 남기는 것이 기본이다. 실패·중복 세대(73–75)와 새 세대 직전 76이 후보이며, 정확한 집합은 그때 번호를 다시 재서 정한다. 전체 GC·재부팅은 이 범위가 아니다.
+- **미검증:** 이 구성으로 재부팅한 적이 없다. 로그인 화면 xrdp 자식 SIGSEGV 2회(`xrdp_wm_mouse_touch`, 11-04 11:32·11:34)의 원인은 미상이다. `/home/browser/.config`·`autostart`의 소유(1990)는 세션이 정상 동작한 것으로 간접 확인만 했다.
+- **보존:** Cloudflare 쪽 Access 앱·터널·DNS는 유지한다. 바꾸거나 퇴역시킬 때는 따로 dry-run과 승인을 거친다. 비공개 영수증 `.agent-reports/issue-14-oracle-rdp/`(게이트·복귀 스크립트·로그, 옛 connector config 원본)는 세대 정리가 끝난 뒤 보존·정리를 판단한다.
 
 ## SSH — 타 기기 검토
 
