@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.10.30](https://github.com/junghan0611/nixos-config/releases/tag/v2026.10.30).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.4](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.4).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -28,12 +28,13 @@
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
 - **보존·판단:** 현재10.9/base, 직전10.8 rollback와pre-port원본3파일, 기존10.7 e122, DB24 cold24+7e39 복귀 짝·검수 영수증은 보존했다. **D1** cold24+7e39/17dab/9d63 퇴역은 DB24 복구 능력 상실을 포함한 별도 선택이다. **D2** e122(+61ff base)도 별도 선택이다. 예전 회수량 추정은 재사용하지 말고 직전에 참조/용량을 다시 재며, 결정하면 ORACLE·ROADMAP·runtime README의 경로를 함께 맞춘다. 비공개 openclaw-config의 기존 혼재 WIP는 공개 릴리스와 분리해 별도 commit 범위를 정한다.
 
-## #14 Oracle RDP — 배포 마무리와 남은 관측
+## #14 Oracle RDP — 남은 관측
 
-- **배포:** RDP 구성은 gen76(11-04, 커밋 기록 없음)으로 돌고 있고 RDP·PAM·XFCE·Chrome·재접속까지 확인했다. main에 들어온 커밋으로 새 세대(configurationRevision 포함)를 빌드·적용·post 검수하는 단계가 남았다. 적용은 코디 checkpoint 뒤다.
-- **세대 정리:** 새 세대 post PASS 뒤에만 한다. 72는 부팅 검증된 마지막 세대라 복귀용으로 남기는 것이 기본이다. 실패·중복 세대(73–75)와 새 세대 직전 76이 후보이며, 정확한 집합은 그때 번호를 다시 재서 정한다. 전체 GC·재부팅은 이 범위가 아니다.
-- **미검증:** 이 구성으로 재부팅한 적이 없다. 로그인 화면 xrdp 자식 SIGSEGV 2회(`xrdp_wm_mouse_touch`, 11-04 11:32·11:34)의 원인은 미상이다. `/home/browser/.config`·`autostart`의 소유(1990)는 세션이 정상 동작한 것으로 간접 확인만 했다.
-- **보존:** Cloudflare 쪽 Access 앱·터널·DNS는 유지한다. 바꾸거나 퇴역시킬 때는 따로 dry-run과 승인을 거친다. 비공개 영수증 `.agent-reports/issue-14-oracle-rdp/`(게이트·복귀 스크립트·로그, 옛 connector config 원본)는 세대 정리가 끝난 뒤 보존·정리를 판단한다.
+- **배포 상태:** main `0b927ab`이 gen77로 돌고 부트 기본값도 77이다. booted는 아직 72다. 이력은 [CHANGELOG v2026.11.4](CHANGELOG.md), 사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-브라우저--rdp-14).
+- **미검증:** 이 구성으로 재부팅한 적이 없다. 다음 계획 재부팅(`oracle-reboot` 스킬) 때 77 부팅 → xrdp 루프백 → `run.sh R` connector → 같은 browser 로그인까지 확인한다. 그때까지 72가 부팅 검증된 복귀 경로이며, 72 퇴역은 그 뒤 별도 판단이다.
+- **미해결:** 로그인 화면 xrdp 연결별 자식 SIGSEGV 2회(`xrdp_wm_mouse_touch`, 11-04 11:32·11:34)의 원인은 미상이다. `/home/browser/.config`·`autostart`의 소유(1990)는 세션이 정상 동작한 것으로만 간접 확인했다.
+- **보존:** Cloudflare 쪽 Access 앱·터널·DNS는 유지한다. 바꾸거나 퇴역시킬 때는 따로 dry-run과 승인을 거친다. 비공개 영수증 `.agent-reports/issue-14-oracle-rdp/`(게이트·복귀 스크립트·로그, 옛 connector config 원본)와 피처 브랜치 `issue-14-oracle-rdp`의 보존·정리는 별도 판단이다. #14를 닫을지는 GLG 판단이다.
+- **범위 밖:** 11-04 아침 agenda hang(호스트 Emacs `server` 데몬, 재기동으로 복구)의 최초 원인과 geworfen의 emacsclient 좀비 ~963은 geworfen 레인 몫이다. 검토 의견은 [#16 댓글](https://github.com/junghan0611/nixos-config/issues/16#issuecomment-6618346772)에 있고 GLG가 지금은 하지 않기로 했다.
 
 ## SSH — 타 기기 검토
 
@@ -48,7 +49,7 @@
 ## Ghostty — 타 기기 반영 시 참고
 
 - thinkpad 1.4.0 switch·기존 설정 검증은 완료했고 GLG가 사용 결과를 수용했다(2026-10-31). 설정·바인딩은 그대로다. laptop/nuc는 선언만 바뀌었으므로 해당 기기에서 필요할 때 별도로 rebuild한다. 원격 적용은 하지 않았다.
-- Oracle에는 Ghostty 패키지·설정 drv가 없음을 평가로 확인했다. 다음 Oracle rebuild에서는 과거 설정 링크1개가 제거된다(GUI 설치 없음). stable이1.4 이상을 제공하면 전용 input/overlay 회수를 검토한다. `ghostty +ssh` 실연결은 아직 하지 않았고 서버 terminfo 쓰기는 별도 판단이다.
+- stable이1.4 이상을 제공하면 전용 input/overlay 회수를 검토한다. `ghostty +ssh` 실연결은 아직 하지 않았고 서버 terminfo 쓰기는 별도 판단이다.
 
 ## 보존·판단 후속 — 10-26 뒷정리에서 이월
 

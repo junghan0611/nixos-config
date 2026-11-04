@@ -9,6 +9,26 @@
 
 ## Unreleased
 
+## v2026.11.4 — Oracle 공유 GUI 브라우저(RDP) 배포, thinkpad SSH 강화·Ghostty 1.4·ChatGPT 프리뷰
+
+### #14 Oracle 공유 GUI 브라우저 — Cloudflare Access 뒤의 RDP
+
+- 에이전트와 GLG가 같이 쓰는 GUI 브라우저 하나를 Oracle에만 두었다([#14](https://github.com/junghan0611/nixos-config/issues/14)). xrdp는 `127.0.0.1:3389`에만 열고, 외부 경로는 Cloudflare Access 앱 + 전용 터널 + DNS 하나뿐이다(11-02 생성, Cloudflare 쪽 자산이며 이 리포는 선언하지 않는다). 세션은 하나(`MaxSessions=1`)이고 접속이 끊겨도 남는다(`KillDisconnected=false`). XFCE가 Agent Chrome을 autostart하며 프로필은 하나, CDP 9222는 루프백만이다. 구성·사용법은 [ORACLE.md §5.5](https://github.com/junghan0611/nixos-config/blob/v2026.11.4/ORACLE.md#55-공유-gui-브라우저--rdp-14).
+- **UID 충돌과 고정:** 첫 적용(gen73)에서 GUI 사용자 browser가 자동 할당으로 UID 1001을 받았는데, 이 호스트의 umami·remark42 컨테이너 프로세스도 host UID 1001이었다. 같은 UID라 browser 세션이 그 프로세스 환경을 읽을 수 있는 상태였다(커널 규칙에 따른 추론이며 시험하거나 내용을 읽지 않았다). 로그인 0회인 채로 gen72로 되돌렸고, browser uid/gid를 1990으로 고정했다.
+- **암호:** `hashedPasswordFile`(Git·store 밖, 600)로 준다. `mutableUsers=true`에서는 계정을 처음 만들 때만 반영된다. 첫 로그인이 PAM 단계에서 실패해 GLG가 해시를 다시 만들었고, browser가 없는 gen72 toplevel을 `--store-path`로 한 번 켜서 계정을 지운 뒤 다시 적용해 새로 만들었다(gen75→gen76).
+- **검증(11-04, GLG 실사용):** ThinkPad에서 Access 로그인 → RDP 로그인·PAM → XFCE → Agent Chrome·CDP 루프백 → 접속을 끊었다가 다시 붙어 같은 세션으로 돌아오는 것까지 확인했다.
+- **운영 메뉴:** `run.sh` → `R`. Oracle에서는 전용 connector를 시작·상태·정지한다(tmux, `timeout 10800` 3시간, 연장·재시작 루프·systemd 상주 없음). 같은 tunnel id로 떠 있는 connector는 경로가 달라도 찾아 중복 시작을 거부하고, 정지는 시작 시각을 다시 확인한 그 PID에만 보낸다. 클라이언트 기기에서는 `cloudflared access rdp`로 `127.0.0.1:13389`를 연다. 두 helper는 오프라인 테스트(6·5건)가 있으며, 테스트 PATH는 실 cloudflared에 닿지 않도록 격리했다.
+- **배포 출처:** Oracle 세대가 빌드한 Git 커밋을 기록한다(`system.configurationRevision`, Oracle만, 다른 세 기기 drvPath 불변). 실제 배포 커밋은 main `0b927ab`이고 gen77 `yn74mfdj…`로 적용했다(11-04 14:16, post 25항목 PASS, 세션·xrdp PID 유지). 이 태그는 그 뒤의 문서 전용 커밋에 찍혔다 — 태그 커밋을 다시 배포하지 않는다.
+- **세대 정리:** 실패·중복 세대 73–76의 링크와 부트 엔트리를 지웠다. 부팅 검증된 72(복귀용)와 77만 남았고 새 세대 번호는 생기지 않았다. GC를 하지 않았으므로 store 용량 회수는 아니다.
+- **남긴 것:** 이 구성으로 재부팅한 적이 없다. 로그인 화면에서 xrdp 연결별 자식이 `xrdp_wm_mouse_touch`에서 SIGSEGV로 2회 죽었다(원인 미상, 수선 안 함). Cloudflare 자산은 유지한다. → [NEXT.md §#14](https://github.com/junghan0611/nixos-config/blob/v2026.11.4/NEXT.md).
+
+### thinkpad·데스크톱
+
+- thinkpad sshd의 비밀번호·keyboard-interactive 인증을 껐다(공개키 접근 유지). 저장소 스캔(`glg`·`greview.py`)이 권한 오류에서 멈추지 않고, 도구가 실패해도 메뉴가 살아 있게 했다. laptop 점검은 남았다.
+- Ghostty를 데스크톱 프로필(nuc·laptop·thinkpad)에만 1.4.0으로 고정했다. thinkpad에 적용·수용됐고 Oracle에서는 이번 rebuild로 옛 설정 링크가 빠졌다.
+- thinkpad에 공식 ChatGPT Linux 프리뷰를 추가했다(flake.lock 불변, `~/.codex` 공유 상태 수용).
+- 외부 세션 코퍼스 후속은 agent-config 담당으로 넘기고 NEXT에서 뺐다.
+
 ## v2026.10.30 — OpenClaw 10.9 보안·복구 업데이트와 깨움 설계 분리 (verify 39PASS/기존 FAIL1)
 
 ### OpenClaw 10.9 — 교차검토와 같은 스키마의 교체
