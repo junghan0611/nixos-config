@@ -19,6 +19,7 @@
 현재 좌표: 1–3 완료 → 4 주말 판단 대기 → 5 미해결 보존
 
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-브라우저--rdp-14), 남은 것은 아래 §#14.
+Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
 
 ## NOW — 10.9 기준의 깨움 설계, 적용은 별도 승인
 
@@ -31,10 +32,30 @@
 ## #14 Oracle RDP — 남은 관측
 
 - **배포 상태:** main `0b927ab`이 gen77로 돌고 부트 기본값도 77이다. booted는 아직 72다. 이력은 [CHANGELOG v2026.11.4](CHANGELOG.md), 사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-브라우저--rdp-14).
-- **미검증:** 이 구성으로 재부팅한 적이 없다. 다음 계획 재부팅(`oracle-reboot` 스킬) 때 77 부팅 → xrdp 루프백 → `run.sh R` connector → 같은 browser 로그인까지 확인한다. 그때까지 72가 부팅 검증된 복귀 경로이며, 72 퇴역은 그 뒤 별도 판단이다.
+- **미검증:** 이 구성으로 재부팅한 적이 없다(재부팅은 아래 §Oracle 계획 재부팅, 보류). 다음 계획 재부팅 때 77 부팅 → xrdp 루프백 → `run.sh R` connector → 같은 browser 로그인까지 확인한다. 그때까지 72가 부팅 검증된 복귀 경로이며, 72 퇴역은 그 뒤 별도 판단이다.
 - **미해결:** 로그인 화면 xrdp 연결별 자식 SIGSEGV 2회(`xrdp_wm_mouse_touch`, 11-04 11:32·11:34)의 원인은 미상이다. `/home/browser/.config`·`autostart`의 소유(1990)는 세션이 정상 동작한 것으로만 간접 확인했다.
 - **보존:** Cloudflare 쪽 Access 앱·터널·DNS는 유지한다. 바꾸거나 퇴역시킬 때는 따로 dry-run과 승인을 거친다. 비공개 영수증 `.agent-reports/issue-14-oracle-rdp/`(게이트·복귀 스크립트·로그, 옛 connector config 원본)와 피처 브랜치 `issue-14-oracle-rdp`의 보존·정리는 별도 판단이다. #14를 닫을지는 GLG 판단이다.
 - **범위 밖:** 11-04 아침 agenda hang(호스트 Emacs `server` 데몬, 재기동으로 복구)의 최초 원인과 geworfen의 emacsclient 좀비 ~963은 geworfen 레인 몫이다. 검토 의견은 [#16 댓글](https://github.com/junghan0611/nixos-config/issues/16#issuecomment-6618346772)에 있고 GLG가 지금은 하지 않기로 했다.
+
+## Oracle 계획 재부팅 — 보류 (11-04 읽기 전용 사전점검까지)
+
+- **상태:** 11-04 14:43–14:50 KST에 [`oracle-reboot`](.claude/skills/oracle-reboot/SKILL.md) §1·§3의 읽기 전용 사전점검만 했다. 실제 재부팅·suspend·추가 삭제는 0이고, GLG가 다음으로 미뤘다. 재부팅 승인과 시간창은 아직 없다. 당시 current와 부트 기본값은 gen77(main `0b927ab`), booted는 gen72였고, 세대 링크와 부트 엔트리는 72·77 두 개다. 77은 아직 부팅해 보지 않았다.
+- **측정 요점:** 72·77은 같은 kernel·initrd·params를 쓰고 `/boot`에 그 파일이 있다. 구성 전체가 같다는 뜻은 아니다. `systemctl reboot`가 sudo NOPASSWD임은 조회로만 확인했다. SSH(공개키 전용)와 tailscale은 enabled, 공개면은 기대값과 일치, OpenClaw 10.9 RPC health는 ok, 운영 중지 provider·heartbeat도 그대로다. **OCI 콘솔 접근 준비는 확인하지 않았다.** 부팅 메뉴에서 72를 고르려면 콘솔이 필요하다. 콘솔이 없으면 77로 부팅한 뒤 SSH에서 store-path로 돌아간다([ORACLE.md §5.5](ORACLE.md#55-공유-gui-브라우저--rdp-14)).
+- **재부팅하면 사라지는 것:** RAM에 있는 XFCE·Chrome 창, 그리고 모든 tmux 하네스 세션(자동 재개 없음). Chrome 프로필은 디스크에 남는다.
+- **수동 복구 주체:**
+  - agenda용 Emacs `server`: geworfen 정본 `~/repos/gh/geworfen/ops/tmux/agent-emacs.sh start`.
+  - RDP: Oracle에서 `run.sh` → R → 1(3시간). GUI 세션은 GLG가 처음 로그인할 때 생긴다.
+  - sorge: 소유 리포 정본대로 수동 재개(`./run.sh inbox`). connector를 직접 띄우는 명령은 정본에서 확인하지 못했으므로 sorge 담당 몫이다.
+  - Docker·translation-server·sshd·tailscaled·xrdp는 enabled다. 그래도 실제로 복귀했는지는 재접속 뒤 스킬 §5로 따로 확인한다.
+- **GC 정정:** 설치된 Nix 2.34.8 매뉴얼에 따르면 `--delete-older-than 30d`는 cutoff보다 오래된 세대 중 가장 최근 것 하나를 남긴다. 지금 세대는 72·77뿐이라 주간 GC가 72를 곧바로 지우지 않는다. 그러므로 날짜 때문에 재부팅을 서두를 이유는 없다(앞선 권고는 철회). 새 세대가 생기거나 시간이 지나면 다시 잰다.
+- **다음 한 수:**
+  1. 스킬과 아래 영수증을 읽는다.
+  2. live preflight·접근·수동 복구 주체를 다시 확정한다.
+  3. GLG의 실행 승인과 시간창을 받는다.
+  4. 직전에 새 영수증 디렉터리·boot-id·실제 RPC 유휴 TTL 게이트를 거친 뒤, 같은 셸에서 reboot한다.
+
+  이번 응답이나 hold를 재사용하지 않으며, 지금 `gateway.suspend.prepare`를 하지 않는다. RDP connector는 시간이 지나면 끝나 있을 수 있으니 상태를 가정하지 말고 `run.sh R` → 2로 확인한다. 72 삭제 승인은 없다. 77 부팅을 검증한 뒤 따로 판단한다.
+- **영수증:** Oracle 로컬 비공개 `.agent-reports/oracle-maintenance/20261104T144353.YJyNRd/` — boot-id·부트·접근·복구 주체·OpenClaw·공개면·storage-review·추가 읽기.
 
 ## SSH — 타 기기 검토
 
