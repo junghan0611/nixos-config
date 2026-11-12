@@ -10,6 +10,16 @@
 
 ---
 
+## 2026-11-13 — Claude Code 2.1.288→2.1.322, bbot·메멘토 Fable 5.2
+
+- GLG가 bbot과 메멘토를 Fable 5.2로 옮기라고 요청했다. 실행은 Opus(Claude Code), 범위와 게이트는 pi-durable 코디가 정했다. OpenClaw는 10.9에 그대로 두었다. 10.10/11.x는 스키마 v22/v27로 가는 비선형 메이저이므로 별도 판단이다(비공개 `.agent-reports/openclaw-v2026.11.2-review/`).
+- 원인: 컨테이너의 Claude Code 2.1.288은 `claude-fable-5-2`를 몰랐다. 10.9 anthropic 정적 카탈로그에도 이 모델이 없다. claude-cli backend는 alias에 없는 모델 id를 그대로 `--model`로 넘긴다.
+- 이미지: Dockerfile에서 claude-code 핀 한 줄만 바꿨다. 2.1.322는 npm integrity `sha512-oP7oW4vM…`로 확인했다. base digest는 `bfa6ab15…`로 그대로이고 pull은 없었다. 기억 패치 v4 applied/verified, behavior assertions 12개를 통과했다. 새 candidate는 `b3bbcd9c…`다.
+- 교체: 유휴 게이트(ready, activeCount 0, blockers [], TTL 119초)를 통과한 뒤 retag하고 recreate를 1회 했다. RPC ok까지 337초가 걸렸다. tini ELOOP가 3회 나왔고, 새 컨테이너 RestartCount 3에서 멈췄다. verify 결과는 PASS 38 / FAIL 1 / UNKNOWN 0이다. FAIL은 10-27 이후 계속 남아 있는 session 실패행(count 1, oldestFailedAt 동일)이다. 기준값을 넓히거나 행을 지우지 않았다. 교체 뒤 자기 suspensionId의 status는 `running`이었다.
+- 설정: hot reload로 bbot `model.primary`와 `models["anthropic/claude-fable-5-2"].agentRuntime.id=claude-cli`를 바꿨다. CLI가 `meta.lastTouchedVersion`도 함께 갱신했다. 메멘토 cron은 model override를 5-2로 바꾼 뒤 enable했다. 다음 실행은 07:26:52 KST이고, 켠 직후 바로 실행되지는 않았다.
+- 검증: GLG가 승인한 bbot 격리 1턴(배달 없음)이 `runner=cli`, `winnerProvider=claude-cli`, `winnerModel=claude-fable-5-2`, `fallbackUsed=false`, `stopReason=completed`로 끝났다. 소요 3.5초. 다른 claude-cli 봇이 2.1.322와 맞는지는 자연 턴으로 본다.
+- 롤백 짝: `openclaw-custom:10.9-candidate-20261030`(`709acab4…`), 비공개 `~/openclaw/backups/swap-10.9-cc322-20261113/`의 config pre-swap과 cron 메타다. 메멘토를 되돌리려면 `cron edit --model anthropic/claude-fable-5-1`와 `disable`을 쓴다.
+
 ## 2026-10-30 — OpenClaw 10.8→10.9 마이너 교체, 깨움 설계는 별도 판단
 
 - 운영자가 Opus 교차검토와10.9 업그레이드를 승인했다. Opus는 릴리스 독립 검토·candidate 준비, pi-durable 코디는 사전 상태·실제 교체·최종 검수·문서를 맡았다. 깨우기/퇴근/기억/검증 설계는10.9 기준 [#13](https://github.com/junghan0611/nixos-config/issues/13)으로 분리했다. 역할·주기·기억/보존 정책은 변경하지 않았다. 업데이트 본체에는 모델 smoke·수동 cron·강제 색인·로그인·삭제·commit/push를 섞지 않았다. 이후 임시 정리와 공개 릴리스는 별도 승인받아 마감했다.

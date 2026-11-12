@@ -289,7 +289,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 #             ② install.cjs 를 명시 실행해 npm 버전이 또 바뀌어도 자가치유하며(멱등)
 #             ③ `claude --version` 으로 빌드를 fail-closed 시킨다. ③ 이 없으면 같은 회귀가 다음 bump 에 또 조용히 지나간다.
 RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
-      @anthropic-ai/claude-code@2.1.288 \
+      @anthropic-ai/claude-code@2.1.322 \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 

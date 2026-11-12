@@ -80,7 +80,7 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `zai/glm-5.3` | **꺼짐** (`{every:"0m"}` 명시, 2026-10-25 — 그전엔 엔트리 없음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
-| **bbot** (B) | `anthropic/claude-fable-5-1` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |
+| **bbot** (B) | `anthropic/claude-fable-5-2` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있다. bbot은 반드시 엔트리에
 `{"every":"0m"}`를 **명시**해 상속을 막는다. 이를 `unset`하면 defaults cadence가 다시 물려
@@ -115,7 +115,9 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 
 GLG 결정: autopilot은 누적 main heartbeat가 아니라 **매 비트 fresh isolated session**이다.
 `bbot-memento-autopilot` (`declarationKey: autopilot:bbot-memento`)은 `agentTurn`이며
-`--model anthropic/claude-fable-5-1`, `--thinking xhigh`, explicit Telegram `accountId:"bbot"` delivery를 갖는다. **cron의 모델 런타임은 defaults 카탈로그만으로 충분하지 않다.** bbot의 `models["anthropic/claude-fable-5-1"].agentRuntime.id="claude-cli"`도 명시한다.
+`--model anthropic/claude-fable-5-2`(2026-11-13부터, 이전 5-1), `--thinking xhigh`, explicit Telegram `accountId:"bbot"` delivery를 갖는다. **cron의 모델 런타임은 defaults 카탈로그만으로 충분하지 않다.** bbot의 `models["anthropic/claude-fable-5-2"].agentRuntime.id="claude-cli"`도 명시한다.
+
+2026-11-13: 꺼져 있던 이 job을 GLG 승인으로 model override를 fable-5-2로 바꾼 뒤 다시 켰다. 켜기 전 bbot 격리 1턴이 claude-cli/fable-5-2로 완결된 것을 확인했고, 켠 직후 즉시 실행은 없었다. 첫 자연 실행 결과는 NEXT에서 관측한다.
 
 2026-09-19의 격리 probe는 Claude CLI 서빙을 통과했지만, bbot 전용 카탈로그 엔트리가 없던 첫 scheduled run(10:26)은 API `anthropic` provider로 풀려 `missing-provider-auth`로 996ms 만에 실패했다. 해당 엔트리를 추가한 뒤 manual catch-up은 `claude-cli` / fable-5-1로 572,900ms 성공·Telegram delivered를 확인했다. 다음 **정기** fable run은 13:26 KST다.
 
@@ -153,7 +155,7 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 
 | 이름 | 봇 | 스케줄 | 대상 | 모델 |
 |---|---|---|---|---|
-| `bbot-memento-autopilot` | bbot | every 3h | GLG DM (`telegram:123861330`, `accountId:bbot`) | `anthropic/claude-fable-5-1` |
+| `bbot-memento-autopilot` | bbot | every 3h | GLG DM (`telegram:123861330`, `accountId:bbot`) | `anthropic/claude-fable-5-2` |
 | `morning-family-schedule-reminder` | glg | `0 23 * * *` UTC = **08:00 KST** | GLG DM | `anthropic/claude-sonnet-5` |
 
 

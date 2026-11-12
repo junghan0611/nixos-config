@@ -26,6 +26,13 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - [ ] [CYBORG.md](CYBORG.md) 사전 준비: 설치 매체·작업 트리 전달, 회사 보안/암호화 정책 확인, ThinkPad 데이터·인증 이전 계획과 설치 시간 실측.
 - [ ] 실물 인수 후 설치·첫 부팅, 하드웨어 수집, Intel/NVIDIA·외부 모니터·오디오·절전·Ollama 검증. 현재 하드웨어 파일은 미검증 초안.
 
+## bbot Fable 5.2 · Claude Code 2.1.322 (11-13 교체) 관측
+
+- [ ] 메멘토의 fable-5-2 첫 자연 실행(첫 예정 2026-11-13 07:26:52 KST, 이후 3시간 간격)을 메타로만 확인한다. `openclaw cron runs --id e94ed49d-847e-4c1e-b127-c914171d5c5b`와 `cron get`으로 status, delivered, consecutiveErrors를 본다. 로그에서는 `cli exec: provider=claude-cli model=claude-fable-5-2`만 본다. 실패하면 OFF·롤백을 판단해 GLG에게 보고하고, 자동으로 되돌리지 않는다.
+- [ ] glg·mini 첫 자연 턴이 claude-cli 2.1.322에서 정상인지 로그 에러 0과 `cli turn`으로 확인한다. bbot direct 세션이 다음 턴에 5-2로 도는지도 본다.
+- [ ] verify FAIL 1: session 실패행이 10-27부터 남아 있고, 10-30과 11-13에서 count와 시각이 같다. 원인 조사는 별도 승인으로 한다.
+- [ ] 비공개 `~/openclaw`(openclaw-config)의 Dockerfile 핀 한 줄(2.1.322)은 아직 커밋하지 않았다. 10-30부터 쌓인 커밋 안 된 작업(M/D/??)과 섞여 있으니, 그 작업을 정리할 때 함께 정한다. 공개 미러 `docker/openclaw/Dockerfile`은 runtime과 바이트가 같다. 정리 후보(지금은 보존): `/tmp/opus2-cc322-build`, `.agent-reports/openclaw-cc322-fable52`의 config 사본. 옛 이미지 10.8/10.7/10.4는 짝이 되는 DB를 조사하기 전에는 지우지 않는다.
+
 ## NOW — 10.9 기준의 깨움 설계, 적용은 별도 승인
 
 - **상태:** OpenClaw10.9(`709acab4…`) 운영 확인과 승인된 임시2폴더/끝난7helper 정리는 닫았다. 상세는 [CHANGELOG v2026.10.30](CHANGELOG.md)·ROADMAP, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261030/`. 기존 FAIL1과 경고·dirty는 별도다.
