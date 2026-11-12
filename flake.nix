@@ -123,6 +123,11 @@
         user = "junghan";
       };
 
+      cyborg = mkSystem "cyborg" {
+        system = "x86_64-linux";
+        user = "junghan";
+      };
+
       # ThinkPad P16s Gen 2 (AMD) - full configuration with home-manager
       thinkpad = mkSystem "thinkpad" {
         system = "x86_64-linux";

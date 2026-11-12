@@ -21,6 +21,11 @@
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14), 남은 것은 아래 §#14.
 Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
 
+## Cyborg 입사 준비
+
+- [ ] [CYBORG.md](CYBORG.md) 사전 준비: 설치 매체·작업 트리 전달, 회사 보안/암호화 정책 확인, ThinkPad 데이터·인증 이전 계획과 설치 시간 실측.
+- [ ] 실물 인수 후 설치·첫 부팅, 하드웨어 수집, Intel/NVIDIA·외부 모니터·오디오·절전·Ollama 검증. 현재 하드웨어 파일은 미검증 초안.
+
 ## NOW — 10.9 기준의 깨움 설계, 적용은 별도 승인
 
 - **상태:** OpenClaw10.9(`709acab4…`) 운영 확인과 승인된 임시2폴더/끝난7helper 정리는 닫았다. 상세는 [CHANGELOG v2026.10.30](CHANGELOG.md)·ROADMAP, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261030/`. 기존 FAIL1과 경고·dirty는 별도다.

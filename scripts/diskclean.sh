@@ -73,11 +73,11 @@ case "$DEVICE" in
     nuc)
         GC_RETAIN=7;  GUI_CACHE=false; REPO_CACHE=true
         DEVICE_NOTE="홈서버 — headless, repo 빌드 캐시 정리 대상" ;;
-    laptop|thinkpad)
+    laptop|thinkpad|cyborg)
         GC_RETAIN=7;  GUI_CACHE=true;  REPO_CACHE=true
         DEVICE_NOTE="GUI 디바이스 — 휴지통·브라우저·repo 빌드 캐시가 용량의 대부분" ;;
     *)
-        error "알 수 없는 디바이스: $DEVICE (유효: oracle nuc laptop thinkpad)"; exit 1 ;;
+        error "알 수 없는 디바이스: $DEVICE (유효: oracle nuc laptop thinkpad cyborg)"; exit 1 ;;
 esac
 
 # ── 유틸 ───────────────────────────────────────────────────────────────

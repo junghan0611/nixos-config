@@ -34,7 +34,7 @@ in systemFunc rec {
     # the overlays are available globally.
     {
       nixpkgs.overlays = overlays ++ nixpkgs.lib.optionals
-        (builtins.elem name [ "nuc" "laptop" "thinkpad" ]) [
+        (builtins.elem name [ "nuc" "laptop" "thinkpad" "cyborg" ]) [
           # Ghostty만 독립 패키지 세트에서 공급한다. Oracle에는 이 overlay도 없다.
           # useGlobalPkgs로 시스템 패키지와 HM의 i3 실행 경로가 함께 바뀐다.
           (final: prev: {

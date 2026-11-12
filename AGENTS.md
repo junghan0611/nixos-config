@@ -6,7 +6,7 @@
 > - 본문에 날짜가 박히기 시작하면 → **ROADMAP.md**로 옮길 때다. AGENTS.md는 "지금 어떤 상태인가"만 유지.
 > - NEXT.md의 ✅ 완료 항목이 쌓이면 → ROADMAP.md로 흘려보낸다.
 
-Operator brief for a multi-device NixOS repository across `oracle`, `nuc`, `laptop`, `thinkpad`.
+Operator brief for a multi-device NixOS repository across `oracle`, `nuc`, `laptop`, `thinkpad`, `cyborg`.
 
 ## How to read this
 
@@ -16,6 +16,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 |---|---|
 | **`oracle` 디바이스 또는 OpenClaw 관련 작업** | [ORACLE.md](ORACLE.md) — ownership, 봇 model routing, env/secret, 업그레이드/restart, skills, 함정 |
 | **Oracle 분기 유지보수·정리·재부팅** | **`oracle-reboot` 스킬** — 승인·유휴 게이트·재접속 복구의 정본. [진입 안내](docs/oracle-maintenance.md), `run.sh d)` 사전 수집 |
+| **`cyborg` 설치·하드웨어 준비** | [CYBORG.md](CYBORG.md) — 인수 전 초안과 설치 절차 |
 | **`thinkpad` 로컬 AI (Ollama)** | [THINKPAD.md](THINKPAD.md) |
 | **Oracle 공유 GUI 작업실 접속** (어느 기기든 `run.sh` → `R`, 사용자 `junghan`) | [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14) — 클라이언트 쪽 사용법·인증서 지문만 보면 된다 |
 | **home 데이터·리포 퇴역·에이전트 작업 잔여물** | [docs/data-retirement.md](docs/data-retirement.md) — 기기 공통 수동 절차, 리포별 실측·원본/재생성물 구분·집합 승인·README 복원 표지 |
@@ -42,6 +43,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | `nuc` | home server | real machine, not disposable |
 | `laptop` | personal GUI | home-manager GUI matters |
 | `thinkpad` | work GUI | home-manager GUI matters; 로컬 AI → [THINKPAD.md](THINKPAD.md) |
+| `cyborg` | 예정된 work GUI | MSI Cyborg 15 AI A1VFK; 실기기 검증 전 → [CYBORG.md](CYBORG.md) |
 
 device / time은 SessionStart hook이 자동 제공 (`device=` / `time_kst=`). 안 보이면 `cat ~/.current-device` + `TZ='Asia/Seoul' date '+%Y%m%dT%H%M%S'`. Normalization (`run.sh`): `oracle-nixos` → `oracle`; first token before `-` is the flake profile name.
 

@@ -8,6 +8,8 @@ let
     import ../../hosts/nuc/vars.nix
   else if (currentSystemName == "laptop") then
     import ../../hosts/laptop/vars.nix
+  else if (currentSystemName == "cyborg") then
+    import ../../hosts/cyborg/vars.nix
   else
     # Default values for other systems
     {

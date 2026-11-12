@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Configuration
 DEVICE_FILE="$HOME/.current-device"
 FLAKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VALID_HOSTS=("oracle" "nuc" "laptop" "thinkpad")
+VALID_HOSTS=("oracle" "nuc" "laptop" "thinkpad" "cyborg")
 
 # Helper functions
 info() { echo -e "${BLUE}ℹ ${NC}$1"; }
@@ -42,6 +42,7 @@ check_device() {
         echo "  echo 'nuc' > ~/.current-device           # Intel NUC"
         echo "  echo 'laptop' > ~/.current-device        # Samsung Laptop"
         echo "  echo 'thinkpad' > ~/.current-device      # ThinkPad P16s"
+        echo "  echo 'cyborg' > ~/.current-device        # MSI Cyborg"
         exit 1
     fi
 
