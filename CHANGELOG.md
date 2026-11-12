@@ -9,6 +9,31 @@
 
 ## Unreleased
 
+## v2026.11.13 — bbot·메멘토 Fable 5.2(Claude Code 2.1.322), Oracle RDP를 junghan 계정으로, Cyborg 설치 준비
+
+### OpenClaw — bbot과 메멘토를 Fable 5.2로
+
+- OpenClaw는 10.9에 그대로 두었다. base digest `bfa6ab15…`와 스키마(state 20 / agent 25)도 바꾸지 않았다. 10.10과 11.x는 스키마가 v22/v27로 바뀌는 비선형 메이저 업그레이드라서 따로 판단한다.
+- 이미지에서 바뀐 것은 Claude Code 핀 한 줄이다(2.1.288 → 2.1.322). 2.1.288은 `claude-fable-5-2`를 알지 못했다. 공개 미러 `docker/openclaw/Dockerfile`은 runtime과 바이트가 같다. 기억 패치 v4는 applied/verified 상태이고, behavior assertions 12개를 통과했다. 새 이미지는 `b3bbcd9c…`다.
+- 설정 변경 세 가지: bbot primary, bbot per-agent `models["anthropic/claude-fable-5-2"].agentRuntime.id=claude-cli`, 메멘토 cron의 model override. 10.9 정적 카탈로그에는 이 모델이 없어서 `models list`에는 보이지 않는다.
+- 승인받은 격리 bbot 1턴이 `runner=cli`, `winnerProvider=claude-cli`, `winnerModel=claude-fable-5-2`, `fallbackUsed=false`, `stopReason=completed`로 끝났다. 그 뒤 꺼져 있던 메멘토를 다시 켰다(3시간 간격). 켠 직후 바로 실행되지는 않았다.
+- **아직 남은 것:**
+  - 메멘토의 첫 자연 실행, 그리고 glg·mini의 2.1.322 자연 턴은 아직 관측하지 못했다.
+  - verify는 PASS 38 / FAIL 1 / UNKNOWN 0이다. FAIL은 `deliveryQueues.failed`의 session 행이다. count와 oldestFailedAt이 10-27·10-30 영수증과 같지만, 11-13 교체 직전 스냅샷은 없고 원인도 모른다. 고친 것이 아니다.
+  - 새 컨테이너 RestartCount는 3이다(기동 중 tini ELOOP 3회). health ok 이후로는 늘지 않았다.
+- 롤백 짝으로 이전 이미지 `709acab4…`, 비공개 config 사본, cron 메타를 보존한다. 비공개 `~/openclaw` 리포의 핀 한 줄은 기존에 커밋하지 않은 작업과 섞여 있어 아직 커밋하지 않았다(NEXT).
+
+### #14 Oracle RDP — GLG 본인 계정 한 작업실로
+
+- RDP 데스크톱이 별도 계정 `browser` 대신 `junghan`으로 로그인한다. 에이전트 uid, 홈, Emacs 소켓, Agent Chrome(CDP 루프백 9222)이 한 작업실이 된다. `tsusers`는 junghan만 두고 MaxSessions는 1이다. Chrome 자동 시작은 Home Manager가 맡는다(`3eae590`).
+- 버스 활성화된 XFCE 서비스(notifyd, GTK portal)가 DISPLAY 없이 실패하던 문제를 고쳤다. autostart 항목이 DISPLAY와 XAUTHORITY만 넘긴다. startwm.sh 변경은 xrdp를 재시작시켜 접속을 끊으므로 쓰지 않았다(`4c3e2c4`).
+- 이 변경은 main `0caf67f`(gen79)로 xrdp 재시작 없이 적용했다. 재부팅 검증, autostart 순서 race, 로그아웃 뒤 남는 DISPLAY는 아직 열려 있다(NEXT §#14).
+
+### Oracle·기기
+
+- Oracle 계획 재부팅은 11-04에 읽기 전용 사전점검만 하고 보류했다. 접근·부트 사실과 수동 복구 담당을 기록했다(`143a80b`).
+- MSI Cyborg 15 설치를 준비했다. flake 프로필, 미검증 하드웨어 초안, `CYBORG.md`를 추가했다(`c6d871d`). 실물 설치·검증은 NEXT에 있다.
+
 ## v2026.11.4 — Oracle 공유 GUI 브라우저(RDP) 배포, thinkpad SSH 강화·Ghostty 1.4·ChatGPT 프리뷰
 
 ### #14 Oracle 공유 GUI 브라우저 — Cloudflare Access 뒤의 RDP

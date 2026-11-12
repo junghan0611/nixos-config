@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.4](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.4).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.13](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.13).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -43,7 +43,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 ## #14 Oracle RDP — 남은 관측
 
-- **배포 상태:** 11-04 16:05 별도 계정 `browser`(uid 1990)를 지우고 GLG 본인 계정 `junghan` 단일 세션으로 옮겼다(gen78 = `3eae590`). 16:41 DISPLAY 보완을 담은 main `0caf67f`을 gen79로 켰다. 79가 current이자 부트 기본값이고, booted는 아직 72다. xrdp·sesman은 재시작되지 않아 GLG의 세션이 이어졌다. 16:17 GLG가 junghan으로 RDP에 로그인해 Chrome과 터미널을 확인했다. 사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14).
+- **배포 상태:** junghan 단일 세션 이전(gen78)과 DISPLAY 보완(gen79)은 [CHANGELOG v2026.11.13](CHANGELOG.md)에 기록했다. 79가 current이자 부트 기본값이고 booted는 아직 72다. 사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14).
 - **미검증:**
   - 이 구성으로 재부팅한 적이 없다(아래 §Oracle 계획 재부팅, 보류). 다음 재부팅 때 확인할 순서: 새 세대 부팅 → xrdp 루프백 → `run.sh R` connector → junghan 로그인. 그때까지 72가 부팅 검증된 복귀 경로다. 72 퇴역은 그 뒤 별도 판단이다.
   - 지금 세션 692는 16:5x에 GLG가 RDP 터미널에서 직접 고쳤다. `dbus-update-activation-environment --systemd DISPLAY XAUTHORITY` 뒤 두 unit을 재시작했다. 그 결과:
