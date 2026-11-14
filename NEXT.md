@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.13](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.13).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.14](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.14).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -15,7 +15,7 @@
 - [x] **3. 10.9 운영 확인·교차검토·임시 정리** — [v2026.10.30](CHANGELOG.md)에 이관
 - [x] **3b. OpenClaw 11.3 메이저 컷오버 + claude-cli 모델 정리 + 현재값 SSOT 단일화** — [v2026.11.14](CHANGELOG.md), 잔여 관측은 아래 §OpenClaw 11.3
 - [ ] **4. 연속성·비용·세션 증식 기준의 깨움 설계** ← CURRENT: 주말 GLG 판단, [#13](https://github.com/junghan0611/nixos-config/issues/13)·llmlog 20261028T092543
-- [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 10.x 복귀 자산 전부 2026-11-14 GLG 승인 퇴역([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
+- [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(현 메이저 복귀 짝 `b3bbcd9c` + cold B는 보존)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
 현재 좌표: 1–3·3b 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요) → 5 미해결 보존
 
@@ -32,10 +32,10 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 현재 운영 버전은 [ORACLE.md](ORACLE.md) `LIVE` 줄로 판정한다(여기에 복제하지 않는다). 경과는 [ORACLE.md](ORACLE.md) Model routing 첫 문단, 영수증은 비공개 `~/openclaw/backups/cutover-11.3-20261113/`·`.agent-reports/openclaw-v2026.11.3-review/`.
 
 - [ ] 실사용: 11-14 GLG가 bbot 메시지 수신을 확인했고, glg·mini 실제 턴은 sonnet-5 시절 것이다. 모델 정리(11-14) 뒤 glg·mini sonnet-5-5 첫 실제 턴과 **모닝 cron 11-15 08:00 자연 실행**(sonnet-5-5)을 메타로 확인한다.
-- [ ] **memory 인덱스 동결 — 결정 필요** (11-14 읽기 전용 검수, 비공개 `.agent-reports/openclaw-v2026.11.3-review/memory-axis-20261114.md`): 6봇 인덱스가 전부 chunking **5** 그대로이고 컷오버 뒤 새 행 **0**, 재구축·capacity·임베딩 로그 0. `tools.deny=["memory_search"]`라 search 경계 repair가 발화하지 않는 것으로 보인다(가설). 비용은 0이지만 **새 봇 기억이 인덱스와 Andenken openclaw 수확으로 흐르지 않는다.** Andenken export가 읽는 4테이블·컬럼은 v27에 그대로 있어 수확 자체는 호환. 선택지: (A) upstream #196378이 든 stable까지 동결 유지 (B) gateway 정지 후 offline `memory index --force`로 통제 재구축 — bbot 6426×4096d는 #196505 실패 규모대, 경계 바뀐 청크만큼 OpenRouter 재임베딩, 재구축 뒤 청크 id가 바뀌면 append-only Andenken에 v5·v6 중복 유입 가능(가설, andenken 담당과 계약 확인 필요). `memory status` CLI는 gateway 실행 중 거부, verify memory 절은 11.3에서 unavailable.
+- [ ] **memory 인덱스 동결 — 결정 필요** (11-14 읽기 전용 검수, 비공개 `.agent-reports/openclaw-v2026.11.3-review/memory-axis-20261114.md`): 6봇 인덱스가 전부 chunking **5** 그대로이고 컷오버 뒤 새 행 **0**, 재구축·capacity·임베딩 로그 0(로그 관측이며 OpenRouter 청구액은 따로 확인하지 않았다). `tools.deny=["memory_search"]`라 search 경계 repair가 발화하지 않는 것으로 보인다(가설). 비용은 0이지만 **새 봇 기억이 인덱스와 Andenken openclaw 수확으로 흐르지 않는다.** Andenken export가 읽는 4테이블·컬럼은 v27에 그대로 있어 수확 자체는 호환. 선택지: (A) upstream #196378이 든 stable까지 동결 유지 (B) gateway 정지 후 offline `memory index --force`로 통제 재구축 — bbot 6426×4096d는 #196505 실패 규모대, 경계 바뀐 청크만큼 OpenRouter 재임베딩, 재구축 뒤 청크 id가 바뀌면 append-only Andenken에 v5·v6 중복 유입 가능(가설, andenken 담당과 계약 확인 필요). `memory status` CLI는 gateway 실행 중 거부, verify memory 절은 11.3에서 unavailable.
 - [ ] W4 권고: 첫 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교).
 - [ ] **재빌드·plain `compose up` 금지(현 상태)**: compose config-hash가 restart:no override 기준 → override 없는 up은 recreate → #195208 경합/tini ELOOP 재노출. 다음 recreate는 의도된 작업으로만.
-- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐), BuildKit 캐시(삭제 이미지가 붙든 2.6G 회수 가능 표기, `docker builder prune`은 GLG 승인). 11-14 정리 완료: cold A, 이미지 1918f03e·709acab4·3623dcc2·e122cbd2·7e39b0b2·17dab88f, cold24, Doctor bak 8개(/home 1.61G). **복귀 짝 cold B + `b3bbcd9c`는 보존.**
+- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐), 11-14 정리 완료: BuildKit 캐시 `docker builder prune -f`(GLG 승인, 2.645GB 회수), cold A, 이미지 1918f03e·709acab4·3623dcc2·e122cbd2·7e39b0b2·17dab88f, cold24, Doctor bak 8개(/home 1.61G). **복귀 짝 cold B + `b3bbcd9c`는 보존.**
 - [ ] 근본원인 3축 미수정 기록: entwurf #162(ACP 실행 중 진행 비가시)·#163(busy 형제 즉시 중단 수단 부재 — 오늘 조기 정지 238s·미승인 lab 리허설 2건), upstream #195208, tini ELOOP.
 
 ## 이월 관측
