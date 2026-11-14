@@ -38,7 +38,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - [ ] W4 권고: 첫 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교).
 - [ ] **재빌드·plain `compose up` 금지(현 상태)**: compose config-hash가 restart:no override 기준 → override 없는 up은 recreate → #195208 경합/tini ELOOP 재노출. 다음 recreate는 의도된 작업으로만.
 - [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐), 11-14 정리 완료: BuildKit 캐시 `docker builder prune -f`(GLG 승인, 2.645GB 회수), cold A, 이미지 1918f03e·709acab4·3623dcc2·e122cbd2·7e39b0b2·17dab88f, cold24, Doctor bak 8개(/home 1.61G). **`b3bbcd9c`와 마지막 cold B도 추가 퇴역 완료.** cold B 단일 파일 삭제로 `/` 1,381,007,360B를 회수했고, 11.3 live와 영수증·메타데이터는 보존했다. 컨테이너 쓰기층 정리를 위한 recreate는 승인하지 않았다.
-- [ ] 근본원인 3축 미수정 기록: entwurf #162(ACP 실행 중 진행 비가시)·#163(busy 형제 즉시 중단 수단 부재 — 오늘 조기 정지 238s·미승인 lab 리허설 2건), upstream #195208, tini ELOOP.
+- [ ] 근본원인 미수정 기록: upstream #195208, tini ELOOP. (entwurf #162 ACP 진행 비가시·#163 busy 형제 중단 수단 부재는 entwurf 0.53.1에서 닫힘, 2026-11-14 확인.)
 
 ## 이월 관측
 
