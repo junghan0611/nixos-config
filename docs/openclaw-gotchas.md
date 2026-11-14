@@ -12,6 +12,18 @@
 
 ## 활성
 
+### 11.3 heartbeat는 cron의 대체물이 아니다 — 닻·busy skip·NO_REPLY·중복 억제 (2026-11-14)
+
+bbot 메멘토 cron을 표준 heartbeat로 옮길지 검토하면서 페어 검수 형제(20261114T155300-dadd32)가 v2026.11.3 소스(847611dc)로 확인했다. 결론은 cron 유지였다(NEXT 「bbot 결정」).
+
+- **분 단위 닻이 없다.** 모니터의 anchor는 `sha256(deviceId:agentId) % interval`로 정해진다(`src/infra/heartbeat-schedule.ts:59-66`). 스키마에 anchor·phase 키가 없다. bbot은 :41:42에 고정되며, 켜도 즉시 돌지 않고 다음 위상 슬롯에서 첫 tick이 난다. 특정 시각이 중요한 비트는 cron에 둔다.
+- **바쁘면 미루지 않고 skip한다.** 같은 agent의 reply·embedded run이 돌고 있거나 main/automation 큐가 바쁘면 그 tick을 건너뛰고 다음 persisted tick을 기다린다(`/app/docs/gateway/heartbeat.md` 기본값 절). 3h 주기에서는 GLG와 대화 중인 비트 하나를 통째로 잃는다.
+- **기본 prompt가 NO_REPLY를 지시한다**(`src/auto-reply/heartbeat.ts:12`). 「깨어나면 한 번 말한다」 규칙의 봇은 `heartbeat.prompt`를 반드시 덮어야 한다. heartbeat 경로에만 있는 억제가 둘 더 있다: 24h 이내 동일문이면 duplicate skip(`src/infra/heartbeat-dispatch.ts:428-443`), 마지막 줄이 `notify=false`면 silent(`heartbeat-delivery-normalization.ts:53`). 또 마지막 payload 하나만 보낸다.
+- **target을 비우면 첫 알림에 영어 서문이 붙는다**(implicitDefaultRoute, `src/infra/outbound/targets.ts:217`). cron announce와 같은 경로가 필요하면 `target` 채널 + `to` + `accountId`를 명시한다.
+- **disabled 모니터에 옛 scratch가 남는다.** bbot 모니터 `af194c38`에는 09-10 시절 scratch(rev 8)가 남아 있어, 켜면 그것이 매 비트 prompt 뒤에 붙는다. 켜기 전에 `cron scratch`를 unset하거나 교체한다.
+- thinking 키가 없다. agent `thinkingDefault` → 모델 params → `agents.defaults.thinkingDefault` 순으로 해석되므로(`src/agents/model-thinking-default-core.ts:31-50`) 전역값을 바꾸면 heartbeat도 따라 바뀐다.
+- isolated heartbeat의 세션 키는 고정 `agent:<id>:main:heartbeat`이고 비트마다 sessionId가 새로 붙는다. opener에 cron id 접두가 없으므로, cron id로 비트를 세는 도구(bbot `beat-census`·`harvest-sessions`)는 전환 시 0이 된다.
+
 ### 10.9 교체 — main PR과 backport 차이·병렬 포팅의 baseline 고정 (2026-10-30)
 
 - **원 main PR만으로 릴리스 동작을 확정하지 않는다.** FTS 복구는 main PR176234만 보면 offline Doctor 전용으로 읽히지만 실제10.9 backport에는 #176833의 제한된 기동 경로도 들어 있다. Opus 교차검토가 이를 찾아 정확 태그의 `src/state/openclaw-agent-startup-fts.ts`·`agent-database-startup-fts.ts` 배선으로 대조했다. canonical FTS-only·배타 lease·백업 조건과 실패 시 거부를 확인하고 실제 기동 로그/백업 발생을 본다. 선언 schema 동일만으로 기동 DB 쓰기0을 주장하지 않는다.
