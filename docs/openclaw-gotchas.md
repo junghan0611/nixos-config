@@ -24,6 +24,13 @@ bbot 메멘토 cron을 표준 heartbeat로 옮길지 검토하면서 페어 검�
 - thinking 키가 없다. agent `thinkingDefault` → 모델 params → `agents.defaults.thinkingDefault` 순으로 해석되므로(`src/agents/model-thinking-default-core.ts:31-50`) 전역값을 바꾸면 heartbeat도 따라 바뀐다.
 - isolated heartbeat의 세션 키는 고정 `agent:<id>:main:heartbeat`이고 비트마다 sessionId가 새로 붙는다. opener에 cron id 접두가 없으므로, cron id로 비트를 세는 도구(bbot `beat-census`·`harvest-sessions`)는 전환 시 0이 된다.
 
+### 전역 `session.reset`을 켜면 entwurf 책상 세션도 끊긴다 (2026-11-14, #160 설계)
+
+GLG 결정(#160 책상 모델): 봇마다 명시 key 책상 세션 하나(예: `agent:main:entwurf-desk`)를 pin해 두고, compaction을 지나도 세션을 잇는다. 지금은 `session.reset`이 미설정(기본 `none`)이라 자동 리셋이 없다(2026-11-14 측정).
+
+- 나중에 `session.reset`을 daily/idle로 **전역** 설정하면 책상도 sessionId가 롤오버되어 맥락이 끊긴다(garden id는 key에 붙어 유지). 전역 리셋을 켜기 전에 책상 key를 `resetByType`/`resetByChannel`로 뺄 수 있는지 먼저 확인한다(`/app/docs/concepts/session.md` 리셋 절).
+- pin이 빠진 책상은 자동 유지보수가 archive한다: dashboard 7일(`archiveDashboardAfter`), 그 밖 durable 30일(`pruneAfter`). pin은 birth와 같은 단계에서 건다.
+
 ### 10.9 교체 — main PR과 backport 차이·병렬 포팅의 baseline 고정 (2026-10-30)
 
 - **원 main PR만으로 릴리스 동작을 확정하지 않는다.** FTS 복구는 main PR176234만 보면 offline Doctor 전용으로 읽히지만 실제10.9 backport에는 #176833의 제한된 기동 경로도 들어 있다. Opus 교차검토가 이를 찾아 정확 태그의 `src/state/openclaw-agent-startup-fts.ts`·`agent-database-startup-fts.ts` 배선으로 대조했다. canonical FTS-only·배타 lease·백업 조건과 실패 시 거부를 확인하고 실제 기동 로그/백업 발생을 본다. 선언 schema 동일만으로 기동 DB 쓰기0을 주장하지 않는다.
