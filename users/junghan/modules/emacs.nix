@@ -7,13 +7,15 @@ let
   doomEmacsPath = "${config.home.homeDirectory}/.emacs.d";
   doomConfigPath = "${config.home.homeDirectory}/.doom.d";
 
-  # Server (headless) vs Desktop
-  isHeadless = builtins.elem currentSystemName [ "oracle" "nuc" ];
+  # Headless 호스트 목록. 지금은 비어 있다 — 모든 디바이스가 GUI Emacs를 쓴다.
+  # oracle은 RDP(xrdp)로 접속하는 공유 GUI 작업실이라 headless가 아니다.
+  # 진짜 GUI 없는 호스트가 생기면 여기에 이름을 넣는다 (emacs-nox + desktop entry 제외).
+  isHeadless = builtins.elem currentSystemName [ ];
   emacsPackage = if isHeadless then pkgs.emacs-nox else pkgs.emacs-gtk;
 in {
   # Enable Emacs
-  # - Desktop (thinkpad/laptop): emacs-gtk (GTK3 + X11) — 마우스 커서, 파일 다이얼로그, context-menu가 GTK 테마 따름
-  # - Server (oracle/nuc): emacs-nox — GUI 불필요, X11 의존성 제거
+  # - 전 디바이스 (oracle/nuc/laptop/thinkpad/cyborg): emacs-gtk (GTK3 + X11) — 마우스 커서, 파일 다이얼로그, context-menu가 GTK 테마 따름
+  # - headless 목록(isHeadless)에 든 호스트만 emacs-nox — 현재 없음
   # - emacs-pgtk는 Wayland용이라 i3wm(X11)에서는 gtk가 적합
   # - 2026-09-02부터 emacs-gtk/emacs-nox 는 flake.nix 오버레이에서 unstable
   #   emacs31-gtk3 / emacs31-nox 로 잡힌다 (26.05는 30.2에 멈춰 있음)
