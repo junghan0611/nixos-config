@@ -113,7 +113,7 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 잠시 사라졌던 typing이 다시 관측되어, `active-memory → 죽은 codex 런타임 → typing` 인과는
 현재 증명되지 않았다. 8.1 soak 동안 재발 시각과 `audit_events`의 main run을 함께 기록한다.
 
-### bbot 3h — 메멘토 autopilot (2026-09-10)
+### bbot 6h — 메멘토 autopilot (2026-09-10, 2026-11-15부터 6h)
 
 GLG 결정: autopilot은 누적 main heartbeat가 아니라 **매 비트 fresh isolated session**이다.
 `bbot-memento-autopilot` (`declarationKey: autopilot:bbot-memento`)은 `agentTurn`이며
@@ -132,18 +132,22 @@ B 파일을 고친 뒤에는 설정 담당자가 그 내용을 `cron edit <job-i
 일반 cron scratch는 저장만 될 뿐 agentTurn prompt에는 주입되지 않고, heartbeat scratch만
 `heartbeat-runner-prompt`가 읽는다. B 파일은 B만 고친다. 현재 job은 operator-created
 `toolsAllow:["*"]` / `scheduledToolPolicy:"trusted"`다. 이는 cron의 전체-tool 기본을 명시한 것이며,
-GLG 결정(2026-09-10): 3시간 memento라는 **깨움 면만** 운영자가 소유하고, 벽돌을 포함한 실행 규칙은
+GLG 결정(2026-09-10): 주기 memento(당시 3시간, 2026-11-15부터 6시간)라는 **깨움 면만** 운영자가 소유하고, 벽돌을 포함한 실행 규칙은
 B와 GLG가 고친다 — 여기서 강제·축소하지 않는다.
 
 #### cadence·배달은 cron job이 소유한다
 
 ```bash
-openclaw cron edit e94ed49d-847e-4c1e-b127-c914171d5c5b --every 3h
+openclaw cron edit e94ed49d-847e-4c1e-b127-c914171d5c5b --cron "30 2,8,14,20 * * *" --tz Asia/Seoul --exact
 openclaw cron enable e94ed49d-847e-4c1e-b127-c914171d5c5b
 ```
 
 이 job은 일반 operator-owned cron이다. delivery·model·schedule 변경은 job을 읽고 `cron edit`으로
-처리한다. `agents.entries.bbot.heartbeat`는 `{ "every": "0m" }`를 유지한다 — `unset`은
+처리한다. **job id를 유지한다** — 지우고 다시 만들면 id가 바뀌어 B의 `beat-census`·`harvest-sessions`(opener의 cron id로 비트를 찾는다)에서 비트가 사라진다. 간격·시각을 바꾸면 B에게 전환 시각(마지막 옛 비트·첫 새 비트 nextRun)을 알린다 — B 스크립트 셋(`beat-census`·`inbox`·`house-board`)에 간격이 상수로 들어 있다.
+
+2026-11-15 07:47 KST(GLG 직접 승인, B 합의): `every 3h`(anchor 09-10 07:26:52) → cron `30 2,8,14,20 * * *` Asia/Seoul `--exact`. 박자 사이 6시간은 GLG가 남기는 시간이고 박자는 그것을 읽는다. 02:30이 전날 day-close를 이어받는다(B `day-close`는 시각이 아니라 날짜로 판단). 마지막 3h 비트 07:27:02, 첫 6h 비트 08:30. 바뀐 경로는 schedule·description뿐(payload·delivery·model pre/post 동일, 영수증 `~/openclaw/backups/swap-10.9-cc322-20261113/cron-memento.{pre,post}-6h-20261115.json`).
+
+`agents.entries.bbot.heartbeat`는 `{ "every": "0m" }`를 유지한다 — `unset`은
 `agents.defaults.heartbeat`를 다시 상속해 6봇의 main-session heartbeat를 되살린다.
 
 **gateway restart 는 이 상태를 흔들지 않는다**(2026-09-10 실측, skill §4의 "등록이 바뀌는 변경까지
@@ -157,7 +161,7 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 
 | 이름 | 봇 | 스케줄 | 대상 | 모델 |
 |---|---|---|---|---|
-| `bbot-memento-autopilot` | bbot | every 3h | GLG DM (`telegram:123861330`, `accountId:bbot`) | `anthropic/claude-fable-5-2` |
+| `bbot-memento-autopilot` | bbot | `30 2,8,14,20 * * *` Asia/Seoul = **02:30·08:30·14:30·20:30 KST** (2026-11-15부터, 이전 every 3h) | GLG DM (`telegram:123861330`, `accountId:bbot`) | `anthropic/claude-fable-5-2` |
 | `morning-family-schedule-reminder` | glg | `0 23 * * *` UTC = **08:00 KST** | GLG DM | `anthropic/claude-sonnet-5-5` (2026-11-14) |
 
 

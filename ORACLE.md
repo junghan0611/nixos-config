@@ -253,7 +253,7 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 ### autopilot — bbot memento 하나만 (2026-09-10)
 
 bbot autopilot은 `heartbeat`가 아니라 operator-owned cron `bbot-memento-autopilot`
-(`declarationKey: autopilot:bbot-memento`)이다. 매 3시간 `isolated` `agentTurn`으로 새 transcript/session을
+(`declarationKey: autopilot:bbot-memento`)이다. 매 6시간(02:30·08:30·14:30·20:30 KST, 2026-11-15부터; 이전 3시간) `isolated` `agentTurn`으로 새 transcript/session을
 열고 `anthropic/claude-fable-5-2`(2026-11-13부터, 이전 5-1)와 `thinking:"xhigh"`를 명시하며, Telegram `123861330` / `accountId:"bbot"`에 `announce`로 최종 텍스트를 배달한다.
 깨움 문장은 B 소유 `workspace-bbot/scripts/heartbeat-wake-message.md`가 job payload에 들어간다 —
 일반 cron scratch는 agentTurn에 주입되지 않는다. 상세는 [docs/openclaw-automations.md](docs/openclaw-automations.md).
