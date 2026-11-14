@@ -143,7 +143,7 @@ if (payloadKind !in setOf("systemEvent", "agentTurn", "command", "script")) retu
 **적지 말고 `openclaw docs`를 가리켜라.**
 
 우리 쪽 SSOT 셋: `docs/openclaw-automations.md`(사람 없이 도는 것 전량) ·
-`docs/openclaw-gotchas.md`(함정 카탈로그) · `ORACLE.md`(운영 핸드북).
+`docs/openclaw-gotchas.md`(함정 카탈로그) · `ORACLE.md`(운영 핸드북). 라이브 값(버전·모델·봇)은 §10 지도를 따른다.
 
 ## 8. 실행 전 체크 — 세 줄
 
@@ -161,3 +161,31 @@ diff하는 것이 "우리 설정이 깨졌나"의 가장 빠른 답이다.
 버전을 올릴 때는 같은 리포의 **`openclaw-update` 스킬** 한 장을 본다. 마이너 후보/메이저 판정, GLG 방식의 교체 순서
 (마이너는 교체만, 메이저는 따로 판단), 매번 밟았던 함정표, 읽기 전용 fail-closed `preflight.py`·`verify.py`(오프라인 fixture `selftest.py`)가 들어 있다.
 교체는 자동화하지 않는다 — GLG: *"자동화하면 터지니까 그냥 헛발질 안하게하는게 중요하다."*
+
+## 10. 라이브 사실의 SSOT 지도 — 값은 여기 적지 않는다
+
+GLG: *"오라클 라이브 문서가 썩으면 안 된다."* 라이브 값은 **한 곳에만** 적고, 그 자리에 live readback 날짜를 같이 둔다.
+이 표는 위치만 가리킨다. 값을 옮겨 적으면 그게 두 번째 사본이 되어 썩는다.
+
+| 사실 | SSOT | readback 근거 |
+|---|---|---|
+| 운영 OpenClaw 버전 | `ORACLE.md` Model routing 절의 **`LIVE` 줄**(과 그 헤더) | `openclaw --version`·`docker inspect` — 판정일을 그 줄에 적는다 |
+| 봇별 primary 모델·레일 | `ORACLE.md` 봇 표("봇·모델 현재값 SSOT" 문단 아래) | `openclaw config get --json agents.entries`/`agents.defaults` — 문단의 "마지막 readback" 날짜 |
+| claude-cli 유효 모델 | 같은 봇 표 위의 정책 문장 | 같은 readback + no-deliver probe |
+| 자동화(cron·heartbeat) | `docs/openclaw-automations.md` | `./run.sh w)` / `scripts/turnwatch.sh` — 문서의 "재확인" 날짜 |
+| 이미지 내부 도구 버전 | `docker/openclaw/Dockerfile` 핀(미러는 `~/openclaw/Dockerfile`) | 빌드 로그(`claude --version` 등) |
+
+- **모델이나 봇을 바꾸면 같은 세션에서 해당 SSOT와 readback 날짜를 갱신한다.** 다음 세션으로 미루면 live와 문서가 갈라진다.
+- 다른 문서(NEXT·ROADMAP·gotchas·스킬)에 나오는 모델 이름과 버전 숫자는 그 시점 기록이다. 현재값의 근거로 인용하지 않는다.
+
+## 11. 모델 변경 — 순서
+
+1. 새 id의 claude-cli 행(`models["<id>"].agentRuntime.id="claude-cli"`)을 **먼저** 추가한다.
+2. primary와 cron model override를 새 id로 바꾼다.
+3. 구 행과 allow를 제거한다.
+4. 1–3을 **한 번의 reload**로 붙인다(upstream #195265).
+5. 격리 no-deliver probe로 실제 레일·모델을 확인한다. `config validate` PASS는 모델 존재의 증거가 아니다(가짜 id도 통과).
+6. §10의 SSOT와 readback 날짜를 갱신한다.
+
+**alias 함정(11.3 plugin alias)**: `sonnet-5`는 Sonnet **5**이지 5.5가 아니다. 5.5를 가리키는 것은 `sonnet`·`opus`뿐이다.
+alias를 쓰지 말고 정확한 id를 적는다. 썼다면 probe로 실제 해석된 모델을 확인한다.

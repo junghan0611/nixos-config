@@ -14,6 +14,7 @@ they are Doctor bookkeeping. INFO lines (restart count, badge, memory index) nev
 The comments ping body is compared to "pong" and never printed.
 """
 import argparse
+import ast
 import json
 import os
 import re
@@ -183,23 +184,131 @@ else:
 			note('PASS' if got == want else 'FAIL', f'{pid}: {got} (expect {want})')
 
 print('== hotfix integrity (constants from the patch script)')
+# The patch script is parsed, never imported or executed. Two shapes are recognised:
+#   v5+ (11.3): VERSION, SIG and TARGETS — one entry per emitted classifier copy (name/original/patched[/helper]).
+#   v4 (10.9):  flat VERSION/CORPUS_NAME/KEY_NAME/PATCHED_SHA/HELPER_SHA256/MARKER — kept because the 10.9 image stays
+#               the rollback target and a rollback restores the v4 script beside it.
+# Neither shape, both shapes, or a malformed field is UNKNOWN: an unreadable contract is never read as a pass.
+V4_KEYS = ('VERSION', 'CORPUS_NAME', 'KEY_NAME', 'PATCHED_SHA', 'HELPER_SHA256', 'MARKER')
+HEX64 = re.compile(r'^[0-9a-f]{64}$')
+DIST_REL = re.compile(r'^(?!/)(?!.*(?:^|/)\.\.(?:/|$))[A-Za-z0-9._/-]+\.m?js$')
+
+
+def patch_constants(text):
+	"""Top-level literal assignments only; anything that is not a plain literal is left out."""
+	try:
+		tree = ast.parse(text)
+	except (SyntaxError, ValueError):
+		return None
+	consts = {}
+	for node in tree.body:
+		if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+			try:
+				consts[node.targets[0].id] = ast.literal_eval(node.value)
+			except (ValueError, TypeError, SyntaxError, RecursionError):
+				pass
+	return consts
+
+
+def v5_targets(c):
+	"""Validated (name, original, patched, helper|None) rows, or None when any field is malformed."""
+	ts = c.get('TARGETS')
+	if not (isinstance(c.get('VERSION'), str) and isinstance(c.get('SIG'), str) and c['SIG']
+		and isinstance(ts, list) and ts):
+		return None
+	rows = []
+	for t in ts:
+		if not isinstance(t, dict):
+			return None
+		name, orig, patched, helper = t.get('name'), t.get('original'), t.get('patched'), t.get('helper')
+		if not (isinstance(name, str) and DIST_REL.match(name) and isinstance(orig, str) and HEX64.match(orig)
+			and isinstance(patched, str) and HEX64.match(patched) and orig != patched):
+			return None
+		if helper is not None:
+			if not (isinstance(helper, (tuple, list)) and len(helper) >= 2 and isinstance(helper[0], str)
+				and DIST_REL.match(helper[0]) and isinstance(helper[1], str) and HEX64.match(helper[1])):
+				return None
+			helper = (helper[0], helper[1])
+		rows.append((name, orig, patched, helper))
+	if len({r[0] for r in rows}) != len(rows):
+		return None
+	return rows
+
+
+def dist_sums(paths):
+	rc, out = run(['docker', 'exec', 'openclaw-gateway', 'sha256sum', *(f'/app/dist/{p}' for p in paths)], timeout=120)
+	sums = {}
+	for ln in out.splitlines() if isinstance(out, str) else []:
+		parts = ln.split()
+		if len(parts) == 2 and HEX64.match(parts[0]) and parts[1].startswith('/app/dist/'):
+			sums[parts[1][len('/app/dist/'):]] = parts[0]
+	return sums  # partial output (rc!=0) still reports what was measured; absent paths become UNKNOWN
+
+
+def version_note(want):
+	if live_ver is None:
+		note('UNKNOWN', f'patch VERSION {want} vs live unreadable')
+	else:
+		note('PASS' if live_ver == want else 'FAIL', f'patch VERSION {want} vs live {live_ver}')
+
+
 patch = HOME / 'patch-memory-cron-parent.py'
 if not patch.exists():
 	note('UNKNOWN', f'{patch.name} missing — retiring the hotfix is a reviewed decision, not an absence (SKILL §1-4)')
 else:
-	t = patch.read_text()
-	c = {k: (re.search(rf'^{k} = "([^"]+)"', t, re.M) or [None, None])[1] for k in ('VERSION', 'CORPUS_NAME', 'KEY_NAME', 'PATCHED_SHA', 'HELPER_SHA256', 'MARKER')}
-	if None in c.values():
-		note('UNKNOWN', f'patch constants unreadable: {[k for k, v in c.items() if v is None]}')
-	else:
-		note('PASS' if live_ver == c['VERSION'] else 'FAIL', f"patch VERSION {c['VERSION']} vs live {live_ver}")
-		rc, out = run(['docker', 'exec', 'openclaw-gateway', 'sha256sum', f"/app/dist/{c['CORPUS_NAME']}", f"/app/dist/{c['KEY_NAME']}"])
-		sums = dict((ln.split()[1].rsplit('/', 1)[-1], ln.split()[0]) for ln in out.splitlines() if len(ln.split()) == 2) if rc == 0 else {}
-		if len(sums) != 2:
-			note('UNKNOWN', 'dist sha256 unavailable')
+	c = patch_constants(patch.read_text(errors='replace'))
+	is_v5 = isinstance(c, dict) and 'TARGETS' in c
+	is_v4 = isinstance(c, dict) and any(k in c for k in V4_KEYS[1:])
+	if c is None:
+		note('UNKNOWN', 'patch script unparsable')
+	elif is_v5 and is_v4:
+		note('UNKNOWN', 'patch script carries both v4 constants and v5 TARGETS — ambiguous contract')
+	elif is_v5:
+		rows = v5_targets(c)
+		if rows is None:
+			note('UNKNOWN', 'patch v5 VERSION/SIG/TARGETS malformed')
 		else:
-			note('PASS' if sums.get(c['CORPUS_NAME']) == c['PATCHED_SHA'] else 'FAIL', f"{c['CORPUS_NAME']} sha {str(sums.get(c['CORPUS_NAME']))[:16]} vs PATCHED {c['PATCHED_SHA'][:16]}")
-			note('PASS' if sums.get(c['KEY_NAME']) == c['HELPER_SHA256'] else 'FAIL', f"{c['KEY_NAME']} sha {str(sums.get(c['KEY_NAME']))[:16]} vs HELPER {c['HELPER_SHA256'][:16]}")
+			version_note(c['VERSION'])
+			helpers = sorted({h for *_, h in rows if h})
+			sums = dist_sums([r[0] for r in rows] + [h[0] for h in helpers])
+			for name, orig, patched, _ in rows:
+				got = sums.get(name)
+				if got is None:
+					note('UNKNOWN', f'{name}: dist sha256 unavailable')
+				else:
+					state = 'patched' if got == patched else 'UNPATCHED original' if got == orig else 'drift'
+					note('PASS' if got == patched else 'FAIL', f'{name} sha {got[:16]} vs PATCHED {patched[:16]} ({state})')
+			for hname, hsha in helpers:
+				got = sums.get(hname)
+				if got is None:
+					note('UNKNOWN', f'{hname}: helper sha256 unavailable')
+				else:
+					note('PASS' if got == hsha else 'FAIL', f'helper {hname} sha {got[:16]} vs pinned {hsha[:16]}')
+			# Coverage: every live copy of the classifier must be a pinned target, and no target may vanish.
+			rc, out = run(['docker', 'exec', 'openclaw-gateway', 'grep', '-rlF', '--include=*.mjs', '--include=*.js',
+				c['SIG'], '/app/dist'], timeout=120)
+			found = sorted(ln.strip()[len('/app/dist/'):] for ln in out.splitlines()
+				if ln.strip().startswith('/app/dist/')) if rc == 0 and isinstance(out, str) else None
+			want = sorted(r[0] for r in rows)
+			if not found:
+				note('UNKNOWN', 'classifier locator unmeasured (grep failed or found nothing; the sha rows above decide content)')
+			else:
+				note('PASS' if found == want else 'FAIL', f'classifier copies live {len(found)} vs pinned {len(want)}'
+					+ ('' if found == want else f' — unpinned {sorted(set(found) - set(want))}, absent {sorted(set(want) - set(found))}'))
+	elif is_v4:
+		missing = [k for k in V4_KEYS if not isinstance(c.get(k), str)]
+		if missing:
+			note('UNKNOWN', f'patch constants unreadable: {missing}')
+		else:
+			version_note(c['VERSION'])
+			sums = dist_sums([c['CORPUS_NAME'], c['KEY_NAME']])
+			if len(sums) != 2:
+				note('UNKNOWN', 'dist sha256 unavailable')
+			else:
+				note('PASS' if sums.get(c['CORPUS_NAME']) == c['PATCHED_SHA'] else 'FAIL', f"{c['CORPUS_NAME']} sha {str(sums.get(c['CORPUS_NAME']))[:16]} vs PATCHED {c['PATCHED_SHA'][:16]}")
+				note('PASS' if sums.get(c['KEY_NAME']) == c['HELPER_SHA256'] else 'FAIL', f"{c['KEY_NAME']} sha {str(sums.get(c['KEY_NAME']))[:16]} vs HELPER {c['HELPER_SHA256'][:16]}")
+	else:
+		note('UNKNOWN', 'patch script shape unrecognised (neither v5 TARGETS nor v4 constants)')
 
 print('== openclaw.json (paths only, never values)')
 try:

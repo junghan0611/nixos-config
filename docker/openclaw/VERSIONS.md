@@ -7,7 +7,7 @@
 이후 모든 버전 이력, 업그레이드 분석, 롤백 이력은 runtime SSOT 레포에 통합되었다:
 
 - **Change history**: https://github.com/junghan0611/openclaw-config/blob/main/README.md#change-history
-- **Current environment**: https://github.com/junghan0611/openclaw-config/blob/main/README.md#current-environment
+- **현재 운영 버전 판정**: 이 리포 [ORACLE.md](../../ORACLE.md)의 `LIVE` 줄 하나(2026-11-14부터). openclaw-config README의 Current environment는 그 줄을 가리킨다.
 
 리포별 영향 분석(nixos-config / agent-config / andenken / openai-codex)은 org 저장소의 추적 문서에 있다 (private):
 

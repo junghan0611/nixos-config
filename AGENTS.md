@@ -15,6 +15,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | 작업 맥락 | 펼칠 문서 |
 |---|---|
 | **`oracle` 디바이스 또는 OpenClaw 관련 작업** | [ORACLE.md](ORACLE.md) — ownership, 봇 model routing, env/secret, 업그레이드/restart, skills, 함정 |
+| **OpenClaw 현재 버전·봇·모델이 무엇인가** | [ORACLE.md](ORACLE.md) Model routing 절의 **`LIVE` 줄(버전) + 봇 표(모델) 한 곳만** 현재값이다. 다른 문서의 숫자는 그 시점 기록. 바꾸면 같은 세션에서 그 두 곳을 갱신한다 |
 | **Oracle 분기 유지보수·정리·재부팅** | **`oracle-reboot` 스킬** — 승인·유휴 게이트·재접속 복구의 정본. [진입 안내](docs/oracle-maintenance.md), `run.sh d)` 사전 수집 |
 | **`cyborg` 설치·하드웨어 준비** | [CYBORG.md](CYBORG.md) — 인수 전 초안과 설치 절차 |
 | **`thinkpad` 로컬 AI (Ollama)** | [THINKPAD.md](THINKPAD.md) |

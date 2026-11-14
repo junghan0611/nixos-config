@@ -85,7 +85,7 @@
 
 | 이름 | kind | delivery | 비고 |
 |---|---|---|---|
-| `bbot-memento-autopilot` | `agentTurn` | `announce -> telegram:123861330 (explicit, bbot)` | isolated fresh session, `anthropic/claude-opus-5`; heartbeat monitor는 `every:"0m"`로 disabled |
+| `bbot-memento-autopilot` | `agentTurn` | `announce -> telegram:123861330 (explicit, bbot)` | isolated fresh session, `anthropic/claude-opus-5`(8.2 작성 시점 — 현재 모델은 [openclaw-automations.md](openclaw-automations.md)); heartbeat monitor는 `every:"0m"`로 disabled |
 | `morning-family-schedule-reminder` | `agentTurn`(추정 — `sessions.describe`류로 미교차검증, model 컬럼이 `anthropic/claude-...`인 것만 실측) | `announce -> telegram:123861330 (explicit)` | glg 에이전트, 매일 08:00 KST |
 
 ---

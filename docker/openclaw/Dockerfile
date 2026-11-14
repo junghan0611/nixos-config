@@ -215,7 +215,9 @@
 # Rollback image: openclaw-custom:10.7-candidate-20261025 (same schema).
 # 2026.10.9 (8b18b55): minor, state20 / agent25 unchanged; arm64 digest bfa6ab15, hotfix v4 re-ported.
 # Rollback image: openclaw-custom:10.8-candidate-20261027 (same schema).
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:bfa6ab1508b9314e71abb73eaabf472d7fa82c2a1199ff91949a834e9ff00f7f
+# 2026.11.3 (847611d) candidate: explicit non-linear transition; state20->22 / agent25->27; arm64 digest adc5f5e9,
+# hotfix v5 ported to three emitted classifier copies. Activation gated (cold + isolated rehearsal) — not yet approved.
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:adc5f5e9654afa3056666cb8f42415a72b91631fc301b382d5771456fee95477
 FROM ${OPENCLAW_BASE}
 
 USER root
@@ -293,7 +295,7 @@ RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
-# 10.9-only memory admission hotfix (v4 port; upstream cycle propagation retained); guards fail closed.
+# 11.3-only memory admission hotfix (v5 port: main chunk + sqlite-store worker + worker chunk; upstream cycle propagation retained); guards fail closed.
 # Cron parents must be classified before the corpus is counted as eligible.
 # Host receipts stay private; these public image scripts must be readable by USER node.
 COPY --chmod=644 patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/

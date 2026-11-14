@@ -7,7 +7,9 @@
 > 그 출력의 §1·§1b가 이 문서의 표와 같아야 한다. 다르면 이 문서를 갱신한다.
 
 기준 시각: **2026-09-10 07:5x KST** · OpenClaw **2026.8.2** (0965053)
-재확인: **2026-10-12 18:4x KST** · OpenClaw **2026.10.2** (b8952d4) 컷오버 직후 — turnwatch §1 활성 2개(스케줄·모델)가 아래 표와 일치. §1b disabled 10개는 이번에 표와 대조하지 않았다.
+> 이 문서의 버전 숫자는 측정 시점 기록이다. 현재 운영 버전은 [ORACLE.md](../ORACLE.md) Model routing 절의 `LIVE` 줄 하나로 판정한다.
+
+재확인: **2026-11-14 13:15 KST** · OpenClaw **2026.11.3** — turnwatch §1 활성 2개(memento fable-5-2, morning sonnet-5-5)와 §1b disabled 4개 모델 표기를 대조(`.agent-reports/openclaw-v2026.11.3-review/turnwatch-20261114.txt`, 비공개). 이전 재확인: **2026-10-12 18:4x KST** · OpenClaw **2026.10.2** (b8952d4) 컷오버 직후 — turnwatch §1 활성 2개(스케줄·모델)가 아래 표와 일치. §1b disabled 10개는 이번에 표와 대조하지 않았다.
 
 운영 가용성 변경: **2026-10-25 · 10.4** — ZAI(`zai`)·Grok/xAI(`xai`) provider는 GLG 요청으로 disabled. Gemini Telegram account도 정지, heartbeat는 명시 `0m`이며 재시작 후 RPC에서 disabled 확인. Gemini의 크론은 변경 전부터 enabled 항목이 없었고 이번에 크론을 추가·재활성화하지 않았다. 아래의 보존 모델 이름을 현재 호출 허가로 읽지 않는다. 대체 유료 모델·자동 fallback·자동 재개는 금지이며 재개는 GLG가 별도 결정한다.
 
@@ -26,7 +28,7 @@
 
 ## Utility 보조 호출 — 운영자에게 알려진 목적만
 
-**현재 선택(2026-10-11 지정, 9.8→10.2 컷오버 후 설정 무변경):** `agents.defaults.utilityModel = "openai/gpt-6-luna"`.
+**선택(2026-10-11 지정, 9.8→10.2 컷오버 후 설정 무변경, 이후 재확인은 본문 시점 표기 참고):** `agents.defaults.utilityModel = "openai/gpt-6-luna"`.
 6봇 모두 상속하며 per-agent utility override는 없다. Luna만 모델별 런타임을
 `openclaw`로 명시했다. Codex 활성화·주 대화 모델/allowlist 변경·새 cron/heartbeat 추가는 없다.
 GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 모델을 기록하고 새 용도는 먼저 논의**다.
@@ -76,10 +78,10 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 | 봇 | 모델 | heartbeat | 소유 cron | 사람 없이 도는가 |
 |---|---|---|---|---|
 | **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (typing 기본값 복귀 2026-10-03) |
-| **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5` | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
+| **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5-5` (2026-11-14; 이전 sonnet-5) | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
 | **gemini** | `zai/glm-5.3` | **꺼짐** (`{every:"0m"}` 명시, 2026-10-25 — 그전엔 엔트리 없음) | 없음 | **아니오** |
-| **mini** | `anthropic/claude-sonnet-5` | **없음** | 없음 (disabled 1건) | **아니오** |
+| **mini** | `anthropic/claude-sonnet-5-5` (2026-11-14; 이전 sonnet-5) | **없음** | 없음 (disabled 1건) | **아니오** |
 | **bbot** (B) | `anthropic/claude-fable-5-2` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있다. bbot은 반드시 엔트리에
@@ -156,14 +158,14 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 | 이름 | 봇 | 스케줄 | 대상 | 모델 |
 |---|---|---|---|---|
 | `bbot-memento-autopilot` | bbot | every 3h | GLG DM (`telegram:123861330`, `accountId:bbot`) | `anthropic/claude-fable-5-2` |
-| `morning-family-schedule-reminder` | glg | `0 23 * * *` UTC = **08:00 KST** | GLG DM | `anthropic/claude-sonnet-5` |
+| `morning-family-schedule-reminder` | glg | `0 23 * * *` UTC = **08:00 KST** | GLG DM | `anthropic/claude-sonnet-5-5` (2026-11-14) |
 
 
 ## 비활성 cron (disabled — 목록에서 지우지 말 것)
 
 | 이름 | 봇 | 왜 꺼졌나 |
 |---|---|---|
-| `morning-family-schedule-reminder-wife` | glg | GLG 지시로 정지 (2026-09-01). model은 sonnet-5로 고쳐둠 — 켜면 바로 돈다 |
+| `morning-family-schedule-reminder-wife` | glg | GLG 지시로 정지 (2026-09-01). model은 sonnet-5-5로 고쳐둠(2026-11-14) — 켜면 바로 돈다 |
 | `daily_real_estate_auction_study_brief_miir` | glg | 이전부터 off. ⚠️ **model 미지정** — 켜기 전에 model을 박아야 한다 |
 | `SK브로드밴드 인터넷 이사 신청 리마인더` | glg | 2026-09-07 one-shot이 disabled로 보존됨. **model 미지정** |
 | `heartbeat-bbot` | bbot | system-owned retained disabled row (`everyMs:3600000`); bbot `{every:"0m"}`의 정상 투영. 편집/삭제 금지 |
@@ -205,11 +207,11 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
   typing 소실이 한 차례 함께 관측됐지만 뒤에 typing이 재관측됐다. 원인으로 기록하지 않고
   비활성 상태에서 soak한다.
 
-**대응**: cron `agentTurn`에는 `--model anthropic/claude-sonnet-5`처럼 **model을 명시**한다. claude-cli 모델은 해당 agent의 `agents.entries.<id>.models["<model>"].agentRuntime.id="claude-cli"` 등록도 확인한다 — defaults만 등록된 fable-5-1은 bbot cron에서 API provider로 잘못 해상돼 auth 실패했다(2026-09-19).
+**대응**: cron `agentTurn`에는 `--model anthropic/claude-sonnet-5-5`처럼 **model을 명시**한다. claude-cli 모델은 해당 agent의 `agents.entries.<id>.models["<model>"].agentRuntime.id="claude-cli"` 등록도 확인한다 — defaults만 등록된 fable-5-1은 bbot cron에서 API provider로 잘못 해상돼 auth 실패했다(2026-09-19).
 `agents.defaults.model.primary`를 바꾸는 건 권하지 않는다 — blast radius가 넓고 회귀 원인을 숨긴다.
 
 ```bash
-docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5
+docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5-5
 ```
 
 ⚠️ heartbeat 잡은 system-owned라 `cron disable`이 거부된다

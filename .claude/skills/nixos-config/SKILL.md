@@ -85,7 +85,7 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
   claude-cli 봇 Anthropic auth GREEN, memory 4096d, `fallbacks` 빈 상태,
   catch-all 1번(8.1부터 `modelPolicy.allow` 배열 첫 항목 = `openai/gpt-5.6-terra`).
 - **모델은 claude-cli 봇이면 카탈로그 등록만으로 태운다** — `agentRuntime claude-cli`는 구독
-  API에서 모델을 동적 해결(예: Sonnet 5 = `anthropic/claude-sonnet-5` + primary, 재빌드 불필요).
+  API에서 모델을 동적 해결(예: Sonnet 5.5 = `anthropic/claude-sonnet-5-5` + primary, 재빌드 불필요. `sonnet-5`는 Sonnet 5이지 5.5가 아니다 — 유효 모델은 ORACLE.md 봇 표 위 정책 문장).
   서빙 미보장 모델을 primary로 박지 말 것(auto-fallback catch-all이 정체성 훼손).
 - **gemini는 DOWN 아니다 (2026-08-27~)** — 서빙 레일 = **`github-copilot/gemini-3.7-flash`**(Copilot 구독).
   옛 "403 → agy 이관 대기 → DOWN 유지" 반사신경은 **화석이다**. Google 구독·gemini-cli·agy 안 쫓는다.

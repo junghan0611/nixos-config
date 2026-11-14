@@ -37,6 +37,7 @@ if name == "docker":
 	if a[:1] == ["inspect"]: out(fx["inspect"])
 	if a[:3] == ["buildx", "imagetools", "inspect"]: out(fx["index"] if "--raw" in a else fx["image"])
 	if a[:2] == ["exec", "openclaw-gateway"]:
+		if a[2:3] == ["grep"]: out(fx.get("locator"))
 		if "--version" in a: out(fx["version"])
 		if "sha256sum" in a: out(fx["sums"])
 		if "health" in a: out(fx["health"])
@@ -169,6 +170,52 @@ def paused_with(path, value):
 
 
 MISSING = object()
+
+# v5 (11.3) hotfix shape: one TARGETS row per emitted classifier copy; helper files pinned separately.
+V5_SIG = 'function collectCronGeneratedSessionKeys('
+V5_ROWS = [
+	('session-actor-memory-owner-M.mjs', '1' * 64, '2' * 64, ('session-key-K.mjs', '3' * 64, 'isCronSessionKey as S')),
+	('worker/sqlite-store.worker.mjs', '4' * 64, '5' * 64, None),
+	('worker/worker-chunk-W.mjs', '6' * 64, '7' * 64, ('worker/worker-chunk-H.mjs', '8' * 64, 'isCronSessionKey as S')),
+]
+
+
+def v5_script(rows=V5_ROWS, version='2026.11.3', extra=''):
+	targets = [{'name': n, 'original': o, 'patched': p, 'call': ('a(', 'b('), 'import': None,
+		**({'helper': h} if h else {'in_bundle': 'function isCronSessionKey(){}'})} for n, o, p, h in rows]
+	# Non-literal code and assignments must be ignored by the AST reader, never executed.
+	return (f'import sys\nVERSION = {version!r}\nSIG = {V5_SIG!r}\nTARGETS = {targets!r}\n{extra}'
+		'RUNTIME = sys.argv\ndef main():\n\traise SystemExit("fixture must never be executed")\nmain()\n')
+
+
+def v5_home(text):
+	d = Path(tempfile.mkdtemp())
+	(d / 'config').mkdir()
+	(d / 'config' / 'openclaw.json').write_text(json.dumps(CFG))
+	if text is not None:
+		(d / 'patch-memory-cron-parent.py').write_text(text)
+	return d
+
+
+def v5_sums(**over):
+	pairs = {n: p for n, _, p, _ in V5_ROWS}
+	pairs.update({h[0]: h[1] for *_, h in V5_ROWS if h})
+	pairs.update(over)
+	return ''.join(f'{s}  /app/dist/{n}\n' for n, s in pairs.items() if s is not MISSING)
+
+
+V5_LOCATOR = ''.join(f'/app/dist/{n}\n' for n, *_ in V5_ROWS)
+V5 = {**GOOD, 'version': 'OpenClaw 2026.11.3 (847611d)\n', 'sums': v5_sums(), 'locator': V5_LOCATOR}
+HOMES = {
+	'nopatch': nopatch,
+	'v5': v5_home(v5_script()),
+	'v5-two-targets': v5_home(v5_script(V5_ROWS[:2])),
+	'v5-bad-sha': v5_home(v5_script([(V5_ROWS[0][0], 'zz', V5_ROWS[0][2], V5_ROWS[0][3]), *V5_ROWS[1:]])),
+	'v5-escape-path': v5_home(v5_script([('../etc/passwd.js', *V5_ROWS[0][1:]), *V5_ROWS[1:]])),
+	'v5-and-v4': v5_home(v5_script(extra='CORPUS_NAME = "session-transcript-corpus-X.mjs"\n')),
+	'v5-unparsable': v5_home('VERSION = "2026.11.3"\nTARGETS = [\n'),
+	'v5-empty-targets': v5_home('VERSION = "2026.11.3"\nSIG = "x"\nTARGETS = []\n'),
+}
 cases = [
 	('preflight', 'good minor', pre, ['2026.10.3'], 0),
 	('preflight', 'schema fetch fails', {**pre, 'pkg': {}}, ['2026.10.3'], 2),
@@ -272,10 +319,35 @@ cases = [
 	('verify', 'cannot exempt mandatory openai', PAUSED, PAUSED_ARGV + ['--expect-disabled-plugin', 'openai'], 2),
 	('verify', 'cannot repeat same exemption', PAUSED, PAUSED_ARGV + ['--expect-disabled-plugin', 'zai'], 2),
 	('verify', 'disabled ID cannot be empty', PAUSED, PAUSED_ARGV + ['--expect-disabled-telegram', ''], 2),
+	# v5 TARGETS shape (11.3): every copy, every helper and the live copy set must match.
+	('verify', 'v5 all copies match', ('v5', V5), None, 0),
+	('verify', 'v5 paused policy all match', ('v5', {**PAUSED, 'version': V5['version'], 'sums': V5['sums'], 'locator': V5_LOCATOR}), PAUSED_ARGV, 0),
+	('verify', 'v5 bundle copy drift', ('v5', {**V5, 'sums': v5_sums(**{'worker/sqlite-store.worker.mjs': '0' * 64})}), None, 1),
+	('verify', 'v5 worker chunk unpatched', ('v5', {**V5, 'sums': v5_sums(**{'worker/worker-chunk-W.mjs': '6' * 64})}), None, 1),
+	('verify', 'v5 main copy unpatched', ('v5', {**V5, 'sums': v5_sums(**{'session-actor-memory-owner-M.mjs': '1' * 64})}), None, 1),
+	('verify', 'v5 helper drift', ('v5', {**V5, 'sums': v5_sums(**{'worker/worker-chunk-H.mjs': '0' * 64})}), None, 1),
+	('verify', 'v5 copy missing from dist', ('v5', {**V5, 'sums': v5_sums(**{'worker/sqlite-store.worker.mjs': MISSING})}), None, 2),
+	('verify', 'v5 helper missing from dist', ('v5', {**V5, 'sums': v5_sums(**{'session-key-K.mjs': MISSING})}), None, 2),
+	('verify', 'v5 sha256sum unavailable', ('v5', {**V5, 'sums': None}), None, 2),
+	('verify', 'v5 drift beats missing copy', ('v5', {**V5, 'sums': v5_sums(**{'worker/sqlite-store.worker.mjs': MISSING, 'worker/worker-chunk-W.mjs': '0' * 64})}), None, 1),
+	('verify', 'v5 unpinned live copy', ('v5', {**V5, 'locator': V5_LOCATOR + '/app/dist/worker/worker-chunk-NEW.mjs\n'}), None, 1),
+	('verify', 'v5 pinned copy gone from live', ('v5', {**V5, 'locator': V5_LOCATOR.split('\n', 1)[1]}), None, 1),
+	('verify', 'v5 TARGETS lacks a live copy', ('v5-two-targets', V5), None, 1),
+	('verify', 'v5 locator unmeasured', ('v5', {**V5, 'locator': None}), None, 2),
+	('verify', 'v5 patch script missing', ('nopatch', V5), None, 2),
+	('verify', 'v5 VERSION != live', ('v5', {**V5, 'version': 'OpenClaw 2026.11.4 (abcdef1)\n'}), None, 1),
+	('verify', 'v5 script on 10.9 live', ('v5', {**V5, 'version': GOOD['version']}), None, 1),
+	('verify', 'v5 live version unreadable', ('v5', {**V5, 'version': 'garbage'}), None, 2),
+	('verify', 'v5 malformed sha field', ('v5-bad-sha', V5), None, 2),
+	('verify', 'v5 path escapes dist', ('v5-escape-path', V5), None, 2),
+	('verify', 'v5 and v4 constants together', ('v5-and-v4', V5), None, 2),
+	('verify', 'v5 script unparsable', ('v5-unparsable', V5), None, 2),
+	('verify', 'v5 empty TARGETS', ('v5-empty-targets', V5), None, 2),
+	('verify', 'v4 script on 11.3 live', (None, V5), None, 1),
 ]
 bad = 0
 for script, name, fx, argv, want in cases:
-	h = nopatch if isinstance(fx, tuple) else home
+	h = (HOMES.get(fx[0], home) if fx[0] else home) if isinstance(fx, tuple) else home
 	fx = fx[1] if isinstance(fx, tuple) else fx
 	got = run(f'{script}.py', fx, h, argv)
 	ok = got == want

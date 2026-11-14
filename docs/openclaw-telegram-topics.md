@@ -1,6 +1,6 @@
 # Telegram 그룹·토픽 운영
 
-OpenClaw 2026.9.8 기준. 라이브 설정·토큰·사용자/방 ID는 private runtime에만 둔다.
+OpenClaw 2026.9.8 시점에 작성했다(현재 운영 버전은 [ORACLE.md](../ORACLE.md) Model routing 절의 `LIVE` 줄). 라이브 설정·토큰·사용자/방 ID는 private runtime에만 둔다.
 
 ## 그룹과 개인 대화
 

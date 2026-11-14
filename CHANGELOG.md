@@ -9,6 +9,35 @@
 
 ## Unreleased
 
+## v2026.11.14 — OpenClaw 11.3 메이저 컷오버, claude-cli 모델 5.5 정리, 현재값 SSOT 단일화
+
+### OpenClaw — 10.9 → 2026.11.3 메이저 컷오버
+
+- 운영 OpenClaw를 2026.11.3(`847611d`)으로 올렸다. 이미지는 `85a21cf5…`, base는 arm64 `adc5f5e9…`다. 선형 업그레이드가 아니어서(state v20→v22, agent DB v25→v27, memory chunking 5→6) 메이저 절차로 진행했다: GATE-1 빌드·격리 validate, cold B sealed, `restart: "no"` override로 recreate. Doctor 498초, 첫 다운타임 645.8초.
+- 기억 패치를 **v5 3사본 이식**으로 바꿨다. 11.3 dist에서는 `collectCronGeneratedSessionKeys`가 main chunk, 53MB sqlite-store worker 번들, worker chunk 세 곳에 있다. 사본마다 behavior 단언 12개를 돌리고, 사본 간 판정 일치와 AST lexical binding도 단언한다. 교차 리뷰는 Blocker 0으로 끝났다. 공개 미러 `docker/openclaw/` 3개 파일은 runtime과 바이트가 같다.
+- 기동할 때 glg가 upstream #195208 경합으로 degraded됐다. 같은 컨테이너를 restart했더니 tini ELOOP로 정지했고(restart:no라 자동 재시도도 없었다), 승인을 받아 수동 `docker start` 1회로 회복했다. 두 번째 다운타임은 약 10.7분이다. 안정 관측 뒤 recreate 없이 `docker update --restart unless-stopped`로 정책을 되돌렸다.
+- 이튿날 memento 4회가 모두 ok·delivered였다. 11.3에서 claude-cli `claude-fable-5-2` 실서빙을 확인했다.
+- 메이저 복귀 짝은 이미지 `b3bbcd9c…`와 cold B다. 근본 원인 3개는 아직 고치지 못했다: entwurf #162/#163(ACP 형제 실행 가시성·중단), upstream #195208, tini ELOOP.
+
+### OpenClaw 봇 모델 — claude-cli 유효본을 셋으로 정리
+
+- glg와 mini는 primary가 `claude-sonnet-5`라서 실제로는 **Sonnet 5**로 서빙되고 있었다. 컨테이너 jsonl의 `message.model`을 집계했고(glg 76건, mini 1057건), 11.3 alias 표도 같았다(`sonnet-5`≠5.5, `sonnet`과 `opus`만 5.5를 가리킨다).
+- GLG 정책에 따라 claude-cli 유효본을 `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-fable-5-2` 셋으로 한정했다. glg/mini primary와 모닝 cron은 sonnet-5-5로 바꿨다. bbot에는 fable-5-2와 opus-5-5만, main에는 opus-5-5만 남겼다. allow와 defaults에서 비유효 claude 항목을 지웠다. GPT, zai, xai 항목과 순서, catch-all(terra)은 그대로다. 변경은 `config patch` 1회와 hot reload 1회로 했고 범위 밖 diff는 0이다.
+- 격리 no-deliver probe 3회(glg, mini, main) 모두 `winnerProvider=claude-cli`, 모델 일치, `fallbackUsed=false`였다. jsonl `message.model`도 같았다. 모닝 cron 자연 실행은 11-15 08:00에 본다.
+
+### 뒷정리 — 10.x 복귀 자산 퇴역
+
+- GLG 승인으로 다음을 삭제했다: 리허설용 cold A, 이전 candidate `1918f03e`, 10.9/10.8/10.7/10.4 이미지 5개(`709acab4`, `3623dcc2`, `e122cbd2`, `7e39b0b2`, `17dab88f`), DB24 cold24 아카이브, Doctor 사전 마이그레이션 bak 8개. 결과는 `/` 여유 13.35→15.87GB(+2.5GB, 나머지 레이어는 BuildKit 캐시가 붙들고 있음), `/home` 5.26→8.05GB다. 남은 복귀 짝은 `b3bbcd9c` + cold B 하나다.
+
+### 검수 도구 — verify.py가 hotfix v5를 읽는다
+
+- `openclaw-update/scripts/verify.py`가 patch를 실행하지 않고 AST로 읽는다. v5 TARGETS의 사본별 sha, helper sha, live dist 분류기 사본 집합이 일치하는지 대조한다. v4 형식은 10.9 롤백을 위해 남겨 두었다. 오프라인 selftest는 124/124(신규 24)다. live 결과는 PASS 43 / FAIL 1(기존 큐 행) / UNKNOWN 0이다.
+
+### 문서 — 현재값은 한 곳에서만
+
+- 운영 버전의 현재값은 `ORACLE.md` Model routing 절의 **`LIVE` 줄 하나**에만 둔다. 봇과 모델의 현재값은 같은 절의 봇 표 하나에만 둔다. 다른 문서의 "9.8 기준"이나 "현재(10.7)" 같은 문장에는 시점을 명시했다. VERSIONS.md, 공개 미러 README, ROADMAP, NEXT, openclaw-config README는 이 SSOT를 가리킨다. AGENTS.md 라우팅표에 이 규칙을 적었다.
+- 기억축 검수: 6봇 memory 인덱스가 모두 chunking 5에서 멈췄다. 컷오버 뒤 들어온 신규 행은 0이고 임베딩 비용도 0이다. `memory_search` deny 때문에 repair가 발화하지 않는다고 보고 있다(가설). Andenken export가 읽는 테이블과 컬럼은 v27에서도 그대로라 호환된다. 동결을 유지할지 통제 재구축을 할지는 NEXT에서 결정한다.
+
 ## v2026.11.13 — bbot·메멘토 Fable 5.2(Claude Code 2.1.322), Oracle RDP를 junghan 계정으로, Cyborg 설치 준비
 
 ### OpenClaw — bbot과 메멘토를 Fable 5.2로

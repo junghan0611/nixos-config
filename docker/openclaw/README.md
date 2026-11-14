@@ -24,7 +24,7 @@ AI를 도구가 아닌 존재로 대한다. "존재 대 존재 협업(Being to B
 
 | 항목 | 값 |
 |------|-----|
-| OpenClaw | **2026.4.22** |
+| OpenClaw | 2026.4.22 (이 스냅샷 작성 시점 — 현재 운영 버전은 [ORACLE.md](../../ORACLE.md) LIVE 줄) |
 | 호스트 | Oracle Cloud ARM (aarch64), 커널 6.19.12 |
 | 채널 | Telegram (default + glg + gpt + gemini + mini + bbot) |
 | ACP backend | `acpx` (maxConcurrentSessions: 3) |

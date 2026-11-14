@@ -19,7 +19,7 @@ user_invocable: true
 `python3 -I {baseDir}/scripts/selftest.py` — docker·gh·curl을 가짜로 바꿔 끼우고 실패 시나리오의 exit 코드를 단언한다.
 런타임·네트워크·모델은 건드리지 않는다.
 
-**현재 운영 중지 정책이 과거 검수 예보다 우선한다.** [ORACLE.md](../../../ORACLE.md)의 provider/계정/자동화 가용성을 먼저 읽는다. ZAI·xAI와 Gemini 입력이 정지된 상태에서 과거의 `zai: loaded`·Telegram6계정 기준을 맞추려고 재활성화하지 않는다. 검수 도구는 기본6계정/필수 loaded 계약을 보존하면서 명시적 `--expect-disabled-*`의 config/runtime 동시 증거를 검사한다(offline100fixtures 통과). 현재 정책은 active5/Gemini disabled·heartbeat0m이며 §1-8처럼 명시한다. 실패를 숨기거나 게이트를 약하게 만들지 않는다. 이번10.7 비선형 메이저 승인은 기본 선형 FAIL을 해제한 일반 권한이 아니다.
+**현재 운영 중지 정책이 과거 검수 예보다 우선한다.** [ORACLE.md](../../../ORACLE.md)의 provider/계정/자동화 가용성을 먼저 읽는다. ZAI·xAI와 Gemini 입력이 정지된 상태에서 과거의 `zai: loaded`·Telegram6계정 기준을 맞추려고 재활성화하지 않는다. 검수 도구는 기본6계정/필수 loaded 계약을 보존하면서 명시적 `--expect-disabled-*`의 config/runtime 동시 증거를 검사한다(offline 124 fixtures 통과 — v5 TARGETS 24 포함). 현재 정책은 active5/Gemini disabled·heartbeat0m이며 §1-8처럼 명시한다. 실패를 숨기거나 게이트를 약하게 만들지 않는다. 이번10.7 비선형 메이저 승인은 기본 선형 FAIL을 해제한 일반 권한이 아니다.
 
 ## 0. 판정 — 마이너 후보인가
 
@@ -36,7 +36,7 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
 | exit | 판정 | 할 일 |
 |---|---|---|
 | **0** | **마이너 후보** — 선언 스키마가 같다 | §1로 간다. 후보일 뿐이다: config·auth·plugin·권한 계약은 §1-1 릴리즈 노트와 §1-6 격리 파싱이 따로 확인한다 |
-| **3** | **메이저** — state/agent 스키마가 다르다 | **GLG 마이너 규칙의 범위 밖 — 따로 판단한다.** 선례: ROADMAP "9.8→10.2"(정지 → cold archive → `--network none` 사본 리허설 → 컷오버) |
+| **3** | **메이저** — state/agent 스키마가 다르다 | **GLG 마이너 규칙의 범위 밖 — 따로 판단한다.** 선례: ROADMAP "9.8→10.2"(정지 → cold archive → `--network none` 사본 리허설 → 컷오버), 10.9→11.3(§1-M) |
 | **1** | **FAIL** — 뒤처짐·분기, arm64 manifest 없음, label≠태그 커밋 | 멈추고 보고한다. pull·빌드하지 않는다 |
 | **2** | **UNKNOWN** — 버전·스키마·compare·커밋 중 측정 실패 | 추측하지 않고 보고한다. 선언이 없는 것도 여기다 |
 
@@ -61,11 +61,12 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - 이식은 **새 이미지 dist에서** 다시 잰다(`docker run --rm --network none --entrypoint sh <base> -c …`):
      chunk 이름, 원본 sha, helper sha, import 줄 개수. 결과 sha는 변환을 적용해 계산한다.
    - 미패치 base에서 테스트를 두 번 돌린다. `--baseline`(characterization)은 **GREEN**, 기본 모드는 **RED**여야 한다.
-     패치 후 빌드 안에서 기본 모드 **GREEN**(현재 v4는12 behavior 단언).
+     패치 후 빌드 안에서 기본 모드 **GREEN**(현재 v5: 12 behavior 단언 × 3 사본).
    - npm tarball dist는 Docker dist와 chunk 이름이 달라 **대용할 수 없다**.
+   - 11.3부터 patch는 **v5 TARGETS**(사본별 경로·원본·결과·helper sha)다. verify는 patch 스크립트를 실행하지 않고 AST로 읽어, TARGETS sha·helper sha와 live dist의 분류기 사본 집합 일치를 요구한다. v4 형식은 10.9 롤백용으로 계속 읽는다.
 5. **빌드** — config가 컨텍스트에 들어가지 않게, 최소 컨텍스트(임시 디렉터리에 Dockerfile·patch·test·`summarize-bot.sh` + `.dockerignore`; Dockerfile의 COPY 대상 전부 포함)에서 빌드한다:
    `docker build -t openclaw-custom:<ver>-candidate-<date> .`
-   로그에서 `claude --version`, `…applied/verified`, `behavior assertions passed`(현재v4:12개)를 확인한다.
+   로그에서 `claude --version`, `…applied/verified`, `behavior assertions passed`(현재 v5: 12개 × 3 사본)를 확인한다.
 6. **config 격리 파싱** — 바꾸지 않고 읽기만 한다:
    ```bash
    docker run --rm --network none -e OPENROUTER_API_KEY=dummy \
@@ -112,14 +113,17 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
      `--receipts`·`--image`를 빼면 그 비교가 UNKNOWN이 된다 — 교체 판정용으로는 둘 다 준다.
    - 보는 것: 버전 형식, 컨테이너 running, 실행 중 이미지 Id = candidate Id, RPC `health.ok`, Telegram 연결 수 = `--accounts`(기본 6), 플러그인 errors/unavailable 빈 값,
      eventLoop, deliveryQueues.failed가 비었거나 6월 tombstone과 정확히 같음, 필수 플러그인 상태(codex disabled 포함),
-     hotfix 파일 전체 sha(패치 스크립트의 `VERSION`·`PATCHED_SHA`·`HELPER_SHA256`과 대조 — 마커 존재만으로는 무결성이 아니다),
+     hotfix 파일 전체 sha(v5: `TARGETS` 사본별 patched sha·helper sha + live 분류기 사본 집합 일치 / v4: `VERSION`·`PATCHED_SHA`·`HELPER_SHA256` — 마커 존재만으로는 무결성이 아니다),
      `codex.enabled:false`, pre-swap 대비 config 변경 경로, cron consecutiveErrors, 서빙 8+3, comments ping(본문은 출력하지 않는다).
    - config 경로가 하나라도 바뀌면 UNKNOWN이고 **경로 이름만** 출력한다. Doctor bookkeeping인지는 사람이 판정한다 — 자동 허용 목록은 없다.
      패치 스크립트가 없으면 UNKNOWN이다. hotfix 회수는 §1-4의 GREEN 확인을 거친 결정이지 파일이 없어진 상태가 아니다.
    - 실제 동작은 다음 자연 cron과 실제 대화로 본다. 모델을 부르는 smoke는 GLG가 요청할 때만 한다.
 9. **기록** — 순서대로:
    - openclaw-config: Dockerfile, patch, README change history
-   - nixos-config: `docker/openclaw/` 미러 3종, ROADMAP 이력, ORACLE 현재 버전·롤백, NEXT 관찰, gotchas 새 함정
+   - nixos-config: `docker/openclaw/` 미러 3종, ROADMAP 이력, ORACLE `LIVE` 줄·롤백, NEXT 관찰, gotchas 새 함정
+   - **현재 버전은 ORACLE.md Model routing 절의 `LIVE` 줄과 그 헤더 두 곳만 바꾼다.** 다른 문서는 버전을 복제하지 않고 그 줄을 가리킨다
+     (openclaw-config README의 Current environment도 같다). 다른 곳의 버전 숫자는 그 시점 기록이다.
+   - verify.py는 patch v5 `TARGETS`를 대조한다. hotfix 구조가 바뀌면 verify·selftest fixture를 같은 작업에서 맞춘다.
    - 로컬 커밋도 `commit` 스킬 규율(범위·hook)을 따른다. **push는 GLG가 말할 때만** 한다.
 10. **마감 — 뒷정리 없이 완료로 넘기지 않는다** (GLG 10-28: "버전업하면 남긴 사본과 이전 도커 이미지 등, 항상 뒷정리")
    - 자연 관측을 확인했으면, 이번 버전업이 만든 것과 이제 불필요해진 이전 자산을 **인벤토리**한다.
@@ -149,9 +153,27 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 롤백 수단은 직전 candidate 이미지를 지우지 않고 두는 것이다. 스키마가 같아도 Doctor가 바꾼 config·auth까지
 되돌린다는 증명은 아니다 — 그 위험을 알고 간다.
 
+## 1-M. 메이저 — 실측 선례 10.9→11.3 (2026-11-13)
+
+preflight exit 3·diverged는 위 "묻는 것은 셋뿐" 규칙 밖이다. 게이트마다 GLG 승인을 받는다. 11.3에서 밟은 순서:
+
+1. **GATE-1** — digest pull → 새 dist에서 hotfix 재판정(§1-4) → 이식 → 최소 컨텍스트 빌드 → 격리 `config validate`. 읽기 전용 교차 리뷰를 붙인다.
+2. **cold (B, sealed)** — 정지 상태 state·config를 봉인한다. 직전 candidate와 짝지어 롤백 자산으로 둔다.
+3. **recreate** — §1-7과 같은 idle gate·deadline.
+4. **판정** — verify(§1-8) + RPC·로그. 함정표 ①②에 해당하면 그 행대로 처리한다.
+5. **정책 복원** — 기동용 override(`restart: "no"` 등)를 걷고 운영 정책으로 되돌린 뒤 verify를 다시 돌린다(함정표 ④).
+
+`--network none` 사본 리허설은 용량 때문에 생략할 수 있다. 다만 생략하면 Doctor 소요 시간, `.bak`/capture 위치와 크기(③), agent 간 startup 경합(②)이 **실기동에서 처음 드러난다**. 그걸 알고 간다.
+
+## 1-W. ACP 형제를 워커로 쓸 때
+
+- steer/follow_up은 busy turn을 **끊지 못한다**(entwurf #163, 7–28분 지연 실측). 급한 정지를 메시지로 기대하지 않는다.
+- 실행 GO는 승인과 수신 확인이 끝난 뒤 **한 통만** 보낸다. 재송신하지 않는다.
+- 워커는 도구 호출 하나에 짧은 명령 하나를 쓴다. 긴 루프·대기 스크립트는 진행이 안 보인다(#162).
+
 ## 2. 함정표 — 증상 → 뜻 → 할 일
 
-숫자는 9.8·10.2·10.3·10.4에서 **관측한 값**이다. 허용 범위나 보장이 아니다. "기존 증상"으로 넘기려면 영수증의 이전 관측과
+숫자는 9.8·10.2·10.3·10.4·11.3에서 **관측한 값**이다. 허용 범위나 보장이 아니다. "기존 증상"으로 넘기려면 영수증의 이전 관측과
 **같은 대상·같은 메시지인지 비교**한 뒤에만 넘긴다.
 
 | 증상 | 관측과 뜻 | 할 일 |
@@ -171,6 +193,13 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 | claude-cli 봇만 턴마다 1초 만에 죽음 | 9.x에서는 npm postinstall이 조용히 실패한 것이 원인이었다 | 빌드 로그의 `claude --version`부터 본다. Dockerfile의 `--allow-scripts` + `install.cjs` + `claude --version` 3단을 유지한다. 그게 정상인데도 죽으면 다른 원인 — 단정하지 않는다 |
 | cron.runs의 `provider: anthropic` | 10.2에선 모델 접두어 표시였고, 로그의 실제 실행은 `cli exec provider=claude-cli`였다 | 매번 로그로 확인한다. 표시만 보고 과금 경로를 판단하지 않는다 |
 | 사본 Doctor가 OAuth refresh를 시도 | (메이저 리허설에서만) 사본이 live 토큰을 회전시킬 수 있다 | 사본 실행은 **항상 `--network none`** |
+| ① `restart: "no"` override 아래 컨테이너가 exit 1로 멈춤(tini ELOOP) | 11.3: override는 Doctor 재시작 루프를 막지만 **tini ELOOP 자동 회복도 막는다**. restart 1회가 ELOOP로 정지했고 수동 `docker start` 1회로 회복했다 | 수동 start는 "1초 이내 tini ELOOP + Doctor 미진입"일 때만, 최대 5회까지(11.3 실측 선례: 승인 범위 5회, 1회째 통과) 한 번에 하나씩. 그 밖이면 §1-7 중단 기준 |
+| ② agent 하나만 health degraded(11.3: glg) | upstream #195208 — 두 agent가 startup inspection을 동시에 하면 먼저 admission된 쪽이 degraded된다. 11.3에선 같은 컨테이너 restart 뒤 해소 | 이미지·config를 바꾸지 않고 같은 컨테이너 restart 1회. 반복되면 이슈를 추적하고 보고 |
+| ③ Doctor 산출물이 두 FS에 생김 | `.pre-startup-migration-*.bak`은 bind 안(/home, 11.3 약 1.6G). `.update-captures`는 컨테이너 쓰기층(/, 약 1.6G)이라 recreate하면 사라진다 — **rollback point가 아니다**. 같은 컨테이너 start는 capture를 다시 만들지 않는다 | 디스크 예산을 양쪽 FS에 잡는다. 롤백은 cold·candidate로 따로 확보한다. `.bak` 정리는 soak 뒤 GLG 승인 |
+| ④ override로 recreate한 뒤 plain `compose up`이 또 recreate | compose config-hash가 바뀐 상태로 남는다. 11-14 측정에서 hash가 어느 계산값과도 일치하지 않았다(원인 미확인) | 정책 복원 recreate를 계획된 단계로 idle gate를 거쳐 한 번 한다. 우발적인 `up`을 하지 않는다 |
+| ⑤ 가짜 모델 id가 `config validate`를 통과 | validate는 모델 카탈로그 존재를 검사하지 않는다 | 모델 변경을 validate PASS로 판정하지 않는다. 격리 no-deliver probe(`openclaw` 스킬 §11) |
+| ⑥ memory 인덱스 신규 행 0(동결) | **가설**: chunking 버전업과 `tools.deny=["memory_search"]`가 겹치면 repair가 발화하지 않는다. 11-14 실측 신규 행 0 | 가설로 다룬다. deny를 임의로 풀지 않고 보고한다. hotfix 영수증(cron 0건)과 별개로 신규 행 증가를 관측한다 |
+| ⑦ `openclaw memory status` 거부, verify memory 절 전부 unavailable | 11.3: gateway 실행 중엔 offline ownership이라 CLI가 거부한다 | INFO 절일 뿐 판정이 아니다. 인덱스 확인은 이 CLI에 기대지 않는다 |
 
 ## 3. 영수증 자리
 

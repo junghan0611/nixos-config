@@ -471,7 +471,7 @@ missing from this prepared run.
 
 ```bash
 # cron agentTurn 은 model 을 반드시 명시한다
-docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5
+docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5-5
 # active-memory 는 조사 중 껐다 (main 전용 lane 이었다)
 docker exec openclaw-gateway openclaw config set plugins.entries.active-memory.enabled false
 # main의 사용자 가시 typing을 우선 억제한다 (원인 판정과 별개)

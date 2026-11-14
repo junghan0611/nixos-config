@@ -10,6 +10,25 @@
 
 ---
 
+## 2026-11-14 — claude-cli 봇 모델 정리(Sonnet 5 → 5.5)와 현재값 SSOT 단일화
+
+- 컷오버 이튿날 검수를 하다가 glg와 mini가 `claude-sonnet-5`, 즉 Sonnet 5로 서빙되고 있다는 것을 확인했다(jsonl `message.model`, 11.3 alias 표). GLG가 claude-cli 유효본을 sonnet 5.5, opus 5.5, fable 5.2로 한정하는 정책을 정했고, W3가 `config patch` 1회(24경로)와 hot reload 1회로 정리했다. pre-models 사본은 비공개 `~/openclaw/backups/models-cleanup-20261114/`에 있다. 격리 probe 3회(glg와 mini는 sonnet-5-5, main은 opus-5-5) 모두 claude-cli였고 모델이 일치했으며 fallbackUsed=false였다. #195265 증상은 나타나지 않았다.
+- 노트북에서 "오라클 OpenClaw 9.x"라는 정보가 보인 원인을 추적했다. 현재 버전을 단정하는 문장이 여러 문서에 흩어져 있었다(W1 인벤토리: 틀린 CURRENT 3곳, 시점 불명 다수). 그래서 **현재 운영 버전은 ORACLE.md `LIVE` 줄 하나, 봇과 모델의 현재값은 ORACLE 봇 표 하나**로 정했다. 다른 문서에는 시점을 표기하고 SSOT를 링크하게 했다. openclaw와 openclaw-update 스킬에 SSOT 지도와 "바꾸면 같은 세션에서 갱신한다" 규칙을 넣었다.
+- 기억축을 읽기 전용으로 검수했다. 6봇 인덱스가 chunking 5에서 동결돼 있었다. 신규 행 0, 임베딩 비용 0이고, Andenken export 스키마는 호환된다.
+- 뒷정리(GLG 승인): cold A, 1918f03e, 10.x 이미지 5개, cold24, Doctor bak 8개를 삭제했다. 결과는 `/` +2.5GB, `/home` +2.8GB다. 10.x 이전으로 돌아갈 수단은 이제 없고, 복귀는 `b3bbcd9c` + cold B만 가능하다.
+
+## 2026-11-13 — OpenClaw 10.9→11.3 메이저 컷오버 (비선형, 다운타임 2회)
+
+- GLG가 11.3 이전을 지시했다. 운영 코디는 pi-durable `20261008T152203-145c2f`, 실무 코디는 pi entwurf Opus `20261113T210713-a2ea0f`가 맡았다. 실행 워커는 전부 entwurf ACP Claude 형제였다: 소스 판독 Sonnet W1 `…7b4bc5`·W2 `…9e4ee2`, 유일 Docker writer Opus W3 `…2983f6`, 교차 리뷰 Opus W4 `…127407`. entwurf 0.53.0 ACP 실전 검증을 겸했다.
+- 대상: 정식 stable `v2026.11.3` = `847611dc`, arm64 base `adc5f5e9…`. 11.3은 11.2에 hotfix 96건을 얹은 패치판이고, 11/09 보류 사유 경로의 blob 12개는 11.2와 같았다. 따라서 메이저 절차를 따랐다: state v20→v22, agent v25→v27, memory chunking 5→6. preflight는 diverged FAIL이었다.
+- GATE-1: base pull → 11.3 Docker dist에서 hotfix 재판정(RED 존속) → **v5 3사본 이식**. `collectCronGeneratedSessionKeys`가 main chunk, 53MB sqlite-store worker 번들, worker chunk에 각각 있었다. W4 교차리뷰에서 Blocker 0, Defect 2를 실측으로 닫았다. 스코프 단언을 강화한 rev3로 candidate `85a21cf5…`를 만들었다. validate valid였지만 모델 존재는 검사하지 않는다.
+- 격리 리허설은 GLG가 용량 때문에 취소했다. 그러나 ACP steer가 실행 중 turn에 닿지 않아(아래) W3가 옛 지시대로 cold A와 리허설 일부를 실행했다. 사본 Doctor는 exit 0에 682초, bak 1.61GB(bind 안), `.update-captures` 1.6GB(컨테이너 쓰기층)였다. 공간선 5GiB에서 코디가 lab 컨테이너만 정지했다.
+- 컷오버: 22:26 memento 실제 완료 → idle gate → stop 22:42:37 → **cold B** sealed(1,380,924,853B, sha `1b3bac0b…`, manifest 54,753) → `restart: "no"` override로 recreate → Doctor 498초 → RPC ok, 다운타임 645.8초. 기동 때 claude·glg가 동시에 startup inspection에 들어가 **glg가 upstream #195208로 degraded**됐다(수정 #195216은 main에만 있음).
+- 복구: 같은 컨테이너를 idle gate 뒤 `docker restart` 1회 → **tini ELOOP**로 exit 1. restart:no였으므로 재시도 없이 정지했다(23:49:12). GLG 추가 승인으로 수동 `docker start` 1회를 해서 tini를 통과했고, claude만 inspection을 거쳐 recovered됐다. glg 오류 0, RPC ok 23:59:5x로 두 번째 다운타임은 약 10.7분이었다. 안정 관측 뒤 `docker update --restart unless-stopped`(recreate 없음).
+- 이튿날 검수: memento 01:29·04:28·07:28·10:32 모두 ok/delivered, 11.3에서 claude-cli `claude-fable-5-2` 실서빙 확인. verify(v5 대응)는 PASS 43 / FAIL 1(기존 큐 행) / UNKNOWN 0. memory 인덱스 6봇 전부 chunking 5로 동결됐고 신규 행 0, 임베딩 비용 0이었다. memory_search deny 때문에 repair가 발화하지 않는다(가설).
+- 사건 2건(영향과 복구): (1) live 조기 정지 238초. 지시보다 이른 창에 cold A를 만들었고 같은 컨테이너로 복구했다. (2) 취소된 lab 리허설이 진행됐다. live 영향은 없었다. 원인은 steer/follow_up이 busy ACP Claude 형제의 turn을 끊지 못한 것이다(7–28분 지연). entwurf #162(실행 중 진행 비가시)·#163(busy 형제 중단 수단 부재)으로 접수했다. 이후 실행 GO는 GLG 승인과 수신 확인 뒤 한 통만 보냈다.
+- 미수정 원인 3축: ACP 취소 지연, upstream #195208, tini ELOOP. 복귀 짝은 이미지 `b3bbcd9c…`와 cold B다. 영수증: 비공개 `.agent-reports/openclaw-v2026.11.3-review/`, `~/openclaw/backups/{candidate,cold-a,rehearsal,cutover}-11.3-20261113/`.
+
 ## 2026-11-13 — Claude Code 2.1.288→2.1.322, bbot·메멘토 Fable 5.2
 
 - GLG가 bbot과 메멘토를 Fable 5.2로 옮기라고 요청했다. 실행은 Opus(Claude Code), 범위와 게이트는 pi-durable 코디가 정했다. OpenClaw는 10.9에 그대로 두었다. 10.10/11.x는 스키마 v22/v27로 가는 비선형 메이저이므로 별도 판단이다(비공개 `.agent-reports/openclaw-v2026.11.2-review/`).
@@ -181,7 +200,7 @@
 
 ---
 
-## 현재 위치 — `v2026.7.2`
+## 2026-07 스냅샷 위치 — `v2026.7.2` (현재 운영 버전은 [ORACLE.md](ORACLE.md) LIVE 줄)
 
 `v2026.5.31`(첫 CalVer) 이후 `v2026.6.2`·`v2026.6.4`·`v2026.6.10`·`v2026.6.13`을 거쳐 현재. 이번 스냅샷의 큰 줄기: **NixOS 25.11(EOL 2026-06-30) → 26.05 "Yarara" 디바이스 베이스 이관** — 오버레이 대청소 + pnpm 전역 단일화 + 외부패키지 `scripts/external-packages.sh` SSOT화 + 패키지 통제 3층 모델(AGENTS.md §2.5). 안전 순서로 완료: thinkpad(x86 canary) switch+재부팅 → oracle `nixos-rebuild build .#oracle`(aarch64 게이트, closure 선실체화) → switch → **재부팅 콜드부팅 GREEN**(gen #59 current·#58 25.11 롤백 보존, `systemctl --failed` 0, 12컨테이너 자동복구, caddy 6-세트 서빙, openclaw 6봇 healthy). 변경 목록은 [CHANGELOG.md](CHANGELOG.md), 다음 할 일은 [NEXT.md](NEXT.md). 봇 런타임 이력은 아래.
 
