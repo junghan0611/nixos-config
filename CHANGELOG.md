@@ -29,9 +29,15 @@
 
 - GLG 승인으로 다음을 삭제했다: 리허설용 cold A, 이전 candidate `1918f03e`, 10.9/10.8/10.7/10.4 이미지 5개(`709acab4`, `3623dcc2`, `e122cbd2`, `7e39b0b2`, `17dab88f`), DB24 cold24 아카이브, Doctor 사전 마이그레이션 bak 8개. 결과는 `/` 여유 13.35→15.87GB(+2.5GB, 나머지 레이어는 BuildKit 캐시가 붙들고 있음), `/home` 5.26→8.05GB다. 남은 복귀 짝은 `b3bbcd9c` + cold B 하나다.
 
+- 이어서 GLG 승인으로 Docker build cache를 `docker builder prune -f`로 정리해 2.645GB를 회수했다. 최종 여유는 `/` 약 18G, `/home` 약 7.5G다. 남은 복귀 수단은 `b3bbcd9c` + cold B 하나다.
+
 ### 검수 도구 — verify.py가 hotfix v5를 읽는다
 
 - `openclaw-update/scripts/verify.py`가 patch를 실행하지 않고 AST로 읽는다. v5 TARGETS의 사본별 sha, helper sha, live dist 분류기 사본 집합이 일치하는지 대조한다. v4 형식은 10.9 롤백을 위해 남겨 두었다. 오프라인 selftest는 124/124(신규 24)다. live 결과는 PASS 43 / FAIL 1(기존 큐 행) / UNKNOWN 0이다.
+
+### Emacs
+
+- 모든 기기(oracle 포함)에서 GUI Emacs 빌드를 쓴다(`df3a3d8`). oracle에는 아직 rebuild하지 않았다.
 
 ### 문서 — 현재값은 한 곳에서만
 
