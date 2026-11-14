@@ -15,9 +15,11 @@
 - [x] **3. 10.9 운영 확인·교차검토·임시 정리** — [v2026.10.30](CHANGELOG.md)에 이관
 - [x] **3b. OpenClaw 11.3 메이저 컷오버 + claude-cli 모델 정리 + 현재값 SSOT 단일화** — [v2026.11.14](CHANGELOG.md), 잔여 관측은 아래 §OpenClaw 11.3
 - [ ] **4. 연속성·비용·세션 증식 기준의 깨움 설계** ← CURRENT: 주말 GLG 판단, [#13](https://github.com/junghan0611/nixos-config/issues/13)·llmlog 20261028T092543
-- [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`도 같은 날 추가 퇴역, cold B만 보존 — 복귀하려면 openclaw-config `d7e0268`로 재빌드)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
+- [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`와 마지막 cold B도 같은 날 추가 퇴역, 이 컷오버의 10.9 전체 데이터 복귀점 없음)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
-현재 좌표: 1–3·3b 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요) → 5 미해결 보존
+현재 좌표: 1–3·3b 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요). 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
+
+작업트리 인계(11-14): cold B 퇴역을 반영한 양쪽 리포 문서 변경은 미커밋이다. 발행 요청을 받으면 해당 문서만 검토·스테이징하고 기존 runtime 미추적 파일은 제외한다. 영수증은 비공개 `.agent-reports/cold-b-retirement-20261114/receipt.md`. 운영 후속은 아래 실사용·메모리 관측이며 추가 정리·recreate 승인은 없다.
 
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14), 남은 것은 아래 §#14.
 Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
@@ -35,7 +37,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - [ ] **memory 인덱스 동결 — 결정 필요** (11-14 읽기 전용 검수, 비공개 `.agent-reports/openclaw-v2026.11.3-review/memory-axis-20261114.md`): 6봇 인덱스가 전부 chunking **5** 그대로이고 컷오버 뒤 새 행 **0**, 재구축·capacity·임베딩 로그 0(로그 관측이며 OpenRouter 청구액은 따로 확인하지 않았다). `tools.deny=["memory_search"]`라 search 경계 repair가 발화하지 않는 것으로 보인다(가설). 비용은 0이지만 **새 봇 기억이 인덱스와 Andenken openclaw 수확으로 흐르지 않는다.** Andenken export가 읽는 4테이블·컬럼은 v27에 그대로 있어 수확 자체는 호환. 선택지: (A) upstream #196378이 든 stable까지 동결 유지 (B) gateway 정지 후 offline `memory index --force`로 통제 재구축 — bbot 6426×4096d는 #196505 실패 규모대, 경계 바뀐 청크만큼 OpenRouter 재임베딩, 재구축 뒤 청크 id가 바뀌면 append-only Andenken에 v5·v6 중복 유입 가능(가설, andenken 담당과 계약 확인 필요). `memory status` CLI는 gateway 실행 중 거부, verify memory 절은 11.3에서 unavailable.
 - [ ] W4 권고: 첫 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교).
 - [ ] **재빌드·plain `compose up` 금지(현 상태)**: compose config-hash가 restart:no override 기준 → override 없는 up은 recreate → #195208 경합/tini ELOOP 재노출. 다음 recreate는 의도된 작업으로만.
-- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐), 11-14 정리 완료: BuildKit 캐시 `docker builder prune -f`(GLG 승인, 2.645GB 회수), cold A, 이미지 1918f03e·709acab4·3623dcc2·e122cbd2·7e39b0b2·17dab88f, cold24, Doctor bak 8개(/home 1.61G). **복귀 짝 cold B + `b3bbcd9c`는 보존.**
+- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐), 11-14 정리 완료: BuildKit 캐시 `docker builder prune -f`(GLG 승인, 2.645GB 회수), cold A, 이미지 1918f03e·709acab4·3623dcc2·e122cbd2·7e39b0b2·17dab88f, cold24, Doctor bak 8개(/home 1.61G). **`b3bbcd9c`와 마지막 cold B도 추가 퇴역 완료.** cold B 단일 파일 삭제로 `/` 1,381,007,360B를 회수했고, 11.3 live와 영수증·메타데이터는 보존했다. 컨테이너 쓰기층 정리를 위한 recreate는 승인하지 않았다.
 - [ ] 근본원인 3축 미수정 기록: entwurf #162(ACP 실행 중 진행 비가시)·#163(busy 형제 즉시 중단 수단 부재 — 오늘 조기 정지 238s·미승인 lab 리허설 2건), upstream #195208, tini ELOOP.
 
 ## 이월 관측
@@ -45,10 +47,11 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 ## 깨움 설계 (10.9 시점에 작성 — 11.3에서 재확인 필요), 적용은 별도 승인
 
 - **상태:** OpenClaw10.9(`709acab4…`) 운영 확인과 승인된 임시2폴더/끝난7helper 정리는 닫았다. 상세는 [CHANGELOG v2026.10.30](CHANGELOG.md)·ROADMAP, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261030/`. 기존 FAIL1과 경고·dirty는 별도다.
+- **bbot 결정(11-14, GLG·B 호스트 좌석 합의):** 메멘토(매 비트 fresh)를 유지한다. 3h 주기는 프롬프트 캐시 TTL보다 길어 연속 세션이 순비용이다(B 측정: fresh 바닥 ≈77K cache-write). 연속성은 세션이 아니라 **부르는 길**로 준다. 순서의 정본은 깨움 파일 `workspace-bbot/scripts/heartbeat-wake-message.md`이고, 흔적은 날 단위 `memory/<날>.json`, `scripts/trail`, aionsclubs `bricks/index.jsonld`에 둔다. 15:46 cron `e94ed49d` payload를 깨움 파일 `6922e75`에 동기화했다(바뀐 경로는 message만, 영수증 `~/openclaw/backups/swap-10.9-cc322-20261113/`). 남은 일: 16:26·19:26 비트 관찰 → 11.3 소스로 heartbeat 전환 5항목 확인(ack 억제·thinking 키 부재·세션 키/census·delivery·:26 닻) → GLG 승인 후 cron 메시지를 3줄 포인터로 바꾸거나 표준 heartbeat(`isolatedSession:true`, `lightContext:false`)로 전환하고 cron은 disable로 보존. 다른 봇 깨우기는 봇별로 따로 잰다(entwurf #160 이후).
 - **Next:** [#13](https://github.com/junghan0611/nixos-config/issues/13)과 [10.9 기준점 댓글](https://github.com/junghan0611/nixos-config/issues/13#issuecomment-6515293984)을 읽고 **연속성 유지 + 전체 맥락 반복 입력 비용 제어 + 매 tick 새 세션/파일 증식 비선호**를 만족할 방식을 고른다. fresh 기본/역할/주기/예산은 미정이다. light는 bootstrap만 줄이고 history 상한이 아니므로 지속 작업 세션·선택적 회수·runtime별 compaction을 분리해 비교한다. 파일럿은 한 봇·범위·관측/중단 기준을 명시 승인한 뒤다.
 - **Read:** 비공개 llmlog `20261028T092543` — 깨우기·퇴근·기억·검증: 연속성과 맥락 비용, 세션 증식의 기준 → #13. 기억 생산/Andenken 회수는#5, mini 역할은#10과 연결하며 자동으로 기능을 켜거나 이슈를 닫지 않는다.
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
-- **보존·판단(11-14 종결):** D1·D2와 10.9/10.8 복귀 이미지를 모두 퇴역했다. `b3bbcd9c`까지 퇴역했고 남은 복귀 자산은 cold B뿐이다(ORACLE.md 11.3 문단). 비공개 openclaw-config는 11.3 반영분만 커밋하고 config/ 아래 기존 혼재 WIP는 별도로 둔다.
+- **보존·판단(11-14 종결):** D1·D2와 10.9/10.8 복귀 이미지를 모두 퇴역했다. `b3bbcd9c`와 cold B까지 퇴역해 이 컷오버의 10.9 전체 데이터 복귀점은 없다(ORACLE.md 11.3 문단). 소스 재빌드는 삭제한 데이터를 복구하지 않는다. 비공개 openclaw-config는 11.3 반영분만 커밋하고 config/ 아래 기존 혼재 WIP는 별도로 둔다.
 
 ## #14 Oracle RDP — 남은 관측
 

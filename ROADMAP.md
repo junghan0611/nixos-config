@@ -15,7 +15,8 @@
 - 컷오버 이튿날 검수를 하다가 glg와 mini가 `claude-sonnet-5`, 즉 Sonnet 5로 서빙되고 있다는 것을 확인했다(jsonl `message.model`, 11.3 alias 표). GLG가 claude-cli 유효본을 sonnet 5.5, opus 5.5, fable 5.2로 한정하는 정책을 정했고, W3가 `config patch` 1회(24경로)와 hot reload 1회로 정리했다. pre-models 사본은 비공개 `~/openclaw/backups/models-cleanup-20261114/`에 있다. 격리 probe 3회(glg와 mini는 sonnet-5-5, main은 opus-5-5) 모두 claude-cli였고 모델이 일치했으며 fallbackUsed=false였다. #195265 증상은 나타나지 않았다.
 - 노트북에서 "오라클 OpenClaw 9.x"라는 정보가 보인 원인을 추적했다. 현재 버전을 단정하는 문장이 여러 문서에 흩어져 있었다(W1 인벤토리: 틀린 CURRENT 3곳, 시점 불명 다수). 그래서 **현재 운영 버전은 ORACLE.md `LIVE` 줄 하나, 봇과 모델의 현재값은 ORACLE 봇 표 하나**로 정했다. 다른 문서에는 시점을 표기하고 SSOT를 링크하게 했다. openclaw와 openclaw-update 스킬에 SSOT 지도와 "바꾸면 같은 세션에서 갱신한다" 규칙을 넣었다.
 - 기억축을 읽기 전용으로 검수했다. 6봇 인덱스가 chunking 5에서 동결돼 있었다. 신규 행 0, 임베딩 비용 0이고, Andenken export 스키마는 호환된다.
-- 뒷정리(GLG 승인): cold A, 1918f03e, 10.x 이미지 5개, cold24, Doctor bak 8개를 삭제했다. 결과는 `/` +2.5GB, `/home` +2.8GB다. 10.x 이전으로 돌아갈 수단은 이제 없고, 복귀는 `b3bbcd9c` + cold B만 가능하다.
+- 뒷정리(GLG 승인): cold A, 1918f03e, 10.x 이미지 5개, cold24, Doctor bak 8개를 삭제했다. 결과는 `/` +2.5GB, `/home` +2.8GB다. 이 정리 직후에는 `b3bbcd9c` + cold B만 복귀 짝으로 남았다.
+- 후속 퇴역(GLG 승인): 10.9-cc322 이미지에 이어 마지막 cold B 아카이브(1,380,924,853B)도 삭제했다. cold B 삭제의 실측 회수량은 `/` 1,381,007,360B이고 `/home` 회수는 없다. 운영 11.3 데이터·컨테이너와 컷오버 영수증·메타데이터는 그대로다. 이 컷오버의 10.9 전체 데이터 복귀점은 더 이상 없으며, 코드나 이미지를 다시 빌드하는 것으로 해당 데이터를 복원할 수 없다.
 
 ## 2026-11-13 — OpenClaw 10.9→11.3 메이저 컷오버 (비선형, 다운타임 2회)
 
