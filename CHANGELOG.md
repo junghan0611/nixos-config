@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- OpenClaw 10.9-cc322 복귀 이미지 `b3bbcd9c`도 GLG 승인으로 삭제했다(빌드 캐시 1.2GB 추가 회수, `/` 여유 19G). 남은 복귀 자산은 cold B뿐이며, 되돌리려면 openclaw-config `d7e0268`로 10.9 이미지를 재빌드해야 한다.
+
 ## v2026.11.14 — OpenClaw 11.3 메이저 컷오버, claude-cli 모델 5.5 정리, 현재값 SSOT 단일화
 
 ### OpenClaw — 10.9 → 2026.11.3 메이저 컷오버

@@ -15,7 +15,7 @@
 - [x] **3. 10.9 운영 확인·교차검토·임시 정리** — [v2026.10.30](CHANGELOG.md)에 이관
 - [x] **3b. OpenClaw 11.3 메이저 컷오버 + claude-cli 모델 정리 + 현재값 SSOT 단일화** — [v2026.11.14](CHANGELOG.md), 잔여 관측은 아래 §OpenClaw 11.3
 - [ ] **4. 연속성·비용·세션 증식 기준의 깨움 설계** ← CURRENT: 주말 GLG 판단, [#13](https://github.com/junghan0611/nixos-config/issues/13)·llmlog 20261028T092543
-- [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(현 메이저 복귀 짝 `b3bbcd9c` + cold B는 보존)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
+- [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`도 같은 날 추가 퇴역, cold B만 보존 — 복귀하려면 openclaw-config `d7e0268`로 재빌드)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
 현재 좌표: 1–3·3b 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요) → 5 미해결 보존
 
@@ -48,7 +48,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - **Next:** [#13](https://github.com/junghan0611/nixos-config/issues/13)과 [10.9 기준점 댓글](https://github.com/junghan0611/nixos-config/issues/13#issuecomment-6515293984)을 읽고 **연속성 유지 + 전체 맥락 반복 입력 비용 제어 + 매 tick 새 세션/파일 증식 비선호**를 만족할 방식을 고른다. fresh 기본/역할/주기/예산은 미정이다. light는 bootstrap만 줄이고 history 상한이 아니므로 지속 작업 세션·선택적 회수·runtime별 compaction을 분리해 비교한다. 파일럿은 한 봇·범위·관측/중단 기준을 명시 승인한 뒤다.
 - **Read:** 비공개 llmlog `20261028T092543` — 깨우기·퇴근·기억·검증: 연속성과 맥락 비용, 세션 증식의 기준 → #13. 기억 생산/Andenken 회수는#5, mini 역할은#10과 연결하며 자동으로 기능을 켜거나 이슈를 닫지 않는다.
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
-- **보존·판단(11-14 종결):** D1·D2와 10.9/10.8 복귀 이미지를 모두 퇴역했다. 남은 복귀 짝은 ORACLE.md 11.3 문단의 `b3bbcd9c` + cold B. 비공개 openclaw-config는 11.3 반영분만 커밋하고 config/ 아래 기존 혼재 WIP는 별도로 둔다.
+- **보존·판단(11-14 종결):** D1·D2와 10.9/10.8 복귀 이미지를 모두 퇴역했다. `b3bbcd9c`까지 퇴역했고 남은 복귀 자산은 cold B뿐이다(ORACLE.md 11.3 문단). 비공개 openclaw-config는 11.3 반영분만 커밋하고 config/ 아래 기존 혼재 WIP는 별도로 둔다.
 
 ## #14 Oracle RDP — 남은 관측
 
