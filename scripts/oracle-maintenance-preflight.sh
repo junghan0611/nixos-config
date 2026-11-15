@@ -65,6 +65,21 @@ long_processes() {
     ps -u "$(id -u)" -o user,pid,ppid,etimes,comm --sort=-etimes | awk 'NR<=80'
 }
 
+# Zombies grouped by parent (command names only, no arguments). A zombie costs no CPU/RAM, only a
+# PID slot, so nothing else surfaces it. One parent holding hundreds = it never reaps (2026-11-15:
+# geworfen PID 1 without init held 963 emacsclient zombies from healthcheck timeouts).
+zombies() {
+    ps -eo pid=,ppid=,stat=,comm= | awk '
+        $3 ~ /^Z/ { n++; c[$2]++; k[$2]=$4 }
+        END {
+            printf "zombies_total=%d\n", n
+            for (p in c) {
+                cmd = "ps -o comm= -p " p; parent = ""; cmd | getline parent; close(cmd)
+                printf "parent_pid=%s parent=%s child=%s count=%d\n", p, (parent == "" ? "?" : parent), k[p], c[p]
+            }
+        }'
+}
+
 compare_desired() {
     local desired current booted
     desired=$(nix eval --offline --no-update-lock-file --raw "$REPO#nixosConfigurations.oracle.config.system.build.toplevel.outPath") || return $?
@@ -95,6 +110,7 @@ step 'Failed units (inspect the rows, not just exit status)' systemctl --failed 
 step 'Failed user units' systemctl --user --failed --no-pager --plain
 step 'Emacs server probe (no automatic startup)' timeout 8 emacsclient -s server --alternate-editor=false --eval '(+ 1 1)'
 step 'Long-running user process metadata (top80, no command arguments)' long_processes
+step 'Zombie processes by parent (no command arguments; >10 under one parent = it never reaps)' zombies
 step 'Docker disk accounting (shared sizes are not freed-space guarantees)' docker system df
 step 'Dangling images (no deletion)' docker images --filter dangling=true --no-trunc
 step 'Containers' docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'

@@ -36,6 +36,8 @@ bash scripts/oracle-maintenance-preflight.sh --nix-plan
 
 ### 1.1 분기 데이터·리포·가용성 검토 — 캐시 견적과 별도
 
+preflight의 `Zombie processes by parent`: 한 부모 아래 10개를 넘으면 그 부모가 자식을 거두지 않는 것이다(2026-11-15 geworfen PID 1·init 없음 → emacsclient 963개, `init: true`로 수선). 재부팅으로 덮지 말고 부모와 원인을 적어 담당에게 넘긴다.
+
 기본 preflight의 `DATA_REVIEW_PENDING`은 이 검토가 아직 수동으로 남았다는 표시다. 시스템 수집 성공을 home 전수 조사나 검토 완료로 읽지 않는다. [기기 공통 절차](../../../docs/data-retirement.md)의 읽기전용 명령으로 합의한 루트만 재고, 이번 영수증에 `storage-review.md`로 아래 판단과 근거를 남긴다.
 
 - **실측/예산:** root와 home의 사용자 가용 바이트, 리포별 `.git`/데이터/의존성/빌드·검증물 비중을 구분한다. 심볼릭 별칭·공유 inode의 귀속 크기는 실제 회수량이 아니다. 목표 여유와 주기마다 회수할 양도 다르며 고정 GiB/보존일수를 임의로 만들지 않는다.
