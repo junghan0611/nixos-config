@@ -81,15 +81,14 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
   방어였고, 8/27 Copilot 이관으로 겨눌 대상이 사라졌다. **8.1부터 `doctor --fix`는 필수**다 —
   agent DB 스키마를 올리는 건 doctor뿐이다. 단 **반드시 게이트웨이를 끈 상태**에서(라이브 writer가
   있으면 "stopped-writer maintenance" 로 전부 skip), 그리고 **끝난 뒤 6봇 prefix를 재확인**한다.
-- **6봇 모델 prefix 전수 재확인** (gemini는 `github-copilot/gemini-3.7-flash` — `google*` 아님),
+- **6봇 모델 prefix 전수 재확인** (gemini 보존 primary는 ORACLE.md 봇 표 — `google*` 아님),
   claude-cli 봇 Anthropic auth GREEN, memory 4096d, `fallbacks` 빈 상태,
-  catch-all 1번(8.1부터 `modelPolicy.allow` 배열 첫 항목 = `openai/gpt-5.6-terra`).
+  catch-all 1번(8.1부터 `modelPolicy.allow` 배열 첫 항목 = `openai/gpt-6.1-sol`, 2026-11-16부터).
 - **모델은 claude-cli 봇이면 카탈로그 등록만으로 태운다** — `agentRuntime claude-cli`는 구독
   API에서 모델을 동적 해결(예: Sonnet 5.5 = `anthropic/claude-sonnet-5-5` + primary, 재빌드 불필요. `sonnet-5`는 Sonnet 5이지 5.5가 아니다 — 유효 모델은 ORACLE.md 봇 표 위 정책 문장).
   서빙 미보장 모델을 primary로 박지 말 것(auto-fallback catch-all이 정체성 훼손).
-- **gemini는 DOWN 아니다 (2026-08-27~)** — 서빙 레일 = **`github-copilot/gemini-3.7-flash`**(Copilot 구독).
-  옛 "403 → agy 이관 대기 → DOWN 유지" 반사신경은 **화석이다**. Google 구독·gemini-cli·agy 안 쫓는다.
-  api-key(`google/`) 폴백은 여전히 금지 — 그 키는 나노바나나 이미지 전용.
+- **gemini는 운영 정지(Telegram account disabled·heartbeat 0m).** 보존 모델·재개 조건은 ORACLE.md 봇 표 gemini 행만 본다.
+  Copilot 레일은 2026-09-28 제거, agy via acpx(#17)는 2026-11-16 원복·보류. api-key(`google/`) 폴백 금지는 유지 — 그 키는 나노바나나 이미지 전용.
 
 ## 5. 반사신경 — 다시 당하지 말 것
 

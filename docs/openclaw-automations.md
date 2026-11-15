@@ -80,9 +80,9 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 | **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (typing 기본값 복귀 2026-10-03) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5-5` (2026-11-14; 이전 sonnet-5) | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
-| **gemini** | `zai/glm-5.3` | **꺼짐** (`{every:"0m"}` 명시, 2026-10-25 — 그전엔 엔트리 없음) | 없음 | **아니오** |
+| **gemini** | 보존 `openai/gpt-6.1-sol` (2026-11-16; 이전 `zai/glm-5.3`) — 운영 정지 | **꺼짐** (`{every:"0m"}` 명시, 2026-10-25 — 그전엔 엔트리 없음) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5-5` (2026-11-14; 이전 sonnet-5) | **없음** | 없음 (disabled 1건) | **아니오** |
-| **bbot** (B) | `anthropic/claude-fable-5-2` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 3h | 예 — fresh memento loop |
+| **bbot** (B) | `anthropic/claude-fable-5-2` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 6h (02:30·08:30·14:30·20:30 KST, 2026-11-15부터) | 예 — fresh memento loop |
 
 `agents.defaults.heartbeat = {every:"1h"}`는 남아 있다. bbot은 반드시 엔트리에
 `{"every":"0m"}`를 **명시**해 상속을 막는다. 이를 `unset`하면 defaults cadence가 다시 물려

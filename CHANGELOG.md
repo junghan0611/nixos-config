@@ -9,6 +9,43 @@
 
 ## Unreleased
 
+## v2026.11.16 — entwurf 책상 첫 설치, bbot memento 6h, 기본 모델 6.1-sol, agy·acpx 시도와 원복
+
+### OpenClaw — entwurf 책상 (#160)
+
+- oracle에서 Gateway가 컨테이너에 있으므로 entwurf OpenClaw 어댑터가 부를 host shim을 home-manager 모듈로 선언했다(`users/junghan/modules/openclaw-entwurf.nix`, oracle 전용). argv를 `docker exec -i openclaw-gateway openclaw`로 넘기며, PATH 밖 `~/.local/libexec/entwurf/`에 두고 `OPENCLAW_CONFIG_PATH`는 거부한다.
+- 반대 방향으로 컨테이너가 `entwurf openclaw-send`에 닿도록 단일 목적 ed25519 키를 `restrict`·`from=172.26.0.2`·forced command로 authorized_keys에 선언했다(`machines/oracle.nix`). `SSH_ORIGINAL_COMMAND`는 읽지 않는다.
+- 책상 세션을 살리는 운영 규칙 넷(전역 `session.reset` 금지 포함)과 설치·첫 사용 절차를 문서화했다([docs/openclaw-entwurf-desk.md](docs/openclaw-entwurf-desk.md), gotchas 책상 절).
+- 11-15 실사용 A 창: main 책상 `agent:main:entwurf` → garden `20261115T215046-12438c`, pin·왕복 통과(1–12단계). 13단계 영수증은 entwurf 릴리즈 뒤 재측정, mini 책상과 압축 뒤 같은 garden 답신(F2) 관측은 NEXT에 남았다.
+
+### OpenClaw — bbot memento 3h → 6h
+
+- bbot memento는 표준 heartbeat로 옮기지 않고 cron을 유지한다(11-14 GLG·B 합의). 11-15 07:47 GLG 승인으로 `30 2,8,14,20 * * *` Asia/Seoul `--exact`로 바꿨다(id 유지, B 스크립트 정렬 workspace-bbot `9694af1`). 첫 6h 비트 11-15 08:33, 첫 day-close 11-16 02:32 모두 ok/delivered(fable-5-2).
+
+### OpenClaw — 기본 모델을 gpt-6.1-sol로
+
+- GLG 지시로 `agents.defaults.model.primary`, `agents.defaults.subagents.model`, 정지 중인 gemini의 보존 primary를 `openai/gpt-5.6-terra`/`zai/glm-5.3`에서 `openai/gpt-6.1-sol`로 바꿨다. catch-all(`agents.defaults.modelPolicy.allow` 1번)도 6.1-sol로 올리고 terra는 2번에 남겼다. `agents.defaults.models["openai/gpt-6.1-sol"].agentRuntime.id=openclaw`를 명시했다. 모두 hot reload, 재시작 0.
+- `openai/gpt-6.1-terra`는 11.3 `models list --all`에는 보이지만 openai provider `models[]`에 없어 config 검증이 거부한다. 수동 등록은 하지 않았다.
+
+### OpenClaw — agy(Antigravity) via acpx 시도와 원복 (#17)
+
+- `@openclaw/acpx@2026.11.3`을 `--pin --no-enable`로 설치했다. config 볼륨에 사는 npm 플러그인은 이미지 교체 때 새 버전으로 재설치해야 한다는 절차를 openclaw-update 스킬에 넣었다.
+- agy ACP는 모든 새 세션을 Gemini 4 Argon으로 시작하고 settings·`--model`을 무시한다. 세션 시작 때 Hydrogen으로 바꾸는 얇은 stdio 프록시를 비공개 openclaw-config에 두었고(`config/agy/agy-acp-pin.mjs`) 핀은 동작했다.
+- 실제 Telegram DM topic에서는 `/acp spawn --bind here`가 저장한 conversation id와 일반 inbound가 찾는 id가 달라, 다음 일반 메시지가 agy가 아니라 gemini의 네이티브 모델로 갔다. config로 고칠 수 없는 업스트림 결함이라 GLG 결정으로 원복했다: gemini account disabled, `acp.enabled:false`, acpx disabled(설치 유지), gemini `runtime` 제거. 업스트림 이슈는 내지 않는다. 근거는 #17.
+
+### 기반 — 저장소·유지보수
+
+- rclone과 Google Drive 콜드 저장소 기반을 선언했다(`machines/shared.nix`, [data-retirement §11](docs/data-retirement.md)). laptop·oracle 인증 완료, oracle rebuild 반영.
+- geworfen이 init 없이 PID 1로 돌아 healthcheck가 남긴 고아 emacsclient를 회수하지 못해 좀비 963개가 쌓였다. compose에 `init: true`를 넣어 tini가 PID 1이 되게 했다.
+- 유지보수 preflight가 좀비 프로세스를 부모별로 센다.
+
+### 문서·이슈
+
+- 현재값처럼 읽히던 옛 모델 서술(gemini의 zai/Copilot 레일, 08-04 기준 분기, automations 표의 3h)을 봇 표 기준으로 고쳤다.
+- 이슈 정리: #3 닫음, #5는 #13으로 흡수하고 닫음, #13 제목에서 버전 제거, #10·#12·#16·#17 현행화.
+
+### 뒷정리 (11-14 발행 직후)
+
 - OpenClaw 10.9-cc322 복귀 이미지 `b3bbcd9c`도 GLG 승인으로 삭제했다(빌드 캐시 1.2GB 추가 회수, `/` 여유 19G). 이 단계에서는 cold B만 남았으며, 이미지 재빌드가 필요한 상태였다.
 - 이어서 GLG 승인으로 마지막 cold B 아카이브(1,380,924,853B)만 삭제했다. `/` 가용 공간이 1,381,007,360B 증가했고 `/home` 회수는 없다. 11.3 컨테이너는 같은 이미지·healthy·재시작 0을 유지했다. 운영 데이터와 영수증은 보존했지만, 10.9 전환 직전 전체 데이터 복귀점은 없어졌다. 과거 이미지를 재빌드해도 삭제한 데이터는 복원되지 않는다. 기존 발행 태그·릴리즈는 변경하지 않았다.
 

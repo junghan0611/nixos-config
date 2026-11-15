@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.14](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.14).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.16](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.16).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -14,12 +14,11 @@
 - [x] **2. OpenClaw 10.8 교체 + 첫 자연 메멘토 관측** — 10-27 23:08 교체, 10-28 01:26 ok/delivered, [v2026.10.28](CHANGELOG.md)
 - [x] **3. 10.9 운영 확인·교차검토·임시 정리** — [v2026.10.30](CHANGELOG.md)에 이관
 - [x] **3b. OpenClaw 11.3 메이저 컷오버 + claude-cli 모델 정리 + 현재값 SSOT 단일화** — [v2026.11.14](CHANGELOG.md), 잔여 관측은 아래 §OpenClaw 11.3
+- [x] **3c. 11-15·16 정비: entwurf 책상 A창(#160), bbot memento 6h, defaults·gemini → 6.1-sol, #17 시도·원복, rclone 콜드 기반** — [v2026.11.16](CHANGELOG.md)
 - [ ] **4. 연속성·비용·세션 증식 기준의 깨움 설계** ← CURRENT: 주말 GLG 판단, [#13](https://github.com/junghan0611/nixos-config/issues/13)·llmlog 20261028T092543
 - [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`와 마지막 cold B도 같은 날 추가 퇴역, 이 컷오버의 10.9 전체 데이터 복귀점 없음)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
-현재 좌표: 1–3·3b 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요). 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
-
-작업트리 인계(11-14): cold B 퇴역을 반영한 양쪽 리포 문서 변경은 미커밋이다. 발행 요청을 받으면 해당 문서만 검토·스테이징하고 기존 runtime 미추적 파일은 제외한다. 영수증은 비공개 `.agent-reports/cold-b-retirement-20261114/receipt.md`. 운영 후속은 아래 실사용·메모리 관측이며 추가 정리·recreate 승인은 없다.
+현재 좌표: 1–3·3b·3c 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요). 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
 
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14), 남은 것은 아래 §#14.
 Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
@@ -33,14 +32,14 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 현재 운영 버전은 [ORACLE.md](ORACLE.md) `LIVE` 줄로 판정한다(여기에 복제하지 않는다). 경과는 [ORACLE.md](ORACLE.md) Model routing 첫 문단, 영수증은 비공개 `~/openclaw/backups/cutover-11.3-20261113/`·`.agent-reports/openclaw-v2026.11.3-review/`.
 
-- [ ] 실사용: 11-14 GLG가 bbot 메시지 수신을 확인했고, glg·mini 실제 턴은 sonnet-5 시절 것이다. 모델 정리(11-14) 뒤 glg·mini sonnet-5-5 첫 실제 턴과 **모닝 cron 11-15 08:00 자연 실행**(sonnet-5-5)을 메타로 확인한다.
+- [ ] 실사용: 모델 정리(11-14) 뒤 glg·mini sonnet-5-5 첫 실제 대화 턴을 메타로 확인한다(모닝 cron 11-15 08:00은 sonnet-5-5 ok/delivered로 확인됨, `cron runs` 11-16).
 - [ ] **memory 인덱스 동결 — 결정 필요** (11-14 읽기 전용 검수, 비공개 `.agent-reports/openclaw-v2026.11.3-review/memory-axis-20261114.md`): 6봇 인덱스가 전부 chunking **5** 그대로이고 컷오버 뒤 새 행 **0**, 재구축·capacity·임베딩 로그 0(로그 관측이며 OpenRouter 청구액은 따로 확인하지 않았다). `tools.deny=["memory_search"]`라 search 경계 repair가 발화하지 않는 것으로 보인다(가설). 비용은 0이지만 **새 봇 기억이 인덱스와 Andenken openclaw 수확으로 흐르지 않는다.** Andenken export가 읽는 4테이블·컬럼은 v27에 그대로 있어 수확 자체는 호환. 선택지: (A) upstream #196378이 든 stable까지 동결 유지 (B) gateway 정지 후 offline `memory index --force`로 통제 재구축 — bbot 6426×4096d는 #196505 실패 규모대, 경계 바뀐 청크만큼 OpenRouter 재임베딩, 재구축 뒤 청크 id가 바뀌면 append-only Andenken에 v5·v6 중복 유입 가능(가설, andenken 담당과 계약 확인 필요). `memory status` CLI는 gateway 실행 중 거부, verify memory 절은 11.3에서 unavailable.
 - [ ] W4 권고: 첫 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교).
 - [ ] **다음 의도된 recreate 때 함께 뺄 것 (GLG 11-14·15 확인, 잊지 말 것):** compose의 `~/.codex` 마운트(`:139`) — OpenClaw에서 Codex를 쓰지 않는다(GLG: GPT는 OpenClaw 인터페이스, 지원 모델은 Claude·GPT). `~/.gemini`(`:140`)는 **#17(agy ACP) 결정 전까지 빼지 않는다** — agy 로그인 토큰이 `~/.gemini/antigravity-cli/`에 있고 컨테이너가 이 마운트로 읽는다(gemini 봇 운영 정지와 별개). 낡은 compose `:131` 주석 갱신. 마운트 변경은 recreate가 필요하므로 단독으로 하지 않고, recreate가 필요한 다른 작업과 묶어 GLG 승인 뒤에 한다.
-- [ ] **#17 agy(Antigravity) via acpx — 11-16 시도 후 원복, 보류 (GLG: "정확히 파악할때까지 그쪽 세션은 안건들일거야… 안되면 뭔가 만들지 않도록하자"):** 막힌 곳은 업스트림 Telegram DM-topic 바인딩 — `/acp spawn --bind here`는 `chatId:topic:thread`로 묶는데 인바운드 DM 라우트는 scope `dm`→bare chatId라 일반 DM이 바인딩을 못 찾고 네이티브 모델로 간다(`topic-conversation.ts:10-38`, `conversation-route.ts:64-69`, `channel.ts:263-296`, `bot-message-context.ts:300-310`; config로 못 고침). 원복 상태: `acp.enabled:false`(allowedAgents `["claude"]`), `plugins.entries.acpx.enabled:false`(2026.11.3 설치 유지), gemini `runtime` 제거·account disabled. 남은 자산: `~/openclaw/config/agy/agy-acp-pin.mjs`(Hydrogen 시작 핀, openclaw-config 7f3cb3a·미푸시)·`config/agy/bin/agy`(ignored). 건드리지 않음: 바인딩된 ACP 세션 `agent:gemini:acp:1eacb22e…`, node 세션 `agent:gemini:node-1fd06883a3db`. 업스트림 이슈 제출 여부는 GLG 결정. 사실·근거는 [#17](https://github.com/junghan0611/nixos-config/issues/17).
+- [ ] **#17 agy(Antigravity) via acpx — 11-16 시도 후 원복, 보류 (GLG: "정확히 파악할때까지 그쪽 세션은 안건들일거야… 안되면 뭔가 만들지 않도록하자"):** 막힌 곳은 업스트림 Telegram DM-topic 바인딩 — `/acp spawn --bind here`는 `chatId:topic:thread`로 묶는데 인바운드 DM 라우트는 scope `dm`→bare chatId라 일반 DM이 바인딩을 못 찾고 네이티브 모델로 간다(`topic-conversation.ts:10-38`, `conversation-route.ts:64-69`, `channel.ts:263-296`, `bot-message-context.ts:300-310`; config로 못 고침). 원복 상태: `acp.enabled:false`(allowedAgents `["claude"]`), `plugins.entries.acpx.enabled:false`(2026.11.3 설치 유지), gemini `runtime` 제거·account disabled. 남은 자산: `~/openclaw/config/agy/agy-acp-pin.mjs`(Hydrogen 시작 핀, openclaw-config 7f3cb3a)·`config/agy/bin/agy`(ignored). 건드리지 않음: 바인딩된 ACP 세션 `agent:gemini:acp:1eacb22e…`, node 세션 `agent:gemini:node-1fd06883a3db`. 업스트림 이슈는 내지 않는다(GLG 11-16). 사실·근거는 [#17](https://github.com/junghan0611/nixos-config/issues/17).
 - [ ] **재빌드·plain `compose up` 금지(현 상태)**: compose config-hash가 restart:no override 기준 → override 없는 up은 recreate → #195208 경합/tini ELOOP 재노출. 다음 recreate는 의도된 작업으로만.
-- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐), 11-14 정리 완료: BuildKit 캐시 `docker builder prune -f`(GLG 승인, 2.645GB 회수), cold A, 이미지 1918f03e·709acab4·3623dcc2·e122cbd2·7e39b0b2·17dab88f, cold24, Doctor bak 8개(/home 1.61G). **`b3bbcd9c`와 마지막 cold B도 추가 퇴역 완료.** cold B 단일 파일 삭제로 `/` 1,381,007,360B를 회수했고, 11.3 live와 영수증·메타데이터는 보존했다. 컨테이너 쓰기층 정리를 위한 recreate는 승인하지 않았다.
-- [ ] 근본원인 미수정 기록: upstream #195208, tini ELOOP. (entwurf #162 ACP 진행 비가시·#163 busy 형제 중단 수단 부재는 entwurf 0.53.1에서 닫힘, 2026-11-14 확인.)
+- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐). recreate 승인 없음. (11-14 퇴역 내역은 [v2026.11.14](CHANGELOG.md)·v2026.11.16.)
+- [ ] 근본원인 미수정 기록: upstream #195208, tini ELOOP.
 
 ## 이월 관측
 
@@ -49,11 +48,11 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 ## 깨움 설계 (10.9 시점에 작성 — 11.3에서 재확인 필요), 적용은 별도 승인
 
 - **상태:** OpenClaw10.9(`709acab4…`) 운영 확인과 승인된 임시2폴더/끝난7helper 정리는 닫았다. 상세는 [CHANGELOG v2026.10.30](CHANGELOG.md)·ROADMAP, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261030/`. 기존 FAIL1과 경고·dirty는 별도다.
-- **entwurf #160 책상 세션 — 운영 몫(11-15 GLG 결정):** 책상이 버티게 하는 운영 규칙 넷을 [gotchas 책상 절](docs/openclaw-gotchas.md)·`openclaw` 스킬 §12에 적었다. 11-15 12:01 leaf 읽기: `session.resetByType`·`resetByChannel`·`compaction.maxActiveTranscriptBytes` 모두 미설정. **남은 것(각각 GLG 승인):** lab에서 sessions.create/pin RPC 이름과 operator.write scope · `/reset` 첫 줄 편지 관측 · 설치 직후 pinnedAt/spawnedBy/parent 확인 · 설치 뒤 몇 주 전사 크기 관측(maxActiveTranscriptBytes 판단). entwurf 쪽은 고정 key↔garden과 compaction 뒤 같은 garden 답신 측정만. **실사용 A 창(11-15 20:0x–21:52):** main 책상 `agent:main:entwurf` → garden `20261115T215046-12438c`, pin·왕복 통과(관측 기록은 [openclaw-entwurf-desk.md](docs/openclaw-entwurf-desk.md)). **남은 것:** 13단계 영수증은 entwurf 릴리즈 커밋 뒤 재측정(ff08d4·GLG 순서) · 다음 집 mini(선언 allow 한 줄 + 10–13, 각 GLG 승인) · 책상 전사 크기·`/reset`·압축 뒤 같은 garden 답신(F2) 관측.
-- **bbot 결정(11-14, GLG·B 호스트 좌석 합의 — cron 유지):** 메멘토(매 비트 fresh)를 유지한다. 3h 주기는 프롬프트 캐시 TTL보다 길어 연속 세션이 순비용이다(B 측정: fresh 바닥 ≈77K cache-write). 연속성은 세션이 아니라 **부르는 길**로 준다: 순서 정본은 깨움 파일 `workspace-bbot/scripts/heartbeat-wake-message.md`, 흔적은 `memory/<날>.json`·`scripts/trail`·aionsclubs `bricks/index.jsonld`. **표준 heartbeat로 옮기지 않는다** — 페어 검수(20261114T155300-dadd32, v2026.11.3 소스)에서 heartbeat는 분 단위 닻이 없고(bbot :41:42 고정), 같은 agent가 바쁘면(GLG↔bbot DM 중) 비트를 skip하며, 기본 prompt가 NO_REPLY를 지시하고, 24h 동일문 중복 억제가 붙는다. B의 `beat-census`·`harvest-sessions`는 세션 키가 아니라 opener의 cron id 문자열로 비트를 찾으므로 heartbeat 전환 시 깨진다. cron도 11.3 공식 automation이다. 15:46 cron `e94ed49d` payload를 깨움 파일 `6922e75`(sha256 `414c3b75…`)에 동기화했다(바뀐 경로는 message만, 영수증 `~/openclaw/backups/swap-10.9-cc322-20261113/`). **진행:** 16:4x GLG 직접 승인으로 cron `--message`를 B의 3줄 포인터(311 B)로 교체했다(바뀐 경로는 message만, 롤백용 `cron-memento.pre-pointer-20261114.json`). 19:26 첫 포인터 비트: ok 113.5s·fable-5-2·delivered, B transcript 판독상 첫 호출이 깨움 파일 읽기였고 여섯 순서·형제들의 판·memory 커밋까지 돌았으며 끝말 한 통이라 되돌리지 않았다. **6h 전환(11-15 07:47, GLG 직접 승인·B 합의; B 스크립트 정렬 workspace-bbot `9694af1` — census 슬롯 07:47 경계로 3h 격자/시계 시각 분할, inbox·house-board 6h):** cron `30 2,8,14,20 * * *` Asia/Seoul `--exact`, id 유지, 마지막 3h 비트 07:27·첫 6h 비트 08:30([automations](docs/openclaw-automations.md)). **남은 관측:** 08:30 첫 6h 비트 ok/delivered, 11-16 02:30 첫 6h day-close. 승격 관문(깨움 파일 마지막 커밋 표시·「GLG가 있는 턴에서만 고친다」)은 B가 넣었다. 다른 봇 깨우기는 봇별로 따로 잰다(entwurf #160 이후). heartbeat 함정은 [gotchas 11.3 절](docs/openclaw-gotchas.md).
+- **entwurf #160 책상 세션 — 운영 몫(11-15 GLG 결정):** 책상이 버티게 하는 운영 규칙 넷을 [gotchas 책상 절](docs/openclaw-gotchas.md)·`openclaw` 스킬 §12에 적었다. 11-15 12:01 leaf 읽기: `session.resetByType`·`resetByChannel`·`compaction.maxActiveTranscriptBytes` 모두 미설정. **남은 것(각각 GLG 승인):** lab에서 sessions.create/pin RPC 이름과 operator.write scope · `/reset` 첫 줄 편지 관측 · 설치 직후 pinnedAt/spawnedBy/parent 확인 · 설치 뒤 몇 주 전사 크기 관측(maxActiveTranscriptBytes 판단). entwurf 쪽은 고정 key↔garden과 compaction 뒤 같은 garden 답신 측정만. 실사용 A 창은 11-15 완료(v2026.11.16, [openclaw-entwurf-desk.md](docs/openclaw-entwurf-desk.md)). **남은 것:** 13단계 영수증은 entwurf 릴리즈 커밋 뒤 재측정(ff08d4·GLG 순서) · 다음 집 mini(선언 allow 한 줄 + 10–13, 각 GLG 승인) · 책상 전사 크기·`/reset`·압축 뒤 같은 garden 답신(F2) 관측.
+- **bbot memento:** cron 유지·6h(`30 2,8,14,20 * * *` KST) — 결정 근거는 [ROADMAP 운영 결정 이력](ROADMAP.md), 함정은 [gotchas 11.3 절](docs/openclaw-gotchas.md). 첫 6h 비트(11-15 08:33)·첫 day-close(11-16 02:32) ok/delivered. 다른 봇 깨우기는 봇별로 따로 잰다(entwurf #160 이후).
 - [ ] **정비 주간 끝나면 삭제:** 페어 검수용 v2026.11.3 소스 sparse clone `/tmp/oc-src-v2026.11.3`(417M, HEAD 847611dc)·`/tmp/hb-audit-20261114/`. 정비가 끝나면 지운다(GLG 11-14 지시). 같은 때 #160 쪽 임시물 `/tmp/oc-847611d.jKXry1`(소스 사본)·`/tmp/ff08d4-next/`는 ff08d4(entwurf) 소유라 그쪽과 정리 시점을 맞춘다.
 - **Next:** [#13](https://github.com/junghan0611/nixos-config/issues/13)과 [10.9 기준점 댓글](https://github.com/junghan0611/nixos-config/issues/13#issuecomment-6515293984)을 읽고 **연속성 유지 + 전체 맥락 반복 입력 비용 제어 + 매 tick 새 세션/파일 증식 비선호**를 만족할 방식을 고른다. fresh 기본/역할/주기/예산은 미정이다. light는 bootstrap만 줄이고 history 상한이 아니므로 지속 작업 세션·선택적 회수·runtime별 compaction을 분리해 비교한다. 파일럿은 한 봇·범위·관측/중단 기준을 명시 승인한 뒤다.
-- **Read:** 비공개 llmlog `20261028T092543` — 깨우기·퇴근·기억·검증: 연속성과 맥락 비용, 세션 증식의 기준 → #13. 기억 생산/Andenken 회수는#5, mini 역할은#10과 연결하며 자동으로 기능을 켜거나 이슈를 닫지 않는다.
+- **Read:** 비공개 llmlog `20261028T092543` — 깨우기·퇴근·기억·검증: 연속성과 맥락 비용, 세션 증식의 기준 → #13. 기억 생산/Andenken 회수는 #5(11-16 #13으로 흡수), mini 역할은 #10과 연결하며 자동으로 기능을 켜거나 이슈를 닫지 않는다.
 - **미해결:** verify **39PASS/FAIL1**의 session 실패 요약은10.9 교체 전·직후·첫 자연 실행 뒤 동일했지만 최초 원인·귀속은 미확정이다. 기준 확장·행 삭제·reset 없이 native 표면으로 조사한다. auth-unknown·slow SQLite·slow lifecycle 경고도 남았다.10.9 초기 tini ELOOP2회/RC2, MaxListeners(exit listeners11)1회는 해결 증명이 아니다. glg/mini/bbot dirty 자연 수렴·실대화 품질도 미검증이며 forceindex/추가 smoke는 승인되지 않았다.
 - **보존·판단(11-14 종결):** D1·D2와 10.9/10.8 복귀 이미지를 모두 퇴역했다. `b3bbcd9c`와 cold B까지 퇴역해 이 컷오버의 10.9 전체 데이터 복귀점은 없다(ORACLE.md 11.3 문단). 소스 재빌드는 삭제한 데이터를 복구하지 않는다. 비공개 openclaw-config는 11.3 반영분만 커밋하고 config/ 아래 기존 혼재 WIP는 별도로 둔다.
 
@@ -165,7 +164,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 원문 맥락은 `git show 07849d5:NEXT.md`의 해당 절. 착수 전에 현재 10.7·현 호스트에서 여전히 사실인지부터 다시 잰다.
 
-**압축 때 개별 재판정하지 않은 옛 절**(미체크 항목이 남아 있었음 — 닫힘 근거 아님): §4 8B 4096d 검색 품질 검증(native 검색 전제의 구 scope — 현행 적용성 미확인, [#5](https://github.com/junghan0611/nixos-config/issues/5) 재정의 이후 그대로 재개하지 않음) · §5 HA 데이터 import(lifetract 배턴) · §oracle `/home` 회수 근본 · §ACP 잔재 청소 · §AGENTS.md/gotchas.md로 옮길 자리. 이 줄은 그 절들을 다시 읽어 지우거나 한 줄로 승격할 때 함께 정리한다.
+**압축 때 개별 재판정하지 않은 옛 절**(미체크 항목이 남아 있었음 — 닫힘 근거 아님): §4 8B 4096d 검색 품질 검증(native 검색 전제의 구 scope — 현행 적용성 미확인, [#5](https://github.com/junghan0611/nixos-config/issues/5)(→#13 흡수) 재정의 이후 그대로 재개하지 않음) · §5 HA 데이터 import(lifetract 배턴) · §oracle `/home` 회수 근본 · §ACP 잔재 청소 · §AGENTS.md/gotchas.md로 옮길 자리. 이 줄은 그 절들을 다시 읽어 지우거나 한 줄로 승격할 때 함께 정리한다.
 
 **보안 부채 (우선):**
 - 🔴 GitHub Copilot 옛 토큰 2개(`ghu_…`·`gho_…`) GitHub 측 권한 취소 — 로컬 삭제만으로 무효화되지 않는다. (§github-copilot)
@@ -178,14 +177,14 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - 아내 07:00 cron(`morning-family-schedule-reminder-wife`, disabled) 재활성 시점 — GLG 판단. `daily_real_estate_auction_study_brief_miir`는 켜기 전 model 명시. (§8.1 회귀)
 - 4봇(main·glg·gpt·mini) heartbeat 재활성 — GLG 예정, 검수 목적의 의도적 off. [#10](https://github.com/junghan0611/nixos-config/issues/10) mini 확장과 함께. 10.7에서 Workshop `propose`·review job 6개가 사라져 #10 4단계는 재정의 필요(2026-10-26 코멘트). 선행: `skills.workshop.allowSymlinkTargetWrites`가 10.7에서 Unknown path — 후계 guard를 v2026.10.7 고정 소스로 정태 확인(미검증, 쓰기 테스트는 GLG 승인 후).
 - active-memory 거취(현재 off, 폐기도 선택지) · typing 재발 관찰 · `tools.sessions.visibility="all"` 재검토. (§8.1·§8.2)
-- [[#5](https://github.com/junghan0611/nixos-config/issues/5) 검토 상자로 이관, 미검증] `memory.search.sources=["sessions"]` 축소 결정(대가: MEMORY/USER가 의미 검색에서 빠짐) · FTS-only 한 봇 시험 · `memory_embedding_cache` orphan+VACUUM(~600MB 추정, 정지 창 필요) · 정기 `memory index` 승격. (§기억축)
+- [[#13](https://github.com/junghan0611/nixos-config/issues/13)(#5 흡수) 검토 상자로 이관, 미검증] `memory.search.sources=["sessions"]` 축소 결정(대가: MEMORY/USER가 의미 검색에서 빠짐) · FTS-only 한 봇 시험 · `memory_embedding_cache` orphan+VACUUM(~600MB 추정, 정지 창 필요) · 정기 `memory index` 승격. (§기억축)
 - glg 가족봇 Sonnet 5 soak — 감정 있는 실제 턴에서 대칭 규칙 유지 여부·역할 낭독 반복·compact 요약의 법적 프레임 잔존 관찰. (§glg 가족봇)
 - thinking 판단: claude-cli 봇은 thinkingLevel이 안 물린다는 기록(`extensions/anthropic/cli-backend.ts`, 10.7 재확인 전) · bbot 세션 `think:xhigh` 정식화/하향 · gpt `thinkingDefault=medium` 인상 관찰 · luna/terra lane 품질 soak. (§glg 가족봇·§7.1 잔여)
 - `run.sh t)` SSH 터널 은퇴 여부(trustedProxies 변경 뒤 403). (§앱 후속)
 - telegram stop-timeout 데드락 — 업그레이드마다 상류 수정 확인, gotchas 미기록. (§2 버전 hop)
 - 스킬 심볼릭 전면 전환 설계(device 이식성·`extraDirs` vs 심볼릭·pi-skills 화이트리스트) · gogcli SKILL.md 내용 분기. (§스킬 심볼릭)
 - 컨테이너 cron이 호스트 시민을 깨울 수 있는가 — 지금 재지 않음. (§시계)
-- OpenClaw 세션을 andenken 코퍼스에 편입·크로스에이전트 기억 일원화 — 수확 축(`semantic-memory` `search-openclaw`, 재임베딩 없는 harvest)으로 이미 서 있다. 남은 계약 재검토는 [#5](https://github.com/junghan0611/nixos-config/issues/5). (§기억망)
+- OpenClaw 세션을 andenken 코퍼스에 편입·크로스에이전트 기억 일원화 — 수확 축(`semantic-memory` `search-openclaw`, 재임베딩 없는 harvest)으로 이미 서 있다. 남은 계약 재검토는 [#13](https://github.com/junghan0611/nixos-config/issues/13)(#5 흡수). (§기억망)
 - 이미지생성 `GEMINI_API_KEY` 경로 미재검증. (§pi-shell-acp)
 
 **호스트・공개면:**

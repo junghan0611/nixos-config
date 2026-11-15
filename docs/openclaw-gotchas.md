@@ -395,7 +395,7 @@ env knob: CLAUDE_CODE_REFUSAL_FALLBACK_CATCH_ALL
 처음 근거로 삼았던 `fable_unavailable` / `fable_probe_failed` 는 그 다른 경로 소속이었다 — 오독이었다.
 
 **OpenClaw 경로가 아니라는 근거 셋**
-- `agents.defaults.modelPolicy.allow` 의 catch-all 은 `openai/gpt-5.6-terra` — anthropic 이 아니다.
+- `agents.defaults.modelPolicy.allow` 의 catch-all 은 당시 `openai/gpt-5.6-terra`(2026-11-16부터 `openai/gpt-6.1-sol`) — 어느 쪽이든 anthropic 이 아니다.
   게다가 **강등 대상 `claude-opus-4-8` 은 `allow` 배열에 아예 없다**(`models` 에만 있다).
   OpenClaw 정책을 통째로 우회했다는 뜻이다.
 - `~/.claude/settings.json` 에 `fallbackModel` 없음
@@ -678,7 +678,7 @@ cd ~/openclaw && docker compose stop openclaw-gateway
 
 # 1) 사람이 정해야 하는 config 편집 3건 (자동 수선 대상 아님)
 #    agents.ownership="explicit" / plugins.allow 에서 죽은 항목 제거 / skills.workshop 명시
-#    ※ agents.defaults.models 는 파일 직접 편집 — 키 순서 = catch-all 규율
+#    ※ catch-all = agents.defaults.modelPolicy.allow 배열 순서(8.1~). 배열 전체를 config set --batch-file로 넘기면 순서 유지(2026-11-16)
 
 # 2) 레거시 잔해를 state dir 밖으로 (doctor 를 막는 것들)
 #    credentials/telegram-<죽은계정>-allowFrom.json  → 백업으로 이동

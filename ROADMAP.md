@@ -421,6 +421,19 @@ ACPX externalize(`@openclaw/acpx` beta), 우리는 disabled. active-memory disab
 
 ## 운영 결정 이력
 
+### OpenClaw 기본 모델 gpt-6.1-sol, agy·acpx 원복 (2026-11-16)
+
+gemini를 agy(Antigravity 구독)로 살리려는 #17 시도가 Telegram DM-topic 바인딩 결함에서 멈췄다. `/acp spawn --bind here`는 `<chat>:topic:<thread>`로 저장하는데 개인 봇 DM의 inbound는 scope `dm`을 bare chat id로 계산해, status는 ACP를 보이는데 일반 턴은 네이티브 모델로 갔다. GLG는 "정확히 되는 길로 해야돼 — 안되면 뭔가 만들지 않도록하자"로 원복을 정했다. 원복하면서 GLG가 gemini 보존 모델과 전체 기본·subagents·catch-all을 `openai/gpt-6.1-sol` 하나로 모았다(terra·glm은 더 안 씀). 그 전 ORACLE.md에 남아 있던 2026-08-04 시점 분기(ORACLE에서 이관):
+
+- main: Anthropic Max via canonical `anthropic/claude-opus-5` + `agentRuntime claude-cli` (Claude Code CLI spawn, `default_claude_max_20x` rate tier)
+- glg / mini / bbot: 같은 Anthropic Max claude-cli 경로 (glg=`claude-sonnet-5`, mini=`claude-sonnet-5`, bbot=`claude-fable-5-2`)
+- gpt: Codex OAuth ($100 plan) — `openai/gpt-6.1-sol` (2026-10-03, 9.8)
+- gemini: 네이티브 `google-gemini-cli` provider OAuth (Pro 쿼터, API 아님 — `google/` api-key와 별개 provider). 2026-06-10 ACP→네이티브 전환
+
+### bbot memento — cron 유지, 3h → 6h (2026-11-14·15)
+
+**bbot 결정(11-14, GLG·B 호스트 좌석 합의 — cron 유지):** 메멘토(매 비트 fresh)를 유지한다. 3h 주기는 프롬프트 캐시 TTL보다 길어 연속 세션이 순비용이다(B 측정: fresh 바닥 ≈77K cache-write). 연속성은 세션이 아니라 **부르는 길**로 준다: 순서 정본은 깨움 파일 `workspace-bbot/scripts/heartbeat-wake-message.md`, 흔적은 `memory/<날>.json`·`scripts/trail`·aionsclubs `bricks/index.jsonld`. **표준 heartbeat로 옮기지 않는다** — 페어 검수(20261114T155300-dadd32, v2026.11.3 소스)에서 heartbeat는 분 단위 닻이 없고(bbot :41:42 고정), 같은 agent가 바쁘면(GLG↔bbot DM 중) 비트를 skip하며, 기본 prompt가 NO_REPLY를 지시하고, 24h 동일문 중복 억제가 붙는다. B의 `beat-census`·`harvest-sessions`는 세션 키가 아니라 opener의 cron id 문자열로 비트를 찾으므로 heartbeat 전환 시 깨진다. cron도 11.3 공식 automation이다. 15:46 cron `e94ed49d` payload를 깨움 파일 `6922e75`(sha256 `414c3b75…`)에 동기화했다(바뀐 경로는 message만, 영수증 `~/openclaw/backups/swap-10.9-cc322-20261113/`). **진행:** 16:4x GLG 직접 승인으로 cron `--message`를 B의 3줄 포인터(311 B)로 교체했다(바뀐 경로는 message만, 롤백용 `cron-memento.pre-pointer-20261114.json`). 19:26 첫 포인터 비트: ok 113.5s·fable-5-2·delivered, B transcript 판독상 첫 호출이 깨움 파일 읽기였고 여섯 순서·형제들의 판·memory 커밋까지 돌았으며 끝말 한 통이라 되돌리지 않았다. **6h 전환(11-15 07:47, GLG 직접 승인·B 합의; B 스크립트 정렬 workspace-bbot `9694af1` — census 슬롯 07:47 경계로 3h 격자/시계 시각 분할, inbox·house-board 6h):** cron `30 2,8,14,20 * * *` Asia/Seoul `--exact`, id 유지, 마지막 3h 비트 07:27·첫 6h 비트 08:30([automations](docs/openclaw-automations.md)). **남은 관측:** 08:30 첫 6h 비트 ok/delivered, 11-16 02:30 첫 6h day-close. 승격 관문(깨움 파일 마지막 커밋 표시·「GLG가 있는 턴에서만 고친다」)은 B가 넣었다. 다른 봇 깨우기는 봇별로 따로 잰다(entwurf #160 이후). heartbeat 함정은 [gotchas 11.3 절](docs/openclaw-gotchas.md).
+
 ### Emacs 30.2 → 31.1, unstable 예외 세 번째 (2026-09-02)
 
 Emacs 31.1이 릴리스되고 Doom의 권장 버전이 31로 올라갔다. 26.05에는 **`emacs31` attr 자체가 없다**
