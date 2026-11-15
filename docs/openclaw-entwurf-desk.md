@@ -1,13 +1,13 @@
 # entwurf × OpenClaw — 봇 책상 설치·실사용 절차 (oracle)
 
-> **상태: 절차 초안, 아직 한 번도 운영에서 실행하지 않았다.** (2026-11-15 작성, entwurf #160)
+> **상태: main 책상 설치·왕복 완료 (2026-11-15 A 창, 1–12단계).** 13단계 영수증은 entwurf 릴리즈 커밋 뒤 재측정 대기. 다음 집 mini. (entwurf #160)
 > 처음 가는 길이라 되는 것 자체가 관측이다. 실행하면서 놀란 지점은 맨 아래 **관측 기록**에 그 자리에서 적는다.
 >
 > 운영 규칙(책상이 버티게 하는 규칙 넷)은 [openclaw-gotchas.md 책상 절](openclaw-gotchas.md)과 `openclaw` 스킬 §12가 정본이다. 이 문서는 **설치하고 처음 써 보는 순서**만 다룬다.
 
 ## 무엇을 만드나
 
-- 봇 집(agent) 하나에 **책상 세션 하나** — pin된 명시 key 세션(`agent:<봇id>:entwurf-desk`).
+- 봇 집(agent) 하나에 **책상 세션 하나** — pin된 명시 key 세션(`agent:<봇id>:entwurf`). GLG: *"책상키는 entwurf 만 쓰자. '-' 이걸 넣는게 어색하다."*
 - entwurf가 그 자리에 **garden id**를 붙인다(birth). 형제들은 이 garden id로 봇 책상에 편지를 보내고, 책상도 형제에게 답한다.
 - 책상 이름(key)과 garden id는 다르다.
   - key는 GLG가 정하는 OpenClaw 세션 이름이다.
@@ -40,7 +40,7 @@
 | key에 피할 것 | 대문자(소문자로 정규화되는 곳이 있다), `subagent:`·`cron:`·`acp:` 표지, `:group:`·`:channel:` | `src/sessions/session-key-utils.ts`, `src/config/sessions/reset.ts` |
 | 책상의 reset 유형 | `direct` — Telegram DM과 같은 칸 | gotchas 책상 절 규칙 2 |
 | 명시 key create의 부모 | 자동으로 `agent:<id>:main` → pin 가능 | lab M1 |
-| 플러그인 link 후 반영 | lab에서는 "Saved for the next Gateway start" → Gateway restart 필요로 본다 | lab 관측(운영 미확인) |
+| 플러그인 link 후 반영 | 운영에서도 hot reload가 안 됐다 → Gateway restart 필요 | 운영 관측 2026-11-15 (관측 기록 8행) |
 
 ## 첫 집과 다음 집
 
@@ -70,12 +70,12 @@ GLG: *"일단 테스트할거니까 main(default) 봇으로 해보자"*, *"이�
 | 2 | `pnpm run build-bridge` — oracle은 checkout 단일 빌드라 **이것이 곧 운영 dist 재빌드** | entwurf | 1에 포함 | 이전 SHA에서 build-bridge 재실행 |
 | 3 | `run.sh install-meta-bridge` + `doctor-meta-bridge` | entwurf (운영 관측) | 1에 포함 | 이전 SHA에서 install-meta-bridge 재실행 (uninstall 아님 — 다른 Claude 세션 수신이 끊긴다) |
 | 4 | 모든 reader 재시작 (§재시작 순서) | 각 세션 주인 | **1건** (살아 있는 대화를 끊는다) | 이전 dist로 되돌린 뒤 같은 순서 재시작 |
-| 5 | host shim `openclaw-oracle-gateway` — PATH에 bare `openclaw`를 두지 않는다. 선언은 home-manager, 경로는 per-user profile 절대경로 | 운영 | **1건** (커밋 + switch) | 선언 revert + switch |
+| 5 | host shim `~/.local/libexec/entwurf/openclaw-oracle-gateway` — PATH에 bare `openclaw`를 두지 않는다. 선언은 home-manager `users/junghan/modules/openclaw-entwurf.nix`(oracle만) | 운영 | **1건** (커밋 + switch) | 선언 revert + switch |
 | 6 | 선언 `~/.pi/agent/openclaw-citizens.json`: scope `oracle`, gateway `{ "bin": <5의 절대경로> }`, allow key 하나 | 운영 작성, entwurf 파서 검사 | **1건** | allow 줄 삭제 (빈 allow도 유효한 닫힘) |
-| 7 | 컨테이너→host 전용 SSH 키 + `authorized_keys` forced command(`restrict,from=<실측 출처>,command=…`), 래퍼 `ConnectTimeout=3` | 운영 | **1건** (커밋 + switch) | authorized_keys 줄·forced script revert + switch, 키 디렉터리 삭제 |
-| 8 | 플러그인 link: `plugins install --link /home/junghan/repos/gh/entwurf/plugins/openclaw`, config `entwurfBin`(7의 래퍼)·`declPath`(컨테이너에서 보이는 경로)·`scope`(`oracle`) | 운영 실행, entwurf 값 확인 | **1건** | `plugins uninstall` (+ 9와 같은 restart) |
+| 7 | 컨테이너→host 전용 SSH 키 + `authorized_keys` forced command(`restrict,from=<실측 출처>,command=…`), 래퍼 `ConnectTimeout=3`. 선언 위치는 **`machines/oracle.nix`**(`lib.mkAfter`) — `hosts/oracle/configuration.nix`는 설치 때만 쓰고 flake에 없다 | 운영 | **1건** (커밋 + switch) | authorized_keys 줄·forced script revert + switch, 키 디렉터리 삭제 |
+| 8 | 플러그인 link: `plugins install --link --force /home/junghan/repos/gh/entwurf/plugins/openclaw`(`--force`는 ClawHub 밖 로컬 소스 확인일 뿐). config는 **객체 하나로** `config set plugins.entries.entwurf '{…}' --strict-json`: `enabled`·`config.entwurfBin`(7의 래퍼)·`declPath`(컨테이너에서 보이는 경로)·`scope`(`oracle`) — 키별 set은 필수 속성 검사에 걸린다 | 운영 실행, entwurf 값 확인 | **1건** | `plugins uninstall` (+ 9와 같은 restart) |
 | 9 | Gateway restart (플러그인 로드) | 운영 | **별도 1건** (idle gate 측정 후) | 8 롤백 뒤 같은 restart 1회 |
-| 10 | 책상: `sessions.create {key}` → `sessions.patch {pinned:true}` → `sessions.describe`로 `pinned===true`, spawnedBy 없음, 부모 ∈ {없음, agent main} 확인 — **끊김 없이** | 운영 | **1건** — 직전에 key 확정·`session.notifyOnCreate` 결정 | unpin (archive는 GLG 판단) |
+| 10 | 책상(shim으로 `gateway call <method> --params '{…}' --json`): `sessions.create {key}` → `sessions.patch {pinned:true}` → `sessions.describe`로 `pinned===true`, spawnedBy 없음, 부모 ∈ {없음, agent main} 확인 — **끊김 없이** | 운영 | **1건** — 직전에 key 확정·`session.notifyOnCreate` 결정 | unpin (archive는 GLG 판단) |
 | 11 | birth: `entwurf openclaw-birth --scope oracle --session-key <key> --cwd <host 절대경로>` — 10 **바로 뒤** | entwurf | 10에 포함 | 6 롤백(allow 빼기)이 닫기 |
 | 12 | 왕복 양방향 + F2(압축 뒤·`/reset` 뒤 같은 garden 답신, pin 유지) | entwurf 측정, 운영 관측 (describe·전사 크기·Gateway 로그 에러) | **1건** (봇 턴 = 모델 사용) | 관측만 — 실패 시 6 롤백 |
 | 13 | `check-openclaw-home-receipt` 영수증 — entwurf VERIFY 기준 11 (MUST tier green) | entwurf | 결과 보고 | — |
@@ -112,4 +112,10 @@ GLG: *"일단 테스트할거니까 main(default) 봇으로 해보자"*, *"이�
 
 | 날짜 | 집 | 단계 | 관측 | 영수증 |
 |---|---|---|---|---|
-| | main | | | |
+| 2026-11-15 | main | 5 | shim 검증(switch 전): 맞는 url → rc0 3.3s, 다른 url → rc1 "Gateway destination changed", `OPENCLAW_CONFIG_PATH` 설정 → rc64 | 운영 세션 |
+| 2026-11-15 | main | 7 | 첫 선언을 `hosts/oracle/configuration.nix`에 넣었다가 빌드에 키가 없어 발견 — flake 밖 파일. `machines/oracle.nix`로 옮김. switch 뒤: 래퍼 argv 틀림 → invalid 한 줄 rc2 / 빈 stdin → entwurf invalid rc2 0.51s / 같은 키로 `id` → forced command가 대체 / host에서 같은 키 → Permission denied(from 제한) | sshd 로그(출처 컨테이너 주소) |
+| 2026-11-15 | main | 8 | `plugins install`은 기존 `plugins.allow`에 id를 자동 추가. 저장은 됐으나 hot reload 실패: 다른 플러그인(memory-core) 서비스 정지가 5s timeout → "persisted but was not applied". entwurf 문제가 아니다 | config 백업 `~/openclaw/backups/swap-10.9-cc322-20261113/openclaw.json.pre-entwurf-plugin-20261115` |
+| 2026-11-15 | main | 9 | 21:45 `docker restart` 1회. ready 21:47:56(≈2.5분), healthy 21:49:15 — 그사이 healthcheck가 "Shared-state read and cleanup failed"로 실패(기동 중 상태 DB 경합 추정, ready 뒤 소멸). 12 plugins에 entwurf 포함, `toolNames=['entwurf_v2']`. ELOOP 없음. 무관 경고: acpx missing-package-dir(미설치 그대로) | Gateway 로그 |
+| 2026-11-15 | main | 10 | create 응답 `delivery.kind=none`·`createdVia operator`·`spawnDepth 0`, 작업 폴더 컨테이너 workspace, 모델은 봇 기본(gpt-6.1-sol). describe: `pinned=true`, spawnedBy/parent 필드 없음, `classification custom`. notifyOnCreate 기본(true)이어도 전달 대상이 none이라 알림이 갈 곳이 없었다 | describe 출력 |
+| 2026-11-15 | main | 11 | birth → garden `20261115T215046-12438c`, 재실행은 attach(멱등) | entwurf 조정자 로그 |
+| 2026-11-15 | main | 12 | host 형제 → 책상 native-push → 책상이 `entwurf_v2`로 답신, 왕복 ≈13s | entwurf 조정자 `/tmp/ff08d4-next/a-window/` |
