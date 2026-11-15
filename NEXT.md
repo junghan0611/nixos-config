@@ -155,9 +155,8 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 ## git-annex 기반 세션 코퍼스 보관 체계
 
 - **대상:** `~/repos/gh/session`(기기 통합 세션 코퍼스). 11-15 laptop 실측: 12 GiB·파일 7,066개, git-annex(SHA256E) 리포, origin `thinkpad`, 커밋 서명 없음. hot/cold 배치·비공개 annex 경계 설계.
-- **콜드 목적지 준비됨(11-15):** Google Drive `gdrive:` — 설정·실측·새 기기 절차는 [data-retirement §11](docs/data-retirement.md#11-콜드-저장소--google-driverclone). laptop·oracle 인증 완료.
+- **콜드 목적지 준비됨(11-15):** Google Drive `gdrive:` — 설정·실측·새 기기 절차는 [data-retirement §11](docs/data-retirement.md#11-콜드-저장소--google-driverclone). laptop·oracle 인증 완료, oracle은 11-15 rebuild(system-80)로 선언 반영(`rclone v1.74.4`). agent-config 745332에 정본 경로와 사실을 전달했다(11-15, 담당 지정 아님).
 - **로드맵(GLG 11-15): 데이터부터 넣고 단계적으로.** ① 이관 담당 정하기(agent-config 후보) → nixos-config는 기반 기술을 세팅하고 그 담당이 쓸 **스킬**을 같이 만든다 ② 첫 이관(도구 미정: rclone 직접 / git-annex special remote — `git-annex-remote-rclone` nixpkgs 판은 낡아 별도 설치 필요할 수 있음) ③ 무결성·신뢰: annex SHA256 + checkpoint 커밋 GPG 서명 + 히스토리 외부 증인 ④ 암호화(annex `encryption=` 또는 rclone crypt). 암호화는 저장소 변조 탐지·기밀성일 뿐 "누가 말했나"를 보장하지 않는다 — 그 축은 ③.
-- [ ] oracle rclone 선언 반영: 지금은 conf만 복사했고 바이너리는 `nix shell nixpkgs#rclone`로 임시 사용. `shared.nix` 반영 rebuild는 oracle 운영 규율로 GLG 승인 뒤.
 - [ ] laptop syncthing password-store 사본(`~/sync/emacs/password-store`, `.gpg-id`·`.git` 깨짐) 거취 — 이제 정본 아님, 정리 여부 GLG 판단.
 - **먼저 결정:** Oracle 잔류 범위, 목적지와 가용량, 로컬 drop 뒤 독립 사본 수, 무결성/복원 증거, 평시/피크 예산. 회사 계정 저장소를 유일 보관처로 삼지 않는다.
 - **소유자 계약:** Andenken·agent-config의 `MANIFEST.json`/SHA256·append-only·gather/replicate·reader 경로 유지 방법을 검토. 이번엔 배치·계약·검증 계획까지만, 시험 복사·원본 이동/drop은 각각 별도 승인.
