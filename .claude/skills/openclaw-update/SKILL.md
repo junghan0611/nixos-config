@@ -155,6 +155,12 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 
 > **책상 세션**: entwurf 책상 세션이 있는 봇은 교체 전후에 `sessions.describe <desk key>`로 pinnedAt·status를 읽어 대조한다. 교체로 모델·런타임이 바뀌면 책상 맥락이 새로 시작될 수 있다 — GLG에게 미리 알린다(`openclaw` 스킬 §12).
 
+> **외부 npm 플러그인 — 이미지 밖이라 따로 올린다** (2026-11-15부터 `@openclaw/acpx`). 설치본은 config 볼륨 `/home/node/.openclaw/npm/` 아래라 이미지 교체로 바뀌지 않는다. 그래서 Gateway 버전과 어긋날 수 있다. 우리는 Gateway와 **같은 버전으로 `--pin`** 한다.
+> - 교체 전: `docker exec openclaw-gateway openclaw plugins list --json`으로 npm 출처 플러그인과 version을 영수증에 적는다.
+> - 교체 뒤: `openclaw plugins install @openclaw/acpx@<새 ver> --pin --no-enable`. `--no-enable`은 켜짐/꺼짐과 allowlist를 그대로 둔다. 확인은 `plugins list`의 version = 새 Gateway 버전, status가 이전과 같은지다. 켜져 있는 플러그인이면 반영에 Gateway restart가 한 번 필요할 수 있다.
+> - 설치 디렉터리가 사라지면 doctor가 `failed post-core payload smoke check (missing-package-dir)`로 알린다(11-15 관측). 그 경고는 같은 명령으로 다시 설치하라는 뜻이다.
+> - `--link` 플러그인(entwurf)은 이 대상이 아니다. 그쪽 버전은 entwurf checkout이 정한다.
+
 ## 1-M. 메이저 — 실측 선례 10.9→11.3 (2026-11-13)
 
 preflight exit 3·diverged는 위 "묻는 것은 셋뿐" 규칙 밖이다. 게이트마다 GLG 승인을 받는다. 11.3에서 밟은 순서:
