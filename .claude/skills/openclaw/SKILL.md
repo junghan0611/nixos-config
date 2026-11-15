@@ -196,7 +196,7 @@ alias를 쓰지 말고 정확한 id를 적는다. 썼다면 probe로 실제 해�
 봇 집마다 garden id가 붙는 pin된 명시 key 책상 세션 하나. 기억은 봇 운영룰(workspace `memory` 기록·커밋·푸시)이 맡고,
 운영이 지킬 것은 **그 세션이 버티는가** 하나다. 근거·소스 좌표는 [gotchas 책상 절](../../../docs/openclaw-gotchas.md).
 
-1. **생성·pin**: `spawnedBy`·`parentSessionKey` 없이 만들고 pin한다(부모가 붙으면 pin 무효 → 30일 뒤 archive). 직후 `sessions.describe`로 확인.
-2. **reset**: 전역 `session.reset`을 켜지 않는다. `resetByType`도 책상에 걸리는지 본다. `/new`·`/reset` 첫 줄 편지는 관측 대상.
+1. **생성·pin**: `spawnedBy` 없이, 부모는 없거나 그 agent의 main(명시 key create의 자동값)으로 만들고 pin한다(다른 부모면 pin 무효 → 30일 뒤 archive). 직후 `sessions.describe`의 `pinned:true`로 확인.
+2. **reset**: 전역 `session.reset`도 `resetByType.direct`도 켜지 않는다(책상 key는 Telegram DM과 같은 `direct` 유형). DM만 리셋하려면 `resetByChannel`로 좁힌다. `/new`·`/reset` 첫 줄 편지는 관측 대상.
 3. **모델·provider 교체·버전업**: 책상 맥락 교체로 취급 — 체크리스트에 "책상 세션 영향", GLG에게 미리 알림.
 4. **막힘**: ctx%가 아니라 `sessions.describe`의 `status`·`lastRunError`·`contextBudgetStatus`. 락이면 GLG 승인 뒤 `sessions.abort`.
