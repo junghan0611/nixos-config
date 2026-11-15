@@ -56,8 +56,23 @@ let
         ;;
     esac
   '';
+
+  # entwurf #160 step 7: the OpenClaw Gateway container reaches host `entwurf openclaw-send` over
+  # SSH with a single-purpose key. The forced command fixes argv and the declaration path; it never
+  # reads SSH_ORIGINAL_COMMAND. stdin (the claim) and the exit code pass through unchanged.
+  # Procedure and rollback: docs/openclaw-entwurf-desk.md.
+  entwurfOpenclawSendForced = pkgs.writeShellScript "entwurf-openclaw-send-forced" ''
+    export PATH=/etc/profiles/per-user/junghan/bin:/run/current-system/sw/bin:/home/junghan/.local/bin
+    exec /home/junghan/.local/bin/entwurf openclaw-send --decl /home/junghan/.pi/agent/openclaw-citizens.json
+  '';
+  # from= is the container's address on openclaw-config_default (measured 2026-11-15). A recreate
+  # that changes it makes sends fail closed (ssh 255 -> plugin indeterminate), not open.
+  entwurfOpenclawSendKey = ''restrict,from="172.26.0.2",command="${entwurfOpenclawSendForced}" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBXfquz9L3dTREcWsLJ9RqgXi5VAqlxA+KrHU0uFTZzx entwurf-openclaw-send@oracle-container'';
 in
 {
+  # entwurf #160 step 7 (see the let binding above).
+  users.users.junghan.openssh.authorizedKeys.keys = lib.mkAfter [ entwurfOpenclawSendKey ];
+
   imports = [
     ./shared.nix
     # Import the existing hardware configuration
