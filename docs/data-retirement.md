@@ -141,3 +141,36 @@ SQLite도 역할을 나눈다: 활성 대화/기억 원본, 과거 import 원문
 - Docker exec 클라이언트 시간초과는 컨테이너 안 작업의 미실행/중단 증명이 아니다. 해당 실행의 식별·잔여 프로세스·설치 기록·파일 상태를 측정해 완료/부분 완료를 구분한다. 이미 완료된 uninstall/config 동작을 다시 실행해 성공 표시를 만들지 않는다.
 - 건강 검사 대기시간 초과도 추가 재시작의 허가가 아니다. 실제 현재 상태가 나중에 healthy로 확인되면 읽기전용 검증으로 이어가고, 실패 영수증을 성공으로 덮어쓰지 않는다. 재시작 구간의 오류·서비스 영향·회복·미해결 원인은 분리해 남긴다.
 - 재개는 새로운 GLG 승인으로 한다. 정지 동안 정리한 의존성/설치 상태를 먼저 확인하고 provider 가용성을 검증한 뒤 해당 입력/자동화를 복원한다. 저장된 primary 이름이나 과거 성공 기록만으로 호출을 재개하지 않는다.
+
+## 11. 콜드 저장소 — Google Drive(rclone)
+
+§2 **콜드 이관**의 목적지 하나다. 여기 있는 것은 *기반 설정*뿐이고, 무엇을 언제 어떤 도구로 옮길지는 데이터 담당자가 정한다(후속은 NEXT.md §git-annex 기반 세션 코퍼스).
+
+- **패키지:** `rclone`은 `machines/shared.nix` 공통 선언. 반영은 각 기기 rebuild.
+- **계정·용량:** 백업용 개인 Google 계정(Google AI Pro, 5 TiB — 계정명은 공개 리포에 적지 않는다). 회사 Workspace 계정을 유일 보관처로 쓰지 않는다.
+- **OAuth 클라이언트:** 같은 계정의 GCP 프로젝트 `rclone-backup`, 데스크톱 앱 클라이언트, 동의 화면 외부·프로덕션. rclone 공용 client_id는 은퇴 중이라 쓰지 않는다.
+- **비밀 SSOT:** `pass api/google/<백업계정>/rclone-oauth`(실제 경로는 `pass ls api/google`) — 첫 줄 client_secret, 이어서 `client_id:`·`project:`. password-store는 GitHub 비공개 리포 clone(`~/repos/gh/password-store` ← `~/.password-store`)이 정본이다. syncthing 사본은 정본이 아니다.
+- **remote 규약:** 이름 `gdrive`, `scope = drive.file`(이 클라이언트가 만든 파일만 보임 → 모든 기기가 같은 client_id를 써야 서로의 업로드를 본다), 최상위 폴더 `gdrive:archive/`.
+
+### 새 기기에 remote 만들기
+
+```bash
+P=api/google/<백업계정>/rclone-oauth
+rclone config create gdrive drive scope=drive.file \
+  client_id="$(pass show $P | sed -n 's/^client_id: //p')" \
+  client_secret="$(pass show $P | head -1)"     # 브라우저 인증이 이어진다
+rclone about gdrive:                            # Total 5 TiB, NOTICE(공용 client_id 경고) 없음
+```
+
+헤드리스 기기는 GUI 기기에서 `rclone authorize "drive" <client_id> <client_secret>`로 받은 토큰을 붙여 넣거나, 이미 인증된 기기의 `~/.config/rclone/rclone.conf`를 ssh로 복사(0600)한다. 토큰이 든 conf는 리포에 넣지 않는다.
+
+### 실측 (2026-11-15, 512 MiB 단일 파일 / 20 KiB×200)
+
+| 기기 | 업로드 | 다운로드 | 작은 파일 |
+|---|---|---|---|
+| oracle | 28 MiB/s | 73 MiB/s | 4.6개/s |
+| laptop (테더링) | 4.8 MiB/s | 24 MiB/s | 4.3개/s |
+
+- 병목은 대역폭보다 **파일 개수**다(초당 4~5개). 작은 파일이 많은 데이터는 묶어서(tar 등) 올리거나 오래 걸리는 백그라운드 작업으로 잡는다.
+- Drive는 실시간 동기화 대상이 아니다. 주기적 아카이브·콜드 사본 용도다. 계정당 일일 업로드 상한(약 750 GB로 알려짐, 미실측)이 있어 대량 첫 이관은 날을 나눈다.
+- `sync`/`move`는 쓰지 않는다 — `copy` 후 `check`(또는 annex `fsck`)로 확인하고, 원본 은퇴는 §2 콜드 이관 조건과 별도 승인으로 한다.

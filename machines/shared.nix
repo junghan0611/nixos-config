@@ -325,6 +325,7 @@ in
     tailscale
     syncthing
     stc-cli
+    rclone # 클라우드 스토리지 동기화/백업 (S3·GDrive·R2 등)
     unixtools.netstat
 
     # System monitoring
