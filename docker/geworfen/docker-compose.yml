@@ -47,6 +47,9 @@ services:
     image: debian:bookworm-slim
     container_name: geworfen
     restart: unless-stopped
+    # PID 1 = tini. geworfen 자신이 PID 1이면 고아를 거두지 않는다 — healthcheck 10s timeout에
+    # 끊긴 emacsclient가 좀비로 쌓였다(2026-11-03~04, 963개, 11-15 정리).
+    init: true
 
     working_dir: /app
 
