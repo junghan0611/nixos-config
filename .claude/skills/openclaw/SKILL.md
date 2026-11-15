@@ -186,6 +186,17 @@ GLG: *"오라클 라이브 문서가 썩으면 안 된다."* 라이브 값은 **
 4. 1–3을 **한 번의 reload**로 붙인다(upstream #195265).
 5. 격리 no-deliver probe로 실제 레일·모델을 확인한다. `config validate` PASS는 모델 존재의 증거가 아니다(가짜 id도 통과).
 6. §10의 SSOT와 readback 날짜를 갱신한다.
+7. 그 봇에 entwurf 책상 세션이 있으면 **책상 맥락이 새로 시작될 수 있다**(§12 3번). 바꾸기 전에 GLG에게 알린다.
 
 **alias 함정(11.3 plugin alias)**: `sonnet-5`는 Sonnet **5**이지 5.5가 아니다. 5.5를 가리키는 것은 `sonnet`·`opus`뿐이다.
 alias를 쓰지 말고 정확한 id를 적는다. 썼다면 probe로 실제 해석된 모델을 확인한다.
+
+## 12. entwurf 책상 세션 — 운영 규칙 넷
+
+봇 집마다 garden id가 붙는 pin된 명시 key 책상 세션 하나. 기억은 봇 운영룰(workspace `memory` 기록·커밋·푸시)이 맡고,
+운영이 지킬 것은 **그 세션이 버티는가** 하나다. 근거·소스 좌표는 [gotchas 책상 절](../../../docs/openclaw-gotchas.md).
+
+1. **생성·pin**: `spawnedBy`·`parentSessionKey` 없이 만들고 pin한다(부모가 붙으면 pin 무효 → 30일 뒤 archive). 직후 `sessions.describe`로 확인.
+2. **reset**: 전역 `session.reset`을 켜지 않는다. `resetByType`도 책상에 걸리는지 본다. `/new`·`/reset` 첫 줄 편지는 관측 대상.
+3. **모델·provider 교체·버전업**: 책상 맥락 교체로 취급 — 체크리스트에 "책상 세션 영향", GLG에게 미리 알림.
+4. **막힘**: ctx%가 아니라 `sessions.describe`의 `status`·`lastRunError`·`contextBudgetStatus`. 락이면 GLG 승인 뒤 `sessions.abort`.

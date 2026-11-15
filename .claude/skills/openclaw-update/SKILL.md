@@ -153,6 +153,8 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 롤백 수단은 직전 candidate 이미지를 지우지 않고 두는 것이다. 스키마가 같아도 Doctor가 바꾼 config·auth까지
 되돌린다는 증명은 아니다 — 그 위험을 알고 간다.
 
+> **책상 세션**: entwurf 책상 세션이 있는 봇은 교체 전후에 `sessions.describe <desk key>`로 pinnedAt·status를 읽어 대조한다. 교체로 모델·런타임이 바뀌면 책상 맥락이 새로 시작될 수 있다 — GLG에게 미리 알린다(`openclaw` 스킬 §12).
+
 ## 1-M. 메이저 — 실측 선례 10.9→11.3 (2026-11-13)
 
 preflight exit 3·diverged는 위 "묻는 것은 셋뿐" 규칙 밖이다. 게이트마다 GLG 승인을 받는다. 11.3에서 밟은 순서:
