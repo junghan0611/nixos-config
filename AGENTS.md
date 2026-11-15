@@ -27,6 +27,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **OpenClaw 버전업** (이미지 교체) | `openclaw-update` **스킬** — 마이너/메이저 판정, GLG 방식 교체 순서, 함정표, 읽기 전용 점검 스크립트 |
 | OpenClaw 주제별 소스 좌표 (`src/…:줄`) | [docs/openclaw-reference-map.md](docs/openclaw-reference-map.md) — v2026.8.2 고정 클론 기준 |
 | **봇별 크론/heartbeat — 무엇이 사람 없이 도는가** | [docs/openclaw-automations.md](docs/openclaw-automations.md) — **자동화 SSOT**. 동기화 `./run.sh w)` |
+| **entwurf 책상 설치·실사용** (봇에 garden id 붙이기, #160) | [docs/openclaw-entwurf-desk.md](docs/openclaw-entwurf-desk.md) — 절차·승인·롤백·관측 기록. 운영 규칙은 gotchas 책상 절 |
 
 > **핵심 분리 원칙**: nixos-config에서 `oracle`이 아니면 OpenClaw를 볼 필요가 없다. oracle/openclaw 작업이 아니라면 ORACLE.md를 열지 마라 — 이 문서만으로 충분하다.
 >

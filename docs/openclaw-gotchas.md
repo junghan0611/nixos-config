@@ -26,6 +26,8 @@ bbot 메멘토 cron을 표준 heartbeat로 옮길지 검토하면서 페어 검�
 
 ### entwurf 책상 세션 생존은 운영 몫이다 — 운영 규칙 넷 (2026-11-14 설계, 2026-11-15 GLG 결정)
 
+> 설치·첫 실사용 절차(main → mini)와 관측 기록: [openclaw-entwurf-desk.md](openclaw-entwurf-desk.md).
+
 GLG 결정(#160 책상 모델): 봇 집마다 garden 하나, 그 garden은 pin된 명시 key 책상 세션(예: `agent:main:entwurf-desk`) 하나에 붙는다. **기억은 세션이 아니라 봇 운영룰이 맡는다** — 봇은 매 턴 workspace `memory`에 기록하고 커밋·푸시하며, 그 몸(`workspace-<bot>`)에 쌓인 기록이 증거다. 그래서 compaction 품질·기억 보존은 entwurf 관심사가 아니고, 운영이 지킬 것은 **garden id로 들어갈 그 세션이 버티는가** 하나다. GLG: *"openclaw 런타임 관리를 잘해야되는거야. entwurf에 짐을 많이 줄수는 없어서."* 근거 판독은 v2026.11.3 @847611d 소스(조사 산출 `/tmp/ff08d4-next/s6-desk-longevity.md`, 비공개·임시).
 
 1. **생성·pin — 다른 부모를 붙이지 말고, 걸렸는지 확인한다.** 유지보수(age 30d `pruneAfter`·dashboard 7d·maxEntries 5000)는 `pinnedAt`이 있고 *pinnable*한 행을 건너뛴다(`src/config/sessions/store-maintenance.ts:438-441`). pinnable은 subagent key가 아니고 `spawnedBy`가 없으며 `parentSessionKey`가 없거나 그 agent의 main일 때뿐이다(`session-pin-policy.ts:8-30`) — `spawnedBy`나 main이 아닌 부모를 붙여 만들면 **pin이 무효**가 되어 30일 뒤 archive된다. 명시 key `sessions.create`는 부모를 `agent:<id>:main`으로 자동으로 붙이고(lab M1 n=1, `createdVia:operator`), 그것은 pinnable이다. 디스크 예산(기본 10GiB, 80% high water)은 archive 행과 *현재 세대가 아닌* 옛 세대만 퇴출하므로 책상의 현재 세대는 남는다(`session-history-eviction-candidates.ts:162-181`). 11.3 CLI에는 create/pin 하위명령이 없어 `gateway call sessions.patch`(operator.write) 경로다 — 쓰기 scope는 설치 전에 lab에서 잰다. 설치 직후 `sessions.describe`로 pinnedAt·spawnedBy·parentSessionKey를 확인한다. pin은 birth와 같은 창에서 건다.
