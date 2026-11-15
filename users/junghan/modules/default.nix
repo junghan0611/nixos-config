@@ -21,6 +21,9 @@ in
 
     # Fonts
     ./fonts.nix
+  ] ++ lib.optionals isOracle [
+    # entwurf × OpenClaw: host shim to the operating Gateway CLI (#160)
+    ./openclaw-entwurf.nix
   ] ++ lib.optionals (!isOracle) [
     # Desktop-only 모듈 — Oracle headless 제외
     ./i3.nix         # i3 window manager config
