@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+## v2026.11.16-openclaw.1 — OpenClaw 2026.11.4 마이너 교체
+
 - OpenClaw 2026.11.3 → **2026.11.4** 마이너 교체(11-16 17:58 recreate, 18:08 health ok). hotfix v5를 11.4의 이름 바뀐 세 사본에 재고정했다. verify PASS 43 / FAIL 1(기존 10-27 행) / UNKNOWN 0. acpx는 재설치하지 않았다. 롤백 이미지 `openclaw-custom:11.3-candidate-20261113`. 공개 미러 `docker/openclaw/` 3종 동기화.
 
 ## v2026.11.16 — entwurf 책상 첫 설치, bbot memento 6h, 기본 모델 6.1-sol, agy·acpx 시도와 원복
