@@ -1,4 +1,4 @@
-// Actual 11.3 emitted classifier copies (main chunk + two worker bundles), including upstream cycle propagation.
+// Actual 11.3/11.4 emitted classifier copies (main chunk + two worker bundles), including upstream cycle propagation.
 // No database, Gateway, credentials, network or model access.
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -23,7 +23,7 @@ function braceBlock(text, sig) {
 	throw new Error(`unterminated ${sig}`);
 }
 
-// Locator: every emitted definition in dist must be covered. 11.3 emits three copies.
+// Locator: every emitted definition in dist must be covered. 11.3 and 11.4 emit three copies.
 const copies = readdirSync(dist, { recursive: true })
 	.filter(n => /\.(mjs|js)$/.test(n))
 	.filter(n => readFileSync(path.join(dist, n), 'utf8').includes(SIG))

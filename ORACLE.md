@@ -135,9 +135,9 @@ Invariants: main's runtime path is `workspace/`, but its independent repo is nam
 
 **아직 부모 추적 중인 봇**: 부모 `git ls-files`로 개별 확인한다. 졸업 전에는 nested `.git`만 ignore하고 내용은 부모가 스냅샷.
 
-### Model routing (현재: OpenClaw **2026.11.3**, `847611d`)
+### Model routing (현재: OpenClaw **2026.11.4**, `d843d6a`)
 
-> **LIVE (현재 운영 버전 판정은 이 한 줄만):** OpenClaw **2026.11.3** · `847611d` · image `openclaw-custom:11.3-candidate-20261113` = `85a21cf513b4…` · base `adc5f5e9…` · state v22 / agent DB v27 · 판정 2026-11-14. 버전업 때 이 줄과 위 헤더만 바꾸고, 다른 문서는 버전을 복제하지 않고 여기로 링크한다. 다른 곳의 버전 숫자는 그 시점 기록이다.
+> **LIVE (현재 운영 버전 판정은 이 한 줄만):** OpenClaw **2026.11.4** · `d843d6a` · image `openclaw-custom:11.4-candidate-20261116` = `503472f17ab9…` · base `2a97ff33…` · state v22 / agent DB v27 · 판정 2026-11-16 (마이너 교체, 롤백 이미지 `openclaw-custom:11.3-candidate-20261113` = `85a21cf513b4…` 같은 스키마). 버전업 때 이 줄과 위 헤더만 바꾸고, 다른 문서는 버전을 복제하지 않고 여기로 링크한다. 다른 곳의 버전 숫자는 그 시점 기록이다.
 
 > **2026-11-13 메이저 컷오버 10.9→11.3:** 현재 이미지는 `openclaw-custom:11.3-candidate-20261113` (`85a21cf513b4…`, `latest` 동일, base arm64 `ghcr.io/openclaw/openclaw@sha256:adc5f5e9…`)다. 선형 업그레이드가 아니다(10.9→11.3 diverged, shared state **v20→v22 / agent DB v25→v27**, memory chunking 5→6). 22:26 memento 실제 완료 뒤 idle gate → 정지 → **cold B**(당시 비공개 sealed; 2026-11-14 GLG 승인으로 아카이브 퇴역) → `restart: "no"` override로 recreate → entrypoint Doctor 498초 → RPC ok(다운타임 645.8초). 기동 직후 **glg가 upstream #195208 경합**(claude·glg 동시 startup inspection, `prepared model runtime owner is stale after config publication`)으로 degraded가 되어 같은 컨테이너 `docker restart` 1회를 했으나 **tini ELOOP**(exit 1, restart:no라 재시도 없음)로 정지했고, 승인된 수동 `docker start` 1회에 tini를 통과해 회복했다(두 번째 다운타임 약 10.7분). 이후 degraded 계열 오류 0, Telegram 5 connected, 안정 관측 뒤 `docker update --restart unless-stopped`로 정책을 복원했다(recreate 없음). 상세·영수증은 ROADMAP과 비공개 `~/openclaw/backups/cutover-11.3-20261113/`.
 >
@@ -237,7 +237,9 @@ upstream 모델별 기본값(`provider-*.js`의 `GPT_56_DEFAULT_REASONING_EFFORT
 
 > ⚠️ **claude-cli 봇에게는 이 값이 안 물릴 수 있다**: `sessions list`가 `think:medium`을 표시하긴 하지만, claude-cli 백엔드에 thinking 매핑이 없다는 코드 확인이 [NEXT.md](NEXT.md)에 걸려 있다(`extensions/anthropic/cli-backend.ts`). main/glg/bbot/mini는 Sonnet/Opus 네이티브 thinking으로 도는 중이라, 이 설정의 실효는 **openai lane(gpt, subagents, active-memory)에 집중**된다고 보는 게 맞다.
 
-### Memory admission hotfix (11.3, v5 3사본 이식)
+### Memory admission hotfix (11.3→11.4, v5 3사본 이식)
+
+**11.4 재이식(2026-11-16):** 상류 blob `ff6b892`·`session-actor-memory-usage.ts` 모두 11.3과 같아 미수정. 11.4 dist도 같은 세 사본이며 이름만 바뀌었다 — main `session-actor-memory-owner-BB0qFpdR.mjs`(원본 `22fa69c4…`→`fdb250ad…`), `worker/sqlite-store.worker.mjs`(`69a91311…`→`cd32a9a6…`), `worker/worker-chunk-BSVxjM55.mjs`(`f46bc946…`→`33cea8ba…`). helper 두 파일은 11.3과 바이트 동일. 미패치 base baseline GREEN / 기본 RED, 빌드 안 12×3 GREEN, verify hotfix 절 7 PASS. patch sha `6e8db035…`, test `b0f19af8…`. 아래 11.3 문단의 구조 설명은 그대로 유효하다.
 
 현재 이미지는 `docker/openclaw/patch-memory-cron-parent.py` **v5**(sha `7bbf6fea…`, test rev3 `d3441015…`)를 포함한다. 상류 `session-transcript-corpus-policy.ts` blob `ff6b892`는 11.2=11.3으로 미수정이다. 11.3 Docker dist에는 `collectCronGeneratedSessionKeys` 정의가 **세 사본**(main `session-actor-memory-owner-BSARM2d5.mjs`, `worker/sqlite-store.worker.mjs` 53MB 단일 번들, `worker/worker-chunk-KkGEpzZj.mjs`) 있고 런타임이 어느 경로를 쓰는지 정적으로 확정되지 않아 셋 다 패치한다. 가드: VERSION 2026.11.3, 사본별 원본·결과·helper sha, locator 집합(정확히 3), 전부 통과 후 일괄 기록. test는 사본마다 12 behavior 단언 + 사본 간 판정 일치 + 이미지 내 acorn으로 분류기 호출의 실제 lexical binding 해석(감싼 정의 음성대조 RED). worker 번들 해시는 `dist/gateway/worker-environments/runtime.js`가 실제 바이트로 계산하므로 고정 해시 충돌이 없다(W4 교차리뷰). 런타임에 어느 사본이 corpus 경로인지, 첫 재구축 뒤 cron 부모·자식이 index에서 0건인지는 미관측(NEXT). 아래는 10.9 v4 기록이다.
 

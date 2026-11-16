@@ -217,7 +217,9 @@
 # Rollback image: openclaw-custom:10.8-candidate-20261027 (same schema).
 # 2026.11.3 (847611d) candidate: explicit non-linear transition; state20->22 / agent25->27; arm64 digest adc5f5e9,
 # hotfix v5 ported to three emitted classifier copies. Activation gated (cold + isolated rehearsal) — not yet approved.
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:adc5f5e9654afa3056666cb8f42415a72b91631fc301b382d5771456fee95477
+# 2026.11.4 (d843d6a): minor, state22 / agent27 unchanged; arm64 digest 2a97ff33, hotfix v5 re-ported (same 3 copies,
+# corpus-policy blob ff6b892 unchanged). Rollback image: openclaw-custom:11.3-candidate-20261113 (same schema).
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:2a97ff333beee741b9666f287ed7243e023fd1a5a4e51f230e85fc858ff06926
 FROM ${OPENCLAW_BASE}
 
 USER root

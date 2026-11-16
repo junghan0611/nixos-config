@@ -226,6 +226,10 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.11.4 (2026-11-16, GREEN) — 마이너 교체
+
+GLG 직접 지시("지금 시작하자. 단, acpx는 안쓴다"), 운영 코디(145c2f)에 통지 후 openclaw-update 스킬 순서대로 진행. preflight MINOR(state22/agent27 동일, ahead 220). hotfix v5는 상류 blob `ff6b892` 미수정이라 재이식 — 같은 세 사본, 청크 이름만 바뀜, helper 바이트 동일. idle gate ready → recreate 17:58:32 → RPC health ok 18:08:21(9분 45초), RestartCount 0, ELOOP 0, startup 경합 없음. verify PASS 43 / FAIL 1(10-27 session 실패 행, 11.3과 동일) / UNKNOWN 0, config 변경 경로 0. entwurf 책상 pinnedAt 유지. acpx는 재설치하지 않았다(2026.11.3 disabled 그대로). 롤백 이미지 `11.3-candidate-20261113`(같은 스키마). 11.4에 memory rebuild 수정(#196378)이 들어와 memory 동결 판단의 선택지 A 조건이 풀렸다(재구축 자체는 별도 승인).
+
 ### 2026.8.1 (2026-08-31, GREEN) — **오프라인 마이그레이션 컷오버**. 버전 bump 가 아니었다
 
 7.1-2(8/04) → 8.1(8/31). 사이 stable 없음(6.34 는 백포트). **한 달치 메이저 + breaking 2건**이라 "이미지 핀
