@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- 11.4 교체 뒷정리(GLG 승인, 정확한 집합): 11.3 롤백 짝(`openclaw-custom:11.3-candidate-20261113` `85a21cf5…`, base `35194a1d…`)과 10.4·10.7·10.8·10.9 base 이미지 4개, 영수증 안 dist 사본, 정비용 `/tmp` 자료(11.3 소스 sparse clone, heartbeat 검수, #17 리뷰 원문, 이슈 초안)를 지웠다. `/` 여유 20.41→24.47G(+4.05G), `/home` +0.10G. 이 교체의 이미지 롤백 수단은 이제 없다(같은 스키마 재빌드는 base digest로 가능). Build cache 회수 가능분 1.9GB는 건드리지 않았다.
+
 ## v2026.11.16-openclaw.1 — OpenClaw 2026.11.4 마이너 교체
 
 - OpenClaw 2026.11.3 → **2026.11.4** 마이너 교체(11-16 17:58 recreate, 18:08 health ok). hotfix v5를 11.4의 이름 바뀐 세 사본에 재고정했다. verify PASS 43 / FAIL 1(기존 10-27 행) / UNKNOWN 0. acpx는 재설치하지 않았다. 롤백 이미지 `openclaw-custom:11.3-candidate-20261113`. 공개 미러 `docker/openclaw/` 3종 동기화.
