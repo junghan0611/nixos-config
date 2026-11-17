@@ -9,6 +9,7 @@
 
 ## Unreleased
 
+- 11.4 뒷정리 2차(GLG 승인 11-17, 정확한 집합): acpx 2026.11.3 `plugins uninstall`(entry·allowlist·install record·npm 디렉터리, hot reload, health ok·config valid), `~/openclaw/config/agy/`(#17 pin 프록시·agy 바이너리), 11.3 컷오버 Doctor DB 백업 `openclaw.sqlite.doctor-cron-…bak`, 안 쓰는 docker 이미지 3개(`entwurf-herdr-raw-install` 1.8G, `node:24-bookworm`, `forgejo:15`), BuildKit 캐시 전부(`until=168h` 657.5MB + 나머지 `prune -a` 3.18GB). `/` 21.52→32.89G(+11.4G), `/home` 8.04→8.42G(+0.37G; du 합계 약 1.07G보다 적다, 원인 미확인). 다음 빌드는 캐시 없이 처음부터 받는다. 11.5(메이저, state 22→36·agent 27→38, diverged)는 며칠 관찰 뒤 검토.
 - 11.4 교체 뒷정리(GLG 승인, 정확한 집합): 11.3 롤백 짝(`openclaw-custom:11.3-candidate-20261113` `85a21cf5…`, base `35194a1d…`)과 10.4·10.7·10.8·10.9 base 이미지 4개, 영수증 안 dist 사본, 정비용 `/tmp` 자료(11.3 소스 sparse clone, heartbeat 검수, #17 리뷰 원문, 이슈 초안)를 지웠다. `/` 여유 20.41→24.47G(+4.05G), `/home` +0.10G. 이 교체의 이미지 롤백 수단은 이제 없다(같은 스키마 재빌드는 base digest로 가능). Build cache 회수 가능분 1.9GB는 건드리지 않았다.
 
 ## v2026.11.16-openclaw.1 — OpenClaw 2026.11.4 마이너 교체
