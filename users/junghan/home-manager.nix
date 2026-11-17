@@ -237,7 +237,14 @@ in {
       system = pkgs.stdenv.hostPlatform.system;
       config.allowUnfreePredicate = pkg: lib.getName pkg == "chatgpt";
     }).chatgpt.override { codex = null; })
-  ]);
+  ]) ++ (lib.optionals (isLinux && builtins.elem currentSystemName [ "thinkpad" "oracle" ]) (
+    # herdr 데스크톱 앱과 터미널용 hc. 앱은 core를 패치된 경로로 직접 찾으므로
+    # herdr-core는 터미널에서 hc를 쓰기 위해 함께 둔다. oracle은 xrdp 작업실용.
+    with inputs.nixpkgs-herdr.legacyPackages.${pkgs.stdenv.hostPlatform.system}; [
+      herdr-desktop
+      herdr-core
+    ]
+  ));
 
   #---------------------------------------------------------------------
   # Dotfiles

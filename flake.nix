@@ -25,6 +25,13 @@
     # GUI 프로필에만 적용(lib/mksystem.nix). ChatGPT Linux도 HM에서 thinkpad만 재사용.
     # stable이 두 패키지를 지원하면 이 input과 예외를 회수한다.
     nixpkgs-ghostty.url = "github:NixOS/nixpkgs/885ba4d038f10c3d17d7a92e8c3cc185b99c9158";
+
+    # herdr 데스크톱 앱 + core 고정(nixos-unstable, 앱 0.1.13 / core 0.1.18).
+    # 26.05와 잠긴 nixpkgs-unstable(ac6b216)에는 둘 다 없다. 소스 빌드라 X11/GL
+    # 라이브러리가 RUNPATH로 묶이고 앱 자체 업데이트는 꺼져 있다. x86_64·aarch64
+    # 모두 cache.nixos.org에 있어 로컬 빌드 0. 이 input은 herdr 두 패키지만 쓴다.
+    # stable 또는 잠긴 unstable이 따라잡으면 이 input을 회수한다.
+    nixpkgs-herdr.url = "github:NixOS/nixpkgs/d5cc6833999746cffdfe0598f7bc801a57b887a9";
   };
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
