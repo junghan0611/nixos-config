@@ -12,6 +12,15 @@
   # ThinkPad specific configuration
   networking.hostName = "thinkpad";
 
+  # GDM must not inherit the i3 login default in the GNOME boot entry.
+  specialisation.gnome.configuration = {
+    services.displayManager.defaultSession = lib.mkForce "gnome";
+    i18n.inputMethod = {
+      type = lib.mkForce "ibus";
+      ibus.engines = [ pkgs.ibus-engines.hangul ];
+    };
+  };
+
   # thinkpad 전용 방화벽 포트 (shared.nix 공통 목록에 머지됨)
   # SK 테스트베드용, thinkpad에서만 개방:
   #   8883  : 허브 MQTT/TLS broker (sks-smoke, mTLS)
