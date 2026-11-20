@@ -21,6 +21,20 @@
     };
   };
 
+  # Optional desktops for this device; the regular i3 entry remains unchanged.
+  specialisation.plasma.configuration = {
+    services.xserver.displayManager.lightdm.enable = false;
+    services.displayManager.sddm.enable = true;
+    services.desktopManager.plasma6.enable = true;
+    services.displayManager.defaultSession = lib.mkForce "plasma";
+    i18n.inputMethod.fcitx5.waylandFrontend = lib.mkForce true;
+  };
+
+  specialisation.xfce.configuration = {
+    services.xserver.desktopManager.xfce.enable = true;
+    services.displayManager.defaultSession = lib.mkForce "xfce";
+  };
+
   # thinkpad 전용 방화벽 포트 (shared.nix 공통 목록에 머지됨)
   # SK 테스트베드용, thinkpad에서만 개방:
   #   8883  : 허브 MQTT/TLS broker (sks-smoke, mTLS)
