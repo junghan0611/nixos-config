@@ -111,7 +111,7 @@
       inherit overlays nixpkgs inputs;
     };
   in {
-    nixosConfigurations = {
+    nixosConfigurations = rec {
       # Oracle Cloud ARM VM - full configuration with home-manager
       oracle = mkSystem "oracle" {
         system = "aarch64-linux";
@@ -133,6 +133,12 @@
       cyborg = mkSystem "cyborg" {
         system = "x86_64-linux";
         user = "junghan";
+      };
+
+      cyborg-iso = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs.cyborgSystem = cyborg.config.system.build.toplevel;
+        modules = [ ./modules/cyborg-iso.nix ];
       };
 
       # ThinkPad P16s Gen 2 (AMD) - full configuration with home-manager
