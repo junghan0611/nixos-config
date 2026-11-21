@@ -230,14 +230,14 @@ in {
     # zigbee and matter
     zigbee2mqtt
     python-matter-server
-  ]) ++ (lib.optionals (isLinux && builtins.elem currentSystemName [ "thinkpad" "cyborg" ]) [
+  ]) ++ (lib.optionals (isLinux && builtins.elem currentSystemName [ "thinkpad" "cyborg" "laptop" ]) [
     # 공식 ChatGPT Linux 프리뷰. 26.05 동명 패키지는 Darwin 전용이므로
     # 기존 고정 스냅샷을 재사용한다. 앱 내장 Codex를 보존하고 전역 CLI는 바꾸지 않는다.
     ((import inputs.nixpkgs-ghostty {
       system = pkgs.stdenv.hostPlatform.system;
       config.allowUnfreePredicate = pkg: lib.getName pkg == "chatgpt";
     }).chatgpt.override { codex = null; })
-  ]) ++ (lib.optionals (isLinux && builtins.elem currentSystemName [ "thinkpad" "oracle" ]) (
+  ]) ++ (lib.optionals (isLinux && builtins.elem currentSystemName [ "thinkpad" "oracle" "cyborg" "laptop" ]) (
     # herdr 데스크톱 앱과 터미널용 hc. 앱은 core를 패치된 경로로 직접 찾으므로
     # herdr-core는 터미널에서 hc를 쓰기 위해 함께 둔다. oracle은 xrdp 작업실용.
     with inputs.nixpkgs-herdr.legacyPackages.${pkgs.stdenv.hostPlatform.system}; [

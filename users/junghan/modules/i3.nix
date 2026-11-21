@@ -626,7 +626,7 @@ in {
         # { command = "${pkgs.kime}/bin/kime"; notification = false; }
 
         # Auto-detect and apply monitor configuration
-        { command = "${pkgs.autorandr}/bin/autorandr --change${lib.optionalString (currentSystemName != "cyborg") " --default thinkpad"}"; notification = false; }
+        { command = "${pkgs.autorandr}/bin/autorandr --change${lib.optionalString (currentSystemName == "thinkpad") " --default thinkpad"}"; notification = false; }
 
         # i3-swap-focus 데몬: Super+period로 마지막 두 창 토글
         # always=true + pkill 가드: i3 restart 후에도 데몬 재기동

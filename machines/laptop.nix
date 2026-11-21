@@ -11,6 +11,17 @@
 
   # Laptop specific configuration
   networking.hostName = "laptop";
+  specialisation = lib.mkForce {
+    xfce.configuration = {
+      services.xserver.desktopManager.xfce.enable = true;
+      services.displayManager.defaultSession = lib.mkForce "xfce";
+    };
+  };
+  services.openssh.settings.PasswordAuthentication = lib.mkForce false;
+  services.openssh.settings.KbdInteractiveAuthentication = lib.mkForce false;
+  services.autorandr.enable = true;
+  services.fwupd.enable = true;
+  programs.java = { enable = true; package = pkgs.jdk17; };
 
   # Boot configuration
   boot = {
@@ -127,6 +138,8 @@
     pulseaudio       # Provides pactl command for PipeWire
     # Network tools
     net-tools        # ifconfig, netstat, etc.
+    libreoffice-fresh
+    calibre
   ];
 
   # Enable thermald for Intel CPU thermal management

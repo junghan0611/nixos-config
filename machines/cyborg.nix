@@ -26,6 +26,10 @@
   services.pipewire = { enable = true; alsa.enable = true; alsa.support32Bit = true; pulse.enable = true; };
   services.pulseaudio.enable = false;
   services.libinput = { enable = true; touchpad.tapping = true; touchpad.naturalScrolling = true; };
+  services.xserver = {
+    autoRepeatDelay = 500;
+    autoRepeatInterval = 30;
+  };
   services.blueman.enable = true;
   services.autorandr.enable = true;
   services.fwupd.enable = true;
