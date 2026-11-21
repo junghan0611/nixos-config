@@ -8,9 +8,28 @@ let
       [[ $EUID == 0 && -t 0 ]] || fail 'Run sudo cyborg-install in the live terminal.'
       [[ -d /sys/firmware/efi/efivars ]] || fail 'Boot in UEFI mode first.'
       shopt -s nullglob
+      requested=""
+      if [[ $# != 0 ]]; then
+        [[ $# == 2 && $1 == --disk && $2 == /dev/* ]] || fail 'Usage: cyborg-install [--disk /dev/DEVICE]'
+        requested=$2
+      fi
       identify() {
         local device name path model serial
         local -a disks=()
+        if [[ -n $requested ]]; then
+          device=$(realpath -e "$requested") || return 1
+          [[ $device =~ ^/dev/(sd[a-z]+|nvme[0-9]+n[0-9]+)$ && -b $device ]] || return 1
+          case $(lsblk -dnro TYPE,TRAN,RM,RO "$device") in
+            'disk sata 0 0'|'disk ata 0 0'|'disk nvme 0 0') ;;
+            *) return 1 ;;
+          esac
+          path=$(realpath -e "/sys/class/block/''${device##*/}") || return 1
+          [[ $path =~ ^/sys/devices/pci[^/]+/ && $path != */usb* && $path != */thunderbolt* ]] || return 1
+          serial=$(lsblk -dnro SERIAL "$device") || return 1
+          [[ -n $serial ]] || return 1
+          printf '%s %s %s\n' "$device" "$path" "$serial"
+          return
+        fi
         for device in /sys/class/block/nvme*; do
           name="''${device##*/}"
           [[ $name =~ ^nvme[0-9]+(c[0-9]+)?n[0-9]+$ ]] || continue
@@ -28,8 +47,10 @@ let
         [[ -n $serial ]] || return 1
         printf '%s %s %s %s\n' "$device" "$path" "$serial" "$(lsblk -dnro MAJ:MIN "$device")"
       }
-      disk_id=$(identify) || fail 'Expected exactly one writable PCIe NVMe matching KLEVV C910, with a readable serial.'
+      disk_id=$(identify) || fail 'Target not eligible: use the default KLEVV C910 NVMe or explicitly pass a writable SATA/NVMe disk with a readable serial via --disk.'
       disk="''${disk_id%% *}"
+      part_prefix=$disk
+      [[ $disk != /dev/nvme* ]] || part_prefix="''${disk}p"
       preflight() {
         [[ $(identify) == "$disk_id" ]] || fail 'Disk identity or candidate set changed.'
         local devices name label node
@@ -37,7 +58,7 @@ let
         while read -r name label; do
           case "$label" in
             CYBORG-BOOT|cyborg-root)
-              [[ $name == "$disk"p[0-9]* ]] || fail "Label $label already exists on $name."
+              [[ $name == "$part_prefix"[0-9]* ]] || fail "Label $label already exists on $name."
               ;;
           esac
         done <<< "$devices"
@@ -47,7 +68,7 @@ let
         if grep -E '^/mnt(/|$)' <<< "$mounts" >/dev/null; then
           fail 'Unmount /mnt and its submounts first.'
         fi
-        for node in "$disk" "$disk"p*; do
+        for node in "$disk" "$part_prefix"[0-9]*; do
           holders=(/sys/class/block/"''${node##*/}"/holders/*)
           [[ ''${#holders[@]} == 0 ]] || fail "Active device mapping on $node."
         done
@@ -64,9 +85,9 @@ let
       parted -s "$disk" mklabel gpt mkpart ESP fat32 1MiB 1025MiB set 1 esp on mkpart root ext4 1025MiB 100%
       partprobe "$disk"
       udevadm settle
-      esp="''${disk}p1"
-      root="''${disk}p2"
-      [[ -b $esp && -b $root ]] || fail 'Expected NVMe partitions did not appear.'
+      esp="''${part_prefix}1"
+      root="''${part_prefix}2"
+      [[ -b $esp && -b $root ]] || fail 'Expected target partitions did not appear.'
       mkfs.fat -F 32 -n CYBORG-BOOT "$esp"
       mkfs.ext4 -F -L cyborg-root "$root"
       mount "$root" /mnt
@@ -88,7 +109,7 @@ in {
   services.displayManager.defaultSession = "xfce";
   services.displayManager.autoLogin = { enable = true; user = "nixos"; };
   isoImage.storeContents = [ cyborgSystem ];
-  # Favor faster local builds over a smaller Ventoy image.
-  isoImage.squashfsCompression = "zstd -Xcompression-level 6";
+  # Build on a remote worker to keep the Ventoy payload smaller.
+  isoImage.squashfsCompression = "zstd -Xcompression-level 19";
   environment.systemPackages = [ install pkgs.parted pkgs.dosfstools pkgs.e2fsprogs ];
 }
