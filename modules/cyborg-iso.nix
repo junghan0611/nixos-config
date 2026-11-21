@@ -88,5 +88,7 @@ in {
   services.displayManager.defaultSession = "xfce";
   services.displayManager.autoLogin = { enable = true; user = "nixos"; };
   isoImage.storeContents = [ cyborgSystem ];
+  # Favor faster local builds over a smaller Ventoy image.
+  isoImage.squashfsCompression = "zstd -Xcompression-level 6";
   environment.systemPackages = [ install pkgs.parted pkgs.dosfstools pkgs.e2fsprogs ];
 }
