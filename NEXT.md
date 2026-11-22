@@ -34,6 +34,10 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - [ ] `nuc` XFCE 대체 부팅 선택지는 평가만 완료했으며 미적용·미커밋이다. `laptop` 실제 SSH 키 접속도 적용 전 확인한다.
 - [ ] 이전 레벨 6 ISO #446의 Nix 스토어 본체 회수 여부는 별도 판단한다.
 
+## 터치패드 제어
+
+- [ ] Cyborg 실기기 X11에서 `touchpad status`로 자동 탐색을 확인한다. 이름이 다르거나 후보가 여럿이면 `xinput list`로 확인하고 `touchpad status '장치 이름'`으로 지정한다. Samsung laptop의 on/off/toggle은 확인했다.
+
 ## Sway 실험 — 후순위
 
 - [ ] 설치 안정화 후 테스트 기기를 정해 Sway를 별도 선택지로 검토한다. i3 기본값 유지; 반납한 ThinkPad는 제외. 스크래치패드 IPC, 모니터 자동 배치, 한글 입력, Teams 화면 공유를 검증한다.

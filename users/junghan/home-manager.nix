@@ -161,6 +161,7 @@ in {
                       # 요구하는 하한이 26.05보다 앞선다(현재 >= 1.8.66)
     # wrangler / cf(Cloudflare CLI)는 2층 — scripts/external-packages.sh 헤더에 사유
   ]) ++ (lib.optionals (isLinux && !isOracle) [
+    xinput          # X11 touchpad control (~/.local/bin/touchpad)
     # Desktop GUI / 주변장치 / 무거운 런타임 — Oracle headless 제외
     firefox
     microsoft-edge
@@ -256,6 +257,10 @@ in {
     ".fortunes".source = ./../../fortunes;
 
     # User scripts (~/.local/bin)
+    ".local/bin/touchpad" = lib.mkIf (isLinux && !isOracle) {
+      source = ../../scripts/touchpad.sh;
+      executable = true;
+    };
     ".local/bin/scan-hubs" = {
       source = ./../../scripts/scan-hubs.sh;
       executable = true;
