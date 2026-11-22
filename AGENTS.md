@@ -22,6 +22,7 @@ This is not generic NixOS documentation. It is the handbook for the operator (hu
 | **Oracle 공유 GUI 작업실 접속** (어느 기기든 `run.sh` → `R`, 사용자 `junghan`) | [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14) — 클라이언트 쪽 사용법·인증서 지문만 보면 된다 |
 | **home 데이터·리포 퇴역·에이전트 작업 잔여물** | [docs/data-retirement.md](docs/data-retirement.md) — 기기 공통 수동 절차, 리포별 실측·원본/재생성물 구분·집합 승인·README 복원 표지 |
 | **`nuc` / `laptop` 일반 NixOS 작업** | 이 문서 + 표준 NixOS 흐름 |
+| **랩탑 보조 SSD·UFS 카드** | [docs/laptop-extra-storage.md](docs/laptop-extra-storage.md) — `/data` 마운트와 `~/data` 접근 |
 | 함정 카탈로그 (OpenClaw) | [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md) |
 | **OpenClaw 런타임을 실제로 만짐** (봇 설정·heartbeat·cron·채널·스키마) | `openclaw` **스킬** — 기억이 아니라 그 버전의 사실로 만지는 절차. 첫 수는 `openclaw docs` / `config schema` |
 | **OpenClaw 버전업** (이미지 교체) | `openclaw-update` **스킬** — 마이너/메이저 판정, GLG 방식 교체 순서, 함정표, 읽기 전용 점검 스크립트 |
