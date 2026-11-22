@@ -108,6 +108,19 @@ in {
   services.xserver.displayManager.lightdm.enable = true;
   services.displayManager.defaultSession = "xfce";
   services.displayManager.autoLogin = { enable = true; user = "nixos"; };
+  # Live installer only: keep the screensaver, but do not lock on idle or sleep.
+  # This module is not imported by the installed cyborg configuration.
+  environment.etc."xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-screensaver.xml".text = ''
+    <?xml version="1.0" encoding="UTF-8"?>
+    <channel name="xfce4-screensaver" version="1.0">
+      <property name="lock" type="empty">
+        <property name="saver-activation" type="empty">
+          <property name="enabled" type="bool" value="false"/>
+        </property>
+        <property name="sleep-activation" type="bool" value="false"/>
+      </property>
+    </channel>
+  '';
   isoImage.storeContents = [ cyborgSystem ];
   # Build on a remote worker to keep the Ventoy payload smaller.
   isoImage.squashfsCompression = "zstd -Xcompression-level 19";

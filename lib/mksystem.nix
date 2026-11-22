@@ -5,7 +5,10 @@
 name:
 {
   system,
-  user
+  user,
+  # Additional accounts do not replace the machine's primary operator.
+  # Each value supplies NixOS and Home Manager modules, respectively.
+  additionalUsers ? { }
 }:
 
 let
@@ -17,7 +20,7 @@ let
   # NixOS system function
   systemFunc = nixpkgs.lib.nixosSystem;
   home-manager = inputs.home-manager.nixosModules;
-in systemFunc rec {
+in assert !(builtins.hasAttr user additionalUsers); systemFunc rec {
   inherit system;
 
   # specialArgs: imports 단계에서 사용 가능 (_module.args 는 config 단계 이후)
@@ -51,14 +54,17 @@ in systemFunc rec {
 
     machineConfig
     userOSConfig
+  ] ++ map (account: account.osModule) (builtins.attrValues additionalUsers) ++ [
     home-manager.home-manager {
       home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
       home-manager.backupFileExtension = "hm-backup";
-      home-manager.users.${user} = import userHMConfig {
-        inherit inputs;
-        currentSystemName = name;  # Pass system name to home-manager config
-      };
+      home-manager.users = {
+        ${user} = import userHMConfig {
+          inherit inputs;
+          currentSystemName = name;  # Pass system name to home-manager config
+        };
+      } // builtins.mapAttrs (_: account: account.homeModule) additionalUsers;
     }
 
     # We expose some extra arguments so that our modules can parameterize

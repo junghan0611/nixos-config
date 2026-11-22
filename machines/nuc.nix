@@ -11,6 +11,13 @@
 
   # NUC specific configuration
   networking.hostName = "nuc";
+  # Keep i3 as the default; use XFCE as the alternate boot entry.
+  specialisation = lib.mkForce {
+    xfce.configuration = {
+      services.xserver.desktopManager.xfce.enable = true;
+      services.displayManager.defaultSession = lib.mkForce "xfce";
+    };
+  };
 
   # Boot configuration specific to NUC
   boot = {
