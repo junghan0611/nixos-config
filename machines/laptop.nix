@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
+
+let
+  # Reuse the newer locked unstable snapshot without moving other packages.
+  teamsPkgs = inputs.nixpkgs-herdr.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+in
 
 {
   imports = [
@@ -140,6 +145,7 @@
     net-tools        # ifconfig, netstat, etc.
     libreoffice-fresh
     calibre
+    teamsPkgs.teams-for-linux
   ];
 
   # Enable thermald for Intel CPU thermal management
