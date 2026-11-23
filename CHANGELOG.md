@@ -9,6 +9,28 @@
 
 ## Unreleased
 
+## v2026.11.23 — OpenClaw 11.7 메이저 컷오버와 깨움 표준 초안
+
+### OpenClaw 2026.11.7 메이저 컷오버
+
+- OpenClaw 2026.11.4 → **2026.11.7**(`e31bbf0`) 메이저 컷오버(11-23 19:00 정지, 19:09 health ok, 다운타임 8분 23초). shared state 22→36 / agent DB 27→38이고 점프는 11.5에서 일어났다. Doctor 340초, tini ELOOP 0, RestartCount 0, 기동 경합 없음. 정책은 recreate 없이 `unless-stopped`로 복원했다.
+- hotfix **v6**: 11.7 dist에서 cron 부모 분류기 사본이 3→4개로 늘어(`config/sessions/` corpus-policy 청크 신설) 4곳 모두 이식했다. 미패치 base에서 baseline GREEN / default RED, 빌드 안에서 12 assertions × 4 GREEN. 공개 미러 `docker/openclaw/` 3종 동기화.
+- config 계약 변화: 11.7에서 heartbeat 설정이 퇴역했다. 기동 Doctor가 heartbeat 키 3곳을 지우고 bbot·gemini monitor를 disabled automation job으로 옮겼다. 이관 결과는 verify와 별도로 cron 단언(cron-assert)으로 확인했다: 새로 활성화된 job은 0이고 enabled job 집합은 그대로다.
+- verify 원시 결과 PASS 43 / FAIL 2 / UNKNOWN 1(전체 PASS 아님). FAIL·UNKNOWN은 모두 원인이 확인됐다: 기존 deliveryQueues 2행(11.4 교체 전과 동일), config heartbeat 검사(키 퇴역), 예상된 config 경로 변화(heartbeat 3 + Doctor bookkeeping 3).
+- 복귀점은 cold C(config + auth-profile-secrets, 정지 상태 봉인)와 11.4 이미지 짝이다. 롤백 복원은 루트 컨테이너 tar로 gid를 보존한다. 컷오버 전 `/home`에서 캐시 4.68GB를 GLG 승인으로 회수했다. 11.3 컨테이너 쓰기층의 `.update-captures` 1.61G는 recreate로 옛 컨테이너와 함께 사라졌다. recreate·plain `compose up` 금지 규칙은 11.7 컨테이너로 이어진다(config-hash가 plain과 다르다).
+- 실무팀: 실무 코디 Claude Code Opus와 W1 Terra(소스 판독), W2 Opus(교차 검수). 운영 코디는 범위·결정만 맡았다.
+
+### OpenClaw 깨움 표준 (#13)
+
+- 11.7 기준 깨움 표준 정본 초안 [docs/openclaw-wake.md](docs/openclaw-wake.md)를 추가했다: 봇 하나에 automation job 하나와 책상 하나, memento(isolated)와 책상 이어 가기 중 역할·비용으로 고르는 기준, 공통 job 틀, 봇별 역할·모드 표(결정 칸은 GLG), 닷(glgdot) 새 집. 근거는 11.7 이미지 안 공식 문서와 소스다.
+- #10(mini heartbeat 역할)을 닫고 #13으로 흡수했다. #13에 11.7 현행화와 GLG 방향(모든 봇 깨움·모든 봇 책상·OpenClaw로 커스텀)을 남겼다.
+- ORACLE `LIVE` 줄을 11.7로 바꾸고 heartbeat `0m` 문장을 11.7 이전 기록으로 표시했다. gotchas에 11.7 heartbeat 퇴역 절, openclaw-update 스킬에 v6·11.7 선례를 넣었다.
+
+### 데스크톱·패키지
+
+- laptop에 새 Teams for Linux, MarkItDown을 넣고 MIME 기본값을 로컬로 유지했다. 외부 패키지에 Microsoft 365 CLI를 추가했다.
+- X11 터치패드 토글 명령(`touchpad`)과 laptop 보조 저장소 문서를 추가했다.
+
 ## v2026.11.22 — Cyborg 설치 준비와 데스크톱 선택지
 
 - Cyborg의 XFCE 라이브 설치 ISO에 대상 시스템 closure와 UEFI 설치기를 담고, 기본 KLEVV NVMe 자동 선택 외에 명시적 SATA/NVMe 대상을 지원했다. 대상 확인과 삭제 승인을 요구하며, 실패 시 무작정 재실행하지 않는다. 회사 실기기와 오프라인 설치는 아직 검증 전이다.

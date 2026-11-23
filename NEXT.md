@@ -15,10 +15,11 @@
 - [x] **3. 10.9 운영 확인·교차검토·임시 정리** — [v2026.10.30](CHANGELOG.md)에 이관
 - [x] **3b. OpenClaw 11.3 메이저 컷오버 + claude-cli 모델 정리 + 현재값 SSOT 단일화** — [v2026.11.14](CHANGELOG.md), 잔여 관측은 아래 §OpenClaw 11.3
 - [x] **3c. 11-15·16 정비: entwurf 책상 A창(#160), bbot memento 6h, defaults·gemini → 6.1-sol, #17 시도·원복, rclone 콜드 기반** — [v2026.11.16](CHANGELOG.md)
-- [ ] **4. 연속성·비용·세션 증식 기준의 깨움 설계** ← CURRENT: 주말 GLG 판단, [#13](https://github.com/junghan0611/nixos-config/issues/13)·llmlog 20261028T092543
+- [x] **3d. OpenClaw 11.4→11.7 메이저 컷오버** — 11-23 19:00 정지 → 19:09 health ok, [v2026.11.23](CHANGELOG.md). 잔여 관측은 아래 §OpenClaw 11.7
+- [ ] **4. 모든 봇이 하나의 규칙으로 깨어나는 표준 — [#13](https://github.com/junghan0611/nixos-config/issues/13)** ← CURRENT: 11-23 GLG 방향 결정(#10 흡수), 정본 초안 [docs/openclaw-wake.md](docs/openclaw-wake.md), 봇별 역할·모드 표와 적용은 봇마다 GLG 승인
 - [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`와 마지막 cold B도 같은 날 추가 퇴역, 이 컷오버의 10.9 전체 데이터 복귀점 없음)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
-현재 좌표: 1–3·3b·3c 완료 → 4 깨움 설계 판단 대기(11.3 기준 재확인 필요). 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
+현재 좌표: 1–3·3b·3c·3d 완료 → 4 깨움 표준(#13) 정본 작성과 봇별 결정. 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
 
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14), 남은 것은 아래 §#14.
 Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
@@ -42,6 +43,17 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 - [ ] 설치 안정화 후 테스트 기기를 정해 Sway를 별도 선택지로 검토한다. i3 기본값 유지; 반납한 ThinkPad는 제외. 스크래치패드 IPC, 모니터 자동 배치, 한글 입력, Teams 화면 공유를 검증한다.
 
+## OpenClaw 11.7 (11-23 메이저 컷오버) 관측·갈무리
+
+경과: 실무 코디 Claude Code Opus `20261123T183855-3783fb`, 워커 W1 Terra `…22551d`(소스 판독)·W2 Opus `…93321c`(교차 검수), 운영 코디 `20261008T152203-145c2f`. 11.4 `d843d6a` → 11.7 `e31bbf0`(state 22→36 / agent 27→38, 점프는 11.5). candidate `openclaw-custom:11.7-candidate-20261123` = `9ead8629…`, hotfix **v6**(dist 분류기 사본 3→4). idle gate 19:00:51 → stop 19:00:56 → cold C 봉인 → restart:no recreate 19:03:31 → Doctor → RPC ok 19:09:19(+340s, 다운타임 8분 23초), ELOOP 0, RestartCount 0 → 19:19:42 `docker update --restart unless-stopped`(recreate 없음). 영수증은 비공개 `~/openclaw/backups/swap-11.7-20261123/`.
+
+- [ ] **20:30 bbot memento 첫 자연 실행**: 정각 발화·ok/delivered·`cli exec provider=claude-cli` fable-5-2·fallbackUsed=false, disabled 이관 job `af194c38`·`f189f4ac` 미발화. 이어서 모닝 cron 11-24 08:00.
+- [ ] **verify 계약 갱신**: `--expect-disabled-heartbeat`의 config 쪽 검사(`verify.py:339-341`)는 11.7에서 영구 FAIL(키 퇴역). "config heartbeat 부재 + cron job disabled"로 바꾸고 selftest fixture를 같은 작업에서 맞춘다. RPC 쪽 heartbeat 검사는 PASS. `TOMBSTONE` 기준값은 10-27 session 행 이전 값이라 낡았다(verify FAIL 1의 정체, 11.4 전후 동일).
+- [ ] **뒷정리(soak 뒤 GLG 승인, 정확한 집합)**: Doctor `.pre-startup-migration-*.bak` 9개 + `openclaw.sqlite.doctor-cron-*.bak` 1개 = 1,499,340,800B(/home). 복귀 짝은 cold C `/var/tmp/openclaw-cold-11.7/cold-c-state22-agent27.tar.zst`(1,272,479,182B, sha `aec94b91…`, config+auth-profile-secrets, 50,611 엔트리)와 11.4 이미지 `503472f1`. **cold C는 `/var/tmp` tmpfiles 30일 청소 대상**이라 보존 기간을 따로 정한다. 11.7 base `cded4be5…`·빌드 캐시도 인벤토리 대상.
+- [ ] **recreate·plain `compose up` 금지(11.7 컨테이너)**: config-hash `1eab70b0…`가 plain `361991b7…`·override `efd012d5…`와 다르다(함정 ④ 재현). `docker update`는 해시를 바꾸지 않는다.
+- [ ] **Doctor 이관 부산물**: `workspace-gemini/HEARTBEAT.md`(168B, git 추적)가 job scratch로 들어가고 원본은 `config/backups/heartbeat-migration/`으로 — 워크스페이스 git에 삭제로 남았다(gemini 정지 중). Doctor State integrity: `agents/claude` 디렉터리가 entries에 없다(DB는 38로 이관됨, 11-16 acpx 잔재 추정) — 정리 여부는 GLG 판단.
+- [ ] **GPT 인증을 회사 계정으로 재인증** (GLG 11-23, 노트북에서): 현재 개인 OpenAI OAuth 프로필 하나가 main·gpt·gemini·defaults(`openai/gpt-6.1-sol`)를 진다. 11.7의 `models auth`는 offline 소유를 요구해 gateway 실행 중엔 거부한다 — 정지 창이 필요하다. Claude 쪽은 호스트 `~/.claude` 공유 마운트라 호스트 로그인을 따른다(11-23 확인: claude.ai Max).
+
 ## OpenClaw 11.3 (11-13 메이저 컷오버) 관측·갈무리
 
 현재 운영 버전은 [ORACLE.md](ORACLE.md) `LIVE` 줄로 판정한다(여기에 복제하지 않는다). 경과는 [ORACLE.md](ORACLE.md) Model routing 첫 문단, 영수증은 비공개 `~/openclaw/backups/cutover-11.3-20261113/`·`.agent-reports/openclaw-v2026.11.3-review/`.
@@ -52,15 +64,18 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - [ ] W4 권고: 첫 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교).
 - [ ] **다음 의도된 recreate 때 함께 뺄 것 (GLG 11-14·15 확인, 잊지 말 것):** compose의 `~/.codex` 마운트(`:139`) — OpenClaw에서 Codex를 쓰지 않는다(GLG: GPT는 OpenClaw 인터페이스, 지원 모델은 Claude·GPT). `~/.gemini`(`:140`)는 **#17(agy ACP) 결정 전까지 빼지 않는다** — agy 로그인 토큰이 `~/.gemini/antigravity-cli/`에 있고 컨테이너가 이 마운트로 읽는다(gemini 봇 운영 정지와 별개). 낡은 compose `:131` 주석 갱신. 마운트 변경은 recreate가 필요하므로 단독으로 하지 않고, recreate가 필요한 다른 작업과 묶어 GLG 승인 뒤에 한다.
 - [ ] **#17 agy(Antigravity) via acpx — 11-16 시도 후 원복, 보류 (GLG: "정확히 파악할때까지 그쪽 세션은 안건들일거야… 안되면 뭔가 만들지 않도록하자"):** 막힌 곳은 업스트림 Telegram DM-topic 바인딩 — `/acp spawn --bind here`는 `chatId:topic:thread`로 묶는데 인바운드 DM 라우트는 scope `dm`→bare chatId라 일반 DM이 바인딩을 못 찾고 네이티브 모델로 간다(`topic-conversation.ts:10-38`, `conversation-route.ts:64-69`, `channel.ts:263-296`, `bot-message-context.ts:300-310`; config로 못 고침). 원복 상태: `acp.enabled:false`(allowedAgents `["claude"]`), gemini `runtime` 제거·account disabled. 2026-11-17 GLG 승인으로 acpx 2026.11.3을 `plugins uninstall`(entry·allow·install record·npm 디렉터리 794M)하고 `~/openclaw/config/agy/`(pin 프록시·agy 바이너리 239M)도 지웠다. 재개 시 pin 프록시는 openclaw-config 이력 7f3cb3a에서 복원하고 agy·acpx는 새로 설치한다. 건드리지 않음: 바인딩된 ACP 세션 `agent:gemini:acp:1eacb22e…`, node 세션 `agent:gemini:node-1fd06883a3db`. 업스트림 이슈는 내지 않는다(GLG 11-16). 사실·근거는 [#17](https://github.com/junghan0611/nixos-config/issues/17).
-- [ ] **재빌드·plain `compose up` 금지(현 상태)**: compose config-hash가 restart:no override 기준 → override 없는 up은 recreate → #195208 경합/tini ELOOP 재노출. 다음 recreate는 의도된 작업으로만.
-- [ ] 남은 정리 후보: 컨테이너 쓰기층 `.update-captures` 1.61G(/, recreate 때만 사라짐). recreate 승인 없음. (11-14 퇴역 내역은 [v2026.11.14](CHANGELOG.md)·v2026.11.16.)
 - [ ] 근본원인 미수정 기록: upstream #195208, tini ELOOP.
 
 ## 이월 관측
 
-- [ ] verify FAIL 1: session 실패행이 10-27부터 남아 있고, 10-30·11-13·11-14(11.3 verify)에서 count와 시각이 같다. 원인 조사는 별도 승인으로 한다.
+- [ ] verify deliveryQueues FAIL: session 실패행이 10-27부터 남아 있고, 10-30·11-13·11-14(11.3)·11-23(11.4 교체 전·11.7 후)에서 count와 시각이 같다. 11.7 verify에서는 6월 outbound tombstone과 함께 2행으로 보고된다(verify `TOMBSTONE` 기준값이 이 행 이전 값). 원인 조사는 별도 승인으로 한다.
 
-## 깨움 설계 (10.9 시점에 작성 — 11.3에서 재확인 필요), 적용은 별도 승인
+## 깨움 설계 — [#13](https://github.com/junghan0611/nixos-config/issues/13), 정본 [docs/openclaw-wake.md](docs/openclaw-wake.md), 적용은 별도 승인
+
+**11-23 GLG 방향(직접):** 모든 봇을 하나의 규칙으로 깨운다 · 모든 봇에 entwurf 책상 · memento냐 이어 가기냐는 역할과 비용으로(B=fable이라 memento) · GPT 구독의 닷(`workspace-glgdot`)에게 OpenClaw 집 · 다른 도구 없이 OpenClaw로 최대한 커스텀. #10은 닫고 #13으로 흡수했다. 11.7에서 heartbeat가 퇴역해 깨움 수단은 automation job 하나로 통일됐다 — 아래 10.9 시점 항목은 그 전제로 다시 읽는다.
+
+- [ ] 정본 초안의 봇별 역할·모드 표(main·glg·gpt·mini·bbot·gemini·닷)를 GLG와 채운다.
+- [ ] 책상 설치 순서(main 다음 봇부터)와 닷 집 만들기(agents.entries·workspace·Telegram account·모델 정책) — 봇마다 GLG 승인.
 
 - **상태:** OpenClaw10.9(`709acab4…`) 운영 확인과 승인된 임시2폴더/끝난7helper 정리는 닫았다. 상세는 [CHANGELOG v2026.10.30](CHANGELOG.md)·ROADMAP, 비공개 영수증 `.agent-reports/openclaw-upgrade-20261030/`. 기존 FAIL1과 경고·dirty는 별도다.
 - **entwurf #160 책상 세션 — 운영 몫(11-15 GLG 결정):** 책상이 버티게 하는 운영 규칙 넷을 [gotchas 책상 절](docs/openclaw-gotchas.md)·`openclaw` 스킬 §12에 적었다. 11-15 12:01 leaf 읽기: `session.resetByType`·`resetByChannel`·`compaction.maxActiveTranscriptBytes` 모두 미설정. **남은 것(각각 GLG 승인):** lab에서 sessions.create/pin RPC 이름과 operator.write scope · `/reset` 첫 줄 편지 관측 · 설치 직후 pinnedAt/spawnedBy/parent 확인 · 설치 뒤 몇 주 전사 크기 관측(maxActiveTranscriptBytes 판단). entwurf 쪽은 고정 key↔garden과 compaction 뒤 같은 garden 답신 측정만. 실사용 A 창은 11-15 완료(v2026.11.16, [openclaw-entwurf-desk.md](docs/openclaw-entwurf-desk.md)). **남은 것:** 13단계 영수증은 entwurf 릴리즈 커밋 뒤 재측정(ff08d4·GLG 순서) · 다음 집 mini(선언 allow 한 줄 + 10–13, 각 GLG 승인) · 책상 전사 크기·`/reset`·압축 뒤 같은 garden 답신(F2) 관측.
