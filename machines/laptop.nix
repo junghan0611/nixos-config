@@ -146,6 +146,7 @@ in
     libreoffice-fresh
     calibre
     teamsPkgs.teams-for-linux
+    python3Packages.markitdown
   ];
 
   # Enable thermald for Intel CPU thermal management

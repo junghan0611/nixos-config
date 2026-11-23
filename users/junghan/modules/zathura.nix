@@ -59,6 +59,6 @@
   };
 
   # 기본 PDF 핸들러 등록은 xdg.mimeApps(불변 store 심볼릭) 대신
-  # configs/mimeapps.list out-of-store 심볼릭으로 관리 (home-manager.nix).
+  # 기본 앱 연결은 사용자의 ~/.config/mimeapps.list에서 관리한다.
   # Thunar 등에서 런타임 변경 가능하도록 — 유연성 우선.
 }

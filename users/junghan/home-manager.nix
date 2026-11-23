@@ -291,12 +291,6 @@ in {
     };
     ".inputrc".text = builtins.readFile ./configs/inputrc;
 
-    # 기본 애플리케이션(mimeapps.list): nix store 불변 심볼릭 대신 레포 파일로
-    # out-of-store symlink → Thunar 등에서 런타임 변경 가능 (쓰면 레포 파일에 반영).
-    # pdf=zathura, epub=foliate, doc/docx/odt=libreoffice writer.
-    ".config/mimeapps.list".source = config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/repos/gh/nixos-config/users/junghan/configs/mimeapps.list";
-
     # Wallpaper for i3
     ".config/nixos-wallpaper.png".source = ./../../assets/indistractable.png;
 
