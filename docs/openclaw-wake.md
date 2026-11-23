@@ -39,11 +39,11 @@
 | **memento** | `isolated` (매 실행 fresh) | 깨움 파일(포인터), `record_result`가 다음 프롬프트로 넘기는 이전 결과(P:352-360), 워크스페이스 `memory/`·trail, git 커밋 | 주기가 프롬프트 캐시 TTL보다 길다 · 비싼 모델이다 · 매 비트가 독립 업무다 |
 | **책상 이어 가기** | `session:agent:<봇id>:entwurf` | 책상 세션 이력(+ compaction), 같은 garden id | 형제와 협업 창구다 · 주기가 짧거나 이벤트형이다 · 맥락 재사용이 비용보다 크다 |
 
-판정 기준은 비용이다. 측정(B, 11-14): fresh 바닥 cache-write 약 77K. 가설: 세션을 이어 가면 깨울 때마다 누적 이력을 다시 읽고, 주기가 프롬프트 캐시 TTL보다 길면 매번 cache-write를 새로 낸다 — Claude CLI resume의 실제 캐시 동작은 미확인(§8). B가 memento인 것은 GLG 결정이다. 모드는 봇의 역할이 바뀌면 다시 고른다.
+판정 기준은 비용이다. 측정(bbot memento 첫 요청 cache-write, Claude CLI 세션 usage): 11.4 마지막 비트(11-23 14:30) **74,350** → 11.7 첫 비트(11-23 20:30) **22,344** 토큰. B는 11.7이 도구 설명을 처음부터 다 싣지 않고 이름만 준다고 관측했다(소스 미판독). 턴 전체 비용은 아직 재지 않았다. 11-14의 "약 77K"는 11.4 기준값이다. 가설: 세션을 이어 가면 깨울 때마다 누적 이력을 다시 읽고, 주기가 프롬프트 캐시 TTL보다 길면 매번 cache-write를 새로 낸다 — Claude CLI resume의 실제 캐시 동작은 미확인(§8). B가 memento인 것은 GLG 결정이다. 모드는 봇의 역할이 바뀌면 다시 고른다.
 
 **규칙 4. 모든 깨움 job은 같은 틀을 쓴다** (§3). 봇마다 다른 것은 표의 칸(역할·모드·주기·모델·전달)뿐이다.
 
-**규칙 5. "무엇을"은 워크스페이스의 standing order, "언제"는 job이다.** 11.7 공식 구분이다(`automation/standing-orders.md:64-74`, `automation/cron-jobs/payloads.md:450-452`): 잡 프롬프트는 standing order를 복제하지 않고 가리킨다. standing order는 워크스페이스 부트스트랩에 둔다 — 자동 주입되는 것은 `AGENTS.md`·`SOUL.md`·`IDENTITY.md`·`USER.md`·`BOOTSTRAP.md`·`MEMORY.md`뿐이다(`standing-orders.md:34`). 그 밖의 깨움 파일은 `AGENTS.md`와 job 포인터가 이름으로 가리키되, 가리킨다고 내용이 주입되는 것은 아니다 — 봇이 실제로 읽는지는 run 기록으로 검증한다. bbot의 3줄 포인터 → `workspace-bbot/scripts/heartbeat-wake-message.md` 구조가 이미 이 권장형이다. 깨움 파일은 GLG가 있는 턴에서만 고친다(B의 승격 관문). `--light-context`나 `contextInjection: "never"`는 주입을 끈다(`payloads.md:52-53`) — 깨움 job에 쓰지 않는다.
+**규칙 5. "무엇을"은 워크스페이스의 standing order, "언제"는 job이다.** 11.7 공식 구분이다(`automation/standing-orders.md:64-74`, `automation/cron-jobs/payloads.md:450-452`): 잡 프롬프트는 standing order를 복제하지 않고 가리킨다. standing order는 워크스페이스 부트스트랩에 둔다 — 자동 주입 후보는 `AGENTS.md`·`SOUL.md`·`IDENTITY.md`·`USER.md`·`BOOTSTRAP.md`·`MEMORY.md`다(`standing-orders.md:34`). 그러나 **isolated 깨움에는 `MEMORY.md`가 오지 않았다**(B 관측 11-23 20:30: 네 파일). 문서끼리 엇갈린다 — 템플릿은 "`MEMORY.md` (main session only)"(`reference/templates/AGENTS.md:35`), `concepts/main-session.md:86`은 "every fresh session". `USER.md`는 고정 4,000자 상한이라 잘린다(`concepts/user-model.md:516`, 실측 로그 "USER.md is 4112 chars (limit 4000); truncating"), 다른 파일은 기본 20,000자(`bootstrapMaxChars`). **그래서 memento로 깨우는 봇의 standing order는 `AGENTS.md`에 둔다.** 그 밖의 깨움 파일은 `AGENTS.md`와 job 포인터가 이름으로 가리키되, 가리킨다고 내용이 주입되는 것은 아니다 — 봇이 실제로 읽는지는 run 기록으로 검증한다. bbot의 3줄 포인터 → `workspace-bbot/scripts/heartbeat-wake-message.md` 구조가 이미 이 권장형이다. 깨움 파일은 GLG가 있는 턴에서만 고친다(B의 승격 관문). `--light-context`나 `contextInjection: "never"`는 주입을 끈다(`payloads.md:52-53`) — 깨움 job에 쓰지 않는다.
 
 ## 3. 깨움 job 틀 (모든 봇 공통)
 
@@ -59,7 +59,7 @@
 | `sessionTarget` | `isolated` 또는 `session:agent:<id>:entwurf` | 규칙 3. isolated는 매 run `cron:<jobId>` 새 transcript(P:486), 고정 세션은 run 사이 맥락이 이어진다(P:488,496) |
 | `idleOnly` | 책상 모드는 `true` | foreground 우선, 대기 중 running 슬롯을 차지하지 않는다(S:68). 대기 경로가 없으면 `skipped`/`busy`(`src/cron/service/timer-execution.ts:142-170`). 대기 상한은 문서 없음 |
 | scratch | 다음 행동 메모만. 장기 사실의 정본이 아니다 | 잡별, 상한 256 KiB, 비밀 금지(P:325-333). 봇은 `scratch_get/scratch_set`(전체 교체, CAS)으로 쓴다(P:342-350) |
-| `record_result` | 매 run 끝에 `no_change`/`progress`/`done`/`blocked`/`needs_attention` | 결과가 다음 프롬프트로 이어진다(P:352-360). **memento의 공식 연결 고리** |
+| `record_result` | 매 run 끝에 `no_change`/`progress`/`done`/`blocked`/`needs_attention` | 결과가 다음 프롬프트로 이어진다(P:352-360). **memento의 공식 연결 고리**. 11.7 스케줄 preamble에 "바뀐 게 없으면 조용히"가 붙고 이 도구가 실제로 제공된다(B 관측 11-23) — **깨움 파일이 없는 봇은 이 기본값을 받아 조용해진다**. bbot에 넣을지는 GLG·B 결정(B 집 규칙 "끝말 한 통"과의 관계) |
 | `skipIfScratchEmpty` | 쓰지 않는다(기본) | 명시적으로 빈 scratch일 때만 skip(S:69). 멈추려면 disable |
 | `delivery` | `announce` + `target: owner`, 할 말 없으면 `NO_REPLY` + `record_result no_change` | owner는 신원 확인된 owner DM으로 해석(D:118-139). 조용한 책상 작업은 `mode: none`(P:506). 이관 잡은 중복 억제가 없다 |
 | `timeoutSeconds` | 봇별 명시 | 미지정 isolated agentTurn은 watchdog 60분(H:26), 초과 시 abort·소유 해제(H:43). 고정 세션에 기본 60분이 적용되는지는 문서 없음 → 반드시 명시 |
