@@ -77,6 +77,7 @@ PNPM_PACKAGES=(
     @earendil-works/pi-coding-agent
     wrangler
     cf
+    @pnp/cli-microsoft365
 )
 
 # check 표시용: "표시 라벨 → npm 패키지명" (버전 비교에 npm view 사용)
@@ -87,6 +88,7 @@ declare -A PNPM_CHECK=(
     [pi-coding-agent]="@earendil-works/pi-coding-agent"
     [wrangler]="wrangler"
     [cf]="cf"
+    [m365]="@pnp/cli-microsoft365"
 )
 
 # uv tool SSOT — 이 배열이 곧 `uv tool install` 대상 집합이다. 지금은 비어 있다.
@@ -291,7 +293,7 @@ check() {
         echo "$glist" | sed 's/^/      /'
         has_update=1
     fi
-    for label in clawhub summarize codex pi-coding-agent wrangler cf; do
+    for label in clawhub summarize codex pi-coding-agent wrangler cf m365; do
         local pkg="${PNPM_CHECK[$label]}" cur lat
         # `├── <pkg>@<ver>` 에서 npm 이름으로 정확히 집는다 — 라벨 부분일치(cf)와
         # 프리릴리즈 버전(1.0.0-beta.5)을 `[\d.]+$` 로는 못 읽는다.
