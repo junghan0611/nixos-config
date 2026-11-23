@@ -9,6 +9,11 @@
 
 ## Unreleased
 
+### OpenClaw 11.7 뒷정리
+
+- 11.7 첫 bbot memento(11-23 20:30)를 관측했다: ok·delivered, claude-cli fable-5-2, fallback 없음, 이관 disabled job 미발화, verify FAIL/UNKNOWN 컷오버 직후와 동일. 첫 요청 cache-write 74,350→22,344 토큰. B의 관측(isolated 깨움에 `MEMORY.md` 미주입, `USER.md` 4,000자 상한)을 깨움 초안에 반영했다 — memento 봇의 standing order는 `AGENTS.md`에 둔다.
+- 뒷정리(GLG 승인, 정확한 집합): Doctor 마이그레이션 bak 10개(1,499,340,800B), `/tmp`의 11.3 산출물·11.7 검토 추출본·빌드 자료, entwurf sdk13/14 백업 6항목(799,968,375B), **cold C**(1,272,479,182B — "돌아갈 일 없어"). 이 컷오버의 11.4 데이터 복귀점은 없다. `/home` +2.27GB, `/` +2.43GB. gateway health ok, RestartCount 0.
+
 ## v2026.11.23 — OpenClaw 11.7 메이저 컷오버와 깨움 표준 초안
 
 ### OpenClaw 2026.11.7 메이저 컷오버
