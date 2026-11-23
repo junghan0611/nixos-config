@@ -1,4 +1,4 @@
-// Actual 11.3/11.4 emitted classifier copies (main chunk + two worker bundles), including upstream cycle propagation.
+// Actual 11.7 emitted classifier copies (main chunk + two worker bundles + standalone corpus-policy chunk), including upstream cycle propagation.
 // No database, Gateway, credentials, network or model access.
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -11,6 +11,10 @@ const baseline = process.argv.includes('--baseline');
 const SIG = 'function collectCronGeneratedSessionKeys(';
 const PARENT_SIG = 'function readParentSessionKeys(';
 const count = (text, needle) => text.split(needle).length - 1;
+// Identifier-boundary call search: a one-letter minified binding (e.g. `e(`) must not match `some(`.
+const callRe = name => new RegExp(`(?<![\\w$])${name.replace(/[$]/g, '\\$&')}\\(`, 'g');
+const callCount = (text, name) => (text.match(callRe(name)) || []).length;
+function callIndex(text, name, from) { const re = callRe(name); re.lastIndex = from; const m = re.exec(text); return m ? m.index : -1; }
 
 function braceBlock(text, sig) {
 	assert.equal(count(text, sig), 1, `unique ${sig}`);
@@ -23,15 +27,17 @@ function braceBlock(text, sig) {
 	throw new Error(`unterminated ${sig}`);
 }
 
-// Locator: every emitted definition in dist must be covered. 11.3 and 11.4 emit three copies.
+// Locator: every emitted definition in dist must be covered. 11.7 emits four copies.
 const copies = readdirSync(dist, { recursive: true })
 	.filter(n => /\.(mjs|js)$/.test(n))
 	.filter(n => readFileSync(path.join(dist, n), 'utf8').includes(SIG))
 	.sort();
-assert.equal(copies.length, 3, `three emitted classifier copies (found: ${copies.join(', ')})`);
+assert.equal(copies.length, 4, `four emitted classifier copies (found: ${copies.join(', ')})`);
 const kinds = copies.map(n => n === path.join('worker', 'sqlite-store.worker.mjs') ? 'bundle'
-	: n.startsWith(`worker${path.sep}worker-chunk-`) ? 'worker-chunk' : !n.includes(path.sep) ? 'main' : 'unknown');
-assert.deepEqual([...kinds].sort(), ['bundle', 'main', 'worker-chunk'], 'one main, one store bundle, one worker chunk');
+	: n.startsWith(`worker${path.sep}worker-chunk-`) ? 'worker-chunk'
+	: n.startsWith(path.join('config', 'sessions', 'transcript-session-transcript-corpus-policy-')) ? 'policy'
+	: !n.includes(path.sep) ? 'main' : 'unknown');
+assert.deepEqual([...kinds].sort(), ['bundle', 'main', 'policy', 'worker-chunk'], 'one main, one store bundle, one worker chunk, one corpus-policy chunk');
 
 async function importedBinding(text, file, name) {
 	for (const m of text.matchAll(/import\s*\{([^}]*)\}\s*from\s*"\.\/([^"]+)";/g)) {
@@ -104,7 +110,7 @@ function resolveAt(ast, pos, name) {
 }
 function scopeProof(kind, file, text, cls) {
 	const ast = acorn.parse(text, { ecmaVersion: 'latest', sourceType: 'module' });
-	const callPos = text.indexOf(`${cls}(`, text.indexOf(SIG));
+	const callPos = callIndex(text, cls, text.indexOf(SIG));
 	const hit = resolveAt(ast, callPos, cls);
 	assert.ok(hit, `${kind}: ${cls} has a lexical binding at the classifier call (no ReferenceError)`);
 	const { decl, scope } = hit;
@@ -140,7 +146,7 @@ async function load(name, kind) {
 	const parentBlock = braceBlock(text, PARENT_SIG);
 	const cls = collectBlock.match(/isCronGenerated\s*=\s*\([^)]*\)\s*=>\s*\{\s*if\s*\(\s*([A-Za-z_$][\w$]*)\(/)?.[1];
 	assert.ok(cls, `${kind}: classifier call located`);
-	assert.equal(count(collectBlock, `${cls}(`), 1, `${kind}: single classifier call`);
+	assert.equal(callCount(collectBlock, cls), 1, `${kind}: single classifier call`);
 	let fn;
 	if (kind === 'bundle') {
 		// In-bundle helper: verify emitted definition text, then bind the same-named main helper.
@@ -158,6 +164,7 @@ async function load(name, kind) {
 		fn = mainHelpers[bound.name];
 	} else {
 		fn = await importedBinding(text, file, cls);
+		if (kind === 'policy') assert.ok(['isCronRunSessionKey', 'isCronSessionKey'].includes(fn?.name), `${kind}: ${cls} binds ${fn?.name}`);
 	}
 	assert.equal(typeof fn, 'function', `${kind}: ${cls} resolves to a function`);
 	if (kind === 'main') {
@@ -178,19 +185,24 @@ async function load(name, kind) {
 	assert.equal(proof.helper, fn.name, `${kind}: lexical binding and behaviour binding agree (${proof.helper})`);
 	scopeLines.push(proof.line);
 	let collect = new Function(cls, `${parentBlock}\n${collectBlock}\nreturn collectCronGeneratedSessionKeys;`)(fn);
-	if (kind === 'main') {
+	if (kind === 'main' || kind === 'policy') {
 		// Real execution in the emitted module's own scope: the chunk exports the actual function.
 		const mod = await import(pathToFileURL(file));
 		const real = Object.values(mod).find(v => typeof v === 'function' && v.name === 'collectCronGeneratedSessionKeys');
-		assert.ok(real, 'main: emitted module exports collectCronGeneratedSessionKeys');
-		assert.equal(real.toString(), collectBlock, 'main: exported function is the located block');
-		collect = real;
-		scopeLines.push('main: behaviour assertions run on the imported module export (real lexical scope)');
+		if (kind === 'main' && !real) {
+			// 11.7 main chunk keeps the classifier internal (no export); the lexical scope proof above covers its binding.
+			scopeLines.push('main: no module export in 11.7; behaviour assertions run on the located block with the proven binding');
+		} else {
+			assert.ok(real, `${kind}: emitted module exports collectCronGeneratedSessionKeys`);
+			assert.equal(real.toString(), collectBlock, `${kind}: exported function is the located block`);
+			collect = real;
+			scopeLines.push(`${kind}: behaviour assertions run on the imported module export (real lexical scope)`);
+		}
 	}
 	return { kind, name, cls, fn, collect };
 }
 
-const order = ['main', 'bundle', 'worker-chunk'];
+const order = ['main', 'bundle', 'worker-chunk', 'policy'];
 const loaded = [];
 for (const k of order) loaded.push(await load(copies[kinds.indexOf(k)], k));
 

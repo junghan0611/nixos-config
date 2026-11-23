@@ -12,6 +12,15 @@
 
 ## 활성
 
+### 11.7 heartbeat 설정 퇴역 — validate 거부, Doctor가 job으로 옮긴다 (2026-11-23)
+
+11.7 격리 `config validate`는 `agents.defaults.heartbeat`·`agents.entries.*.heartbeat`를 **Unrecognized key**로 거부한다(exit 1). 고장이 아니라 계약 변화다. 기동 Doctor가 명시 heartbeat 에이전트의 monitor를 같은 id의 agentTurn automation job으로 옮기고 키를 지운다. `0m`은 disabled로 옮겨지고 새로 활성화되는 job은 없다(11-23 실측, 소스 `doctor-heartbeat-legacy.ts:97-120`, `doctor-heartbeat-cadence-migration.ts:185-201`). 워크스페이스 `HEARTBEAT.md`는 job scratch로 들어가고 원본은 `config/backups/heartbeat-migration/`으로 옮겨진다 — 봇 워크스페이스 git에 삭제로 보인다.
+
+- 이 경고를 보고 config에 heartbeat 키를 되살리지 않는다. 깨움은 job으로 다룬다 → [openclaw-wake.md](openclaw-wake.md).
+- verify의 `--expect-disabled-heartbeat` config 쪽 검사는 11.7에서 항상 FAIL이다(키 부재). RPC 쪽 heartbeat 검사는 job에서 투영돼 PASS한다. 갱신 전까지 이 FAIL은 "키 퇴역"으로 판정한다(NEXT).
+- 이관 job을 지우면 provision receipt가 남아 **영구 삭제**다(`/app/docs/gateway/heartbeat.md:55-58`). 재사용할지 먼저 정한다.
+- 11.7의 `openclaw models auth list/login`은 offline state 소유를 요구해 **gateway 실행 중에는 거부**한다. 인증 교체는 정지 창이 필요하다.
+
 ### 11.3 heartbeat는 cron의 대체물이 아니다 — 닻·busy skip·NO_REPLY·중복 억제 (2026-11-14)
 
 bbot 메멘토 cron을 표준 heartbeat로 옮길지 검토하면서 페어 검수 형제(20261114T155300-dadd32)가 v2026.11.3 소스(847611dc)로 확인했다. 결론은 cron 유지였다(NEXT 「bbot 결정」).

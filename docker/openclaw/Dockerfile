@@ -218,8 +218,10 @@
 # 2026.11.3 (847611d) candidate: explicit non-linear transition; state20->22 / agent25->27; arm64 digest adc5f5e9,
 # hotfix v5 ported to three emitted classifier copies. Activation gated (cold + isolated rehearsal) — not yet approved.
 # 2026.11.4 (d843d6a): minor, state22 / agent27 unchanged; arm64 digest 2a97ff33, hotfix v5 re-ported (same 3 copies,
-# corpus-policy blob ff6b892 unchanged). Rollback image: openclaw-custom:11.3-candidate-20261113 (same schema).
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:2a97ff333beee741b9666f287ed7243e023fd1a5a4e51f230e85fc858ff06926
+# corpus-policy blob ff6b892 unchanged). 11.3 rollback image + base retired 2026-11-16 (GLG); same-schema rollback = rebuild from adc5f5e9.
+# 11.4 → 11.7 (2026-11-23): 메이저(state 22→36 / agent 27→38, 스키마 점프는 11.5). 11.4 base 2a97ff33… 는 롤백 짝.
+#   hotfix v6: corpus-policy blob ff6b892 미수정, dist 분류기 사본 3→4 (config/sessions corpus-policy 청크 신설).
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:fb0f19c9a2573cde08d944b950be32cfae416c145d28430fda10aae74d26739e
 FROM ${OPENCLAW_BASE}
 
 USER root

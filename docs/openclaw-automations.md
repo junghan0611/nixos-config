@@ -75,16 +75,18 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 
 ## 봇별 현황
 
+> **11.7(2026-11-23)부터 heartbeat 설정은 퇴역했다.** 기동 Doctor가 `agents.defaults.heartbeat`·`agents.entries.{gemini,bbot}.heartbeat`를 지우고, retained monitor 두 행(`heartbeat-bbot` `af194c38`, `heartbeat-gemini` `f189f4ac`)을 같은 id의 **disabled agentTurn job**으로 옮겼다(declarationKey 없음, 새 활성 job 0). 아래 `{every:"0m"}`·system-owned·scratch 비주입 서술은 **11.4까지의 기록**이다. 11.7 cron 목록 readback(2026-11-23, `cron list --all`): total 6 — enabled `bbot-memento-autopilot`·`morning-family-schedule-reminder`, disabled `morning-family-schedule-reminder-wife`·`daily_real_estate_auction_study_brief_miir`·`heartbeat-bbot`·`heartbeat-gemini`. 깨움 표준은 [openclaw-wake.md](openclaw-wake.md).
+
 | 봇 | 모델 | heartbeat | 소유 cron | 사람 없이 도는가 |
 |---|---|---|---|---|
 | **main** (default) | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** (typing 기본값 복귀 2026-10-03) |
 | **glg** (힣, 가족봇) | `anthropic/claude-sonnet-5-5` (2026-11-14; 이전 sonnet-5) | **없음** | 가족 알림 3건 (1 enabled, 2 disabled) | 예 — 아침 알림 |
 | **gpt** | `openai/gpt-6.1-sol` | **없음** | 없음 | **아니오** |
-| **gemini** | 보존 `openai/gpt-6.1-sol` (2026-11-16; 이전 `zai/glm-5.3`) — 운영 정지 | **꺼짐** (`{every:"0m"}` 명시, 2026-10-25 — 그전엔 엔트리 없음) | 없음 | **아니오** |
+| **gemini** | 보존 `openai/gpt-6.1-sol` (2026-11-16; 이전 `zai/glm-5.3`) — 운영 정지 | **꺼짐** (11.7: disabled job `f189f4ac`; 11.4까지 `{every:"0m"}` 명시) | 없음 | **아니오** |
 | **mini** | `anthropic/claude-sonnet-5-5` (2026-11-14; 이전 sonnet-5) | **없음** | 없음 (disabled 1건) | **아니오** |
-| **bbot** (B) | `anthropic/claude-fable-5-2` | **꺼짐** (`{every:"0m"}`) | `bbot-memento-autopilot` 6h (02:30·08:30·14:30·20:30 KST, 2026-11-15부터) | 예 — fresh memento loop |
+| **bbot** (B) | `anthropic/claude-fable-5-2` | **꺼짐** (11.7: disabled job `af194c38`; 11.4까지 `{every:"0m"}`) | `bbot-memento-autopilot` 6h (02:30·08:30·14:30·20:30 KST, 2026-11-15부터) | 예 — fresh memento loop |
 
-`agents.defaults.heartbeat = {every:"1h"}`는 남아 있다. bbot은 반드시 엔트리에
+(11.4까지의 기록) `agents.defaults.heartbeat = {every:"1h"}`는 남아 있었다. bbot은 반드시 엔트리에
 `{"every":"0m"}`를 **명시**해 상속을 막는다. 이를 `unset`하면 defaults cadence가 다시 물려
 **6봇 전원**의 활성 heartbeat monitor가 재생성된다(2026-09-10 07:29에는 bbot 1건만 재현;
 6봇 팬아웃은 `resolveHeartbeatAgents` 분기 판독). 라이브 cron 목록의 heartbeat 행은 bbot(`everyMs:3600000`)·gemini(`everyMs:1800000`)의 **retained disabled row 둘**이고 enabled heartbeat 행은 0이다(2026-10-26 · 10.7 `cron list --all` 실측, total 7). retained row는 활성 monitor가 아니다.
@@ -100,7 +102,7 @@ GLG 원칙은 **모르게 호출하지 않는다: 목적·발동 조건·선택 
 - `task_runs`에 `automation_run` 행 1개 — `tasks list`를 도배
 
 `agent:<id>:main` 세션이 있는 봇만 heartbeat가 실턴이 된다. 그 세션을 가진 건 bbot뿐이다.
-되돌리려면: `openclaw config set agents.entries.main.heartbeat '{"every":"1h"}'`
+(11.4까지) 되돌리려면: `openclaw config set agents.entries.main.heartbeat '{"every":"1h"}'` — **11.7에서는 이 키가 거부된다.** 깨움은 automation job으로 만든다([openclaw-wake.md](openclaw-wake.md)).
 
 **이건 고장이 아니라 GLG의 의도다** (확인 2026-09-02). 네 봇은 **검수 목적으로 일부러 꺼둔 상태**이고
 검수가 끝나면 다시 켠다. bbot의 사람에게 닿는 루프는 이제 heartbeat가 아니라 아래의 isolated memento cron이다.
@@ -129,8 +131,8 @@ GLG 결정: autopilot은 누적 main heartbeat가 아니라 **매 비트 fresh i
 
 깨움 계약은 B 소유 `workspace-bbot/scripts/heartbeat-wake-message.md`에서 job `message`로 **스냅샷**된다.
 B 파일을 고친 뒤에는 설정 담당자가 그 내용을 `cron edit <job-id> --message ...`로 재동기화한다.
-일반 cron scratch는 저장만 될 뿐 agentTurn prompt에는 주입되지 않고, heartbeat scratch만
-`heartbeat-runner-prompt`가 읽는다. B 파일은 B만 고친다. 현재 job은 operator-created
+(11.4까지) 일반 cron scratch는 저장만 될 뿐 agentTurn prompt에는 주입되지 않고, heartbeat scratch만
+`heartbeat-runner-prompt`가 읽었다. **11.7에서는 job scratch가 run 맥락에 주입된다**(`/app/docs/automation/cron-jobs/payloads.md:325-328`). B 파일은 B만 고친다. 현재 job은 operator-created
 `toolsAllow:["*"]` / `scheduledToolPolicy:"trusted"`다. 이는 cron의 전체-tool 기본을 명시한 것이며,
 GLG 결정(2026-09-10): 주기 memento(당시 3시간, 2026-11-15부터 6시간)라는 **깨움 면만** 운영자가 소유하고, 벽돌을 포함한 실행 규칙은
 B와 GLG가 고친다 — 여기서 강제·축소하지 않는다.
@@ -147,8 +149,8 @@ openclaw cron enable e94ed49d-847e-4c1e-b127-c914171d5c5b
 
 2026-11-15 07:47 KST(GLG 직접 승인, B 합의): `every 3h`(anchor 09-10 07:26:52) → cron `30 2,8,14,20 * * *` Asia/Seoul `--exact`. 박자 사이 6시간은 GLG가 남기는 시간이고 박자는 그것을 읽는다. 02:30이 전날 day-close를 이어받는다(B `day-close`는 시각이 아니라 날짜로 판단). 마지막 3h 비트 07:27:02, 첫 6h 비트 08:30. 바뀐 경로는 schedule·description뿐(payload·delivery·model pre/post 동일, 영수증 `~/openclaw/backups/swap-10.9-cc322-20261113/cron-memento.{pre,post}-6h-20261115.json`).
 
-`agents.entries.bbot.heartbeat`는 `{ "every": "0m" }`를 유지한다 — `unset`은
-`agents.defaults.heartbeat`를 다시 상속해 6봇의 main-session heartbeat를 되살린다.
+(11.4까지) `agents.entries.bbot.heartbeat`는 `{ "every": "0m" }`를 유지했다 — `unset`은
+`agents.defaults.heartbeat`를 다시 상속해 6봇의 main-session heartbeat를 되살렸다. 11.7에서 이 키는 퇴역했다.
 
 **gateway restart 는 이 상태를 흔들지 않는다**(2026-09-10 실측, skill §4의 "등록이 바뀌는 변경까지
 hot reload 가 덮는지 미확인" 중 restart 쪽을 닫는다). restart·recreate 전후로 cron 12건/활성 2건,
@@ -172,8 +174,8 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 | `morning-family-schedule-reminder-wife` | glg | GLG 지시로 정지 (2026-09-01). model은 sonnet-5-5로 고쳐둠(2026-11-14) — 켜면 바로 돈다 |
 | `daily_real_estate_auction_study_brief_miir` | glg | 이전부터 off. ⚠️ **model 미지정** — 켜기 전에 model을 박아야 한다 |
 | `SK브로드밴드 인터넷 이사 신청 리마인더` | glg | 2026-09-07 one-shot이 disabled로 보존됨. **model 미지정** |
-| `heartbeat-bbot` | bbot | system-owned retained disabled row (`everyMs:3600000`); bbot `{every:"0m"}`의 정상 투영. 편집/삭제 금지 |
-| `heartbeat-gemini` | gemini | system-owned retained disabled row (`everyMs:1800000`); gemini `{every:"0m"}`(2026-10-25)의 투영. 편집/삭제 금지 |
+| `heartbeat-bbot` | bbot | 11.7: Doctor가 옮긴 disabled agentTurn job `af194c38`(`everyMs:3600000`). 11.4까지는 system-owned retained row. **삭제는 영구 선택**(provision receipt) — 재사용 여부는 [openclaw-wake.md](openclaw-wake.md)에서 정한다 |
+| `heartbeat-gemini` | gemini | 11.7: Doctor가 옮긴 disabled agentTurn job `f189f4ac`(`everyMs:1800000`), `workspace-gemini/HEARTBEAT.md`가 scratch로 들어감. 11.4까지는 system-owned retained row |
 | ~~`skill-collection-review-{main,glg,gpt,gemini,mini,bbot}`~~ | 6봇 각 1개 | 8.1이 심은 자율 스킬 검토 자동화. 2026-09-13 turnwatch 실측 때는 6개 모두 disabled. **10.7 라이브 목록에는 없다**(disabled가 아니라 부재 — 2026-10-26 `cron list --all` total 7). Workshop mode가 `off`로 이관된 뒤의 상태이며, 이 job은 `auto`일 때만 활성이다([reference-map](openclaw-reference-map.md) `skillCollectionReview`) |
 
 ---
@@ -218,8 +220,8 @@ memento `nextRunAtMs`·`anchorMs`, `heartbeat-bbot` disabled, `{every:"0m"}` 가
 docker exec openclaw-gateway openclaw cron edit <job-id> --model anthropic/claude-sonnet-5-5
 ```
 
-⚠️ heartbeat 잡은 system-owned라 `cron disable`이 거부된다
-(`system-owned monitor jobs cannot be edited by cron clients`). config에서 빼야 한다.
+⚠️ (11.4까지) heartbeat 잡은 system-owned라 `cron disable`이 거부됐다
+(`system-owned monitor jobs cannot be edited by cron clients`). 11.7에서 이관된 job은 일반 automation job이다.
 
 ---
 

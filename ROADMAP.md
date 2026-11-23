@@ -226,6 +226,20 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.11.7 (2026-11-23) — 메이저 컷오버, heartbeat 퇴역
+
+GLG 직접 지시로 실무 코디 Claude Code Opus `20261123T183855-3783fb`가 실무팀을 꾸렸다: W1 Terra `20261123T184603-22551d`(소스 판독), W2 Opus `20261123T184507-93321c`(교차 검수). 운영 코디 `20261008T152203-145c2f`는 범위·결정만 맡았다. Sonnet 형제는 서비스 장애로 GLG가 닫고 Terra로 대신했다. GLG 결정: entwurf 책상 호환은 이번 통과 조건이 아니다(차후 entwurf 검수 몫), 다른 운영 기능과 복구 기준은 그대로.
+
+- 대상: `v2026.11.7` = `e31bbf05`, arm64 base `fb0f19c9…`(label revision 일치). 계보는 11.4→11.5 한 곳에서만 갈라진다(ahead 11811 / behind 1779). 11.5→11.6→11.7은 선형이고 선언 스키마 점프(state 22→36 / agent 27→38)도 전부 11.5다. preflight는 diverged FAIL이었다.
+- GATE-1: hotfix 대상 corpus-policy blob `ff6b892`는 그대로였고, 11.7 dist에서 분류기 사본이 **3→4**로 늘었다(`config/sessions/transcript-session-transcript-corpus-policy-*.mjs` 신설). 미패치 base는 `--baseline` GREEN, default RED였다. **v6** 4사본을 이식했다. main 청크가 함수를 export하지 않게 바뀌어 테스트는 main을 located block + 렉시컬 스코프 증명으로, policy 청크를 실제 export로 실행한다. 1글자 바인딩은 식별자 경계로 찾는다(W2: 거짓 GREEN 방향의 약화 아님). 빌드 안에서 12 assertions × 4 GREEN이었고 candidate는 `9ead8629…`다.
+- **config 계약 변화**: 격리 validate가 `agents.defaults`·`entries.gemini`·`entries.bbot`의 `heartbeat`를 Unrecognized key로 거부했다. 11.7에서 heartbeat는 퇴역했고 정기 깨움은 automation job이다. 소스 판독(W1·코디 독립 일치, W2 반례 없음): 명시 heartbeat 에이전트만 대상이고 `0m`은 disabled로 옮겨지며 새로 활성화되는 job은 0이다(`doctor-heartbeat-legacy.ts:97-120`, `doctor-heartbeat-cadence-migration.ts:185-201`, `doctor-heartbeat-monitors.ts:66-75`).
+- 정리: GLG 승인으로 `/home`에서 4.68GB를 회수했다(npm 캐시·도구 캐시·copilot·uv prune·`rv-s54-amend`).
+- 컷오버: 19:00:51 idle gate ready → 19:00:56 stop -t 60(exit 0) → **cold C**(`/var/tmp/openclaw-cold-11.7/cold-c-state22-agent27.tar.zst` 1,272,479,182B, sha `aec94b91…`, config+auth-profile-secrets 50,611 엔트리, 141초; W2 블로커 반영으로 auth-profile-secrets 포함) → 19:03:31 restart:no override로 recreate → Doctor → **RPC ok 19:09:19(+340s)**, 정지부터 다운타임 8분 23초. ELOOP 0, RestartCount 0, #195208 경합 없음. Doctor 보고 state 36/36, agent 7개 38/38, pending 0.
+- 판정: cron 단언 PASS(enabled 집합 불변, monitor 2개 heartbeat→agentTurn disabled, 새 job 0). verify 1차는 telegram 4/5·eventLoop degraded였는데 기동 직후 측정이라 그랬다. 2차는 **PASS 43 / FAIL 2 / UNKNOWN 1**이고 모두 설명된다: deliveryQueues는 11.4 교체 전과 동일한 기존 2행, config heartbeat 검사는 키 퇴역, 바뀐 config 경로는 heartbeat 3 + Doctor bookkeeping 3. 19:19:42 `docker update --restart unless-stopped`(recreate 없음).
+- Doctor 산출물: `.pre-startup-migration` bak 9개 + `doctor-cron` bak 1개 = 1.50GB(/home)이고 soak 뒤 승인 정리 대상이다. `workspace-gemini/HEARTBEAT.md`는 job scratch로 이관됐다. `agents/claude` 디렉터리가 entries 밖이라는 알림이 있었다. compose config-hash는 plain과 다르다(함정 ④ 재현).
+- 같은 날 GLG가 깨움 표준 방향을 정했다(#13, #10 흡수): 모든 봇을 하나의 규칙으로 깨운다, 모든 봇에 책상, memento/이어 가기는 역할·비용으로, 닷(glgdot)에게 집, OpenClaw로 최대한 커스텀. 정본 초안은 [docs/openclaw-wake.md](docs/openclaw-wake.md)다.
+- 남은 것: 첫 자연 memento 20:30 관측, verify heartbeat 계약 갱신, bak 정리와 cold C 보존 기간 결정, GPT 회사 계정 재인증 → [NEXT.md](NEXT.md) §OpenClaw 11.7.
+
 ### 2026.11.4 (2026-11-16, GREEN) — 마이너 교체
 
 GLG 직접 지시("지금 시작하자. 단, acpx는 안쓴다"), 운영 코디(145c2f)에 통지 후 openclaw-update 스킬 순서대로 진행. preflight MINOR(state22/agent27 동일, ahead 220). hotfix v5는 상류 blob `ff6b892` 미수정이라 재이식 — 같은 세 사본, 청크 이름만 바뀜, helper 바이트 동일. idle gate ready → recreate 17:58:32 → RPC health ok 18:08:21(9분 45초), RestartCount 0, ELOOP 0, startup 경합 없음. verify PASS 43 / FAIL 1(10-27 session 실패 행, 11.3과 동일) / UNKNOWN 0, config 변경 경로 0. entwurf 책상 pinnedAt 유지. acpx는 재설치하지 않았다(2026.11.3 disabled 그대로). 롤백 이미지 `11.3-candidate-20261113`(같은 스키마). 11.4에 memory rebuild 수정(#196378)이 들어와 memory 동결 판단의 선택지 A 조건이 풀렸다(재구축 자체는 별도 승인).

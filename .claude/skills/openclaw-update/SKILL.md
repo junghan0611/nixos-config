@@ -61,12 +61,13 @@ python3 -I {baseDir}/scripts/preflight.py <대상버전>      # 예: 2026.10.3 �
    - 이식은 **새 이미지 dist에서** 다시 잰다(`docker run --rm --network none --entrypoint sh <base> -c …`):
      chunk 이름, 원본 sha, helper sha, import 줄 개수. 결과 sha는 변환을 적용해 계산한다.
    - 미패치 base에서 테스트를 두 번 돌린다. `--baseline`(characterization)은 **GREEN**, 기본 모드는 **RED**여야 한다.
-     패치 후 빌드 안에서 기본 모드 **GREEN**(현재 v5: 12 behavior 단언 × 3 사본).
+     패치 후 빌드 안에서 기본 모드 **GREEN**(현재 v6: 12 behavior 단언 × 4 사본).
    - npm tarball dist는 Docker dist와 chunk 이름이 달라 **대용할 수 없다**.
-   - 11.3부터 patch는 **v5 TARGETS**(사본별 경로·원본·결과·helper sha)다. verify는 patch 스크립트를 실행하지 않고 AST로 읽어, TARGETS sha·helper sha와 live dist의 분류기 사본 집합 일치를 요구한다. v4 형식은 10.9 롤백용으로 계속 읽는다.
+   - 사본 수는 버전마다 바뀔 수 있다(11.3·11.4 = 3, **11.7 = 4**: `config/sessions/` corpus-policy 청크 신설). 사본을 dist 전체에서 다시 세고, main 청크가 함수를 export하지 않으면 located block + 렉시컬 스코프 증명으로 실행한다(11.7).
+   - 11.3부터 patch는 **v5 TARGETS**(사본별 경로·원본·결과·helper sha)이고 11.7 v6도 같은 형식이다. verify는 patch 스크립트를 실행하지 않고 AST로 읽어, TARGETS sha·helper sha와 live dist의 분류기 사본 집합 일치를 요구한다. v4 형식은 10.9 롤백용으로 계속 읽는다.
 5. **빌드** — config가 컨텍스트에 들어가지 않게, 최소 컨텍스트(임시 디렉터리에 Dockerfile·patch·test·`summarize-bot.sh` + `.dockerignore`; Dockerfile의 COPY 대상 전부 포함)에서 빌드한다:
    `docker build -t openclaw-custom:<ver>-candidate-<date> .`
-   로그에서 `claude --version`, `…applied/verified`, `behavior assertions passed`(현재 v5: 12개 × 3 사본)를 확인한다.
+   로그에서 `claude --version`, `…applied/verified`, `behavior assertions passed`(현재 v6: 12개 × 4 사본)를 확인한다.
 6. **config 격리 파싱** — 바꾸지 않고 읽기만 한다:
    ```bash
    docker run --rm --network none -e OPENROUTER_API_KEY=dummy \
@@ -161,7 +162,9 @@ FAIL/UNKNOWN, 릴리즈 노트의 계약 변화, §1-7 중단 기준, 함정표�
 > - 설치 디렉터리가 사라지면 doctor가 `failed post-core payload smoke check (missing-package-dir)`로 알린다(11-15 관측). 그 경고는 같은 명령으로 다시 설치하라는 뜻이다.
 > - `--link` 플러그인(entwurf)은 이 대상이 아니다. 그쪽 버전은 entwurf checkout이 정한다.
 
-## 1-M. 메이저 — 실측 선례 10.9→11.3 (2026-11-13)
+## 1-M. 메이저 — 실측 선례 10.9→11.3 (2026-11-13), 11.4→11.7 (2026-11-23)
+
+> **11.7 선례 요약** (ROADMAP 11.7 절): 계보가 갈라지는 지점과 스키마 점프 위치(11.5)를 compare·`package.json`으로 먼저 잰다. 격리 validate가 config 계약 변화를 잡는다(heartbeat 퇴역 → Doctor 이관, 함정은 gotchas 11.7 절). cold C 범위는 bind mount 전체를 대조해 정한다(`config` + `auth-profile-secrets`). 롤백 복원은 루트 컨테이너 tar로 해야 gid가 보존된다. 리허설 없이 Doctor는 340초였다. 첫 verify의 telegram·eventLoop FAIL은 기동 직후 측정 탓이라 재측정한다.
 
 preflight exit 3·diverged는 위 "묻는 것은 셋뿐" 규칙 밖이다. 게이트마다 GLG 승인을 받는다. 11.3에서 밟은 순서:
 
