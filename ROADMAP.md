@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-11-25 — Cyborg 메인 작업 환경 이관
+
+- Cyborg를 설치하고 SSD 부팅을 확인한 뒤, 기존 노트북에서 데이터와 작업 환경을 이관했다. USB 복원 중 연결 끊김과 I/O 오류가 발생한 아카이브는 LAN으로 다시 보내 체크섬을 대조했다.
+- 사용자 TTF 16개를 옮겨 `fc-match`로 확인했다. GPG 비밀 키는 표준 입력 파이프 대신 새 기기의 대화형 터미널에서 가져와 `pass` 복호화를 확인했다. 세션 전송 검증과 기존 매니페스트의 누락 포인터는 별개로 남겼다.
+- 이번 사례를 바탕으로 [새 PC 이관 가이드](docs/new-pc-migration.md)를 만들었다. 다음 기기에서는 그때의 장치와 도구를 다시 확인하고, 바뀐 절차는 가이드에 반영하되 이번 기록은 이력으로 남긴다.
+
 ## 2026-11-14 — claude-cli 봇 모델 정리(Sonnet 5 → 5.5)와 현재값 SSOT 단일화
 
 - 컷오버 이튿날 검수를 하다가 glg와 mini가 `claude-sonnet-5`, 즉 Sonnet 5로 서빙되고 있다는 것을 확인했다(jsonl `message.model`, 11.3 alias 표). GLG가 claude-cli 유효본을 sonnet 5.5, opus 5.5, fable 5.2로 한정하는 정책을 정했고, W3가 `config patch` 1회(24경로)와 hot reload 1회로 정리했다. pre-models 사본은 비공개 `~/openclaw/backups/models-cleanup-20261114/`에 있다. 격리 probe 3회(glg와 mini는 sonnet-5-5, main은 opus-5-5) 모두 claude-cli였고 모델이 일치했으며 fallbackUsed=false였다. #195265 증상은 나타나지 않았다.
