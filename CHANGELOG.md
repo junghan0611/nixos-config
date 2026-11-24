@@ -9,6 +9,12 @@
 
 ## Unreleased
 
+### OpenClaw 11.8 관측·뒷정리
+
+- 11.8 첫 자연 메멘토(11-25 02:30)를 관측했다: ok·delivered, 386초, claude-cli fable-5-2, fallback 없음, RestartCount 1 유지, 이관 disabled job 미발화.
+- 뒷정리(GLG 집합 승인): 11.7 롤백 이미지 `9ead8629…`와 base `cded4be5…`, `/tmp/oc-1108`(354,704,822B), live와 같은 pre-swap config 사본. `/` +425MB(지운 레이어를 BuildKit 캐시가 붙잡음, prune은 하지 않음). 11.8의 롤백 이미지는 없다 — 같은 스키마라 11.7은 Dockerfile 이력 digest로 재빌드할 수 있다.
+- BuildKit 캐시 전체(113 레코드, 2.517GB)를 GLG 승인으로 회수했다. 지운 이미지 레이어까지 풀려 `/` +3.17GB(68%, 32.03G free).
+
 ## v2026.11.24 — OpenClaw 11.8 마이너 교체
 
 ### OpenClaw 2026.11.8 마이너 교체

@@ -226,6 +226,15 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.11.8 (2026-11-24, GREEN) — 마이너 교체
+
+GLG 직접 요청("응 바로 가자 오푸스 옆에 있다 진행 맡겨")을 운영 코디 `20261008T152203-145c2f`가 전했고, 실무 코디 Claude Code Opus `20261123T183855-3783fb`가 단독 writer로 openclaw-update 스킬 마이너 순서대로 진행했다. preflight MINOR(state36/agent38 동일, ahead 314 / behind 0, arm64 `3d081c5d…` label revision 일치). 이미지 package.json도 36/38이고 config schema는 11.7과 바이트 동일했다(경로 7,352). 같은 config의 격리 validate 경고 집합도 11.7 이미지와 같았다. 릴리즈 노트에서 config·auth·plugin 계약 변화는 찾지 못했다.
+
+- hotfix v6 (11.8): corpus-policy blob `ff6b892`와 helper 청크 3개는 바이트까지 같다. 분류기 사본 4개의 바이트와 파일명 3개만 바뀌었다. 미패치 base는 baseline GREEN / default RED였고, 빌드 안에서 12 × 4 GREEN이었다. candidate는 `697e7bbe…`다.
+- 교체: 21:46 idle gate ready → SKILL §1-7 plain compose recreate 21:46:55 → tini ELOOP 1회 자동 회복 → RPC ok 21:52:46(+348s), RestartCount 1. 라벨의 compose 파일은 plain 하나가 됐지만 config-hash `39799277…`는 `config --hash` `361991b7…`와 여전히 달랐다(함정 ④, 원인 미확인).
+- 판정: verify PASS 44 / FAIL 2 / UNKNOWN 0. FAIL 2개는 11.7과 같은 기존 항목이고, Doctor config 변경은 0이었다. 누락 전사 경고는 11.3 영수증과 같은 대상이었다. 책상·enabled cron·플러그인은 교체 전후 같았다. 첫 자연 메멘토는 11-25 02:30 ok·delivered(386초, claude-cli, fallback 없음)였다.
+- 뒷정리(GLG 집합 승인): 11.7 이미지·base, `/tmp/oc-1108`, live와 같은 pre-swap 사본을 지웠다. `/`는 +425MB에 그쳤는데, 지운 레이어를 BuildKit 캐시가 붙잡았기 때문이다. 11-25 GLG 승인으로 BuildKit 캐시 전체(2.517GB)를 회수하자 `/` +3.17GB가 됐다. **롤백 이미지는 없다** — 11.7이 필요하면 Dockerfile 이력 digest로 재빌드한다. 영수증은 비공개 `~/openclaw/backups/swap-11.8-20261124/`.
+
 ### 2026.11.7 (2026-11-23) — 메이저 컷오버, heartbeat 퇴역
 
 GLG 직접 지시로 실무 코디 Claude Code Opus `20261123T183855-3783fb`가 실무팀을 꾸렸다: W1 Terra `20261123T184603-22551d`(소스 판독), W2 Opus `20261123T184507-93321c`(교차 검수). 운영 코디 `20261008T152203-145c2f`는 범위·결정만 맡았다. Sonnet 형제는 서비스 장애로 GLG가 닫고 Terra로 대신했다. GLG 결정: entwurf 책상 호환은 이번 통과 조건이 아니다(차후 entwurf 검수 몫), 다른 운영 기능과 복구 기준은 그대로.

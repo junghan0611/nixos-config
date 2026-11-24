@@ -48,8 +48,9 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 경과: 운영 코디 `20261008T152203-145c2f` 지시, 실무 코디 `20261123T183855-3783fb` 실행. 11.7 `e31bbf0` → 11.8 `2d4ab29`(state 36 / agent 38 불변, config schema 바이트 동일). hotfix v6 (11.8)은 사본 4개 재이식. suspend.prepare ready 21:46 → plain compose recreate 21:46:55 → RPC ok 21:52:46(+348s), tini ELOOP 1회 자동 회복(RC=1). verify PASS 44 / FAIL 2 / UNKNOWN 0 — FAIL 2개는 11.7과 같은 기존 항목, Doctor config 변경 0. 영수증은 비공개 `~/openclaw/backups/swap-11.8-20261124/`. [v2026.11.24](CHANGELOG.md)로 태그했다. `~/openclaw`(openclaw-config) 빌드 입력 커밋도 같은 날 했다.
 
-- [ ] **첫 자연 메멘토 bbot 02:30 KST (11-25)**: ok·delivered, `provider=claude-cli`, fallback 없음, RestartCount 1 유지, 이관 disabled job 미발화. 그 뒤 모닝 cron 08:00.
-- [ ] **11.8 뒷정리(SKILL §1-10)**: 관측 뒤 인벤토리 — 11.7 이미지·base(같은 스키마 롤백 짝, 복구 능력 상실 선택지), `/tmp/oc-1108`(dist 사본 400M·빌드 컨텍스트), 영수증 안 schema·validate 사본. GLG 집합 승인 뒤. 마감 때 ROADMAP 이력과 CHANGELOG에 회수량·남긴 복구 자산을 적는다.
+- [x] **첫 자연 메멘토 (11.8)**: 11-25 02:30:01 발화, ok·delivered, 386,268ms, `cli live session start: provider=claude-cli model=claude-fable-5-2`, fallback 없음, RestartCount 1 유지, 이관 disabled job 미발화.
+- [x] **11.8 뒷정리(GLG 집합 승인 11-24)**: 11.7 이미지 `9ead8629…`·base `cded4be5…`, `/tmp/oc-1108`(354,704,822B), live와 같은 `openclaw.json.pre-swap`. `/` +425MB — 지운 레이어를 BuildKit 캐시가 붙잡아 df 이득이 작다(Build Cache 2.52GB, reclaimable 1.26GB; prune은 미승인). 영수증 `cleanup-20261125.txt`. **11.8 롤백 이미지 없음.**
+- [x] **BuildKit 캐시 회수**: GLG 승인 11-25, `docker builder prune --all` 113 레코드 2.517GB → `/` +3,172,663,296B(지운 이미지 레이어 포함, 28.86G→32.03G free). 다음 빌드는 캐시 없이 처음부터.
 
 ## OpenClaw 11.7 (11-23 메이저 컷오버) 관측·갈무리
 
