@@ -26,7 +26,20 @@
   services.pipewire = { enable = true; alsa.enable = true; alsa.support32Bit = true; pulse.enable = true; };
   services.pulseaudio.enable = false;
   services.libinput = { enable = true; touchpad.tapping = true; touchpad.naturalScrolling = true; };
+  # Keep the Intel iGPU as the primary renderer; offload selected apps to Ada.
+  hardware.nvidia = {
+    open = true;
+    modesetting.enable = true;
+    prime = {
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
+      offload.enable = true;
+      offload.enableOffloadCmd = true;
+    };
+  };
   services.xserver = {
+    # PRIME supplies the Intel modesetting device; do not claim NVIDIA with it.
+    videoDrivers = [ "nvidia" ];
     autoRepeatDelay = 500;
     autoRepeatInterval = 30;
   };
@@ -34,8 +47,8 @@
   services.autorandr.enable = true;
   services.fwupd.enable = true;
   programs.java = { enable = true; package = pkgs.jdk17; };
-  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux ];
-  # NVIDIA PRIME and Ollama acceleration require measured PCI IDs and validation.
+  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv ];
+  # Ollama stays on-demand; verify GPU acceleration after the driver boots.
   services.ollama = { enable = true; host = "127.0.0.1"; environmentVariables.OLLAMA_KEEP_ALIVE = "10m"; };
   systemd.services.ollama.wantedBy = lib.mkForce [];
 }
