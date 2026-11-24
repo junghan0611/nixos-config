@@ -2,7 +2,7 @@
 { config, lib, modulesPath, ... }:
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
-  boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "usb_storage" "uas" "sd_mod" ];
+  boot.initrd.availableKernelModules = [ "vmd" "nvme" "xhci_pci" "usb_storage" "uas" "sd_mod" ];
   boot.kernelModules = [ "kvm-intel" ];
   fileSystems."/" = { device = "/dev/disk/by-label/cyborg-root"; fsType = "ext4"; };
   fileSystems."/boot" = { device = "/dev/disk/by-label/CYBORG-BOOT"; fsType = "vfat"; };

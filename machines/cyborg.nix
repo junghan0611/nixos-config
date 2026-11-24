@@ -34,7 +34,7 @@
   services.autorandr.enable = true;
   services.fwupd.enable = true;
   programs.java = { enable = true; package = pkgs.jdk17; };
-  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv ];
+  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux ];
   # NVIDIA PRIME and Ollama acceleration require measured PCI IDs and validation.
   services.ollama = { enable = true; host = "127.0.0.1"; environmentVariables.OLLAMA_KEEP_ALIVE = "10m"; };
   systemd.services.ollama.wantedBy = lib.mkForce [];
