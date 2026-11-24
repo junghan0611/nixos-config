@@ -9,10 +9,25 @@
 
 ## Unreleased
 
+## v2026.11.24 — OpenClaw 11.8 마이너 교체
+
+### OpenClaw 2026.11.8 마이너 교체
+
+- OpenClaw 2026.11.7 → **2026.11.8**(`2d4ab29`) 마이너 교체(11-24 21:46 idle gate·recreate, 21:52 RPC ok, +348초). state 36 / agent DB 38 불변, config schema는 11.7과 바이트 동일, 같은 config의 격리 validate 경고 집합도 동일. 릴리즈 노트에 config·auth·plugin 계약 변화 없음.
+- hotfix **v6 (11.8)** 재이식: corpus-policy 소스 blob `ff6b892`와 helper 청크 3개는 11.7과 같고, 분류기 사본 4개의 바이트·파일명만 바뀌었다. 미패치 base에서 baseline GREEN / default RED, 빌드 안에서 12 assertions × 4 GREEN, 멱등. 공개 미러 `docker/openclaw/` 3종 동기화.
+- 교체는 SKILL §1-7 마이너 명령(plain compose, `unless-stopped`)으로 했다. tini ELOOP 1회는 자동 회복(RestartCount 1). 라벨의 compose 파일은 plain 하나가 됐지만 config-hash는 여전히 `config --hash`와 달라 plain `up`·rebuild 금지는 유지한다(함정 ④).
+- verify PASS 44 / FAIL 2 / UNKNOWN 0. FAIL 2개는 11.7과 같은 기존 항목(deliveryQueues 기존 2행, 퇴역한 heartbeat 키 검사)이고, Doctor는 config를 바꾸지 않았다. 책상 `agent:main:entwurf`·enabled cron 2개·플러그인 79개는 교체 전과 같다.
+- 같은 스키마 롤백 수단은 11.7 이미지 `openclaw-custom:11.7-candidate-20261123`와 base `fb0f19c9…`. 첫 자연 메멘토(11-25 02:30)와 뒷정리는 NEXT에 남겼다.
+- 실무 코디 Claude Code Opus가 운영 코디의 지시로 단독 writer로 진행했다.
+
 ### OpenClaw 11.7 뒷정리
 
-- 11.7 첫 bbot memento(11-23 20:30)를 관측했다: ok·delivered, claude-cli fable-5-2, fallback 없음, 이관 disabled job 미발화, verify FAIL/UNKNOWN 컷오버 직후와 동일. 첫 요청 cache-write 74,350→22,344 토큰. B의 관측(isolated 깨움에 `MEMORY.md` 미주입, `USER.md` 4,000자 상한)을 깨움 초안에 반영했다 — memento 봇의 standing order는 `AGENTS.md`에 둔다.
+- 11.7 첫 bbot memento(11-23 20:30)를 관측했다: ok·delivered, claude-cli fable-5-2, fallback 없음, 이관 disabled job 미발화, verify FAIL/UNKNOWN 컷오버 직후와 동일. 11-24 08:00 모닝 cron도 ok·delivered. 첫 요청 cache-write 74,350→22,344 토큰. B의 관측(isolated 깨움에 `MEMORY.md` 미주입, `USER.md` 4,000자 상한)을 깨움 초안에 반영했다 — memento 봇의 standing order는 `AGENTS.md`에 둔다.
 - 뒷정리(GLG 승인, 정확한 집합): Doctor 마이그레이션 bak 10개(1,499,340,800B), `/tmp`의 11.3 산출물·11.7 검토 추출본·빌드 자료, entwurf sdk13/14 백업 6항목(799,968,375B), **cold C**(1,272,479,182B — "돌아갈 일 없어"), 11.4 이미지 `openclaw-custom:11.4-candidate-20261116`와 base(`2a97ff33…`). 이 컷오버의 11.4 복귀 수단은 없다. `/home` +2.27GB, `/` +6.02GB. gateway health ok, RestartCount 0.
+
+### Cyborg
+
+- 설치 대상 initrd에 VMD를 넣고, gerbv 뷰어를 추가했다(오프라인 설치 밖에서 따로 설치).
 
 ## v2026.11.23 — OpenClaw 11.7 메이저 컷오버와 깨움 표준 초안
 
