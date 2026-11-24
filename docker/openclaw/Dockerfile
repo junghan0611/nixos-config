@@ -221,7 +221,9 @@
 # corpus-policy blob ff6b892 unchanged). 11.3 rollback image + base retired 2026-11-16 (GLG); same-schema rollback = rebuild from adc5f5e9.
 # 11.4 → 11.7 (2026-11-23): 메이저(state 22→36 / agent 27→38, 스키마 점프는 11.5). 11.4 base 2a97ff33… 는 롤백 짝.
 #   hotfix v6: corpus-policy blob ff6b892 미수정, dist 분류기 사본 3→4 (config/sessions corpus-policy 청크 신설).
-ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:fb0f19c9a2573cde08d944b950be32cfae416c145d28430fda10aae74d26739e
+# 2026.11.8 (2d4ab29): minor, state36 / agent38 unchanged; arm64 digest 3d081c5d, hotfix v6 re-ported (same 4 copies,
+# corpus-policy blob ff6b892 and the three helper chunks byte-identical). Same-schema rollback image: openclaw-custom:11.7-candidate-20261123.
+ARG OPENCLAW_BASE=ghcr.io/openclaw/openclaw@sha256:3d081c5db1445fcd10b5e0826834511b1f75e974fa1c2a78a94cb81898bc9f23
 FROM ${OPENCLAW_BASE}
 
 USER root
@@ -299,7 +301,7 @@ RUN npm install -g --allow-scripts=@anthropic-ai/claude-code \
  && node /usr/local/lib/node_modules/@anthropic-ai/claude-code/install.cjs \
  && claude --version
 
-# 11.3-only memory admission hotfix (v5 port: main chunk + sqlite-store worker + worker chunk; upstream cycle propagation retained); guards fail closed.
+# Version-pinned memory admission hotfix (v6 since 11.7: main chunk + sqlite-store worker + worker chunk + corpus-policy chunk; upstream cycle propagation retained); guards fail closed.
 # Cron parents must be classified before the corpus is counted as eligible.
 # Host receipts stay private; these public image scripts must be readable by USER node.
 COPY --chmod=644 patch-memory-cron-parent.py test-memory-cron-parent.mjs /usr/local/lib/openclaw-hotfix/

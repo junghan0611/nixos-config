@@ -1,4 +1,4 @@
-// Actual 11.7 emitted classifier copies (main chunk + two worker bundles + standalone corpus-policy chunk), including upstream cycle propagation.
+// Actual 11.8 (same as 11.7) emitted classifier copies (main chunk + two worker bundles + standalone corpus-policy chunk), including upstream cycle propagation.
 // No database, Gateway, credentials, network or model access.
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -27,7 +27,7 @@ function braceBlock(text, sig) {
 	throw new Error(`unterminated ${sig}`);
 }
 
-// Locator: every emitted definition in dist must be covered. 11.7 emits four copies.
+// Locator: every emitted definition in dist must be covered. 11.7 and 11.8 emit four copies.
 const copies = readdirSync(dist, { recursive: true })
 	.filter(n => /\.(mjs|js)$/.test(n))
 	.filter(n => readFileSync(path.join(dist, n), 'utf8').includes(SIG))
@@ -190,8 +190,8 @@ async function load(name, kind) {
 		const mod = await import(pathToFileURL(file));
 		const real = Object.values(mod).find(v => typeof v === 'function' && v.name === 'collectCronGeneratedSessionKeys');
 		if (kind === 'main' && !real) {
-			// 11.7 main chunk keeps the classifier internal (no export); the lexical scope proof above covers its binding.
-			scopeLines.push('main: no module export in 11.7; behaviour assertions run on the located block with the proven binding');
+			// 11.7/11.8 main chunk keeps the classifier internal (no export); the lexical scope proof above covers its binding.
+			scopeLines.push('main: no module export in 11.7/11.8; behaviour assertions run on the located block with the proven binding');
 		} else {
 			assert.ok(real, `${kind}: emitted module exports collectCronGeneratedSessionKeys`);
 			assert.equal(real.toString(), collectBlock, `${kind}: exported function is the located block`);
