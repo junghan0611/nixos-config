@@ -1,6 +1,6 @@
 # CYBORG — MSI Cyborg 15 AI A1VFK
 
-납품 사양: Core Ultra 7 155H · Intel Arc + RTX 4060 Laptop · RAM 16GB · KLEVV CRAS C910 NVMe 1TB · Intel AX211 Wi-Fi. 이 회사 실기기는 아직 설치·부팅 전이다.
+납품 사양: Core Ultra 7 155H · Intel Arc + RTX 4060 Laptop · RAM 16GB · KLEVV CRAS C910 NVMe 1TB · Intel AX211 Wi-Fi. 회사 실기기는 설치 후 부팅 경로를 수선했고, 현재 내장 NVMe에서 정상 부팅한다. 이는 ISO 설치 절차 자체의 성공 검증과는 별개다.
 
 ## ISO 원격 빌드
 
@@ -35,3 +35,18 @@ GLG 현장 보고: RX 470 데스크톱에서 Ventoy가 처음 보이지 않았�
 - `echo cyborg > ~/.current-device`를 실행하고 이 리포를 가져온다. 설치 ISO와 현재 리포 변경분은 다를 수 있다.
 - `lspci -nnk`, `lsusb`, `lsblk -f`로 실측하고 Wi-Fi·입력·오디오·절전·외부 모니터를 확인한다. NVIDIA PRIME 구성은 별도 판단이다.
 - 리포를 가져온 뒤 `#cyborg` switch가 필요한지 GLG가 판단한다. switch는 별도 실행이며 현재 검증이나 설치의 일부가 아니다.
+
+## 실기기 검수 — PRIME과 로컬 임베딩
+
+4세대 부팅에서 `cyborg-root` 검사와 `/`, `CYBORG-BOOT`의 `/boot` 마운트 및 LightDM을 확인했다. i3/X11의 기본 OpenGL 렌더러는 Intel Arc, `nvidia-offload` 실행은 RTX 4060 Laptop GPU(595.71.05)였다. `gerbv --version`은 2.10.0. Intel 쪽 HDMI의 QHD 2560×1440 @ 59.95Hz 확장 출력은 X11에서 확인했다. 회사 4K 패널은 현장에서 1920×1080 출력으로, 외부 위·내장 아래 배치 예정이며 프로필은 아직 저장하지 않았다.
+
+2026-11-25: 기본 `ollama` 0.32.3 서비스는 8B 스모크에서 100% CPU였다. 아래는 별도로 빌드한 **CUDA Ollama 0.32.3**을 임시 루프백 포트 `11435`에서 실행한 실측이다. 동일한 18토큰 한국어 입력, `/api/embed`, 컨텍스트 2048, 모델 한 개씩 실행했다. 두 모델 모두 `ollama ps`에서 100% GPU였다.
+
+| 모델 (로컬 ID) | 모델 파일 | 차원 | 첫 요청 | 동일 입력 반복 3회 | GPU 사용 / 여유 |
+|---|---:|---:|---:|---:|---:|
+| `qwen3-embedding:8b` (`64b933495768`) | 4.7 GB | 4096 | 5.07초 | 134.5–137.3 ms | 6137 / 1672 MiB |
+| `qwen3-embedding:4b` (`df5bd2e3c74c`) | 2.5 GB | 2560 | 5.04초 | 117.3–128.0 ms | 4013 / 3796 MiB |
+
+두 모델 파일은 기존 모델 저장소에 준비됐다. 첫 요청은 모델 로딩을 포함하며 반복 입력에는 캐시 재사용이 있어 실제 검색 지연이나 대량 처리량을 대표하지 않는다. 임시 CUDA 서버는 종료했고 기본 서비스 선언과 Andenken 설정·코퍼스·인덱스는 변경하지 않았다. 재현용 빌드: `NIXPKGS_ALLOW_UNFREE=1 nix build --impure --out-link /tmp/cyborg-ollama-cuda 'nixpkgs#ollama-cuda'` (당시 소스 빌드 33분 14초, 레지스트리 입력은 비고정).
+
+Andenken의 기존 8B/4096차원 인덱스에는 로컬 8B를 읽기 전용 비교 후보로 본다. 차원이 같아도 양자화·입력 처리 차이가 있으므로 다양한 쿼리로 OpenRouter 대비 지연과 상위 검색 결과를 검증하기 전에는 혼용하지 않는다. 4B는 VRAM 여유가 약 2.1 GiB 더 많지만 2560차원 별도 인덱스가 필요하다.
