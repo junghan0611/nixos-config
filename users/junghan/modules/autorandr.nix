@@ -1,12 +1,21 @@
 # Autorandr configuration for automatic display management
 # Profiles for laptop-only and dual-monitor setups
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, currentSystemName, ... }:
 
 {
   programs.autorandr = {
     enable = true;
 
-    profiles = {
+    profiles = lib.optionalAttrs (currentSystemName == "cyborg") {
+      # Office HDMI: match by port, not by a particular monitor serial.
+      cyborg-office-fhd = {
+        fingerprint = { eDP-1 = "*"; HDMI-1 = "*"; };
+        config = {
+          HDMI-1 = { enable = true; mode = "1920x1080"; rate = "60.00"; position = "0x0"; };
+          eDP-1 = { enable = true; primary = true; mode = "1920x1080"; rate = "59.97"; position = "0x1080"; };
+        };
+      };
+    } // {
       # Samsung NT930SBE (1920x1080)
       "laptop" = {
         fingerprint = {

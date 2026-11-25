@@ -38,7 +38,7 @@ GLG 현장 보고: RX 470 데스크톱에서 Ventoy가 처음 보이지 않았�
 
 ## 실기기 검수 — PRIME과 로컬 임베딩
 
-4세대 부팅에서 `cyborg-root` 검사와 `/`, `CYBORG-BOOT`의 `/boot` 마운트 및 LightDM을 확인했다. i3/X11의 기본 OpenGL 렌더러는 Intel Arc, `nvidia-offload` 실행은 RTX 4060 Laptop GPU(595.71.05)였다. `gerbv --version`은 2.10.0. Intel 쪽 HDMI의 QHD 2560×1440 @ 59.95Hz 확장 출력은 X11에서 확인했다. 회사 4K 패널은 현장에서 1920×1080 출력으로, 외부 위·내장 아래 배치 예정이며 프로필은 아직 저장하지 않았다.
+4세대 부팅에서 `cyborg-root` 검사와 `/`, `CYBORG-BOOT`의 `/boot` 마운트 및 LightDM을 확인했다. i3/X11의 기본 OpenGL 렌더러는 Intel Arc, `nvidia-offload` 실행은 RTX 4060 Laptop GPU(595.71.05)였다. `gerbv --version`은 2.10.0. Intel 쪽 HDMI의 QHD 2560×1440 @ 59.95Hz 확장 출력은 X11에서 확인했다. 회사에서는 FHD 모니터를 HDMI에 연결했다. `cyborg-office-fhd`는 `HDMI-1` 1920×1080 @ 60Hz를 위에, 내장 `eDP-1`을 기본 화면으로 아래에 둔다. 현장 로컬 프로필의 자동 적용을 확인했고, 같은 배치를 Cyborg 전용 Home Manager 프로필로 선언했다. 기존 수동 저장본(`~/.config/autorandr/cyborg-office-fhd`)이 있는 기기는 첫 Home Manager 적용 전에 다른 위치로 백업한다.
 
 2026-11-25: 기본 `ollama` 0.32.3 서비스는 8B 스모크에서 100% CPU였다. 아래는 별도로 빌드한 **CUDA Ollama 0.32.3**을 임시 루프백 포트 `11435`에서 실행한 실측이다. 동일한 18토큰 한국어 입력, `/api/embed`, 컨텍스트 2048, 모델 한 개씩 실행했다. 두 모델 모두 `ollama ps`에서 100% GPU였다.
 
