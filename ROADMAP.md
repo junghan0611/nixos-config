@@ -232,6 +232,17 @@
 
 > 절차 / 검증 / 함정은 사이클별로 박는다. 활성 함정은 [docs/openclaw-gotchas.md](docs/openclaw-gotchas.md)로 승격된다.
 
+### 2026.11.10 (2026-11-25, GREEN) — 메이저 컷오버
+
+운영 코디 `20261008T152203-145c2f`가 검수를 맡겼고, 실무 코디 Claude Code Opus `20261123T183855-3783fb`가 단독 writer로 진행했다. GLG 승인은 두 번이었다. 하나는 "문제 크게 없으면 진행해", 다른 하나는 Auto-B 권한 변화를 보고한 뒤의 "괜찮아 그냥 가자 메멘토비는 괜찮다"·"시간넉넉허니까 업그레이드 진행쭉 가라"다. preflight는 11.9 MINOR(36/38, ahead 13), 11.10 FAIL이었다. 11.10은 main 11-16 분기 계열이라 diverged(ahead 8309 / behind 1993)이고 state 36→40 / agent 38→42다. 11.9는 대안 정보로만 남겼다. 11.8의 #202984(Doctor 문구 수정)는 11.10에 없다.
+
+- hotfix v6 (11.10): corpus-policy blob `ff6b892`는 여전히 미수정이었다. 분류기 사본은 4개에서 3개로 줄었다(sqlite-store 번들 사본 소멸). helper export 글자는 `x`/`S`/`p`다. 미패치 base는 baseline GREEN / default RED였고, 빌드 안에서 12 × 3 GREEN이었다. candidate `67683ca9…`(claude 2.1.322), base arm64 `b9410d97…`.
+- 격리 validate는 `skills.workshop` Unrecognized 1건만 거부했다(예측한 그대로). `--network none` 리허설은 hot 스냅샷에 복사된 gateway-owner lease 때문에 처음에 거부됐다. 사본에서만 `recover-lock --confirm`으로 풀었다. 11.8 정상 정지에서 lease 해제를 확인한 뒤 11.10이 in-place로 36→40 / 38→42를 마쳤다(RPC ok 227초). config 변경 경로 9개를 예측했고 Skill Workshop은 off로 보존됐다.
+- 정지 사유 1건: Doctor가 CLI 예약 실행에 owner-only 도구를 준다고 보고했다. Auto-B(`toolsAllow: ['*']`)의 권한이 넓어진다. 보고했고 GLG가 A안(그대로 수용)을 골랐다. allowlist는 바꾸지 않았다.
+- 교체: 18:36:46 idle gate ready → 18:37:00 정상 정지, lease 0행 → 18:39:13 cold B `/var/tmp/openclaw-cold-11.10/cold-b-state36-agent38.tar.zst` 봉인(1,282,886,587B, manifest 50958 = 원본, `zstd -t` ok) → 18:39:25 restart:no override로 recreate → 기동 Doctor in-place 마이그레이션 → RPC ok(대기 465초) → `docker update --restart unless-stopped`, RestartCount 0.
+- 판정: verify PASS 42 / FAIL 2 / UNKNOWN 1. FAIL 2개는 11.8과 같은 기존 항목이다(deliveryQueues 10-27 session 행, gemini heartbeat config 경로). UNKNOWN은 config 경로 9개이고 리허설과 같다. 첫 verify의 eventLoop degraded(cpu)는 재측정에서 PASS했다. telegram 5/5, hotfix 사본 3 + helper 3 PASS. cron 6개 정의 불변, 책상 세션 불변, Skill Workshop plugin loaded·off, state user_version 40. Doctor는 google-gemini-cli 프로필 1건을 "realm unresolved"로 변경 없이 남겼다.
+- 뒷정리(GLG 직접 "태그릴리즈 그리고 뒷정리 바로 해줘"): Doctor `.bak` 11개(0.55GB), 리허설 사본 `/var/tmp/oc-1110-rehearsal`(3.4G, auth 사본 포함), `/tmp/oc-1110-{review,build}`, BuildKit 캐시 1.206GB. `/` +3.55GB(28.4G free), `/home` +0.59GB(17.9G free). **롤백 짝은 남겼다**: 11.8 이미지 `697e7bbe…` + base `1333535099ca…` + cold B. 영수증은 비공개 `~/openclaw/backups/swap-11.10-20261125/`.
+
 ### 2026.11.8 (2026-11-24, GREEN) — 마이너 교체
 
 GLG 직접 요청("응 바로 가자 오푸스 옆에 있다 진행 맡겨")을 운영 코디 `20261008T152203-145c2f`가 전했고, 실무 코디 Claude Code Opus `20261123T183855-3783fb`가 단독 writer로 openclaw-update 스킬 마이너 순서대로 진행했다. preflight MINOR(state36/agent38 동일, ahead 314 / behind 0, arm64 `3d081c5d…` label revision 일치). 이미지 package.json도 36/38이고 config schema는 11.7과 바이트 동일했다(경로 7,352). 같은 config의 격리 validate 경고 집합도 11.7 이미지와 같았다. 릴리즈 노트에서 config·auth·plugin 계약 변화는 찾지 못했다.

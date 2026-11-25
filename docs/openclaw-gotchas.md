@@ -12,6 +12,17 @@
 
 ## 활성
 
+### 11.10 메이저 — lease 사본 함정·Skill Workshop 복귀·예약 실행 권한 (2026-11-25)
+
+11.10은 11.5–11.9 줄이 아니라 main 11-16 분기 계열이다(11.8과 diverged, state 36→40 / agent 38→42). preflight FAIL(exit 1)은 메이저라는 뜻이고, 판정은 리허설과 격리 validate로 했다.
+
+- **hot 스냅샷 사본에는 라이브 gateway-owner lease가 따라온다.** 실행 중 게이트웨이를 SQLite online backup으로 복사하면 `state_leases`(scope `gateway-owner`) 행도 복사된다. 사본 위 Doctor는 "cannot verify Gateway ownership … heartbeat age does not prove that the holder stopped"로 maintenance 진입을 거부하고 196초 뒤 종료한다. 다른 pid-ns의 owner는 자동 회수하지 않는다. **사본에서만** `openclaw gateway recover-lock --json`으로 지문을 받고 `--confirm <fp>`로 푼다. 라이브에서는 정상 정지(`stop -t 60`)가 행을 지운다(11.8 정지에서 0행으로 실측). `tmp/openclaw-1000/*.lock.sqlite` 파일은 정지 뒤에도 남지만 잠금의 실체가 아니다.
+- **11.10의 copy-and-swap 업그레이더(#198389)는 컨테이너 흐름에서 일을 하지 않았다.** entrypoint의 기동 Doctor가 먼저 in-place로 36→40 / 38→42를 끝낸다. 그래서 `cli.bootstrap.state-upgrade`는 36ms 만에 "현재"로 끝나고 `.upgrade-*` shadow, `.pre-2026.11.10` 세대, `diagnostic_events` `upgrade.*` 행이 모두 0이다. 복귀점은 여전히 정지 시점 cold B다. Doctor는 대신 `.pre-startup-migration-*.bak`과 `*.auth-profile-migration-*.bak`을 남긴다(라이브 11개, 0.55GB).
+- **Skill Workshop이 다시 플러그인이 됐고 기본값은 `autonomous.mode = "auto"`다.** 11.10 validate는 `skills.workshop`을 Unrecognized key로 거부한다. 기동 Doctor가 이 값을 `plugins.entries.skill-workshop.config`로 옮기고 `plugins.allow`에 `skill-workshop`을 더한다. 교체 뒤에는 resolved mode == off를 반드시 단언한다. 이동이 빠지면 기본값 auto가 켜진다.
+- **CLI 백엔드 예약 실행이 owner-only 도구를 받는다.** Doctor 보고 원문은 "scheduled runs now get the owner-only tools embedded runs already had"이고, 대상 목록은 `src/security/dangerous-tools.ts:57-80`이다(automations·gateway·plugins·sessions·terminal·conversations_*·nodes·computer·openclaw·intent). 호출마다 owner를 재확인하는 가드가 붙는다(`scheduled-owner-tool-guard.ts`). `toolsAllow: ['*']`인 Auto-B는 이 도구들을 실제로 받는다 — GLG가 11-25에 수용했다. 같은 보고에서 범위 없는 `automations` 도구와 `sessions_yield`는 일부 job에서 빠진다.
+- **claude-cli 실행의 도구 호출은 OpenClaw transcript에 없다.** cron 세션 transcript는 3 이벤트뿐이다. 실제 도구 사용은 호스트 `~/.claude/projects/-home-node--openclaw-workspace-<agent>/*.jsonl`에서 센다.
+- 리허설 기동은 RPC ok까지 227초, 라이브는 465초였다. 기동 직후 health `eventLoop.degraded=true`(reason cpu)는 수 분 뒤 재측정하면 PASS다.
+
 ### 11.7 heartbeat 설정 퇴역 — validate 거부, Doctor가 job으로 옮긴다 (2026-11-23)
 
 11.7 격리 `config validate`는 `agents.defaults.heartbeat`·`agents.entries.*.heartbeat`를 **Unrecognized key**로 거부한다(exit 1). 고장이 아니라 계약 변화다. 기동 Doctor가 명시 heartbeat 에이전트의 monitor를 같은 id의 agentTurn automation job으로 옮기고 키를 지운다. `0m`은 disabled로 옮겨지고 새로 활성화되는 job은 없다(11-23 실측, 소스 `doctor-heartbeat-legacy.ts:97-120`, `doctor-heartbeat-cadence-migration.ts:185-201`). 워크스페이스 `HEARTBEAT.md`는 job scratch로 들어가고 원본은 `config/backups/heartbeat-migration/`으로 옮겨진다 — 봇 워크스페이스 git에 삭제로 보인다.

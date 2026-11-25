@@ -1,4 +1,4 @@
-// Actual 11.8 (same as 11.7) emitted classifier copies (main chunk + two worker bundles + standalone corpus-policy chunk), including upstream cycle propagation.
+// Actual 11.10 emitted classifier copies (main chunk + shared worker chunk + standalone corpus-policy chunk; the 11.7/11.8 sqlite-store bundle copy is gone), including upstream cycle propagation.
 // No database, Gateway, credentials, network or model access.
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -27,17 +27,17 @@ function braceBlock(text, sig) {
 	throw new Error(`unterminated ${sig}`);
 }
 
-// Locator: every emitted definition in dist must be covered. 11.7 and 11.8 emit four copies.
+// Locator: every emitted definition in dist must be covered. 11.10 emits three copies (11.7/11.8: four).
 const copies = readdirSync(dist, { recursive: true })
 	.filter(n => /\.(mjs|js)$/.test(n))
 	.filter(n => readFileSync(path.join(dist, n), 'utf8').includes(SIG))
 	.sort();
-assert.equal(copies.length, 4, `four emitted classifier copies (found: ${copies.join(', ')})`);
+assert.equal(copies.length, 3, `three emitted classifier copies (found: ${copies.join(', ')})`);
 const kinds = copies.map(n => n === path.join('worker', 'sqlite-store.worker.mjs') ? 'bundle'
 	: n.startsWith(`worker${path.sep}worker-chunk-`) ? 'worker-chunk'
 	: n.startsWith(path.join('config', 'sessions', 'transcript-session-transcript-corpus-policy-')) ? 'policy'
 	: !n.includes(path.sep) ? 'main' : 'unknown');
-assert.deepEqual([...kinds].sort(), ['bundle', 'main', 'policy', 'worker-chunk'], 'one main, one store bundle, one worker chunk, one corpus-policy chunk');
+assert.deepEqual([...kinds].sort(), ['main', 'policy', 'worker-chunk'], 'one main, one worker chunk, one corpus-policy chunk (no store bundle copy)');
 
 async function importedBinding(text, file, name) {
 	for (const m of text.matchAll(/import\s*\{([^}]*)\}\s*from\s*"\.\/([^"]+)";/g)) {
@@ -190,8 +190,8 @@ async function load(name, kind) {
 		const mod = await import(pathToFileURL(file));
 		const real = Object.values(mod).find(v => typeof v === 'function' && v.name === 'collectCronGeneratedSessionKeys');
 		if (kind === 'main' && !real) {
-			// 11.7/11.8 main chunk keeps the classifier internal (no export); the lexical scope proof above covers its binding.
-			scopeLines.push('main: no module export in 11.7/11.8; behaviour assertions run on the located block with the proven binding');
+			// 11.7/11.8/11.10 main chunk keeps the classifier internal (no export); the lexical scope proof above covers its binding.
+			scopeLines.push('main: no module export in 11.7/11.8/11.10; behaviour assertions run on the located block with the proven binding');
 		} else {
 			assert.ok(real, `${kind}: emitted module exports collectCronGeneratedSessionKeys`);
 			assert.equal(real.toString(), collectBlock, `${kind}: exported function is the located block`);
@@ -202,7 +202,7 @@ async function load(name, kind) {
 	return { kind, name, cls, fn, collect };
 }
 
-const order = ['main', 'bundle', 'worker-chunk', 'policy'];
+const order = ['main', 'worker-chunk', 'policy'];
 const loaded = [];
 for (const k of order) loaded.push(await load(copies[kinds.indexOf(k)], k));
 
