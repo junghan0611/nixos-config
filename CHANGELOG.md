@@ -9,6 +9,18 @@
 
 ## Unreleased
 
+## v2026.11.25-openclaw.1 — OpenClaw 11.10 메이저 컷오버
+
+### OpenClaw 2026.11.10 메이저 컷오버
+
+- 게이트웨이를 11.8 `2d4ab29`에서 11.10 `6ea542f`로 올렸다. state 36→40 / agent 38→42이고, 11.10은 main 11-16 분기 계열이라 11.8과 diverged다. 11.9(MINOR)는 대안 정보로만 검토했다.
+- hotfix v6을 11.10에 재이식했다. corpus-policy blob `ff6b892`는 미수정이고, 분류기 사본은 4개에서 3개로 줄었다. 빌드 안에서 12 × 3 GREEN, candidate `67683ca9…`. `docker/openclaw/` 미러도 함께 갱신했다.
+- `--network none` 리허설로 lease 해제, in-place Doctor 마이그레이션, config 변경 경로 9개, Skill Workshop off 보존을 먼저 확인했다. hot 스냅샷에 라이브 gateway-owner lease가 따라오는 함정은 gotchas에 적었다.
+- Doctor가 보고한 예약 실행 권한 변화(CLI 백엔드 job이 owner-only 도구를 받음, Auto-B `toolsAllow: ['*']`)를 GLG가 수용했다. allowlist는 바꾸지 않았다.
+- 교체: idle gate → 정상 정지 → cold B 봉인(1.28GB) → restart:no override로 recreate → RPC ok(465초) → 정책 복원.
+- 판정: verify PASS 42 / FAIL 2(기존) / UNKNOWN 1(리허설과 같은 config 경로). telegram 5/5, cron 6개 정의 불변, 책상 세션 불변, Skill Workshop off.
+- 뒷정리(GLG 직접): Doctor `.bak` 11개 0.55GB, 리허설 사본 3.4G, `/tmp` 스크래치, BuildKit 캐시 1.206GB. `/` +3.55GB, `/home` +0.59GB. 롤백 짝(11.8 이미지·base + cold B)은 첫 자연 Auto-B 관측 뒤 판단하려고 남겼다.
+
 ## v2026.11.25 — Cyborg 실기기 온보딩
 
 ### Cyborg

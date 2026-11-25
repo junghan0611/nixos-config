@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.24](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.24).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.25-openclaw.1](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.25-openclaw.1).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -16,11 +16,12 @@
 - [x] **3b. OpenClaw 11.3 메이저 컷오버 + claude-cli 모델 정리 + 현재값 SSOT 단일화** — [v2026.11.14](CHANGELOG.md), 잔여 관측은 아래 §OpenClaw 11.3
 - [x] **3c. 11-15·16 정비: entwurf 책상 A창(#160), bbot memento 6h, defaults·gemini → 6.1-sol, #17 시도·원복, rclone 콜드 기반** — [v2026.11.16](CHANGELOG.md)
 - [x] **3d. OpenClaw 11.4→11.7 메이저 컷오버** — 11-23 19:00 정지 → 19:09 health ok, [v2026.11.23](CHANGELOG.md). 잔여 관측은 아래 §OpenClaw 11.7
-- [x] **3e. OpenClaw 11.7→11.8 마이너 교체** — 11-24 21:46 recreate → 21:52 health ok, [v2026.11.24](CHANGELOG.md). 첫 자연 메멘토·뒷정리는 아래 §OpenClaw 11.8
+- [x] **3e. OpenClaw 11.7→11.8 마이너 교체** — 11-24 21:46 recreate → 21:52 health ok, [v2026.11.24](CHANGELOG.md). 첫 자연 메멘토·뒷정리 [v2026.11.25](CHANGELOG.md)
+- [x] **3f. OpenClaw 11.8→11.10 메이저 컷오버** — 11-25 18:37 정지 → 18:47 RPC ok, [v2026.11.25-openclaw.1](CHANGELOG.md). 첫 자연 Auto-B·롤백 짝 판단은 아래 §OpenClaw 11.10
 - [ ] **4. 모든 봇이 하나의 규칙으로 깨어나는 표준 — [#13](https://github.com/junghan0611/nixos-config/issues/13)** ← CURRENT: 11-23 GLG 방향 결정(#10 흡수), 정본 초안 [docs/openclaw-wake.md](docs/openclaw-wake.md), 봇별 역할·모드 표와 적용은 봇마다 GLG 승인
 - [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`와 마지막 cold B도 같은 날 추가 퇴역, 이 컷오버의 10.9 전체 데이터 복귀점 없음)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
-현재 좌표: 1–3·3b·3c·3d·3e 완료 → 4 깨움 표준(#13) 정본 작성과 봇별 결정. 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
+현재 좌표: 1–3·3b·3c·3d·3e·3f 완료 → 4 깨움 표준(#13) 정본 작성과 봇별 결정. 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
 
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14), 남은 것은 아래 §#14.
 Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
@@ -44,20 +45,20 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 - [ ] 설치 안정화 후 테스트 기기를 정해 Sway를 별도 선택지로 검토한다. i3 기본값 유지; 반납한 ThinkPad는 제외. 스크래치패드 IPC, 모니터 자동 배치, 한글 입력, Teams 화면 공유를 검증한다.
 
-## OpenClaw 11.8 (11-24 마이너 교체) 관측
+## OpenClaw 11.10 (11-25 메이저 컷오버) 관측
 
-경과: 운영 코디 `20261008T152203-145c2f` 지시, 실무 코디 `20261123T183855-3783fb` 실행. 11.7 `e31bbf0` → 11.8 `2d4ab29`(state 36 / agent 38 불변, config schema 바이트 동일). hotfix v6 (11.8)은 사본 4개 재이식. suspend.prepare ready 21:46 → plain compose recreate 21:46:55 → RPC ok 21:52:46(+348s), tini ELOOP 1회 자동 회복(RC=1). verify PASS 44 / FAIL 2 / UNKNOWN 0 — FAIL 2개는 11.7과 같은 기존 항목, Doctor config 변경 0. 영수증은 비공개 `~/openclaw/backups/swap-11.8-20261124/`. [v2026.11.24](CHANGELOG.md)로 태그했다. `~/openclaw`(openclaw-config) 빌드 입력 커밋도 같은 날 했다.
+경과: 운영 코디 `20261008T152203-145c2f` 지시, 실무 코디 `20261123T183855-3783fb` 실행. 11.8 `2d4ab29` → 11.10 `6ea542f`(state 36→40 / agent 38→42, main 11-16 분기 계열). 이력·영수증은 [ROADMAP](ROADMAP.md) 2026.11.10, 함정은 [gotchas](docs/openclaw-gotchas.md) 11.10.
 
-- [x] **첫 자연 메멘토 (11.8)**: 11-25 02:30:01 발화, ok·delivered, 386,268ms, `cli live session start: provider=claude-cli model=claude-fable-5-2`, fallback 없음, RestartCount 1 유지, 이관 disabled job 미발화.
-- [x] **11.8 뒷정리(GLG 집합 승인 11-24)**: 11.7 이미지 `9ead8629…`·base `cded4be5…`, `/tmp/oc-1108`(354,704,822B), live와 같은 `openclaw.json.pre-swap`. `/` +425MB — 지운 레이어를 BuildKit 캐시가 붙잡아 df 이득이 작다(Build Cache 2.52GB, reclaimable 1.26GB; prune은 미승인). 영수증 `cleanup-20261125.txt`. **11.8 롤백 이미지 없음.**
-- [x] **BuildKit 캐시 회수**: GLG 승인 11-25, `docker builder prune --all` 113 레코드 2.517GB → `/` +3,172,663,296B(지운 이미지 레이어 포함, 28.86G→32.03G free). 다음 빌드는 캐시 없이 처음부터.
+- [ ] **첫 자연 Auto-B 20:30 KST (11-25)**: ok·delivered, `provider=claude-cli`, fallback 없음, RestartCount 0 유지. 11.10에서 owner-only 도구를 처음 받는 실행이다(GLG 수용). 도구 사용은 호스트 `~/.claude/projects/-home-node--openclaw-workspace-bbot/`에서 11.8 때(`exec`·`read`·`process`·`ToolSearch`)와 비교한다. 그 뒤 모닝 cron 11-26 08:00 — 범위 없는 `automations`·`sessions_yield`를 잃은 job이다.
+- [ ] **롤백 짝 퇴역 판단(GLG)**: 11.8 이미지 `697e7bbe…`(3.07GB) + base `1333535099ca…`(1.81GB) + cold B `/var/tmp/openclaw-cold-11.10/cold-b-state36-agent38.tar.zst`(1.28GB, 11.8 데이터의 유일한 복귀점, auth 포함). 첫 자연 Auto-B·모닝 관측 뒤 승인으로만 지운다. 영수증 디렉터리의 `openclaw.json.pre-swap`도 같은 때 판단한다.
+- [ ] **Doctor 알림**: auth profile `google-gemini-cli:*` 1건을 "provider realm or identity unresolved"로 변경 없이 남겼다(gemini 정지 중, 비파괴). gemini 재가동이나 GPT 회사 계정 재인증 때 `openclaw models status`와 함께 본다.
 
 ## OpenClaw 11.7 (11-23 메이저 컷오버) 관측·갈무리
 
 경과: 실무 코디 Claude Code Opus `20261123T183855-3783fb`, 워커 W1 Terra `…22551d`(소스 판독)·W2 Opus `…93321c`(교차 검수), 운영 코디 `20261008T152203-145c2f`. 11.4 `d843d6a` → 11.7 `e31bbf0`(state 22→36 / agent 27→38, 점프는 11.5). candidate `openclaw-custom:11.7-candidate-20261123` = `9ead8629…`, hotfix **v6**(dist 분류기 사본 3→4). idle gate 19:00:51 → stop 19:00:56 → cold C 봉인 → restart:no recreate 19:03:31 → Doctor → RPC ok 19:09:19(+340s, 다운타임 8분 23초), ELOOP 0, RestartCount 0 → 19:19:42 `docker update --restart unless-stopped`(recreate 없음). 영수증은 비공개 `~/openclaw/backups/swap-11.7-20261123/`.
 
 - [ ] **verify 계약 갱신**: `--expect-disabled-heartbeat`의 config 쪽 검사(`verify.py:339-341`)는 11.7에서 영구 FAIL(키 퇴역). "config heartbeat 부재 + cron job disabled"로 바꾸고 selftest fixture를 같은 작업에서 맞춘다. RPC 쪽 heartbeat 검사는 PASS. `TOMBSTONE` 기준값은 10-27 session 행 이전 값이라 낡았다(verify FAIL 1의 정체, 11.4 전후 동일).
-- [ ] **recreate·plain `compose up` 금지(11.8 컨테이너)**: 11.8은 override 없이 plain compose로 recreate했다(라벨 파일 = `docker-compose.yml` 하나). 그런데도 config-hash `39799277…`는 `config --hash` `361991b7…`와 다르다(11.7 때 `1eab70b0…`, 함정 ④ 재현, 원인 미확인). `docker update`는 해시를 바꾸지 않는다.
+- [ ] **recreate·plain `compose up` 금지(11.10 컨테이너)**: 11.10은 restart:no override로 recreate했다(라벨 파일 = `docker-compose.yml` + override). 라벨 config-hash `1eab70b0…` ≠ plain `config --hash` `361991b7…`(함정 ④). 11.8 plain recreate에서도 불일치는 남았었다(`39799277…`, 원인 미확인). `docker update`는 해시를 바꾸지 않는다.
 - [ ] **Doctor 이관 부산물**: `workspace-gemini/HEARTBEAT.md`(168B, git 추적)가 job scratch로 들어가고 원본은 `config/backups/heartbeat-migration/`으로 — 워크스페이스 git에 삭제로 남았다(gemini 정지 중). Doctor State integrity: `agents/claude` 디렉터리가 entries에 없다(DB는 38로 이관됨, 11-16 acpx 잔재 추정) — 정리 여부는 GLG 판단.
 - [ ] **GPT 인증을 회사 계정으로 재인증** (GLG 11-23, 노트북에서): 현재 개인 OpenAI OAuth 프로필 하나가 main·gpt·gemini·defaults(`openai/gpt-6.1-sol`)를 진다. 11.7의 `models auth`는 offline 소유를 요구해 gateway 실행 중엔 거부한다 — 정지 창이 필요하다. Claude 쪽은 호스트 `~/.claude` 공유 마운트라 호스트 로그인을 따른다(11-23 확인: claude.ai Max).
 
