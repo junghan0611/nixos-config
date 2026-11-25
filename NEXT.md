@@ -1,6 +1,6 @@
 # NEXT.md — 다음 할 일
 
-운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.25-openclaw.1](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.25-openclaw.1).
+운영 baseline은 [AGENTS.md](AGENTS.md). 후속 작업 / 미완 검증은 여기에. 닫힌 항목은 [CHANGELOG.md](CHANGELOG.md)로 흘려보낸다 — 최근 발행 [v2026.11.25-openclaw.2](https://github.com/junghan0611/nixos-config/releases/tag/v2026.11.25-openclaw.2).
 
 작업 끝나면 항목 지우고, 새로 발견한 후속은 추가. 영속할 사실은 AGENTS.md / docs/openclaw-gotchas.md / `~/openclaw/README.md` change history로 옮긴다.
 
@@ -18,10 +18,11 @@
 - [x] **3d. OpenClaw 11.4→11.7 메이저 컷오버** — 11-23 19:00 정지 → 19:09 health ok, [v2026.11.23](CHANGELOG.md). 잔여 관측은 아래 §OpenClaw 11.7
 - [x] **3e. OpenClaw 11.7→11.8 마이너 교체** — 11-24 21:46 recreate → 21:52 health ok, [v2026.11.24](CHANGELOG.md). 첫 자연 메멘토·뒷정리 [v2026.11.25](CHANGELOG.md)
 - [x] **3f. OpenClaw 11.8→11.10 메이저 컷오버** — 11-25 18:37 정지 → 18:47 RPC ok, [v2026.11.25-openclaw.1](CHANGELOG.md). 첫 자연 Auto-B·롤백 짝 판단은 아래 §OpenClaw 11.10
+- [x] **3g. OpenClaw 기억 색인 BGE-M3 전환** — 11-25 21:38 정지 → 22:06 RPC ok, 6봇 1024d, [v2026.11.25-openclaw.2](CHANGELOG.md)
 - [ ] **4. 모든 봇이 하나의 규칙으로 깨어나는 표준 — [#13](https://github.com/junghan0611/nixos-config/issues/13)** ← CURRENT: 11-23 GLG 방향 결정(#10 흡수), 정본 초안 [docs/openclaw-wake.md](docs/openclaw-wake.md), 봇별 역할·모드 표와 적용은 봇마다 GLG 승인
 - [x] **5. 기존 복구 자산 판단** — D1(cold24+10.4)·D2(e122)를 포함한 옛 10.x 복귀 자산을 2026-11-14 GLG 승인으로 퇴역(10.9-cc322 `b3bbcd9c`와 마지막 cold B도 같은 날 추가 퇴역, 이 컷오버의 10.9 전체 데이터 복귀점 없음)([v2026.11.14](CHANGELOG.md)). 미해결 관측은 §이월 관측
 
-현재 좌표: 1–3·3b·3c·3d·3e·3f 완료 → 4 깨움 표준(#13) 정본 작성과 봇별 결정. 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
+현재 좌표: 1–3·3b·3c·3d·3e·3f·3g 완료 → 4 깨움 표준(#13) 정본 작성과 봇별 결정. 5 복귀 자산 퇴역 완료, 미해결 관측은 별도.
 
 #14 Oracle RDP는 별도 레인이다. 구성·사용법은 [ORACLE.md §5.5](ORACLE.md#55-공유-gui-작업실--rdp-14), 남은 것은 아래 §#14.
 Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류했다 — 아래 §Oracle 계획 재부팅.
@@ -69,8 +70,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 - [ ] 실사용: 모델 정리(11-14) 뒤 glg·mini sonnet-5-5 첫 실제 대화 턴을 메타로 확인한다(모닝 cron 11-15 08:00은 sonnet-5-5 ok/delivered로 확인됨, `cron runs` 11-16).
 - [ ] **11.4 교체(11-16) 사후 관측:** 다음 자연 메멘토 20:30·모닝 cron 11-17 08:00 ok/delivered, glg·mini·main 실제 턴, RestartCount 0 유지. 뒷정리는 11-16 완료(이미지 롤백 수단 없음 — CHANGELOG Unreleased).
-- [ ] **memory 인덱스 동결 — 결정 필요** (11-16: 11.4에 #196378 rebuild 수정 포함 → 선택지 A의 대기 조건 해소, #196505는 열림) (11-14 읽기 전용 검수, 비공개 `.agent-reports/openclaw-v2026.11.3-review/memory-axis-20261114.md`): 6봇 인덱스가 전부 chunking **5** 그대로이고 컷오버 뒤 새 행 **0**, 재구축·capacity·임베딩 로그 0(로그 관측이며 OpenRouter 청구액은 따로 확인하지 않았다). `tools.deny=["memory_search"]`라 search 경계 repair가 발화하지 않는 것으로 보인다(가설). 비용은 0이지만 **새 봇 기억이 인덱스와 Andenken openclaw 수확으로 흐르지 않는다.** Andenken export가 읽는 4테이블·컬럼은 v27에 그대로 있어 수확 자체는 호환. 선택지: (A) upstream #196378이 든 stable까지 동결 유지 (B) gateway 정지 후 offline `memory index --force`로 통제 재구축 — bbot 6426×4096d는 #196505 실패 규모대, 경계 바뀐 청크만큼 OpenRouter 재임베딩, 재구축 뒤 청크 id가 바뀌면 append-only Andenken에 v5·v6 중복 유입 가능(가설, andenken 담당과 계약 확인 필요). `memory status` CLI는 gateway 실행 중 거부, verify memory 절은 11.3에서 unavailable.
-- [ ] W4 권고: 첫 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교).
+- [ ] W4 권고: 11-25 BGE-M3 재구축 뒤 memory index에 cron 부모·자식 세션 0건 확인(읽기 전용, 10.9 기준값과 비교). memory 인덱스 동결 항목은 이 재구축으로 닫혔다(ROADMAP 2026-11-25).
 - [ ] **다음 의도된 recreate 때 함께 뺄 것 (GLG 11-14·15 확인, 잊지 말 것):** compose의 `~/.codex` 마운트(`:139`) — OpenClaw에서 Codex를 쓰지 않는다(GLG: GPT는 OpenClaw 인터페이스, 지원 모델은 Claude·GPT). `~/.gemini`(`:140`)는 **#17(agy ACP) 결정 전까지 빼지 않는다** — agy 로그인 토큰이 `~/.gemini/antigravity-cli/`에 있고 컨테이너가 이 마운트로 읽는다(gemini 봇 운영 정지와 별개). 낡은 compose `:131` 주석 갱신. 마운트 변경은 recreate가 필요하므로 단독으로 하지 않고, recreate가 필요한 다른 작업과 묶어 GLG 승인 뒤에 한다.
 - [ ] **#17 agy(Antigravity) via acpx — 11-16 시도 후 원복, 보류 (GLG: "정확히 파악할때까지 그쪽 세션은 안건들일거야… 안되면 뭔가 만들지 않도록하자"):** 막힌 곳은 업스트림 Telegram DM-topic 바인딩 — `/acp spawn --bind here`는 `chatId:topic:thread`로 묶는데 인바운드 DM 라우트는 scope `dm`→bare chatId라 일반 DM이 바인딩을 못 찾고 네이티브 모델로 간다(`topic-conversation.ts:10-38`, `conversation-route.ts:64-69`, `channel.ts:263-296`, `bot-message-context.ts:300-310`; config로 못 고침). 원복 상태: `acp.enabled:false`(allowedAgents `["claude"]`), gemini `runtime` 제거·account disabled. 2026-11-17 GLG 승인으로 acpx 2026.11.3을 `plugins uninstall`(entry·allow·install record·npm 디렉터리 794M)하고 `~/openclaw/config/agy/`(pin 프록시·agy 바이너리 239M)도 지웠다. 재개 시 pin 프록시는 openclaw-config 이력 7f3cb3a에서 복원하고 agy·acpx는 새로 설치한다. 건드리지 않음: 바인딩된 ACP 세션 `agent:gemini:acp:1eacb22e…`, node 세션 `agent:gemini:node-1fd06883a3db`. 업스트림 이슈는 내지 않는다(GLG 11-16). 사실·근거는 [#17](https://github.com/junghan0611/nixos-config/issues/17).
 - [ ] 근본원인 미수정 기록: upstream #195208, tini ELOOP.
@@ -216,7 +216,7 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 - 아내 07:00 cron(`morning-family-schedule-reminder-wife`, disabled) 재활성 시점 — GLG 판단. `daily_real_estate_auction_study_brief_miir`는 켜기 전 model 명시. (§8.1 회귀)
 - 4봇(main·glg·gpt·mini) heartbeat 재활성 — GLG 예정, 검수 목적의 의도적 off. [#10](https://github.com/junghan0611/nixos-config/issues/10) mini 확장과 함께. 10.7에서 Workshop `propose`·review job 6개가 사라져 #10 4단계는 재정의 필요(2026-10-26 코멘트). 선행: `skills.workshop.allowSymlinkTargetWrites`가 10.7에서 Unknown path — 후계 guard를 v2026.10.7 고정 소스로 정태 확인(미검증, 쓰기 테스트는 GLG 승인 후).
 - active-memory 거취(현재 off, 폐기도 선택지) · typing 재발 관찰 · `tools.sessions.visibility="all"` 재검토. (§8.1·§8.2)
-- [[#13](https://github.com/junghan0611/nixos-config/issues/13)(#5 흡수) 검토 상자로 이관, 미검증] `memory.search.sources=["sessions"]` 축소 결정(대가: MEMORY/USER가 의미 검색에서 빠짐) · FTS-only 한 봇 시험 · `memory_embedding_cache` orphan+VACUUM(~600MB 추정, 정지 창 필요) · 정기 `memory index` 승격. (§기억축)
+- [[#13](https://github.com/junghan0611/nixos-config/issues/13)(#5 흡수) 검토 상자로 이관, 미검증] `memory.search.sources=["sessions"]` 축소 결정(대가: MEMORY/USER가 의미 검색에서 빠짐) · FTS-only 한 봇 시험 · ~~`memory_embedding_cache` orphan+VACUUM~~(11-25 BGE-M3 reset으로 해소, 6봇 DB 1.48→0.63GB) · 정기 `memory index` 승격. (§기억축)
 - glg 가족봇 Sonnet 5 soak — 감정 있는 실제 턴에서 대칭 규칙 유지 여부·역할 낭독 반복·compact 요약의 법적 프레임 잔존 관찰. (§glg 가족봇)
 - thinking 판단: claude-cli 봇은 thinkingLevel이 안 물린다는 기록(`extensions/anthropic/cli-backend.ts`, 10.7 재확인 전) · bbot 세션 `think:xhigh` 정식화/하향 · gpt `thinkingDefault=medium` 인상 관찰 · luna/terra lane 품질 soak. (§glg 가족봇·§7.1 잔여)
 - `run.sh t)` SSH 터널 은퇴 여부(trustedProxies 변경 뒤 403). (§앱 후속)

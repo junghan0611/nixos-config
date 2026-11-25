@@ -12,6 +12,23 @@
 
 ## 활성
 
+### 11.10 기억 색인 BGE-M3 전환 — CLI offline-only·DB 파일 삭제 금지·cold-restore (2026-11-25)
+
+GLG 승인으로 6봇 memory search를 `qwen/qwen3-embedding-8b` 4096d에서 `baai/bge-m3` 1024d로 바꿨다(이력 [ROADMAP](../ROADMAP.md) 2026-11-25, 비공개 영수증 `~/openclaw/backups/embed-bge-m3-20261125/`).
+
+- **봇 DB 파일은 지우지 않는다.** 메모리 색인은 봇별 `agents/<id>/agent/openclaw-agent.sqlite`의 `memory_index_*`·`memory_embedding_cache` 테이블이다. 같은 파일에 세션 원본이 있다(bbot `transcript_events` 5,000행·441세션, 디스크 일반 `.jsonl` 0 — 11-25 실측). 예전 "`memory/*.sqlite` 지우고 재색인" 절차는 이제 세션 삭제다. 파생물만 비우는 공식 길은 `memory reset --agent <id> --yes`다(색인+캐시만 비우고 세션은 보존).
+- **memory CLI는 offline-only다.** 게이트웨이가 켜져 있으면 `memory status`까지 "requires exclusive offline state ownership"으로 거부한다. 라이브 `docs/cli/memory.md`는 실행 중 게이트웨이와 협조한다고 쓰지만 이 배치에서는 아니다. 실행 중 확인은 봇 DB를 읽기 전용으로 연다.
+- **절차** (다운타임 30분):
+  1. `gateway.suspend.prepare` ready → `docker stop -t 60 openclaw-gateway` → `state_leases` gateway-owner 0 확인.
+  2. one-off 실행기: `docker run --rm --volumes-from openclaw-gateway --user node -w /app --env-file <inspect Env> --entrypoint tini <라이브 image id> -s -- node openclaw.mjs …`. `config set`·`reset`은 `--network none`, `index`만 `--network openclaw-config_default`.
+  3. `config set memory.search.model baai/bge-m3` → config diff가 그 한 줄인지 본다.
+  4. 봇마다 `memory reset --agent <id> --yes` → `memory index --agent <id>`. canary 하나를 먼저 끝까지 검증한다.
+  5. `docker start openclaw-gateway`(compose 아님, config-hash 불변).
+- **one-off 함정 둘** (둘 다 데이터 전 단계에서 나고 재시도로 통과): 첫 시도(`--init` + `--entrypoint node`)는 `exec node` ELOOP였고, `--entrypoint tini … -s -- node`로도 간헐적으로 연속 5회까지 났다. 그리고 직전 one-off가 끝난 직후의 다음 실행은 같은 offline-ownership 거부를 받는다 — 10초 뒤 재시도한다.
+- **재색인은 cold 세션을 hot으로 되살린다** (`reclamationKind=cold-restore`). 본문이 cold 파일로 빠져 있던 `transcript_events` 행이 채워지고, `session_transcript_cold_archives` 행이 사라지고, 세션 FTS가 는다. 기존 본문 변경은 0이고, gemini에서 복원된 본문 128/128이 cold 파일과 같았다(6봇 모두 백업과 해시 대조). 디스크의 cold 파일은 남는다.
+- **결과는 meta로 검증한다**: `memory_index_meta_v1`의 model·vectorDims, `memory_index_chunks_vec`의 `FLOAT[N]`, 청크 blob 길이(차원당 8바이트 — Qwen 4096d=32768B, BGE 1024d=8192B). 기동 뒤 값이 같으면 게이트웨이가 다시 짓지 않은 것이다.
+- **파일이 줄었다**: reset 안내문은 "파일을 줄이지 않는다"고 하지만 6봇 합계가 1.48GB에서 0.63GB가 됐다(bbot 743→475MB). 별도 compact는 하지 않았다.
+
 ### 11.10 메이저 — lease 사본 함정·Skill Workshop 복귀·예약 실행 권한 (2026-11-25)
 
 11.10은 11.5–11.9 줄이 아니라 main 11-16 분기 계열이다(11.8과 diverged, state 36→40 / agent 38→42). preflight FAIL(exit 1)은 메이저라는 뜻이고, 판정은 리허설과 격리 validate로 했다.

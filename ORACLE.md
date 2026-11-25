@@ -470,16 +470,16 @@ path; use the Tailnet URL for Control UI instead.
 
 ### Memory / embedding layers
 
-Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). **2026-09-02 통합 세션 인덱스 rebuild부터 레이어가 모델까지 같아졌다** — 양쪽 다 8B/4096d. 분리는 *storage*·*corpus*만 남는다(andenken #10/#11).
+Oracle has two disjoint recall layers. **2026-11-25부터 모델도 갈라졌다** — OpenClaw는 BGE-M3 1024d로 옮겼고, andenken은 cyborg에서 따로 재구축 중이다(GLG 11-25). 아래 andenken 행은 그 전 기록이다(2026-09-02 통합 rebuild 이후 양쪽 8B/4096d였다).
 
 | Layer | Provider | Model | Dim | Storage | Bot access |
 |---|---|---|---|---|---|
-| OpenClaw session+memory | OpenRouter | `qwen/qwen3-embedding-8b` | **4096** | `~/openclaw/config/memory/{agentId}.sqlite` (sqlite-vec + FTS5 trigram) | 검색엔 쓰지 않는다 — `tools.deny=["memory_search"]`(2026-10-26 실측). 이 인덱스는 Andenken harvest 원천([#5](https://github.com/junghan0611/nixos-config/issues/5)) |
-| andenken (sessions + md garden) | OpenRouter (query·index 양쪽) | `qwen/qwen3-embedding-8b` | **4096** | LanceDB `~/repos/gh/andenken/data`(sessions 75k chunks / md 10.7k, 2026-09-03 실측) | `semantic-memory` 스킬 **배포 완료**(claude-skills + workspace*) — 컨테이너 env는 [issue #9](https://github.com/junghan0611/nixos-config/issues/9) |
+| OpenClaw session+memory | OpenRouter | `baai/bge-m3` (2026-11-25~) | **1024** | 봇별 `~/openclaw/config/agents/{agentId}/agent/openclaw-agent.sqlite`의 `memory_index_*`·`memory_embedding_cache` (sqlite-vec + FTS5 trigram). **세션 원본과 같은 파일이다 — 파일을 지우지 않는다** | 검색엔 쓰지 않는다 — `tools.deny=["memory_search"]`(2026-10-26 실측). 이 인덱스는 Andenken harvest 원천([#5](https://github.com/junghan0611/nixos-config/issues/5)) |
+| andenken (sessions + md garden) — 11-25 이전 기록, cyborg에서 재구축 중 | OpenRouter (query·index 양쪽) | `qwen/qwen3-embedding-8b` | **4096** | LanceDB `~/repos/gh/andenken/data`(sessions 75k chunks / md 10.7k, 2026-09-03 실측) | `semantic-memory` 스킬 **배포 완료**(claude-skills + workspace*) — 컨테이너 env는 [issue #9](https://github.com/junghan0611/nixos-config/issues/9) |
 
 - `agents.defaults.memorySearch.experimental.sessionMemory: true` since 2026-05-08 — sessions transcript indexing finally activated. Before that the `sources: ["sessions"]` line was being silently dropped by `normalizeSources()` because the experimental gate was closed. Verify with `openclaw memory status --agent <id>` showing `Sources: memory, sessions` and a non-zero `sessions ·` row under `By source:`.
-- baseline reindex chunk 수치 이력 (5.2 → 5.7 → 8B 4096d 전환 절차 + chunk 분포 + storage)은 [ROADMAP.md](ROADMAP.md) "임베딩 baseline 전환". 현재 baseline = 8B 4096d, 총 ~4982 chunks. **재현 함정**: 8B 전환 시 `~/openclaw/config/memory/*.sqlite{,-shm,-wal}` 삭제 + restart로 schema 4096d 재생성 후 **reindex 필수**(4B↔8B 임베딩 공간 직교). OpenRouter privacy에서 8B endpoint 허용 필요(default 차단 시 "No endpoints available matching your guardrail restrictions").
-- 진단: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider 별도 진단, `vec0.so` 경로 확인.
+- 현재 baseline = BGE-M3 1024d, 6봇 합계 10,619 chunks (2026-11-25: bbot 6,885 · glg 1,565 · gpt 875 · mini 793 · main 378 · gemini 123). 모델 전환 절차는 [gotchas](docs/openclaw-gotchas.md) 「11.10 기억 색인 BGE-M3 전환」이다: 게이트웨이 정지 → one-off CLI `config set` → 봇별 `memory reset --yes` → `memory index`. **11.10의 memory CLI는 게이트웨이 정지 중에만 돈다** — 실행 중 확인은 봇 DB의 `memory_index_meta`를 읽기 전용으로 본다. 예전 8B 전환 때의 `~/openclaw/config/memory/*.sqlite` 삭제 절차는 지금 구조에서는 **세션 원본 삭제**가 된다. 수치 이력은 [ROADMAP.md](ROADMAP.md) "임베딩 baseline 전환"과 2026-11-25. 새 임베딩 모델은 OpenRouter privacy guardrail이 그 endpoint를 허용해야 돈다(Qwen 8B 때 default 차단 시 "No endpoints available matching your guardrail restrictions"; `baai/bge-m3`는 11-25 허용 상태로 통과).
+- 진단: `memory status --deep --json` 의 `vector` 객체 (`enabled / storeAvailable / semanticAvailable / available / extensionPath`) — sqlite-vec 로딩과 embedding provider 별도 진단, `vec0.so` 경로 확인. 11.10에서는 게이트웨이 정지 중에만 돈다.
 - FTS tokenizer = `trigram` for CJK. Korean particle stripping (25 particles, longest-match-first) automatic in query expansion.
 - `~/org:/home/node/org:rw` is for file access (denotecli / bibcli / botlog / journal), not embedding. Do not remove.
 - andenken layer is separate by *storage* (LanceDB vs sqlite) and *corpus* (통합 세션+garden md vs OpenClaw sessions/memory). ~~모델(4B vs 8B)로도 분리~~ — **2026-09-02 통합 rebuild로 해소**, cross-store 보정 부채는 없다. 봇의 `semantic-memory` 스킬은 배포 완료(claude-cli 봇은 `config/claude-skills` 마운트 면, 내장 런타임은 `workspace*/skills` 면)이고, 컨테이너 env·dictcli Layer 3 프로비저닝은 [issue #9](https://github.com/junghan0611/nixos-config/issues/9)에서 종결 중.
@@ -494,7 +494,7 @@ Oracle has two disjoint recall layers. Same embedding family (Qwen3-Embedding). 
 | `sessions.lance` | **read-only consumer** — 실물은 있으나 여기서 색인하지 않는다(`sync-sessions.sh` 가 rsync 로 채운다) | read-only consumer | thinkpad |
 | `md.lance` (가든) | read-only consumer | read-only consumer | thinkpad |
 | `openclaw.lance` | **absent** | **absent** | thinkpad |
-| OpenClaw 자체 memory (`config/memory/*.sqlite`) | — | **writer** (OpenClaw 자체 임베딩. 봇 native 검색은 deny — harvest 원천) | oracle |
+| OpenClaw 자체 memory (봇별 `config/agents/<id>/agent/openclaw-agent.sqlite`의 `memory_index_*`) | — | **writer** (OpenClaw 자체 임베딩. 봇 native 검색은 deny — harvest 원천) | oracle |
 
 **실측 (2026-09-06, 이 호스트에서)**:
 
@@ -574,7 +574,7 @@ Implication: if `docker compose up` runs from a shell that never sourced `.env.l
 
 | Var | Use | Source |
 |---|---|---|
-| `OPENROUTER_API_KEY` | memorySearch embedding (Qwen3-Embedding-8B 4096d, all agents). ~~web search (perplexity)~~ — 2026-06-22(6.9) perplexity 외부화·제거, 웹검색은 런타임 내장(codex=Codex Hosted Search, claude-cli=Claude WebSearch)으로 전환 | `~/.env.local` SSOT → `~/openclaw/.env` (sync values, not just names) |
+| `OPENROUTER_API_KEY` | memory search embedding (`baai/bge-m3` 1024d, all agents, 2026-11-25~; 그 전 Qwen3-Embedding-8B 4096d). ~~web search (perplexity)~~ — 2026-06-22(6.9) perplexity 외부화·제거, 웹검색은 런타임 내장(codex=Codex Hosted Search, claude-cli=Claude WebSearch)으로 전환 | `~/.env.local` SSOT → `~/openclaw/.env` (sync values, not just names) |
 | `GEMINI_API_KEY` | image generation only (banana / `gemini-3-flash-preview-image`). **Not** memorySearch since 2026-05-08 (replaced by OpenRouter Qwen3) | `~/.env.local` SSOT |
 | `GROQ_API_KEY` | active-memory primary (currently disabled) | `~/.env.local` SSOT |
 | `TELEGRAM_BOT_TOKEN_*` | per-bot Telegram | `~/openclaw/.env` (gitignore) |
@@ -594,13 +594,13 @@ Treat **every** OpenClaw gateway WARN as an Error until proven harmless. Silent 
 
   ```bash
   for f in ~/openclaw/config/tasks/runs.sqlite \
-           ~/openclaw/config/memory/*.sqlite \
+           ~/openclaw/config/agents/*/agent/openclaw-agent.sqlite \
            ~/openclaw/config/flows/registry.sqlite; do
     [ -f "$f" ] && echo "$(basename $f): $(sqlite3 "$f" 'PRAGMA integrity_check;' 2>&1 | head -1)"
   done
   ```
 
-  `runs.sqlite` and `flows/registry.sqlite` are ephemeral — safe to delete. Per-bot `memory/*.sqlite` carry workspace recall and should be repaired (`.dump` + reload) rather than deleted if possible.
+  `runs.sqlite` and `flows/registry.sqlite` are ephemeral — safe to delete. Per-bot `agents/<id>/agent/openclaw-agent.sqlite` hold the session originals as well as the memory index (11.x) — never delete them; repair (`.dump` + reload) with the gateway stopped. A memory-only reset is `openclaw memory reset --agent <id> --yes` (offline).
 
 Operational rule:
 

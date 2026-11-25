@@ -9,6 +9,20 @@
 
 ## Unreleased
 
+## v2026.11.25-openclaw.2 — OpenClaw 기억 색인 BGE-M3 전환
+
+### OpenClaw memory search: Qwen 4096d → BGE-M3 1024d
+
+- GLG 직접 승인으로 6봇 memory search 모델을 `qwen/qwen3-embedding-8b` 4096d에서 `baai/bge-m3` 1024d로 바꿨다. config 변경은 `memory.search.model` 한 줄이고, `tools.deny=["memory_search"]`·sources·fallback·cron은 그대로다.
+- 11.10에서는 세션 원본이 봇 DB(`agents/<id>/agent/openclaw-agent.sqlite`) 안에 있음을 실측했다. 그래서 파일 삭제 대신 공식 `memory reset`으로 파생 색인과 캐시만 비우고 `memory index`로 다시 지었다. memory CLI가 offline-only라 21:38–22:06 게이트웨이를 정지하고 one-off 컨테이너로 돌렸다(canary gemini 먼저).
+- 실측 결과: 6봇 모두 meta `baai/bge-m3`·1024d, 합계 10,619 chunks, Qwen 행 0. 세션 원본은 봇마다 정지 중 백업과 해시로 대조해 기존 본문 변경 0을 확인했다. 재색인이 cold 세션을 hot으로 되살리는 부수 효과가 있었고, 되살린 본문은 cold 파일과 같았다(gemini 128/128). 6봇 DB는 1.48GB에서 0.63GB로 줄었다. 임시 백업 1.4GB는 GLG 지시대로 검증 뒤 지웠다.
+- 비용은 $0.05 미만으로 추정했다($0.01/M, 청크 약 10.6k). OpenRouter 실제 청구액은 확인하지 않았다. Andenken 쪽 수확·재색인은 cyborg에서 따로 진행 중이며 이 릴리즈에 들어 있지 않다.
+- 문서: ORACLE 임베딩 표·저장 위치·무결성 점검 경로, gotchas 「11.10 기억 색인 BGE-M3 전환」(CLI offline-only, DB 파일 삭제 금지, cold-restore, one-off 함정), `openclaw-update` 함정 ⑦, `nixos-config` 스킬 점검 항목, ROADMAP 2026-11-25. NEXT의 memory 인덱스 동결 항목을 닫았다.
+
+### OpenClaw 11.10 첫 자연 Auto-B
+
+- 11-25 20:30 Auto-B가 ok·delivered로 통과했다(claude-cli, fallback 없음, 도구 34회로 11.8 범위, owner-only 도구 0). bbot `USER.md` 4000자 주입 상한 경고는 workspace-bbot 쪽에서 고쳤다.
+
 ## v2026.11.25-openclaw.1 — OpenClaw 11.10 메이저 컷오버
 
 ### OpenClaw 2026.11.10 메이저 컷오버

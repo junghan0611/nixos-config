@@ -82,7 +82,7 @@ secret/auth를 공개 repo로 새게 하지 마라. 자세한 건 `ORACLE.md`. �
   agent DB 스키마를 올리는 건 doctor뿐이다. 단 **반드시 게이트웨이를 끈 상태**에서(라이브 writer가
   있으면 "stopped-writer maintenance" 로 전부 skip), 그리고 **끝난 뒤 6봇 prefix를 재확인**한다.
 - **6봇 모델 prefix 전수 재확인** (gemini 보존 primary는 ORACLE.md 봇 표 — `google*` 아님),
-  claude-cli 봇 Anthropic auth GREEN, memory 4096d, `fallbacks` 빈 상태,
+  claude-cli 봇 Anthropic auth GREEN, memory 1024d(`baai/bge-m3`, 11-25~ — 봇 DB `memory_index_meta`로 확인), `fallbacks` 빈 상태,
   catch-all 1번(8.1부터 `modelPolicy.allow` 배열 첫 항목 = `openai/gpt-6.1-sol`, 2026-11-16부터).
 - **모델은 claude-cli 봇이면 카탈로그 등록만으로 태운다** — `agentRuntime claude-cli`는 구독
   API에서 모델을 동적 해결(예: Sonnet 5.5 = `anthropic/claude-sonnet-5-5` + primary, 재빌드 불필요. `sonnet-5`는 Sonnet 5이지 5.5가 아니다 — 유효 모델은 ORACLE.md 봇 표 위 정책 문장).

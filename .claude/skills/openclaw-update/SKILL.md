@@ -210,7 +210,7 @@ preflight exit 3·diverged는 위 "묻는 것은 셋뿐" 규칙 밖이다. 게�
 | ④ override로 recreate한 뒤 plain `compose up`이 또 recreate | compose config-hash가 바뀐 상태로 남는다. 11-14 측정에서 hash가 어느 계산값과도 일치하지 않았다(원인 미확인) | 정책 복원 recreate를 계획된 단계로 idle gate를 거쳐 한 번 한다. 우발적인 `up`을 하지 않는다 |
 | ⑤ 가짜 모델 id가 `config validate`를 통과 | validate는 모델 카탈로그 존재를 검사하지 않는다 | 모델 변경을 validate PASS로 판정하지 않는다. 격리 no-deliver probe(`openclaw` 스킬 §11) |
 | ⑥ memory 인덱스 신규 행 0(동결) | **가설**: chunking 버전업과 `tools.deny=["memory_search"]`가 겹치면 repair가 발화하지 않는다. 11-14 실측 신규 행 0 | 가설로 다룬다. deny를 임의로 풀지 않고 보고한다. hotfix 영수증(cron 0건)과 별개로 신규 행 증가를 관측한다 |
-| ⑦ `openclaw memory status` 거부, verify memory 절 전부 unavailable | 11.3: gateway 실행 중엔 offline ownership이라 CLI가 거부한다 | INFO 절일 뿐 판정이 아니다. 인덱스 확인은 이 CLI에 기대지 않는다 |
+| ⑦ `openclaw memory status` 거부, verify memory 절 전부 unavailable | 11.3~11.10: gateway 실행 중엔 offline ownership이라 memory CLI 전체(status·index·reset)가 거부한다 | INFO 절일 뿐 판정이 아니다. 인덱스 확인은 이 CLI에 기대지 않고 봇 DB `memory_index_meta`(model·vectorDims)를 읽기 전용으로 본다. 재색인·모델 전환은 정지 창의 one-off CLI로 한다 — gotchas 「11.10 기억 색인 BGE-M3 전환」. 봇 DB 파일 삭제는 세션 삭제다 |
 
 ## 3. 영수증 자리
 

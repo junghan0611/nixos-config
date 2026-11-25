@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-11-25 — OpenClaw 기억 색인 BGE-M3 전환 (Qwen 부채 정리)
+
+- GLG 직접 승인("응응 내가 승인했어", "잠시 백업이고 끝나면 바로 지워")으로 실무 코디 `20261123T183855-3783fb`가 단독 writer로 진행했다. 운영 코디 `20261008T152203-145c2f`가 범위를 정했고, Terra `20261125T213209-b1f85c`가 읽기 전용으로 교차 확인했다. 6봇 memory search를 `qwen/qwen3-embedding-8b` 4096d에서 `baai/bge-m3` 1024d로 바꿨다. 영수증은 비공개 `~/openclaw/backups/embed-bge-m3-20261125/`.
+- GLG의 원칙은 "정본은 세션과 memory 문서, sqlite 색인은 날려도 된다"였다. 실측해 보니 11.10에서는 세션 원본이 같은 봇 DB 안에 있었다(bbot `transcript_events` 5,000행·441세션, 디스크 일반 `.jsonl` 0). 그래서 파일 삭제 대신 공식 `memory reset`으로 파생 색인과 캐시만 비웠다.
+- 21:38:48 정지 → 오프라인 백업 1.4GB → one-off CLI로 `config set`·봇별 `reset`·`index`(canary gemini) → 22:04:26 start → 22:06:42 RPC ok(+136s) → 22:08:32 healthy, RestartCount 0. 6봇 모두 meta `baai/bge-m3`·1024d이고 합계 10,619 chunks다. 세션 원본은 봇마다 백업과 해시로 대조해 보존을 확인했고, 백업은 GLG 지시대로 22:08에 지웠다. 비용은 $0.05 미만으로 추정했다($0.01/M).
+- 덤으로 6봇 DB가 1.48GB에서 0.63GB가 됐다(NEXT §기억축의 cache orphan 부채). 재색인이 cold 세션을 hot으로 되살리는 부수 효과가 있었다(내용 동일). 함정은 [gotchas](docs/openclaw-gotchas.md) 「11.10 기억 색인 BGE-M3 전환」에 있다. Andenken 수확·재색인은 cyborg에서 따로 진행 중이다.
+
 ## 2026-11-25 — Cyborg 메인 작업 환경 이관
 
 - Cyborg를 설치하고 SSD 부팅을 확인한 뒤, 기존 노트북에서 데이터와 작업 환경을 이관했다. USB 복원 중 연결 끊김과 I/O 오류가 발생한 아카이브는 LAN으로 다시 보내 체크섬을 대조했다.
