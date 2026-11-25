@@ -50,3 +50,12 @@ GLG 현장 보고: RX 470 데스크톱에서 Ventoy가 처음 보이지 않았�
 두 모델 파일은 기존 모델 저장소에 준비됐다. 첫 요청은 모델 로딩을 포함하며 반복 입력에는 캐시 재사용이 있어 실제 검색 지연이나 대량 처리량을 대표하지 않는다. 임시 CUDA 서버는 종료했고 기본 서비스 선언과 Andenken 설정·코퍼스·인덱스는 변경하지 않았다. 재현용 빌드: `NIXPKGS_ALLOW_UNFREE=1 nix build --impure --out-link /tmp/cyborg-ollama-cuda 'nixpkgs#ollama-cuda'` (당시 소스 빌드 33분 14초, 레지스트리 입력은 비고정).
 
 Andenken의 기존 8B/4096차원 인덱스에는 로컬 8B를 읽기 전용 비교 후보로 본다. 차원이 같아도 양자화·입력 처리 차이가 있으므로 다양한 쿼리로 OpenRouter 대비 지연과 상위 검색 결과를 검증하기 전에는 혼용하지 않는다. 4B는 VRAM 여유가 약 2.1 GiB 더 많지만 2560차원 별도 인덱스가 필요하다.
+
+### 8B: OpenRouter 비교와 15분 지속 부하
+
+동일 합성 입력 6회씩 비교: 첫 단건 로컬 5.33초 / OpenRouter 1.34초(원격 모델 적재 상태 비관측), 이후 단건 0.17–0.18초 / 3.32–3.48초, 배치 4개(625 입력 토큰) 0.66–0.77초 / 2.76–3.91초. OpenRouter는 6회 성공·429 없음; 장시간 원격 레이트 제한은 측정하지 않았다. 로컬 지속 900.7초 동안 5,316청크, 5.90청크/초, 실패 0, 배치 p50 0.678초/p95 0.689초, VRAM 사용/여유 6143/1666 MiB, 관측 최고 63°C. 합성 문형 반복이 있어 실제 코퍼스나 검색 품질을 대표하지 않는다.
+
+1. 위 CUDA 빌드를 준비한다(다른 경로는 `OLLAMA_CUDA_BIN`으로 지정). 대상 기기에서 기존 `ollama.service`가 실행 중이고, `ollama list`에 `qwen3-embedding:8b`가 있어야 한다. 없으면 `sudo systemctl start ollama` 및 `ollama pull qwen3-embedding:8b`로 별도 준비한다.
+2. `bash scripts/cyborg-embedding-runtime.sh start`로 임시 서버를 올린다. 접속 계약: **base `http://127.0.0.1:11435`** (`/v1` 미포함), `POST /v1/embeddings`, 모델 `qwen3-embedding:8b`, 배열 `input`, `data[].index`, 유한 벡터 4096차원. 검증된 설정은 컨텍스트 2048, 배치 4, 요청 타임아웃 30초다. 운영 서비스(`11434`)와 설정은 바꾸지 않으며 임시 서버 수명은 최대 20분이다.
+3. `python3 scripts/cyborg-embedding-bench.py`는 로컬 스모크, `--seconds 900`은 15분 지속 부하. **유료 비교를 명시적으로 원할 때만** `--openrouter`를 추가한다(환경의 `ANDENKEN_SESSION_API_KEY` 또는 `OPENROUTER_API_KEY`, 합성 6회 이하, 자동 재시도 없음). 이 벤치는 기존 코퍼스와 인덱스를 읽거나 수정하지 않는다.
+4. 사용자가 `bash scripts/cyborg-embedding-runtime.sh stop`으로 임시 서버를 종료한다. 장애는 `journalctl -u cyborg-embedding-cuda.service`에서 확인한다. Andenken 후보 시험에서는 이 엔드포인트를 명시적으로 사용하고 운영 인덱스 쓰기나 교체는 별도 결정으로 둔다.
