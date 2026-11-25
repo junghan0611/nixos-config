@@ -49,8 +49,9 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 경과: 운영 코디 `20261008T152203-145c2f` 지시, 실무 코디 `20261123T183855-3783fb` 실행. 11.8 `2d4ab29` → 11.10 `6ea542f`(state 36→40 / agent 38→42, main 11-16 분기 계열). 이력·영수증은 [ROADMAP](ROADMAP.md) 2026.11.10, 함정은 [gotchas](docs/openclaw-gotchas.md) 11.10.
 
-- [ ] **첫 자연 Auto-B 20:30 KST (11-25)**: ok·delivered, `provider=claude-cli`, fallback 없음, RestartCount 0 유지. 11.10에서 owner-only 도구를 처음 받는 실행이다(GLG 수용). 도구 사용은 호스트 `~/.claude/projects/-home-node--openclaw-workspace-bbot/`에서 11.8 때(`exec`·`read`·`process`·`ToolSearch`)와 비교한다. 그 뒤 모닝 cron 11-26 08:00 — 범위 없는 `automations`·`sessions_yield`를 잃은 job이다.
-- [ ] **롤백 짝 퇴역 판단(GLG)**: 11.8 이미지 `697e7bbe…`(3.07GB) + base `1333535099ca…`(1.81GB) + cold B `/var/tmp/openclaw-cold-11.10/cold-b-state36-agent38.tar.zst`(1.28GB, 11.8 데이터의 유일한 복귀점, auth 포함). 첫 자연 Auto-B·모닝 관측 뒤 승인으로만 지운다. 영수증 디렉터리의 `openclaw.json.pre-swap`도 같은 때 판단한다.
+- [x] **첫 자연 Auto-B 20:30 KST (11-25)**: 통과. ok·delivered, `provider=claude-cli model=claude-fable-5-2`, 508,822ms(11.8 다섯 번 251–386s보다 길다; 같은 시각 entwurf 게이트 검증이 CPU를 쓰고 있었으나 인과는 재지 않음), fallback·error 없음, RestartCount 0. 도구 사용은 `exec` 32·`read` 1·`ToolSearch` 1 = 34로 11.8 범위(15–46)와 같은 형태이고, owner-only 도구 호출은 0. 경고 하나: `USER.md is 4112 chars (limit 4000); truncating` — 주입 상한 4000자를 넘으면 가운데가 잘린다. SOUL·AGENTS와 겹치는 줄을 덜어 3096자로 고쳤다(workspace-bbot `80cc8bd`, GLG 요청). 영수증 `autob-first-run.json`·`autob-first-run-tools.txt`.
+- [ ] **모닝 cron 11-26 08:00**: 범위 없는 `automations`·`sessions_yield`를 잃은 job이다. ok·delivered와 그 도구 결손이 보고에 드러나는지 본다.
+- [ ] **롤백 짝 퇴역 판단(GLG)**: 11.8 이미지 `697e7bbe…`(3.07GB) + base `1333535099ca…`(1.81GB) + cold B `/var/tmp/openclaw-cold-11.10/cold-b-state36-agent38.tar.zst`(1.28GB, 11.8 데이터의 유일한 복귀점, auth 포함). 모닝 관측 뒤 승인으로만 지운다. 영수증 디렉터리의 `openclaw.json.pre-swap`도 같은 때 판단한다.
 - [ ] **Doctor 알림**: auth profile `google-gemini-cli:*` 1건을 "provider realm or identity unresolved"로 변경 없이 남겼다(gemini 정지 중, 비파괴). gemini 재가동이나 GPT 회사 계정 재인증 때 `openclaw models status`와 함께 본다.
 
 ## OpenClaw 11.7 (11-23 메이저 컷오버) 관측·갈무리
