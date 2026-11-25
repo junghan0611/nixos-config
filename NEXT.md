@@ -31,14 +31,14 @@ Oracle 계획 재부팅은 11-04 읽기 전용 사전점검까지 하고 보류�
 
 ## Cyborg 입사 준비
 
-- [ ] [CYBORG.md](CYBORG.md) 절차로 회사 실기기를 설치하고 첫 부팅·하드웨어 수집·Intel/NVIDIA·외부 모니터·오디오·절전·Ollama를 검증한다. ISO 재빌드 없이 준비된 매체 사용; 리포를 가져온 뒤 `#cyborg` switch는 GLG가 판단한다. RX 470 데스크톱 실측과 설치 첫 실패의 미상 원인은 문서에 구분했다.
+- [ ] Cyborg의 Wi-Fi 실제 접속·오디오/Teams 통화·절전 복귀와 NVIDIA 쪽 DP 출력을 검수한다. 현재 실기기의 수선 후 부팅은 확인했지만 ISO 설치 절차 자체는 미검증이다. [CYBORG.md](CYBORG.md) 참조.
 - [ ] 다음 ISO를 만들 때만 라이브 XFCE 자동 잠금 방지를 실제로 검증한다. 현재 매체는 변경 전이다. 오프라인 설치 및 Teams 실행도 아직 미검증.
 - [ ] `nuc` XFCE 대체 부팅 선택지는 평가만 완료했으며 미적용·미커밋이다. `laptop` 실제 SSH 키 접속도 적용 전 확인한다.
 - [ ] 이전 레벨 6 ISO #446의 Nix 스토어 본체 회수 여부는 별도 판단한다.
 
 ## 터치패드 제어
 
-- [ ] Cyborg 실기기 X11에서 `touchpad status`로 자동 탐색을 확인한다. 이름이 다르거나 후보가 여럿이면 `xinput list`로 확인하고 `touchpad status '장치 이름'`으로 지정한다. Samsung laptop의 on/off/toggle은 확인했다.
+
 
 ## Sway 실험 — 후순위
 

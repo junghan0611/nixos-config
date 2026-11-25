@@ -9,6 +9,15 @@
 
 ## Unreleased
 
+## v2026.11.25 — Cyborg 실기기 온보딩
+
+### Cyborg
+
+- 수선한 내장 NVMe 부팅, i3/X11, 터치패드를 검수했다. Intel 기본 렌더링과 RTX 4060 PRIME 오프로딩을 실측했고 Gerber 뷰어 `gerbv`를 추가했다.
+- 회사 HDMI FHD 화면을 위, 내장 화면을 아래에 두는 자동 전환을 확인하고 Cyborg 전용 `autorandr` 프로필을 선언했다.
+- Qwen3-Embedding 8B/4B가 RTX 4060에서 각각 4096/2560차원으로 100% GPU 구동됨을 확인했다. 측정 조건과 Andenken 전환 전 남은 호환성 검증은 [CYBORG.md](CYBORG.md)에 남겼다.
+- 기기 이관과 재사용 가능한 설정 순서를 [온보딩 기록](https://github.com/junghan0611/nixos-config/commit/1f80886)에 남겼다. ISO 설치 자체와 절전·오디오 등은 별도 검수다.
+
 ### OpenClaw 11.8 관측·뒷정리
 
 - 11.8 첫 자연 메멘토(11-25 02:30)를 관측했다: ok·delivered, 386초, claude-cli fable-5-2, fallback 없음, RestartCount 1 유지, 이관 disabled job 미발화.
