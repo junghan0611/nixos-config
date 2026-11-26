@@ -1,6 +1,6 @@
 { config, lib, pkgs, ... }:
 {
-  imports = [ ./shared.nix ../hosts/cyborg/hardware-configuration.nix ];
+  imports = [ ./shared.nix ../hosts/cyborg/hardware-configuration.nix ../modules/embedded.nix ];
   networking.hostName = "cyborg";
   # Keep i3 as the default boot; replace the shared GNOME variant with XFCE.
   specialisation = lib.mkForce {
@@ -47,7 +47,7 @@
   services.autorandr.enable = true;
   services.fwupd.enable = true;
   programs.java = { enable = true; package = pkgs.jdk17; };
-  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv poppler-utils stlink openocd ];
+  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv poppler-utils ];
   # Local Andenken endpoint: boot the server, load models on demand, keep them warm.
   services.ollama = {
     enable = true;

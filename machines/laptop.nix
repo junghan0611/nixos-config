@@ -8,6 +8,7 @@ in
 {
   imports = [
     ./shared.nix
+    ../modules/embedded.nix
     # Import the existing hardware configuration
     ../hosts/laptop/hardware-configuration.nix
     # Note: disk-config.nix is only needed for fresh installations with disko
@@ -147,9 +148,6 @@ in
     calibre
     teamsPkgs.teams-for-linux
     python3Packages.markitdown
-    # STM32 SWD debug tools
-    stlink
-    openocd
   ];
 
   # Enable thermald for Intel CPU thermal management
