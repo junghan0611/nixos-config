@@ -47,7 +47,7 @@
   services.autorandr.enable = true;
   services.fwupd.enable = true;
   programs.java = { enable = true; package = pkgs.jdk17; };
-  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv poppler-utils ];
+  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv poppler-utils stlink openocd ];
   # Local Andenken endpoint: boot the server, load models on demand, keep them warm.
   services.ollama = {
     enable = true;

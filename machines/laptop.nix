@@ -147,6 +147,9 @@ in
     calibre
     teamsPkgs.teams-for-linux
     python3Packages.markitdown
+    # STM32 SWD debug tools
+    stlink
+    openocd
   ];
 
   # Enable thermald for Intel CPU thermal management
