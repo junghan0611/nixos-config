@@ -1,7 +1,13 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
-  environment.systemPackages = with pkgs; [ stlink openocd ];
+  environment.systemPackages = with pkgs; [
+    stlink
+    openocd
+    libusb1
+    # Prefer this interpreter over the plain Python in machines/shared.nix.
+    (lib.hiPrio (python3.withPackages (ps: [ ps.pyusb ])))
+  ];
 
   # Grant the active local session access to ST-LINK/V2 without sudo.
   # Avoid the upstream ST-LINK rule's world-writable device permissions.
