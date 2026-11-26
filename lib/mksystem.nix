@@ -49,6 +49,9 @@ in assert !(builtins.hasAttr user additionalUsers); systemFunc rec {
     # Allow unfree packages.
     { nixpkgs.config.allowUnfree = true; }
 
+    # Shared agent tooling: make bb available system-wide on every host.
+    ({ pkgs, ... }: { environment.systemPackages = [ pkgs.babashka ]; })
+
     # Disko for disk management
     inputs.disko.nixosModules.disko
 
