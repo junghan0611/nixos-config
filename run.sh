@@ -623,10 +623,29 @@ main() {
                         *) error "잘못된 선택입니다." ;;
                     esac
                 else
-                    # Client side of #14. Ctrl-C stops the tunnel, not this menu.
-                    trap 'true' INT
-                    bash "$FLAKE_DIR/scripts/oracle-rdp-client.sh" || true
-                    trap - INT
+                    echo ""
+                    echo "  Oracle RDP — 1번과 2번은 별도 터미널에서 실행"
+                    echo "  1) Cloudflare Access 터널 열기"
+                    echo "  2) RDP 클라이언트 실행 (xfreerdp)"
+                    echo "  0) 취소"
+                    read -p "> " rdp_choice
+                    case $rdp_choice in
+                        1)
+                            # Ctrl-C stops the tunnel, not this menu.
+                            trap 'true' INT
+                            bash "$FLAKE_DIR/scripts/oracle-rdp-client.sh" || true
+                            trap - INT
+                            ;;
+                        2)
+                            if command -v xfreerdp >/dev/null; then
+                                xfreerdp "/v:127.0.0.1:${ORACLE_RDP_LOCAL_PORT:-13389}" /u:junghan /dynamic-resolution || true
+                            else
+                                error "xfreerdp를 찾을 수 없습니다 (FreeRDP 패키지 필요)."
+                            fi
+                            ;;
+                        0) info "취소" ;;
+                        *) error "잘못된 선택입니다." ;;
+                    esac
                 fi
                 ;;
             0)
