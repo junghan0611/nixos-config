@@ -47,8 +47,19 @@
   services.autorandr.enable = true;
   services.fwupd.enable = true;
   programs.java = { enable = true; package = pkgs.jdk17; };
-  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv ];
-  # Ollama stays on-demand; verify GPU acceleration after the driver boots.
-  services.ollama = { enable = true; host = "127.0.0.1"; environmentVariables.OLLAMA_KEEP_ALIVE = "10m"; };
-  systemd.services.ollama.wantedBy = lib.mkForce [];
+  environment.systemPackages = with pkgs; [ powertop acpi brightnessctl pavucontrol pulseaudio net-tools libreoffice-fresh calibre teams-for-linux gerbv poppler-utils ];
+  # Local Andenken endpoint: boot the server, load models on demand, keep them warm.
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-cuda;
+    host = "127.0.0.1";
+    port = 11435;
+    environmentVariables = {
+      OLLAMA_KEEP_ALIVE = "8h";
+      OLLAMA_CONTEXT_LENGTH = "2048";
+      OLLAMA_MAX_LOADED_MODELS = "1";
+      OLLAMA_NO_CLOUD = "true";
+      OLLAMA_NOPRUNE = "true";
+    };
+  };
 }
