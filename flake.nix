@@ -32,6 +32,8 @@
     # 모두 cache.nixos.org에 있어 로컬 빌드 0. 이 input은 herdr 두 패키지만 쓴다.
     # stable 또는 잠긴 unstable이 따라잡으면 이 input을 회수한다.
     nixpkgs-herdr.url = "github:NixOS/nixpkgs/d5cc6833999746cffdfe0598f7bc801a57b887a9";
+    # Follow unstable when refreshing this input in flake.lock.
+    nixpkgs-herdr-core.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
   outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
